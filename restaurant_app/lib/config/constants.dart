@@ -94,6 +94,12 @@ abstract final class AppConstants {
   static const String newOrderAlert = 'طلب جديد';
   static const String orderHistoryTitle = 'سجل الطلبات';
   static const String reorderAction = 'أعد الطلب';
+  static const String tableDetailTitle = 'تفاصيل الطاولة';
+  static const String tableActiveOrder = 'الطلب النشط';
+  static const String tableNoOrder = 'لا يوجد طلب نشط';
+  static const String actionCleanTable = 'تم التنظيف';
+  static const String actionReserveTable = 'حجز الطاولة';
+  static const String actionReleaseTable = 'تسليم الطاولة';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

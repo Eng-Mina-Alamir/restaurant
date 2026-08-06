@@ -10,12 +10,14 @@ class WaiterTableCard extends StatelessWidget {
   const WaiterTableCard({
     super.key,
     required this.table,
+    required this.onTap,
     required this.onTakeOrder,
     required this.onRelease,
     required this.onReserve,
   });
 
   final RestaurantTable table;
+  final VoidCallback onTap;
   final VoidCallback onTakeOrder;
   final VoidCallback onRelease;
   final VoidCallback onReserve;
@@ -33,7 +35,7 @@ class WaiterTableCard extends StatelessWidget {
         side: BorderSide(color: accent, width: 2),
       ),
       child: InkWell(
-        onTap: onTakeOrder,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Column(

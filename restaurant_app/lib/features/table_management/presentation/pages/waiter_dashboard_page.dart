@@ -34,6 +34,9 @@ class WaiterDashboardPage extends ConsumerWidget {
                 final table = tables[index];
                 return WaiterTableCard(
                   table: table,
+                  onTap: () {
+                    context.push('/waiter/table/${table.id}');
+                  },
                   onTakeOrder: () {
                     context.push('/waiter/order/${table.id}');
                   },
