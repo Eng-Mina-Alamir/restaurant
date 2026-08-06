@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -23,10 +24,11 @@ class _CartPageState extends ConsumerState<CartPage> {
 
   Future<void> _checkout(BuildContext context) async {
     if (_placing) return;
+    final payment = ref.read(selectedPaymentMethodProvider);
     setState(() => _placing = true);
     final order = await ref
         .read(ordersControllerProvider.notifier)
-        .placeOrder();
+        .placeOrder(paymentMethod: payment);
     if (!context.mounted) return;
     setState(() => _placing = false);
     if (order != null) {
@@ -73,6 +75,10 @@ class _CartPageState extends ConsumerState<CartPage> {
                   taxAmount: totals.taxAmount,
                   totalAmount: totals.totalAmount,
                   placing: _placing,
+                  paymentMethod: ref.watch(selectedPaymentMethodProvider),
+                  onPaymentChanged: (m) =>
+                      ref.read(selectedPaymentMethodProvider.notifier).state =
+                          m,
                   onCheckout: () => _checkout(context),
                 ),
               ],
@@ -187,6 +193,8 @@ class _TotalsFooter extends StatelessWidget {
     required this.taxAmount,
     required this.totalAmount,
     required this.placing,
+    required this.paymentMethod,
+    required this.onPaymentChanged,
     required this.onCheckout,
   });
 
@@ -194,6 +202,8 @@ class _TotalsFooter extends StatelessWidget {
   final double taxAmount;
   final double totalAmount;
   final bool placing;
+  final PaymentMethod paymentMethod;
+  final ValueChanged<PaymentMethod> onPaymentChanged;
   final VoidCallback onCheckout;
 
   @override
@@ -204,6 +214,11 @@ class _TotalsFooter extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _PaymentSelector(
+              paymentMethod: paymentMethod,
+              onChanged: onPaymentChanged,
+            ),
+            const SizedBox(height: AppSpacing.md),
             _Row(
               label: AppConstants.totalLabel,
               value: Formatters.formatCurrency(subtotal),
@@ -238,6 +253,45 @@ class _TotalsFooter extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PaymentSelector extends StatelessWidget {
+  const _PaymentSelector({
+    required this.paymentMethod,
+    required this.onChanged,
+  });
+
+  final PaymentMethod paymentMethod;
+  final ValueChanged<PaymentMethod> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          AppConstants.paymentMethodLabel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const Spacer(),
+        SegmentedButton<PaymentMethod>(
+          segments: const [
+            ButtonSegment(
+              value: PaymentMethod.cash,
+              icon: Icon(Icons.payments_outlined),
+              label: Text(AppConstants.paymentCash),
+            ),
+            ButtonSegment(
+              value: PaymentMethod.card,
+              icon: Icon(Icons.credit_card),
+              label: Text(AppConstants.paymentCard),
+            ),
+          ],
+          selected: {paymentMethod},
+          onSelectionChanged: (selection) => onChanged(selection.first),
+        ),
+      ],
     );
   }
 }

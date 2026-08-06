@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/enums.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
 
@@ -78,3 +79,8 @@ final cartControllerProvider =
     StateNotifierProvider<CartController, List<CartItem>>((ref) {
       return CartController();
     });
+
+/// The payment method the customer has selected at checkout.
+final selectedPaymentMethodProvider = StateProvider<PaymentMethod>(
+  (ref) => PaymentMethod.cash,
+);

@@ -110,6 +110,9 @@ abstract final class AppConstants {
   static const String specialNotesLabel = 'ملاحظات الطلب';
   static const String pickupTimeLabel = 'وقت الجهوزية';
   static const String orderItemsLabel = 'تفاصيل الطلب';
+  static const String paymentMethodLabel = 'طريقة الدفع';
+  static const String paymentCash = 'نقداً';
+  static const String paymentCard = 'بطاقة';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

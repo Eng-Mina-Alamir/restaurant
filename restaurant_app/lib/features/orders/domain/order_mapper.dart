@@ -35,6 +35,7 @@ abstract final class OrderMapper {
     required String restaurantId,
     required List<CartItem> cartItems,
     required DateTime createdAt,
+    PaymentMethod? paymentMethod,
   }) {
     final items = cartItems
         .map((cart) => toOrderItem(cart, timestamp: createdAt))
@@ -46,6 +47,7 @@ abstract final class OrderMapper {
       restaurantId: restaurantId,
       orderType: OrderType.takeaway,
       status: OrderStatus.pending,
+      paymentMethod: paymentMethod,
       items: items,
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,

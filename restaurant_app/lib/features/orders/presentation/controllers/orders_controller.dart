@@ -52,7 +52,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   ///
   /// Appends the created [OrderEntity] to [state] and clears the cart on
   /// success.
-  Future<OrderEntity?> placeOrder() async {
+  Future<OrderEntity?> placeOrder({PaymentMethod? paymentMethod}) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
     if (cartItems.isEmpty) return null;
@@ -65,6 +65,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         restaurantId: MenuSeedData.restaurantId,
         cartItems: cartItems,
         createdAt: createdAt,
+        paymentMethod: paymentMethod,
       );
 
       final result = await _repository.createOrder(order);
