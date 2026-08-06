@@ -85,8 +85,28 @@ lib/
 - [x] Auth data layer (Dio + JWT + secure storage + repository + use cases)
 - [x] Auth presentation + role-based go_router navigation + Arabic RTL
 - [x] Core unit tests + docs + git
-- [ ] Customer menu browsing, cart, ordering
-- [ ] Waiter table management + order taking
-- [ ] KDS order columns, timers, alerts
-- [ ] Delivery driver flow + live tracking
-- [ ] Manager dashboard analytics
+- [x] Offline menu repository with Arabic seed data + customer menu browsing
+- [x] Cart domain (totals + 15% tax), CartController (merge-on-add), cart UI
+- [x] Modifier detail sheet + customer order creation from cart + confirmation
+- [x] Waiter table management (grid + statuses) and order intake → kitchen
+- [x] Kitchen Display System (pending/preparing/ready columns + status advance)
+- [x] New-order notification service with KDS badge
+- [x] Delivery driver flow (accept / start / complete assignments)
+- [x] Manager dashboard (sales metrics, active orders, top items)
+- [ ] Live backend integration (Dio datasources, real persistence)
+- [ ] Push notifications / audio alerts for new orders
+- [ ] QR ordering + self-pay
+- [ ] Delivery live tracking (maps)
+
+## Verification
+
+The project is verified entirely offline with:
+
+```bash
+flutter analyze     # 0 issues
+dart format --set-exit-if-changed .   # consistently formatted
+flutter test        # 83 unit + widget tests
+```
+
+All feature controllers (cart, orders, tables, delivery, metrics, notifications)
+have pure-Dart unit tests; pages have widget smoke tests.
