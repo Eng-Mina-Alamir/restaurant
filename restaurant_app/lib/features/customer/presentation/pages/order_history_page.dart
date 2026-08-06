@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,6 +36,13 @@ class OrderHistoryPage extends ConsumerWidget {
 
   void _reorder(WidgetRef ref, OrderEntity order, BuildContext context) {
     final cart = ref.read(cartControllerProvider.notifier);
+    // A past order with no items means the whole re-order is a no-op.
+    if (order.items.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(AppConstants.reorderFailed)));
+      return;
+    }
     for (final item in order.items) {
       cart.addItem(
         CartItem(
@@ -52,6 +60,8 @@ class OrderHistoryPage extends ConsumerWidget {
         ),
       ),
     );
+    // Guide the user straight to the cart to review & pay.
+    context.push('/customer/cart');
   }
 }
 

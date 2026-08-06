@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
+import 'package:restaurant_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_history_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
@@ -75,10 +77,23 @@ void main() {
 
     expect(cart.state, isEmpty); // cart cleared after ordering
 
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const OrderHistoryPage(),
+        ),
+        GoRoute(
+          path: '/customer/cart',
+          builder: (context, state) => const CartPage(),
+        ),
+      ],
+    );
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: OrderHistoryPage()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
@@ -87,5 +102,7 @@ void main() {
 
     expect(cart.unitCount, 3); // 2 burgers + 1 fries
     expect(cart.state, hasLength(2));
+    // Reorder navigates straight to the cart for review/checkout.
+    expect(find.byType(CartPage), findsOneWidget);
   });
 }
