@@ -40,7 +40,14 @@ void main() {
     final simpleItem = MenuSeedData.items.firstWhere(
       (item) => item.modifierGroups.isEmpty,
     );
-    await tester.tap(find.text(simpleItem.name).first);
+    // Tapping the tile's add (IconButton) on a no-modifier item quick-adds.
+    final simpleTile = find.ancestor(
+      of: find.text(simpleItem.name).first,
+      matching: find.byType(Card),
+    );
+    await tester.tap(
+      find.descendant(of: simpleTile, matching: find.byIcon(Icons.add)),
+    );
     await tester.pump();
 
     expect(cart.unitCount, greaterThan(0));

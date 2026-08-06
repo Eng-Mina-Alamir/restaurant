@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
@@ -54,6 +55,9 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       GoRoute(
         path: '/customer',
         builder: (context, state) => const CustomerHomePage(),
+        routes: [
+          GoRoute(path: 'cart', builder: (context, state) => const CartPage()),
+        ],
       ),
       GoRoute(
         path: '/waiter',

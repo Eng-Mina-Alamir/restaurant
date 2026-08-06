@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
@@ -7,8 +8,9 @@ import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
-import '../../presentation/widgets/category_chips.dart';
-import '../../presentation/widgets/menu_item_tile.dart';
+import '../pages/menu_item_detail_sheet.dart';
+import '../widgets/category_chips.dart';
+import '../widgets/menu_item_tile.dart';
 
 /// Dine-in customer home: browse categories, view items, add to cart.
 class CustomerHomePage extends ConsumerWidget {
@@ -81,22 +83,15 @@ class CustomerHomePage extends ConsumerWidget {
           .read(cartControllerProvider.notifier)
           .addItem(CartItem(menuItem: item, quantity: 1));
     } else {
-      // Detailed modifier selection arrives in Task 5; quick-add is a safe
-      // default until then.
-      ref
-          .read(cartControllerProvider.notifier)
-          .addItem(CartItem(menuItem: item, quantity: 1));
+      _showItemDetail(ref.context, ref, item);
     }
   }
 
   void _showItemDetail(BuildContext context, WidgetRef ref, MenuItem item) {
-    // Placeholder until the modifier bottom sheet (Task 5) lands.
-    _quickAdd(ref, item);
+    MenuItemDetailSheet.show(context, item);
   }
 
   void _openCart(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('سلة الطلب قريباً')));
+    context.push('/customer/cart');
   }
 }
