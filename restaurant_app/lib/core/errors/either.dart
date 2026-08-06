@@ -9,6 +9,18 @@
 /// ([Left]).
 sealed class Either<L, R> {
   const Either();
+
+  /// Pattern-matches this [Either], invoking [onLeft] for a [Left] value and
+  /// [onRight] for a [Right] value.
+  TResult when<TResult>({
+    required TResult Function(L value) onLeft,
+    required TResult Function(R value) onRight,
+  }) {
+    return switch (this) {
+      Left<L, R>(:final value) => onLeft(value),
+      Right<L, R>(:final value) => onRight(value),
+    };
+  }
 }
 
 /// Failure side of an [Either]; carries the reason an operation failed.

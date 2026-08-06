@@ -1,3 +1,5 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../config/environment.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -11,9 +13,10 @@ import '../storage/secure_storage_service.dart';
 
 /// Manual dependency locator used before full Riverpod wiring is in place.
 ///
-/// Cleanup note: Task 5 will replace this with Riverpod providers (see
-/// `service_locator` Riverpod plan). Until then this composes the auth stack
-/// with lazily-initialized singletons.
+/// Note: This class provides lazily-initialized singletons. The Riverpod
+/// providers below (`*Provider`s) are the preferred dependency-injection
+/// mechanism for feature code; this class remains for legacy/utility call
+/// sites until they are migrated.
 class ServiceLocator {
   ServiceLocator._();
 
@@ -50,3 +53,44 @@ class ServiceLocator {
   static RefreshTokenUseCase get refreshTokenUseCase =>
       RefreshTokenUseCase(authRepository);
 }
+
+// ── Riverpod providers ─────────────────────────────────────────────────────────
+
+/// Single shared instance of the secure storage service.
+final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
+  return ServiceLocator.secureStorage;
+});
+
+/// Dio client configured for the active environment.
+final dioClientProvider = Provider<DioClient>((ref) {
+  return ServiceLocator.dioClient;
+});
+
+/// Remote auth data source (Dio-backed).
+final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
+  return AuthRemoteDataSourceImpl(ref.watch(dioClientProvider).dio);
+});
+
+/// Auth repository combining the remote data source with secure storage.
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepositoryImpl(
+    remoteDataSource: ref.watch(authRemoteDataSourceProvider),
+    secureStorage: ref.watch(secureStorageServiceProvider),
+  );
+});
+
+final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
+  return LoginUseCase(ref.watch(authRepositoryProvider));
+});
+
+final verifyOtpUseCaseProvider = Provider<VerifyOtpUseCase>((ref) {
+  return VerifyOtpUseCase(ref.watch(authRepositoryProvider));
+});
+
+final logoutUseCaseProvider = Provider<LogoutUseCase>((ref) {
+  return LogoutUseCase(ref.watch(authRepositoryProvider));
+});
+
+final refreshTokenUseCaseProvider = Provider<RefreshTokenUseCase>((ref) {
+  return RefreshTokenUseCase(ref.watch(authRepositoryProvider));
+});

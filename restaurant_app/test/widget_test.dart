@@ -1,11 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:restaurant_app/main.dart';
+import 'package:restaurant_app/app.dart';
 
 void main() {
-  testWidgets('App renders app name placeholder', (WidgetTester tester) async {
-    await tester.pumpWidget(const RestaurantApp());
+  testWidgets('App renders scaffold', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: RestaurantApp()));
+    await tester.pump();
 
-    expect(find.text('مطعمي - جاهز للتطوير'), findsOneWidget);
+    // The login page should be shown for an unauthenticated (bootstrapped) user.
+    expect(find.text('مطعمي'), findsWidgets);
   });
 }
