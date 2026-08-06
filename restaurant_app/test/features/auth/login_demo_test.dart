@@ -24,9 +24,7 @@ void main() {
   ) async {
     await pump(tester);
 
-    await tester.tap(
-      find.widgetWithText(ActionChip, 'مدير'),
-    );
+    await tester.tap(find.widgetWithText(ActionChip, 'مدير'));
     await tester.pumpAndSettle();
 
     expect(find.text('manager@demo.com'), findsOneWidget);

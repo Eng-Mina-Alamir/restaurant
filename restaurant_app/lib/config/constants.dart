@@ -107,6 +107,7 @@ abstract final class AppConstants {
   static const String searchMenuHint = 'ابحث عن صنف...';
   static const String demoAccountsTitle = 'حسابات تجريبية';
   static const String demoPasswordHint = 'كلمة المرور: 123456';
+  static const String specialNotesLabel = 'ملاحظات الطلب';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

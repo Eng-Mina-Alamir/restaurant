@@ -209,10 +209,47 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
-            for (final item in order.items)
+            for (final item in order.items) ...[
               Text(
                 '${item.quantity} × ${item.menuItem.name}',
                 style: theme.textTheme.bodySmall,
+              ),
+              if (item.selectedModifiers.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                  ),
+                  child: Text(
+                    item.selectedModifiers.map((m) => m.name).join('، '),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              if (item.specialNotes?.trim().isNotEmpty ?? false)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                  ),
+                  child: Text(
+                    '${AppConstants.specialNotesLabel}: ${item.specialNotes}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+            ],
+            if (_elapsedMinutes(order.createdAt) >= 1)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Text(
+                  'منذ ${_elapsedMinutes(order.createdAt)} دقيقة',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.tertiary,
+                  ),
+                ),
               ),
             const SizedBox(height: AppSpacing.sm),
             FilledButton.tonal(
@@ -231,5 +268,11 @@ class _OrderCard extends StatelessWidget {
   String _orderNumber(OrderEntity order) {
     final digits = order.id.replaceAll(RegExp(r'[^0-9]'), '');
     return '#$digits';
+  }
+
+  int _elapsedMinutes(DateTime createdAt) {
+    final diff = DateTime.now().difference(createdAt);
+    final minutes = diff.inMinutes;
+    return minutes < 0 ? 0 : minutes;
   }
 }

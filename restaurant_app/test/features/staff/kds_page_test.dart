@@ -17,6 +17,12 @@ void main() {
     price: 28,
   );
 
+  const fries = MenuModifierOption(
+    id: 'opt-fries',
+    name: 'بطاطس مقلية',
+    extraPrice: 5,
+  );
+
   testWidgets('shows empty state when no orders', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: KdsPage())),
@@ -50,5 +56,34 @@ void main() {
     await tester.tap(find.text('قيد التحضير').last);
     await tester.pumpAndSettle();
     expect(find.text('جاهز للتسليم'), findsOneWidget);
+  });
+
+  testWidgets('shows modifier options and special notes on the card', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(
+      const CartItem(
+        menuItem: burger,
+        quantity: 1,
+        selectedModifiers: [fries],
+        specialNotes: 'بدون ملح',
+      ),
+    );
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: KdsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('بطاطس مقلية'), findsOneWidget);
+    expect(find.textContaining('ملاحظات الطلب: بدون ملح'), findsOneWidget);
   });
 }
