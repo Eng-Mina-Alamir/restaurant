@@ -100,6 +100,31 @@ abstract final class AppConstants {
   static const String kdsReady = 'جاهز للتسليم';
   static const String kdsCompleting = 'استكمال';
 
+  // ── Manager ────────────────────────────────────────────────────────────────
+  static const String managerTitle = 'لوحة المدير';
+  static const String metricsSalesTitle = 'إجمالي المبيعات';
+  static const String metricsOrdersTitle = 'عدد الطلبات';
+  static const String metricsAvgOrderTitle = 'متوسط قيمة الطلب';
+  static const String metricsActiveTitle = 'طلبات نشطة';
+  static const String metricsOverview = 'نظرة عامة';
+  static const String metricsItemsSold = 'الأصناف الأكثر مبيعاً';
+  static const String metricsNoData = 'لا توجد بيانات بعد';
+  static const String salesTitle = 'المبيعات';
+
+  // ── Driver / Delivery ────────────────────────────────────────────────────
+  static const String driverTitle = 'شاشة السائق';
+  static const String deliveryPending = 'بانتظار التوكيل';
+  static const String deliveryAccepted = 'مقبول';
+  static const String deliveryInTransit = 'قيد التوصيل';
+  static const String deliveryDelivered = 'تم التسليم';
+  static const String deliveryFailed = 'فشل التسليم';
+  static const String deliveryPickedUp = 'تم الاستلام';
+  static const String actionAccept = 'قبول التوصيل';
+  static const String actionStartDelivery = 'بدء التوصيل';
+  static const String actionCompleteDelivery = 'تسليم الطلب';
+  static const String deliveryLocationLabel = 'العنوان';
+  static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
+
   // ── Validation messages ────────────────────────────────────────────────────
   static const String invalidEmail = 'أدخل بريداً إلكترونياً صحيحاً';
   static const String invalidPhone =
