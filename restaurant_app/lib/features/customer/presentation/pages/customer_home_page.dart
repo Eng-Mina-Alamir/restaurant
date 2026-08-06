@@ -26,6 +26,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
     final menuAsync = ref.watch(menuControllerProvider);
     final selected = ref.watch(selectedCategoryProvider);
     final query = ref.watch(menuSearchQueryProvider);
+    final diet = ref.watch(menuDietFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -47,7 +48,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
         data: (menu) {
-          final items = filterMenu(menu, selected, query);
+          final items = filterMenu(menu, selected, query, diet);
           return Column(
             children: [
               Padding(
@@ -77,6 +78,12 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 onSelected: (category) =>
                     ref.read(selectedCategoryProvider.notifier).state =
                         category,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _DietChips(
+                selected: diet,
+                onSelected: (value) =>
+                    ref.read(menuDietFilterProvider.notifier).state = value,
               ),
               const SizedBox(height: AppSpacing.sm),
               Expanded(
@@ -125,4 +132,39 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
   void _openCart(BuildContext context) {
     context.push('/customer/cart');
   }
+}
+
+/// Horizontal row of dietary filter chips (all / vegetarian / spicy).
+class _DietChips extends StatelessWidget {
+  const _DietChips({required this.selected, required this.onSelected});
+
+  final MenuDietFilter selected;
+  final ValueChanged<MenuDietFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Row(
+        children: [
+          for (final filter in MenuDietFilter.values)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+              child: ChoiceChip(
+                label: Text(_label(filter)),
+                selected: selected == filter,
+                onSelected: (_) => onSelected(filter),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _label(MenuDietFilter filter) => switch (filter) {
+    MenuDietFilter.none => AppConstants.dietAll,
+    MenuDietFilter.vegetarian => AppConstants.dietVegetarian,
+    MenuDietFilter.spicy => AppConstants.dietSpicy,
+  };
 }

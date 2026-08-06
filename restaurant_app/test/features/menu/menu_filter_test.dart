@@ -33,4 +33,26 @@ void main() {
     final items = filterMenu(menu, kAllCategoriesFilter, 'xyz-not-found');
     expect(items, isEmpty);
   });
+
+  test('filterMenu narrows to vegetarian items', () {
+    final items = filterMenu(
+      menu,
+      kAllCategoriesFilter,
+      '',
+      MenuDietFilter.vegetarian,
+    );
+    expect(items, isNotEmpty);
+    expect(items.every((i) => i.isVegetarian), isTrue);
+  });
+
+  test('filterMenu narrows to spicy items', () {
+    final items = filterMenu(
+      menu,
+      kAllCategoriesFilter,
+      '',
+      MenuDietFilter.spicy,
+    );
+    expect(items, isNotEmpty);
+    expect(items.every((i) => i.isSpicy), isTrue);
+  });
 }

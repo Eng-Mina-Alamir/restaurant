@@ -118,6 +118,9 @@ abstract final class AppConstants {
   static const String metricsByCategory = 'الإيرادات حسب الفئة';
   static const String deliveryEtaLabel = 'الوقت المتوقع للوصول';
   static const String kdsNewBadge = 'جديد';
+  static const String dietAll = 'الكل';
+  static const String dietVegetarian = 'نباتي';
+  static const String dietSpicy = 'حار';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';
