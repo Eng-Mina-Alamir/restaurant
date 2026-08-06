@@ -1,0 +1,44 @@
+import 'package:intl/intl.dart';
+
+import '../../config/app_config.dart';
+
+/// Formatting helpers for currency, dates and order numbers.
+///
+/// Pure Dart + `intl` only, so every function is unit-testable without the
+/// Flutter framework. Note: formatting dates with the `ar` locale requires
+/// `initializeDateFormatting('ar')` in pure Dart tests (Flutter initializes
+/// locale data automatically).
+abstract final class Formatters {
+  Formatters._();
+
+  static final NumberFormat _currencyNumber = NumberFormat('#,##0.00', 'en_US');
+
+  static const String _datePattern = 'd MMM yyyy';
+  static const String _timePattern = 'HH:mm';
+  static const String _dateTimePattern = 'd MMM yyyy، HH:mm';
+
+  /// Formats [amount] as Western digits followed by the Arabic currency symbol.
+  ///
+  /// Example: `50.00 ر.س`
+  static String formatCurrency(double amount) {
+    return '${_currencyNumber.format(amount)} ${AppConfig.defaultCurrency}';
+  }
+
+  /// Formats [date] with an Arabic locale (e.g. `6 أغسطس 2026`).
+  static String formatDate(DateTime date) {
+    return DateFormat(_datePattern, AppConfig.locale).format(date);
+  }
+
+  /// Formats [time] in 24-hour form (e.g. `19:30`).
+  static String formatTime(DateTime time) {
+    return DateFormat(_timePattern, AppConfig.locale).format(time);
+  }
+
+  /// Formats [dateTime] combining date and time (e.g. `6 أغسطس 2026، 19:30`).
+  static String formatDateTime(DateTime dateTime) {
+    return DateFormat(_dateTimePattern, AppConfig.locale).format(dateTime);
+  }
+
+  /// Formats an order id as a human-friendly order number (e.g. `#1024`).
+  static String formatOrderNumber(int orderNumber) => '#$orderNumber';
+}

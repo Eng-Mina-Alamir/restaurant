@@ -1,0 +1,111 @@
+/// Centralized Arabic string constants for the app.
+///
+/// Kept as pure Dart (no Flutter imports) so the strings can be consumed from
+/// any layer, including the domain layer and unit tests.
+abstract final class AppConstants {
+  AppConstants._();
+
+  // ── App ────────────────────────────────────────────────────────────────────
+  static const String appName = 'مطعمي';
+  static const String appTagline = 'طبخك المفضل في مكان واحد';
+  static const String currency = 'ر.س';
+
+  // ── Auth / Login ───────────────────────────────────────────────────────────
+  static const String loginTitle = 'تسجيل الدخول';
+  static const String loginSubtitle = 'مرحباً بعودتك! سجّل للوصول إلى طلباتك';
+  static const String phoneTab = 'جوال';
+  static const String emailTab = 'بريد إلكتروني';
+  static const String phoneLabel = 'رقم الجوال';
+  static const String emailLabel = 'البريد الإلكتروني';
+  static const String passwordLabel = 'كلمة المرور';
+  static const String otpLabel = 'رمز التحقق';
+  static const String loginButton = 'دخول';
+  static const String loginWithOtpButton = 'تسجيل الدخول بالرمز';
+  static const String sendOtpButton = 'إرسال الرمز';
+  static const String resendOtpButton = 'إعادة إرسال الرمز';
+  static const String forgotPassword = 'نسيت كلمة المرور؟';
+  static const String noAccount = 'ليس لديك حساب؟';
+  static const String createAccount = 'إنشاء حساب جديد';
+  static const String welcome = 'أهلاً بك';
+
+  // ── Orders ─────────────────────────────────────────────────────────────────
+  static const String ordersTitle = 'الطلبات';
+  static const String orderDetailsTitle = 'تفاصيل الطلب';
+  static const String orderNumberLabel = 'رقم الطلب';
+  static const String orderTotalLabel = 'الإجمالي';
+  static const String orderStatusLabel = 'الحالة';
+  static const String emptyOrders = 'لا توجد طلبات حالياً';
+  static const String cancelOrder = 'إلغاء الطلب';
+  static const String reorder = 'إعادة الطلب';
+
+  // ── Cart ───────────────────────────────────────────────────────────────────
+  static const String cartTitle = 'سلة الطلب';
+  static const String cartEmpty = 'العربة فارغة';
+  static const String addToCart = 'أضف إلى السلة';
+  static const String checkout = 'إتمام الطلب';
+  static const String totalLabel = 'الإجمالي';
+  static const String itemCount = 'عدد الأصناف';
+
+  // ── Menu ───────────────────────────────────────────────────────────────────
+  static const String menuTitle = 'القائمة';
+  static const String searchHint = 'ابحث عن طبق…';
+  static const String categoriesLabel = 'التصنيفات';
+  static const String featuredLabel = 'الأطباق المميزة';
+  static const String noItemsFound = 'لا توجد أصناف مطابقة';
+
+  // ── Common UI ──────────────────────────────────────────────────────────────
+  static const String save = 'حفظ';
+  static const String cancel = 'إلغاء';
+  static const String confirm = 'تأكيد';
+  static const String retry = 'إعادة المحاولة';
+  static const String ok = 'حسناً';
+  static const String delete = 'حذف';
+  static const String back = 'رجوع';
+  static const String loading = 'جارٍ التحميل…';
+  static const String optional = '(اختياري)';
+
+  // ── Validation messages ────────────────────────────────────────────────────
+  static const String invalidEmail = 'أدخل بريداً إلكترونياً صحيحاً';
+  static const String invalidPhone =
+      'أدخل رقم جوال سعودياً صحيحاً (05xxxxxxxx)';
+  static const String invalidOtp = 'أدخل رمز التحقق المكوّن من 6 أرقام';
+  static const String invalidName = 'أدخل اسماً صحيحاً';
+  static const String requiredField = 'هذا الحقل مطلوب';
+
+  // ── Error messages ─────────────────────────────────────────────────────────
+  static const String errorConnection = 'خطأ في الاتصال';
+  static const String errorServer = 'حدث خطأ في الخادم';
+  static const String errorGeneric = 'حدث خطأ غير متوقع';
+  static const String errorInvalidCredentials = 'بيانات الدخول غير صحيحة';
+  static const String errorSessionExpired =
+      'انتهت الجلسة، سجّل الدخول مرة أخرى';
+  static const String errorCartEmpty = 'العربة فارغة';
+  static const String errorNoNetwork = 'لا يوجد اتصال بالإنترنت';
+  static const String errorTimeout = 'انتهت مهلة الطلب، حاول مرة أخرى';
+  static const String errorCache = 'تعذر حفظ البيانات محلياً';
+}
+
+/// Arabic labels for order statuses.
+///
+/// Uses string keys instead of a domain enum so the UI layer can map any
+/// backend-provided status without introducing a hard dependency.
+abstract final class OrderStatusAr {
+  OrderStatusAr._();
+
+  /// Map of backend order status keys to their Arabic labels.
+  static const Map<String, String> labels = <String, String>{
+    'pending': 'قيد الانتظار',
+    'confirmed': 'مؤكد',
+    'preparing': 'قيد التحضير',
+    'ready': 'جاهز',
+    'delivering': 'قيد التوصيل',
+    'delivered': 'تم التوصيل',
+    'completed': 'مكتمل',
+    'cancelled': 'ملغي',
+    'rejected': 'مرفوض',
+  };
+
+  /// Returns the Arabic label for [status], falling back to the raw key when
+  /// the status is unknown.
+  static String labelOf(String status) => labels[status] ?? status;
+}
