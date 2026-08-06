@@ -75,6 +75,21 @@ abstract final class AppConstants {
   static const String loading = 'جارٍ التحميل…';
   static const String optional = '(اختياري)';
 
+  // ── Staff / Tables ──────────────────────────────────────────────────────────
+  static const String staffTitle = 'شاشة الموظفين';
+  static const String tablesTitle = 'الطاولات';
+  static const String tableStatusAvailable = 'متاحة';
+  static const String tableStatusOccupied = 'مشغولة';
+  static const String tableStatusReserved = 'محجوزة';
+  static const String tableStatusNeedsCleaning = 'تحتاج تنظيف';
+  static const String tableCapacityLabel = 'مقاعد';
+  static const String tableActionTakeOrder = 'أخذ الطلب';
+  static const String tableActionRelease = 'تسليم الطاولة';
+  static const String tableActionClean = 'تم التنظيف';
+  static const String tableActionReserve = 'حجز';
+  static const String tableNoActiveOrder = 'لا يوجد طلب نشط';
+  static const String seats = 'مقاعد';
+
   // ── Validation messages ────────────────────────────────────────────────────
   static const String invalidEmail = 'أدخل بريداً إلكترونياً صحيحاً';
   static const String invalidPhone =
