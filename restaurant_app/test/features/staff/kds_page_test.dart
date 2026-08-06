@@ -86,4 +86,23 @@ void main() {
     expect(find.textContaining('بطاطس مقلية'), findsOneWidget);
     expect(find.textContaining('ملاحظات الطلب: بدون ملح'), findsOneWidget);
   });
+
+  testWidgets('shows new badge for freshly placed orders', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: KdsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('جديد'), findsOneWidget);
+  });
 }

@@ -175,6 +175,11 @@ class _OrderCard extends StatelessWidget {
   final OrderEntity order;
   final ValueChanged<OrderEntity> onAdvance;
 
+  /// Orders younger than this threshold are considered "new".
+  static const Duration _newThreshold = Duration(minutes: 2);
+
+  bool get _isNew => DateTime.now().difference(order.createdAt) < _newThreshold;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -185,8 +190,16 @@ class _OrderCard extends StatelessWidget {
       _ => AppConstants.ok,
     };
 
+    final highlight = _isNew ? theme.colorScheme.primary : null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: highlight != null
+            ? BorderSide(color: highlight, width: 1.5)
+            : BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
@@ -201,11 +214,36 @@ class _OrderCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (order.tableId != null)
-                  Chip(
-                    label: Text('${AppConstants.seats} ${order.tableId}'),
-                    visualDensity: VisualDensity.compact,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isNew)
+                      Container(
+                        margin: const EdgeInsetsDirectional.only(
+                          end: AppSpacing.xs,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: highlight!.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Text(
+                          AppConstants.kdsNewBadge,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: highlight,
+                          ),
+                        ),
+                      ),
+                    if (order.tableId != null)
+                      Chip(
+                        label: Text('${AppConstants.seats} ${order.tableId}'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.xs),
