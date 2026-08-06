@@ -55,6 +55,17 @@ class OrderConfirmationPage extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           _Card(
+            title: AppConstants.orderItemsLabel,
+            rows: [
+              for (final item in order.items)
+                _Row(
+                  label: '${item.quantity} × ${item.menuItem.name}',
+                  value: Formatters.formatCurrency(item.itemTotal),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _Card(
             title: AppConstants.orderSummaryLabel,
             rows: [
               _Row(
