@@ -21,6 +21,11 @@ _$SalesMetricsImpl _$$SalesMetricsImplFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, (e as num).toDouble()),
           ) ??
           const <String, double>{},
+      paymentMethodRevenue:
+          (json['paymentMethodRevenue'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, (e as num).toDouble()),
+          ) ??
+          const <String, double>{},
       peakHour: (json['peakHour'] as num?)?.toDouble() ?? 0,
       prepTimeAverage: (json['prepTimeAverage'] as num?)?.toDouble() ?? 0,
     );
@@ -32,6 +37,7 @@ Map<String, dynamic> _$$SalesMetricsImplToJson(_$SalesMetricsImpl instance) =>
       'averageOrderValue': instance.averageOrderValue,
       'itemsSold': instance.itemsSold,
       'categoryRevenue': instance.categoryRevenue,
+      'paymentMethodRevenue': instance.paymentMethodRevenue,
       'peakHour': instance.peakHour,
       'prepTimeAverage': instance.prepTimeAverage,
     };

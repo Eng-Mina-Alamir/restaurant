@@ -26,6 +26,8 @@ mixin _$SalesMetrics {
   double get averageOrderValue => throw _privateConstructorUsedError;
   Map<String, int> get itemsSold => throw _privateConstructorUsedError;
   Map<String, double> get categoryRevenue => throw _privateConstructorUsedError;
+  Map<String, double> get paymentMethodRevenue =>
+      throw _privateConstructorUsedError;
   double get peakHour => throw _privateConstructorUsedError;
   double get prepTimeAverage => throw _privateConstructorUsedError;
 
@@ -52,6 +54,7 @@ abstract class $SalesMetricsCopyWith<$Res> {
     double averageOrderValue,
     Map<String, int> itemsSold,
     Map<String, double> categoryRevenue,
+    Map<String, double> paymentMethodRevenue,
     double peakHour,
     double prepTimeAverage,
   });
@@ -77,6 +80,7 @@ class _$SalesMetricsCopyWithImpl<$Res, $Val extends SalesMetrics>
     Object? averageOrderValue = null,
     Object? itemsSold = null,
     Object? categoryRevenue = null,
+    Object? paymentMethodRevenue = null,
     Object? peakHour = null,
     Object? prepTimeAverage = null,
   }) {
@@ -101,6 +105,10 @@ class _$SalesMetricsCopyWithImpl<$Res, $Val extends SalesMetrics>
             categoryRevenue: null == categoryRevenue
                 ? _value.categoryRevenue
                 : categoryRevenue // ignore: cast_nullable_to_non_nullable
+                      as Map<String, double>,
+            paymentMethodRevenue: null == paymentMethodRevenue
+                ? _value.paymentMethodRevenue
+                : paymentMethodRevenue // ignore: cast_nullable_to_non_nullable
                       as Map<String, double>,
             peakHour: null == peakHour
                 ? _value.peakHour
@@ -131,6 +139,7 @@ abstract class _$$SalesMetricsImplCopyWith<$Res>
     double averageOrderValue,
     Map<String, int> itemsSold,
     Map<String, double> categoryRevenue,
+    Map<String, double> paymentMethodRevenue,
     double peakHour,
     double prepTimeAverage,
   });
@@ -155,6 +164,7 @@ class __$$SalesMetricsImplCopyWithImpl<$Res>
     Object? averageOrderValue = null,
     Object? itemsSold = null,
     Object? categoryRevenue = null,
+    Object? paymentMethodRevenue = null,
     Object? peakHour = null,
     Object? prepTimeAverage = null,
   }) {
@@ -180,6 +190,10 @@ class __$$SalesMetricsImplCopyWithImpl<$Res>
             ? _value._categoryRevenue
             : categoryRevenue // ignore: cast_nullable_to_non_nullable
                   as Map<String, double>,
+        paymentMethodRevenue: null == paymentMethodRevenue
+            ? _value._paymentMethodRevenue
+            : paymentMethodRevenue // ignore: cast_nullable_to_non_nullable
+                  as Map<String, double>,
         peakHour: null == peakHour
             ? _value.peakHour
             : peakHour // ignore: cast_nullable_to_non_nullable
@@ -202,10 +216,12 @@ class _$SalesMetricsImpl implements _SalesMetrics {
     this.averageOrderValue = 0,
     final Map<String, int> itemsSold = const <String, int>{},
     final Map<String, double> categoryRevenue = const <String, double>{},
+    final Map<String, double> paymentMethodRevenue = const <String, double>{},
     this.peakHour = 0,
     this.prepTimeAverage = 0,
   }) : _itemsSold = itemsSold,
-       _categoryRevenue = categoryRevenue;
+       _categoryRevenue = categoryRevenue,
+       _paymentMethodRevenue = paymentMethodRevenue;
 
   factory _$SalesMetricsImpl.fromJson(Map<String, dynamic> json) =>
       _$$SalesMetricsImplFromJson(json);
@@ -237,6 +253,16 @@ class _$SalesMetricsImpl implements _SalesMetrics {
     return EqualUnmodifiableMapView(_categoryRevenue);
   }
 
+  final Map<String, double> _paymentMethodRevenue;
+  @override
+  @JsonKey()
+  Map<String, double> get paymentMethodRevenue {
+    if (_paymentMethodRevenue is EqualUnmodifiableMapView)
+      return _paymentMethodRevenue;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_paymentMethodRevenue);
+  }
+
   @override
   @JsonKey()
   final double peakHour;
@@ -246,7 +272,7 @@ class _$SalesMetricsImpl implements _SalesMetrics {
 
   @override
   String toString() {
-    return 'SalesMetrics(totalSales: $totalSales, totalOrders: $totalOrders, averageOrderValue: $averageOrderValue, itemsSold: $itemsSold, categoryRevenue: $categoryRevenue, peakHour: $peakHour, prepTimeAverage: $prepTimeAverage)';
+    return 'SalesMetrics(totalSales: $totalSales, totalOrders: $totalOrders, averageOrderValue: $averageOrderValue, itemsSold: $itemsSold, categoryRevenue: $categoryRevenue, paymentMethodRevenue: $paymentMethodRevenue, peakHour: $peakHour, prepTimeAverage: $prepTimeAverage)';
   }
 
   @override
@@ -268,6 +294,10 @@ class _$SalesMetricsImpl implements _SalesMetrics {
               other._categoryRevenue,
               _categoryRevenue,
             ) &&
+            const DeepCollectionEquality().equals(
+              other._paymentMethodRevenue,
+              _paymentMethodRevenue,
+            ) &&
             (identical(other.peakHour, peakHour) ||
                 other.peakHour == peakHour) &&
             (identical(other.prepTimeAverage, prepTimeAverage) ||
@@ -283,6 +313,7 @@ class _$SalesMetricsImpl implements _SalesMetrics {
     averageOrderValue,
     const DeepCollectionEquality().hash(_itemsSold),
     const DeepCollectionEquality().hash(_categoryRevenue),
+    const DeepCollectionEquality().hash(_paymentMethodRevenue),
     peakHour,
     prepTimeAverage,
   );
@@ -308,6 +339,7 @@ abstract class _SalesMetrics implements SalesMetrics {
     final double averageOrderValue,
     final Map<String, int> itemsSold,
     final Map<String, double> categoryRevenue,
+    final Map<String, double> paymentMethodRevenue,
     final double peakHour,
     final double prepTimeAverage,
   }) = _$SalesMetricsImpl;
@@ -325,6 +357,8 @@ abstract class _SalesMetrics implements SalesMetrics {
   Map<String, int> get itemsSold;
   @override
   Map<String, double> get categoryRevenue;
+  @override
+  Map<String, double> get paymentMethodRevenue;
   @override
   double get peakHour;
   @override

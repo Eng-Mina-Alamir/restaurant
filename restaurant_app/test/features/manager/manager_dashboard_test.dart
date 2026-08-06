@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/manager_dashboard/presentation/controllers/metrics_controller.dart';
@@ -55,6 +56,19 @@ void main() {
 
       final metrics = computeMetrics(container.read(ordersControllerProvider));
       expect(metrics.categoryRevenue['برجر'], 56.0);
+    });
+
+    test('tracks revenue by payment method', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final cart = container.read(cartControllerProvider.notifier);
+      cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+      final orders = container.read(ordersControllerProvider.notifier);
+      await orders.placeOrder(paymentMethod: PaymentMethod.card);
+
+      final metrics = computeMetrics(container.read(ordersControllerProvider));
+      expect(metrics.paymentMethodRevenue['بطاقة'], 32.2);
     });
   });
 

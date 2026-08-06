@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/sales_metrics.dart';
@@ -32,6 +33,7 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
   // Item popularity across all orders.
   final itemsSold = <String, int>{};
   final categoryRevenue = <String, double>{};
+  final paymentMethodRevenue = <String, double>{};
   for (final order in orders) {
     for (final item in order.items) {
       itemsSold[item.menuItem.name] =
@@ -39,6 +41,10 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
       categoryRevenue[item.menuItem.categoryId] =
           (categoryRevenue[item.menuItem.categoryId] ?? 0) + item.itemTotal;
     }
+    final paymentLabel =
+        order.paymentMethod?.labelAr ?? AppConstants.paymentUnknown;
+    paymentMethodRevenue[paymentLabel] =
+        (paymentMethodRevenue[paymentLabel] ?? 0) + order.totalAmount;
   }
 
   return SalesMetrics(
@@ -47,6 +53,7 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
     averageOrderValue: orders.isEmpty ? 0 : totalSales / orders.length,
     itemsSold: itemsSold,
     categoryRevenue: categoryRevenue,
+    paymentMethodRevenue: paymentMethodRevenue,
   );
 }
 
