@@ -1,0 +1,28 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+*.js.map
+*.mjs.map
+
+# Flutter generated platform directories are scoped in their subprojects
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+*.env
+.env.local
+**/.env
+**/.env.*
+
+# Logs
+logs/
+*.log
