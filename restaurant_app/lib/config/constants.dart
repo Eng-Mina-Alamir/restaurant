@@ -114,6 +114,7 @@ abstract final class AppConstants {
   static const String paymentCash = 'نقداً';
   static const String paymentCard = 'بطاقة';
   static const String paymentMethodDisplayLabel = 'الدفع';
+  static const String cartEmptySend = 'أضف أصنافاً أولاً';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

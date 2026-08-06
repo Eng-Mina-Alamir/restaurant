@@ -83,7 +83,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
   /// Places an order for a specific [tableId] (dine-in) with the next cart
   /// contents, defaulting the type to [OrderType.dineIn].
-  Future<OrderEntity?> placeOrderForTable(String tableId) async {
+  Future<OrderEntity?> placeOrderForTable(
+    String tableId, {
+    PaymentMethod? paymentMethod,
+  }) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
     if (cartItems.isEmpty) return null;
@@ -97,6 +100,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         tableId: tableId,
         cartItems: cartItems,
         createdAt: createdAt,
+        paymentMethod: paymentMethod,
       );
 
       final result = await _repository.createOrder(order);

@@ -20,7 +20,8 @@ void main() {
 
     final firstItem = MenuSeedData.items.first;
     expect(find.text(firstItem.name), findsWidgets);
-    expect(find.textContaining('إرسال إلى المطبخ'), findsOneWidget);
+    // Empty cart: button shows the disabled hint instead of the send action.
+    expect(find.text('أضف أصنافاً أولاً'), findsOneWidget);
   });
 
   testWidgets('tapping a simple item adds it to the cart', (tester) async {
