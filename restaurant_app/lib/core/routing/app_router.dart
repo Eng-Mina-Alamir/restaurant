@@ -5,6 +5,7 @@ import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
+import '../../features/customer/presentation/pages/order_history_page.dart';
 import '../../features/orders/presentation/pages/order_confirmation_page.dart';
 import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
@@ -59,6 +60,10 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         path: '/customer',
         builder: (context, state) => const CustomerHomePage(),
         routes: [
+          GoRoute(
+            path: 'orders',
+            builder: (context, state) => const OrderHistoryPage(),
+          ),
           GoRoute(path: 'cart', builder: (context, state) => const CartPage()),
           GoRoute(
             path: 'order-confirmation',

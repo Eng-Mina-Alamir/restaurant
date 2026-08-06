@@ -26,6 +26,11 @@ class CustomerHomePage extends ConsumerWidget {
         title: const Text(AppConstants.menuTitle),
         actions: [
           IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: AppConstants.orderHistoryTitle,
+            onPressed: () => context.push('/customer/orders'),
+          ),
+          IconButton(
             icon: const Icon(Icons.shopping_cart_outlined),
             tooltip: AppConstants.cartTitle,
             onPressed: () => _openCart(context),

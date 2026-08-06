@@ -92,6 +92,8 @@ abstract final class AppConstants {
   static const String sendToKitchen = 'إرسال إلى المطبخ';
   static const String sentToKitchen = 'تم إرسال الطلب إلى المطبخ';
   static const String newOrderAlert = 'طلب جديد';
+  static const String orderHistoryTitle = 'سجل الطلبات';
+  static const String reorderAction = 'أعد الطلب';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';
