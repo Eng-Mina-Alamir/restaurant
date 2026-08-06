@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_history_page.dart';
@@ -44,7 +45,9 @@ void main() {
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger, quantity: 2));
     cart.addItem(const CartItem(menuItem: fries));
-    await container.read(ordersControllerProvider.notifier).placeOrder();
+    await container
+        .read(ordersControllerProvider.notifier)
+        .placeOrder(paymentMethod: PaymentMethod.card);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -57,6 +60,8 @@ void main() {
     expect(find.textContaining('برجر كلاسيك'), findsOneWidget);
     expect(find.textContaining('بطاطس مقلية'), findsOneWidget);
     expect(find.text('أعد الطلب'), findsOneWidget);
+    // Payment method shown on the history card.
+    expect(find.textContaining('الدفع: بطاقة'), findsOneWidget);
   });
 
   testWidgets('reorder adds items back to the cart', (tester) async {

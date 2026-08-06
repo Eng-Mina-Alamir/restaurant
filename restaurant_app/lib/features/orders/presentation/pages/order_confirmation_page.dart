@@ -89,6 +89,11 @@ class OrderConfirmationPage extends StatelessWidget {
                 label: AppConstants.estimatedTimeLabel,
                 value: '${order.estimatedMinutes ?? 0} ${AppConstants.minutes}',
               ),
+              if (order.paymentMethod != null)
+                _Row(
+                  label: AppConstants.paymentMethodDisplayLabel,
+                  value: order.paymentMethod!.labelAr,
+                ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

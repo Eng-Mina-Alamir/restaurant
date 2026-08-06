@@ -88,6 +88,16 @@ class _OrderHistoryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (order.paymentMethod != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '${AppConstants.paymentMethodDisplayLabel}: '
+                '${order.paymentMethod!.labelAr}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.sm),
             Text(
               order.items
