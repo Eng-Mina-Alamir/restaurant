@@ -100,6 +100,10 @@ abstract final class AppConstants {
   static const String actionCleanTable = 'تم التنظيف';
   static const String actionReserveTable = 'حجز الطاولة';
   static const String actionReleaseTable = 'تسليم الطاولة';
+  static const String allOrdersTitle = 'جميع الطلبات';
+  static const String filterAll = 'الكل';
+  static const String noOrdersFound = 'لا توجد طلبات حالياً';
+  static const String orderCompletedToaster = 'تم تحديث حالة الطلب';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

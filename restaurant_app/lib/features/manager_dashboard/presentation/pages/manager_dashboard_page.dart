@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
@@ -16,7 +17,16 @@ class ManagerDashboardPage extends ConsumerWidget {
     final metrics = ref.watch(metricsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.managerTitle)),
+      appBar: AppBar(
+        title: const Text(AppConstants.managerTitle),
+        actions: [
+          IconButton(
+            tooltip: AppConstants.allOrdersTitle,
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => context.push('/manager/orders'),
+          ),
+        ],
+      ),
       body: metrics.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
