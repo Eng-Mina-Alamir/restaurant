@@ -13,13 +13,19 @@ import '../widgets/category_chips.dart';
 import '../widgets/menu_item_tile.dart';
 
 /// Dine-in customer home: browse categories, view items, add to cart.
-class CustomerHomePage extends ConsumerWidget {
+class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CustomerHomePage> createState() => _CustomerHomePageState();
+}
+
+class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
+  @override
+  Widget build(BuildContext context) {
     final menuAsync = ref.watch(menuControllerProvider);
     final selected = ref.watch(selectedCategoryProvider);
+    final query = ref.watch(menuSearchQueryProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -41,9 +47,29 @@ class CustomerHomePage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
         data: (menu) {
-          final items = filterMenu(menu, selected);
+          final items = filterMenu(menu, selected, query);
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: TextField(
+                  onChanged: (value) =>
+                      ref.read(menuSearchQueryProvider.notifier).state = value,
+                  decoration: InputDecoration(
+                    hintText: AppConstants.searchMenuHint,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               CategoryChips(
                 categories: menu.categories,

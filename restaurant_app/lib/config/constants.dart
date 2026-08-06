@@ -104,6 +104,7 @@ abstract final class AppConstants {
   static const String filterAll = 'الكل';
   static const String noOrdersFound = 'لا توجد طلبات حالياً';
   static const String orderCompletedToaster = 'تم تحديث حالة الطلب';
+  static const String searchMenuHint = 'ابحث عن صنف...';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

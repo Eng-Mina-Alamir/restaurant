@@ -31,10 +31,27 @@ final selectedCategoryProvider = StateProvider<String>(
   (ref) => kAllCategoriesFilter,
 );
 
-/// Derives the visible [MenuItem]s for [menu] under [selectedCategory].
-List<MenuItem> filterMenu(Menu? menu, String selectedCategory) {
-  if (menu == null || selectedCategory == kAllCategoriesFilter) {
-    return menu?.items ?? const <MenuItem>[];
-  }
-  return menu.itemsIn(selectedCategory);
+/// The active free-text search query (empty = no filtering).
+final menuSearchQueryProvider = StateProvider<String>((ref) => '');
+
+/// Derives the visible [MenuItem]s for [menu] under [selectedCategory],
+/// further narrowed by [query] (matched against name/description).
+List<MenuItem> filterMenu(
+  Menu? menu,
+  String selectedCategory, [
+  String query = '',
+]) {
+  final visible = menu == null || selectedCategory == kAllCategoriesFilter
+      ? menu?.items ?? const <MenuItem>[]
+      : menu.itemsIn(selectedCategory);
+
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return visible;
+  return visible
+      .where(
+        (i) =>
+            i.name.toLowerCase().contains(q) ||
+            i.description.toLowerCase().contains(q),
+      )
+      .toList();
 }
