@@ -1,23 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../presentation/controllers/cart_controller.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
 
 /// Shows the cart contents with quantity controls and a totals footer.
-class CartPage extends ConsumerWidget {
-  const CartPage({super.key, this.onCheckout});
-
-  /// Called when the user taps "إتمام الطلب". When `null`, a placeholder
-  /// snackbar is shown.
-  final void Function(BuildContext context)? onCheckout;
+class CartPage extends ConsumerStatefulWidget {
+  const CartPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends ConsumerState<CartPage> {
+  bool _placing = false;
+
+  Future<void> _checkout(BuildContext context) async {
+    if (_placing) return;
+    setState(() => _placing = true);
+    final order = await ref
+        .read(ordersControllerProvider.notifier)
+        .placeOrder();
+    if (!context.mounted) return;
+    setState(() => _placing = false);
+    if (order != null) {
+      context.push('/customer/order-confirmation', extra: order);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
     final totals = ref.watch(
       cartControllerProvider.select((items) => _totalsOf(items)),
@@ -54,16 +72,8 @@ class CartPage extends ConsumerWidget {
                   subtotal: totals.subtotal,
                   taxAmount: totals.taxAmount,
                   totalAmount: totals.totalAmount,
-                  onCheckout: () {
-                    final handler = onCheckout;
-                    if (handler != null) {
-                      handler(context);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('إتمام الطلب قريباً')),
-                      );
-                    }
-                  },
+                  placing: _placing,
+                  onCheckout: () => _checkout(context),
                 ),
               ],
             ),
@@ -176,12 +186,14 @@ class _TotalsFooter extends StatelessWidget {
     required this.subtotal,
     required this.taxAmount,
     required this.totalAmount,
+    required this.placing,
     required this.onCheckout,
   });
 
   final double subtotal;
   final double taxAmount;
   final double totalAmount;
+  final bool placing;
   final VoidCallback onCheckout;
 
   @override
@@ -212,8 +224,16 @@ class _TotalsFooter extends StatelessWidget {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
-              onPressed: onCheckout,
-              child: const Text(AppConstants.checkout),
+              // 30s guard so the trailing async _checkout can complete
+              // without leaving the button disabled.
+              onPressed: placing ? null : onCheckout,
+              child: placing
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text(AppConstants.checkout),
             ),
           ],
         ),

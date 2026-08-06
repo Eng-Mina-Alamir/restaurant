@@ -37,6 +37,17 @@ abstract final class AppConstants {
   static const String emptyOrders = 'لا توجد طلبات حالياً';
   static const String cancelOrder = 'إلغاء الطلب';
   static const String reorder = 'إعادة الطلب';
+  static const String orderConfirmationTitle = 'تأكيد الطلب';
+  static const String orderPlacedMessage =
+      'تم استلام طلبك بنجاح! سنقوم بتحضيره قريباً.';
+  static const String orderSummaryLabel = 'ملخص الطلب';
+  static const String itemCountLabel = 'عدد الأصناف';
+  static const String subtotalLabel = 'المجموع الفرعي';
+  static const String taxLabel = 'الضريبة (15%)';
+  static const String estimatedTimeLabel = 'الوقت المتوقع';
+  static const String minutes = 'دقيقة';
+  static const String statusLabel = 'الحالة';
+  static const String backToMenu = 'العودة إلى القائمة';
 
   // ── Cart ───────────────────────────────────────────────────────────────────
   static const String cartTitle = 'سلة الطلب';

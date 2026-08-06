@@ -5,6 +5,8 @@ import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
+import '../../features/orders/presentation/pages/order_confirmation_page.dart';
+import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
@@ -57,6 +59,16 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         builder: (context, state) => const CustomerHomePage(),
         routes: [
           GoRoute(path: 'cart', builder: (context, state) => const CartPage()),
+          GoRoute(
+            path: 'order-confirmation',
+            builder: (context, state) {
+              final order = state.extra as OrderEntity?;
+              if (order == null) {
+                return const CustomerHomePage();
+              }
+              return OrderConfirmationPage(order: order);
+            },
+          ),
         ],
       ),
       GoRoute(
