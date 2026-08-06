@@ -105,6 +105,8 @@ abstract final class AppConstants {
   static const String noOrdersFound = 'لا توجد طلبات حالياً';
   static const String orderCompletedToaster = 'تم تحديث حالة الطلب';
   static const String searchMenuHint = 'ابحث عن صنف...';
+  static const String demoAccountsTitle = 'حسابات تجريبية';
+  static const String demoPasswordHint = 'كلمة المرور: 123456';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

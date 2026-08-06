@@ -24,4 +24,8 @@ abstract final class AppConfig {
 
   /// All locales supported by the app.
   static const List<String> supportedLocales = <String>[locale, fallbackLocale];
+
+  /// When true, auth uses the offline demo data source so every role can be
+  /// reviewed without a backend (see demo accounts on the login screen).
+  static const bool useDemoAuth = true;
 }

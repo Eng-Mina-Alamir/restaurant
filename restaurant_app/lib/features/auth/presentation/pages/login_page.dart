@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../auth/data/datasources/demo_auth_datasource.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 /// Authentication entry page.
@@ -124,6 +126,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         : null,
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  _DemoAccounts(
+                    identifierController: _identifierController,
+                    passwordController: _passwordController,
+                    visible: AppConfig.useDemoAuth,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   FilledButton(
                     onPressed: _submitting ? null : _submit,
                     child: _submitting
@@ -141,5 +149,83 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
       ),
     );
+  }
+}
+
+/// Demo-account quick fill shown when offline auth is enabled, so reviewers
+/// can jump into any role without a backend.
+class _DemoAccounts extends StatelessWidget {
+  const _DemoAccounts({
+    required this.identifierController,
+    required this.passwordController,
+    required this.visible,
+  });
+
+  final TextEditingController identifierController;
+  final TextEditingController passwordController;
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              AppConstants.demoAccountsTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              AppConstants.demoPasswordHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final role in DemoAuthDataSource.supportedRoles)
+                  ActionChip(
+                    avatar: Icon(_roleIcon(role), size: 18),
+                    label: Text(role.labelAr),
+                    onPressed: () {
+                      identifierController.text =
+                          DemoAuthDataSource.accounts[role]!;
+                      passwordController.text = DemoAuthDataSource.password;
+                    },
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _roleIcon(UserRole role) {
+    switch (role) {
+      case UserRole.customer:
+        return Icons.person;
+      case UserRole.waiter:
+        return Icons.restaurant_menu;
+      case UserRole.kitchen:
+        return Icons.local_fire_department;
+      case UserRole.manager:
+        return Icons.insights;
+      case UserRole.admin:
+        return Icons.admin_panel_settings;
+      case UserRole.driver:
+        return Icons.delivery_dining;
+    }
   }
 }

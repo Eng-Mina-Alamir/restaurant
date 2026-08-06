@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/app_config.dart';
 import '../../config/environment.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/data/datasources/demo_auth_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
@@ -11,6 +13,7 @@ import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/menu/data/repositories/menu_repository_impl.dart';
 import '../../features/menu/domain/repositories/menu_repository.dart';
 import '../network/dio_client.dart';
+import '../storage/in_memory_secure_storage_service.dart';
 import '../storage/secure_storage_service.dart';
 
 /// Manual dependency locator used before full Riverpod wiring is in place.
@@ -59,7 +62,11 @@ class ServiceLocator {
 // ── Riverpod providers ─────────────────────────────────────────────────────────
 
 /// Single shared instance of the secure storage service.
+///
+/// Demo mode uses an in-memory store (no platform keystore dependency); real
+/// builds use the platform secure storage.
 final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
+  if (AppConfig.useDemoAuth) return InMemorySecureStorageService();
   return ServiceLocator.secureStorage;
 });
 
@@ -68,8 +75,12 @@ final dioClientProvider = Provider<DioClient>((ref) {
   return ServiceLocator.dioClient;
 });
 
-/// Remote auth data source (Dio-backed).
+/// Remote auth data source.
+///
+/// In demo mode uses the offline [DemoAuthRemoteDataSource] so every role
+/// can be explored without a backend; otherwise uses the Dio-backed client.
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
+  if (AppConfig.useDemoAuth) return DemoAuthRemoteDataSource();
   return AuthRemoteDataSourceImpl(ref.watch(dioClientProvider).dio);
 });
 

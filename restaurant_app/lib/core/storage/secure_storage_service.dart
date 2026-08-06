@@ -1,44 +1,49 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// Contract for persisting sensitive authentication values.
+abstract class SecureStorage {
+  Future<void> write({required String key, required String value});
+  Future<String?> read(String key);
+  Future<void> delete(String key);
+  Future<void> deleteAll();
+}
+
 /// Wrapper around [FlutterSecureStorage] for storing sensitive authentication
 /// data (tokens) on the platform's secure keystore/keychain.
-class SecureStorageService {
+class SecureStorageService implements SecureStorage {
   const SecureStorageService();
+
+  @override
+  Future<void> write({required String key, required String value}) =>
+      _storage.write(key: key, value: value);
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
+
+  @override
+  Future<void> deleteAll() => _storage.deleteAll();
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   // ── Access token ──────────────────────────────────────────────────────────
 
-  Future<void> writeToken(String token) =>
-      _storage.write(key: _tokenKey, value: token);
+  Future<void> writeToken(String token) => write(key: _tokenKey, value: token);
 
-  Future<String?> readToken() => _storage.read(key: _tokenKey);
+  Future<String?> readToken() => read(_tokenKey);
 
-  Future<void> deleteToken() => _storage.delete(key: _tokenKey);
+  Future<void> deleteToken() => delete(_tokenKey);
 
   // ── Refresh token ─────────────────────────────────────────────────────────
 
   Future<void> writeRefreshToken(String token) =>
-      _storage.write(key: _refreshTokenKey, value: token);
+      write(key: _refreshTokenKey, value: token);
 
-  Future<String?> readRefreshToken() => _storage.read(key: _refreshTokenKey);
+  Future<String?> readRefreshToken() => read(_refreshTokenKey);
 
-  Future<void> deleteRefreshToken() => _storage.delete(key: _refreshTokenKey);
-
-  // ── Generic / lifecycle ───────────────────────────────────────────────────
-
-  /// Writes an arbitrary string value under [key].
-  Future<void> write({required String key, required String value}) =>
-      _storage.write(key: key, value: value);
-
-  /// Reads the string value stored under [key], or `null` if absent.
-  Future<String?> read(String key) => _storage.read(key: key);
-
-  /// Removes any value stored under [key].
-  Future<void> delete(String key) => _storage.delete(key: key);
-
-  /// Deletes all stored values in one call.
-  Future<void> clear() => _storage.deleteAll();
+  Future<void> deleteRefreshToken() => delete(_refreshTokenKey);
 
   static const String _tokenKey = 'jwt_token';
   static const String _refreshTokenKey = 'refresh_token';
