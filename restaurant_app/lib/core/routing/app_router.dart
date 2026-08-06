@@ -11,6 +11,7 @@ import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
+import '../../features/table_management/presentation/pages/waiter_order_page.dart';
 import '../../shared/widgets/not_found_page.dart';
 
 /// Builds the root [GoRouter] with role-based redirects.
@@ -74,6 +75,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       GoRoute(
         path: '/waiter',
         builder: (context, state) => const WaiterDashboardPage(),
+        routes: [
+          GoRoute(
+            path: 'order/:tableId',
+            builder: (context, state) =>
+                WaiterOrderPage(tableId: state.pathParameters['tableId']!),
+          ),
+        ],
       ),
       GoRoute(path: '/kds', builder: (context, state) => const KdsPage()),
       GoRoute(

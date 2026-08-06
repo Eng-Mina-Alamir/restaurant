@@ -89,6 +89,16 @@ abstract final class AppConstants {
   static const String tableActionReserve = 'حجز';
   static const String tableNoActiveOrder = 'لا يوجد طلب نشط';
   static const String seats = 'مقاعد';
+  static const String sendToKitchen = 'إرسال إلى المطبخ';
+  static const String sentToKitchen = 'تم إرسال الطلب إلى المطبخ';
+  static const String newOrderAlert = 'طلب جديد';
+
+  // ── KDS / Kitchen ─────────────────────────────────────────────────────────
+  static const String kdsTitle = 'شاشة المطبخ';
+  static const String kdsPending = 'بانتظار التحضير';
+  static const String kdsPreparing = 'قيد التحضير';
+  static const String kdsReady = 'جاهز للتسليم';
+  static const String kdsCompleting = 'استكمال';
 
   // ── Validation messages ────────────────────────────────────────────────────
   static const String invalidEmail = 'أدخل بريداً إلكترونياً صحيحاً';
