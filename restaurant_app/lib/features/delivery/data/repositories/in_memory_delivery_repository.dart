@@ -9,10 +9,10 @@ import '../delivery_seed_data.dart';
 /// Keeps the mutable assignment state so the driver's actions (accept, start,
 /// complete) persist within the session.
 class InMemoryDeliveryRepository implements DeliveryRepository {
-InMemoryDeliveryRepository()
-      : _assignments = <String, DeliveryAssignment>{
-          for (final a in DeliverySeedData.buildAssignments()) a.id: a,
-        };
+  InMemoryDeliveryRepository()
+    : _assignments = <String, DeliveryAssignment>{
+        for (final a in DeliverySeedData.buildAssignments()) a.id: a,
+      };
 
   final Map<String, DeliveryAssignment> _assignments;
 

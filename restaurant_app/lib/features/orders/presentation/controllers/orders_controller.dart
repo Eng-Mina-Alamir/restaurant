@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/enums.dart';
+import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
-import '../../../../core/domain/enums.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../data/repositories/in_memory_order_repository.dart';
 import '../../domain/entities/order_entity.dart';
@@ -21,10 +22,12 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
 /// [OrderEntity] through [OrderMapper], then clears the cart so the user can
 /// start a fresh order.
 class OrdersController extends StateNotifier<List<OrderEntity>> {
-  OrdersController(this._repository, this._cart) : super(const []);
+  OrdersController(this._repository, this._cart, this._newOrderNotifier)
+    : super(const []);
 
   final OrderRepository _repository;
   final CartController _cart;
+  final NewOrderNotifier _newOrderNotifier;
 
   /// True once an order is being created, preventing double-taps.
   bool _placing = false;
@@ -63,6 +66,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       if (created != null) {
         state = [...state, created];
         _cart.clear();
+        _newOrderNotifier.notifyNewOrder();
       }
       return created;
     } finally {
@@ -93,6 +97,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       if (created != null) {
         state = [...state, created];
         _cart.clear();
+        _newOrderNotifier.notifyNewOrder();
       }
       return created;
     } finally {
@@ -126,10 +131,18 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       .toList();
 }
 
+/// Single shared new-order notifier for badge/sound alerts.
+final newOrderNotifierProvider = Provider<NewOrderNotifier>((ref) {
+  final notifier = NewOrderNotifier();
+  ref.onDispose(notifier.dispose);
+  return notifier;
+});
+
 final ordersControllerProvider =
     StateNotifierProvider<OrdersController, List<OrderEntity>>((ref) {
       return OrdersController(
         ref.watch(orderRepositoryProvider),
         ref.watch(cartControllerProvider.notifier),
+        ref.watch(newOrderNotifierProvider),
       );
     });

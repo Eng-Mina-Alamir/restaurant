@@ -11,12 +11,21 @@ import '../../../orders/presentation/controllers/orders_controller.dart';
 ///
 /// Watches [ordersControllerProvider] so orders sent by a waiter appear
 /// immediately, and the kitchen advances each order's status with a button.
-class KdsPage extends ConsumerWidget {
+class KdsPage extends ConsumerStatefulWidget {
   const KdsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KdsPage> createState() => _KdsPageState();
+}
+
+class _KdsPageState extends ConsumerState<KdsPage> {
+  @override
+  Widget build(BuildContext context) {
     final orders = ref.watch(ordersControllerProvider);
+    final badge = ref.watch(
+      newOrderNotifierProvider.select((n) => n.alertCount),
+    );
+
     final active = orders
         .where(
           (o) =>
@@ -30,7 +39,21 @@ class KdsPage extends ConsumerWidget {
     final ready = active.where((o) => o.status == OrderStatus.ready);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.kdsTitle)),
+      appBar: AppBar(
+        title: const Text(AppConstants.kdsTitle),
+        actions: [
+          if (badge > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.md),
+              child: Center(
+                child: Badge(
+                  label: Text('$badge'),
+                  child: const Icon(Icons.notifications_active),
+                ),
+              ),
+            ),
+        ],
+      ),
       body: active.isEmpty
           ? const Center(child: Text(AppConstants.emptyOrders))
           : Row(
@@ -63,6 +86,7 @@ class KdsPage extends ConsumerWidget {
     WidgetRef ref,
     OrderEntity order,
   ) async {
+    ref.read(newOrderNotifierProvider).reset();
     final next = _nextStatus(order.status);
     if (next == null) return;
     await ref
