@@ -127,6 +127,21 @@ class _DeliveryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (assignment.routeDistanceMeters != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 18),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '${AppConstants.deliveryEtaLabel}: '
+                    '${Formatters.estimateDeliveryMinutes(assignment.routeDistanceMeters!)} '
+                    '${AppConstants.minutes}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
             if (assignment.deliveryFee != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(

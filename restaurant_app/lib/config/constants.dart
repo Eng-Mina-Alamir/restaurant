@@ -116,6 +116,7 @@ abstract final class AppConstants {
   static const String paymentMethodDisplayLabel = 'الدفع';
   static const String cartEmptySend = 'أضف أصنافاً أولاً';
   static const String metricsByCategory = 'الإيرادات حسب الفئة';
+  static const String deliveryEtaLabel = 'الوقت المتوقع للوصول';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

@@ -41,4 +41,14 @@ abstract final class Formatters {
 
   /// Formats an order id as a human-friendly order number (e.g. `#1024`).
   static String formatOrderNumber(int orderNumber) => '#$orderNumber';
+
+  /// Estimates delivery time (minutes) from a route distance, assuming a
+  /// typical urban delivery speed of 30 km/h (~8.33 m/s), with a 10 minute
+  /// pickup/prep offset. Pure function so it is unit-testable.
+  static int estimateDeliveryMinutes(double distanceMeters) {
+    const averageSpeedMps = 8.33; // ~30 km/h
+    const prepOffsetMinutes = 10;
+    final travelMinutes = (distanceMeters / averageSpeedMps / 60).ceil();
+    return prepOffsetMinutes + travelMinutes;
+  }
 }
