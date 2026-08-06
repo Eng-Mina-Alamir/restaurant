@@ -20,8 +20,11 @@ class MenuItemTile extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      color: item.isAvailable
+          ? null
+          : theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
       child: InkWell(
-        onTap: onTap,
+        onTap: item.isAvailable ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
@@ -38,12 +41,17 @@ class MenuItemTile extends StatelessWidget {
                             item.name,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
+                              color: item.isAvailable
+                                  ? null
+                                  : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
                         if (item.isVegetarian) const _Badge('نباتي'),
                         if (item.isSpicy)
                           const _Badge('حار', color: Colors.red),
+                        if (!item.isAvailable)
+                          const _Badge('غير متوفر', color: Colors.grey),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -52,14 +60,18 @@ class MenuItemTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: item.isAvailable
+                            ? theme.colorScheme.onSurfaceVariant
+                            : theme.colorScheme.outline,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       Formatters.formatCurrency(item.price),
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.primary,
+                        color: item.isAvailable
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -70,7 +82,7 @@ class MenuItemTile extends StatelessWidget {
               IconButton.filled(
                 icon: const Icon(Icons.add),
                 tooltip: hasModifiers ? 'تخصيص الطلب' : 'أضف إلى السلة',
-                onPressed: onAdd,
+                onPressed: item.isAvailable ? onAdd : null,
               ),
             ],
           ),

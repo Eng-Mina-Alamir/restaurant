@@ -11,7 +11,12 @@ abstract final class MenuSeedData {
 
   static const String restaurantId = 'demo-restaurant-1';
 
-  static const List<String> categories = <String>['برجر', 'بيتزا', 'مشروبات'];
+  static const List<String> categories = <String>[
+    'برجر',
+    'بيتزا',
+    'مشروبات',
+    'حلويات',
+  ];
 
   static List<MenuItem> get items => <MenuItem>[
     // ── برجر ──────────────────────────────────────────────────────────────
@@ -189,6 +194,51 @@ abstract final class MenuSeedData {
       modifierGroups: [],
       rating: 4.2,
       orderCount: 650,
+    ),
+
+    // ── حلويات ───────────────────────────────────────────────────────────
+    const MenuItem(
+      id: 'item-dessert-chocolate',
+      categoryId: 'حلويات',
+      name: 'كيك الشوكولاتة',
+      description: 'كيك شوكولاتة فاخر مع صوص الشوكولاتة',
+      price: 22.0,
+      isAvailable: true,
+      isVegetarian: true,
+      isSpicy: false,
+      preparationTime: 8,
+      modifierGroups: [],
+      rating: 4.7,
+      orderCount: 210,
+    ),
+    const MenuItem(
+      id: 'item-dessert-cheesecake',
+      categoryId: 'حلويات',
+      name: 'تشيز كيك التوت',
+      description: 'تشيز كيك كريمي مع صوص التوت الطازج',
+      price: 26.0,
+      isAvailable: true,
+      isVegetarian: true,
+      isSpicy: false,
+      preparationTime: 9,
+      modifierGroups: [],
+      rating: 4.8,
+      orderCount: 175,
+    ),
+    // Kept unavailable to exercise the "out of stock" flow end-to-end.
+    const MenuItem(
+      id: 'item-dessert-basbousa',
+      categoryId: 'حلويات',
+      name: 'بسبوسة',
+      description: 'بسبوسة بالسميد مع القطر واللوز',
+      price: 18.0,
+      isAvailable: false,
+      isVegetarian: true,
+      isSpicy: false,
+      preparationTime: 10,
+      modifierGroups: [],
+      rating: 4.5,
+      orderCount: 320,
     ),
   ];
 

@@ -21,8 +21,12 @@ class CartController extends StateNotifier<List<CartItem>> {
   CartTotals get totals => CartTotals.fromItems(state);
 
   /// Adds [item], merging with an existing same-configuration entry.
+  ///
+  /// Unavailable items (currently out of stock) are rejected so customers
+  /// cannot add products the kitchen can no longer prepare.
   void addItem(CartItem item) {
     if (item.quantity <= 0 || item.menuItem.id.isEmpty) return;
+    if (!item.menuItem.isAvailable) return;
     final index = state.indexWhere((e) => e.configKey == item.configKey);
     if (index == -1) {
       state = [...state, item];
