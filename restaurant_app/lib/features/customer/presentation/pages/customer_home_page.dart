@@ -1,36 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
-import '../../../auth/presentation/controllers/auth_controller.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../cart/domain/entities/cart_item.dart';
+import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../menu/domain/entities/menu_item.dart';
+import '../../../menu/presentation/controllers/menu_controller.dart';
+import '../../presentation/widgets/category_chips.dart';
+import '../../presentation/widgets/menu_item_tile.dart';
 
-/// Dine-in customer home.
-///
-/// Placeholder landing shell for the customer flow (QR scanning, menu browsing).
+/// Dine-in customer home: browse categories, view items, add to cart.
 class CustomerHomePage extends ConsumerWidget {
   const CustomerHomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-    final userName = auth.user?.name ?? AppConstants.welcome;
+    final menuAsync = ref.watch(menuControllerProvider);
+    final selected = ref.watch(selectedCategoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.menuTitle)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '$userName 👋',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text(AppConstants.ordersTitle),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text(AppConstants.menuTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart_outlined),
+            tooltip: AppConstants.cartTitle,
+            onPressed: () => _openCart(context),
+          ),
+        ],
+      ),
+      body: menuAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('$error')),
+        data: (menu) {
+          final items = filterMenu(menu, selected);
+          return Column(
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              CategoryChips(
+                categories: menu.categories,
+                selected: selected,
+                onSelected: (category) =>
+                    ref.read(selectedCategoryProvider.notifier).state =
+                        category,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Expanded(
+                child: items.isEmpty
+                    ? const Center(child: Text(AppConstants.noItemsFound))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: MenuItemTile(
+                              item: item,
+                              onTap: () => _showItemDetail(context, ref, item),
+                              onAdd: () => _quickAdd(ref, item),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  /// Adds an item directly, or opens the detail sheet when it has modifiers.
+  void _quickAdd(WidgetRef ref, MenuItem item) {
+    if (item.modifierGroups.isEmpty) {
+      ref
+          .read(cartControllerProvider.notifier)
+          .addItem(CartItem(menuItem: item, quantity: 1));
+    } else {
+      // Detailed modifier selection arrives in Task 5; quick-add is a safe
+      // default until then.
+      ref
+          .read(cartControllerProvider.notifier)
+          .addItem(CartItem(menuItem: item, quantity: 1));
+    }
+  }
+
+  void _showItemDetail(BuildContext context, WidgetRef ref, MenuItem item) {
+    // Placeholder until the modifier bottom sheet (Task 5) lands.
+    _quickAdd(ref, item);
+  }
+
+  void _openCart(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('سلة الطلب قريباً')));
   }
 }
