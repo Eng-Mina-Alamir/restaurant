@@ -40,6 +40,21 @@ void main() {
       // Not "completed" so totalSales stays 0.
       expect(metrics.totalSales, 0);
       expect(metrics.itemsSold['برجر كلاسيك'], 2);
+      expect(metrics.categoryRevenue['برجر'], 56.0);
+    });
+
+    test('category revenue aggregates multiple orders', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final cart = container.read(cartControllerProvider.notifier);
+      cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+      cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+      final orders = container.read(ordersControllerProvider.notifier);
+      await orders.placeOrder();
+
+      final metrics = computeMetrics(container.read(ordersControllerProvider));
+      expect(metrics.categoryRevenue['برجر'], 56.0);
     });
   });
 

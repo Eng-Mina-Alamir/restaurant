@@ -123,6 +123,48 @@ class ManagerDashboardPage extends ConsumerWidget {
                   ),
                 ),
               ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              AppConstants.metricsByCategory,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            if (data.categoryRevenue.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  child: Text(AppConstants.metricsNoData),
+                ),
+              )
+            else
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    children: [
+                      for (final entry
+                          in data.categoryRevenue.entries.toList()
+                            ..sort((a, b) => b.value.compareTo(a.value)))
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.xs,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(child: Text(entry.key)),
+                              Text(
+                                Formatters.formatCurrency(entry.value),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),

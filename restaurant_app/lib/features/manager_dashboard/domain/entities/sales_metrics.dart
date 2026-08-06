@@ -10,6 +10,7 @@ abstract class SalesMetrics with _$SalesMetrics {
     @Default(0) int totalOrders,
     @Default(0) double averageOrderValue,
     @Default(<String, int>{}) Map<String, int> itemsSold,
+    @Default(<String, double>{}) Map<String, double> categoryRevenue,
     @Default(0) double peakHour,
     @Default(0) double prepTimeAverage,
   }) = _SalesMetrics;

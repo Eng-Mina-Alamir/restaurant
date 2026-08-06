@@ -31,10 +31,13 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
 
   // Item popularity across all orders.
   final itemsSold = <String, int>{};
+  final categoryRevenue = <String, double>{};
   for (final order in orders) {
     for (final item in order.items) {
       itemsSold[item.menuItem.name] =
           (itemsSold[item.menuItem.name] ?? 0) + item.quantity;
+      categoryRevenue[item.menuItem.categoryId] =
+          (categoryRevenue[item.menuItem.categoryId] ?? 0) + item.itemTotal;
     }
   }
 
@@ -43,6 +46,7 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
     totalOrders: orders.length,
     averageOrderValue: orders.isEmpty ? 0 : totalSales / orders.length,
     itemsSold: itemsSold,
+    categoryRevenue: categoryRevenue,
   );
 }
 
