@@ -54,4 +54,32 @@ abstract final class OrderMapper {
       estimatedMinutes: 25,
     );
   }
+
+  /// Builds a dine-in [OrderEntity] linked to a restaurant [tableId].
+  static OrderEntity buildForTable({
+    required String orderId,
+    required String restaurantId,
+    required String tableId,
+    required List<CartItem> cartItems,
+    required DateTime createdAt,
+  }) {
+    final items = cartItems
+        .map((cart) => toOrderItem(cart, timestamp: createdAt))
+        .toList();
+    final totals = CartTotals.fromItems(cartItems);
+
+    return OrderEntity(
+      id: orderId,
+      restaurantId: restaurantId,
+      tableId: tableId,
+      orderType: OrderType.dineIn,
+      status: OrderStatus.pending,
+      items: items,
+      subtotal: totals.subtotal,
+      taxAmount: totals.taxAmount,
+      totalAmount: totals.totalAmount,
+      createdAt: createdAt,
+      estimatedMinutes: 20,
+    );
+  }
 }

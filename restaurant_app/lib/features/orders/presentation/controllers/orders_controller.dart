@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../data/repositories/in_memory_order_repository.dart';
 import '../../domain/entities/order_entity.dart';
@@ -68,6 +69,61 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       _placing = false;
     }
   }
+
+  /// Places an order for a specific [tableId] (dine-in) with the next cart
+  /// contents, defaulting the type to [OrderType.dineIn].
+  Future<OrderEntity?> placeOrderForTable(String tableId) async {
+    if (_placing) return null;
+    final cartItems = List<CartItem>.of(_cart.state);
+    if (cartItems.isEmpty) return null;
+
+    _placing = true;
+    try {
+      final createdAt = DateTime.now();
+      final order = OrderMapper.buildForTable(
+        orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
+        restaurantId: MenuSeedData.restaurantId,
+        tableId: tableId,
+        cartItems: cartItems,
+        createdAt: createdAt,
+      );
+
+      final result = await _repository.createOrder(order);
+      final created = result.when(onLeft: (_) => null, onRight: (o) => o);
+      if (created != null) {
+        state = [...state, created];
+        _cart.clear();
+      }
+      return created;
+    } finally {
+      _placing = false;
+    }
+  }
+
+  /// Advances the status of the order with [orderId] to [status].
+  ///
+  /// When the order is completed/cancelled it is kept in state but no longer
+  /// counts toward the KDS active columns.
+  Future<OrderEntity?> updateStatus(String orderId, OrderStatus status) async {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return null;
+
+    final updated = state[index].copyWith(status: status);
+    state = [...state]..[index] = updated;
+
+    // Persist the updated order through the repository.
+    final result = await _repository.createOrder(updated);
+    return result.when(onLeft: (_) => null, onRight: (o) => o);
+  }
+
+  /// Orders that are still active for kitchen display (not terminal).
+  List<OrderEntity> get activeOrders => state
+      .where(
+        (o) =>
+            o.status != OrderStatus.completed &&
+            o.status != OrderStatus.cancelled,
+      )
+      .toList();
 }
 
 final ordersControllerProvider =

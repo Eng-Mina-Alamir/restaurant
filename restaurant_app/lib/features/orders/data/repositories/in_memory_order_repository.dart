@@ -15,7 +15,12 @@ class InMemoryOrderRepository implements OrderRepository {
 
   @override
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
-    _orders.add(order);
+    final index = _orders.indexWhere((o) => o.id == order.id);
+    if (index == -1) {
+      _orders.add(order);
+    } else {
+      _orders[index] = order;
+    }
     return Right<Failure, OrderEntity>(order);
   }
 
