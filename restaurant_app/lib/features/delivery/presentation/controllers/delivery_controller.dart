@@ -1,12 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/repositories/delivery_repository.dart';
+import '../../data/repositories/hive_delivery_repository.dart';
 import '../../data/repositories/in_memory_delivery_repository.dart';
 
 /// Shared [DeliveryRepository].
+///
+/// Hive-persisted when the local cache is available, in-memory otherwise
+/// (tests / unsupported platforms).
 final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) {
+  final cache = ref.watch(localCacheServiceProvider);
+  if (cache != null) return HiveDeliveryRepository(cache);
   return InMemoryDeliveryRepository();
 });
 

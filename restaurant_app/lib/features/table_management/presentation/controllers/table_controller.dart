@@ -1,12 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
+import '../../data/repositories/hive_table_repository.dart';
 import '../../data/repositories/in_memory_table_repository.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
 
 /// Shared [TableRepository].
+///
+/// Hive-persisted when the local cache is available, in-memory otherwise
+/// (tests / unsupported platforms).
 final tableRepositoryProvider = Provider<TableRepository>((ref) {
+  final cache = ref.watch(localCacheServiceProvider);
+  if (cache != null) return HiveTableRepository(cache);
   return InMemoryTableRepository();
 });
 

@@ -1,18 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
+import '../../data/repositories/hive_order_repository.dart';
 import '../../data/repositories/in_memory_order_repository.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/order_mapper.dart';
 import '../../domain/repositories/order_repository.dart';
 
-/// Provides the shared [OrderRepository]. Swap for the Hive/remote-backed
-/// implementation here once persistence is introduced.
+/// Provides the shared [OrderRepository].
+///
+/// Uses the Hive-persisted implementation when the local cache is available,
+/// falling back to the in-memory repository (tests / unsupported platforms).
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+  final cache = ref.watch(localCacheServiceProvider);
+  if (cache != null) return HiveOrderRepository(cache);
   return InMemoryOrderRepository();
 });
 
