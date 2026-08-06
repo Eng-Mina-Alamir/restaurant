@@ -8,6 +8,8 @@ import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/refresh_token_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
+import '../../features/menu/data/repositories/menu_repository_impl.dart';
+import '../../features/menu/domain/repositories/menu_repository.dart';
 import '../network/dio_client.dart';
 import '../storage/secure_storage_service.dart';
 
@@ -93,4 +95,10 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>((ref) {
 
 final refreshTokenUseCaseProvider = Provider<RefreshTokenUseCase>((ref) {
   return RefreshTokenUseCase(ref.watch(authRepositoryProvider));
+});
+
+// ── Menu ───────────────────────────────────────────────────────────────────────
+
+final menuRepositoryProvider = Provider<MenuRepository>((ref) {
+  return const MenuRepositoryImpl();
 });
