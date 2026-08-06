@@ -102,6 +102,31 @@ class _DeliveryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (assignment.routeDistanceMeters != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  const Icon(Icons.route_outlined, size: 18),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    'المسافة: ${_formatDistance(assignment.routeDistanceMeters!)}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                const Icon(Icons.schedule_outlined, size: 18),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  '${AppConstants.pickupTimeLabel}: '
+                  '${Formatters.formatTime(assignment.pickupTime)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
             if (assignment.deliveryFee != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -124,6 +149,11 @@ class _DeliveryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatDistance(double meters) {
+    if (meters >= 1000) return '${(meters / 1000).toStringAsFixed(1)} كم';
+    return '${meters.round()} م';
   }
 }
 

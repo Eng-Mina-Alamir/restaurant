@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('ar');
+  });
+
   group('DeliveryController', () {
     late ProviderContainer container;
 

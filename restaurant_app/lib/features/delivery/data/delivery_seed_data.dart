@@ -17,6 +17,7 @@ abstract final class DeliverySeedData {
       deliveryLocation: 'شارع الملك فهد، 12',
       deliveryStatus: DeliveryStatus.pending,
       deliveryFee: 15,
+      routeDistanceMeters: 2400,
     ),
     DeliveryAssignment(
       id: 'd2',
@@ -26,6 +27,7 @@ abstract final class DeliverySeedData {
       deliveryLocation: 'حي النرجس، 88',
       deliveryStatus: DeliveryStatus.accepted,
       deliveryFee: 12,
+      routeDistanceMeters: 750,
     ),
   ];
 

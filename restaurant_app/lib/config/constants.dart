@@ -108,6 +108,7 @@ abstract final class AppConstants {
   static const String demoAccountsTitle = 'حسابات تجريبية';
   static const String demoPasswordHint = 'كلمة المرور: 123456';
   static const String specialNotesLabel = 'ملاحظات الطلب';
+  static const String pickupTimeLabel = 'وقت الجهوزية';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';
