@@ -199,6 +199,22 @@ class _ActiveOrderCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (order.paymentMethod != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    AppConstants.paymentMethodLabel,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  Text(
+                    order.paymentMethod!.labelAr,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
