@@ -125,4 +125,27 @@ void main() {
     // 2 × burger line plus the summary row both show a count.
     expect(find.text('عدد الأصناف: 2'), findsOneWidget);
   });
+
+  testWidgets('shows the table number instead of the raw id', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+    await container
+        .read(ordersControllerProvider.notifier)
+        .placeOrderForTable('t1');
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: KdsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Seed table 't1' has tableNumber 1.
+    expect(find.text('طاولة 1'), findsOneWidget);
+    expect(find.textContaining('مقاعد t1'), findsNothing);
+  });
 }

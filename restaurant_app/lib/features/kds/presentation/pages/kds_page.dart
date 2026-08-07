@@ -9,6 +9,7 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../../../table_management/presentation/controllers/table_controller.dart';
 
 /// Kitchen Display System: live order columns (pending / preparing / ready).
 ///
@@ -28,6 +29,10 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final badge = ref.watch(
       newOrderNotifierProvider.select((n) => n.alertCount),
     );
+    final tables = ref.watch(tableControllerProvider);
+    final tableNumberById = <String, int>{
+      for (final t in tables) t.id: t.tableNumber,
+    };
 
     final active = orders
         .where(
@@ -67,18 +72,21 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                   color: Colors.orange,
                   orders: pending.toList(),
                   onAdvance: (order) => _advance(context, ref, order),
+                  tableNumberById: tableNumberById,
                 ),
                 _KdsColumn(
                   title: AppConstants.kdsPreparing,
                   color: Colors.blue,
                   orders: preparing.toList(),
                   onAdvance: (order) => _advance(context, ref, order),
+                  tableNumberById: tableNumberById,
                 ),
                 _KdsColumn(
                   title: AppConstants.kdsReady,
                   color: Colors.green,
                   orders: ready.toList(),
                   onAdvance: (order) => _advance(context, ref, order),
+                  tableNumberById: tableNumberById,
                 ),
               ],
             ),
@@ -121,12 +129,14 @@ class _KdsColumn extends StatelessWidget {
     required this.color,
     required this.orders,
     required this.onAdvance,
+    required this.tableNumberById,
   });
 
   final String title;
   final Color color;
   final List<OrderEntity> orders;
   final ValueChanged<OrderEntity> onAdvance;
+  final Map<String, int> tableNumberById;
 
   @override
   Widget build(BuildContext context) {
@@ -162,7 +172,13 @@ class _KdsColumn extends StatelessWidget {
                   : ListView(
                       children: [
                         for (final order in orders)
-                          _OrderCard(order: order, onAdvance: onAdvance),
+                          _OrderCard(
+                            order: order,
+                            onAdvance: onAdvance,
+                            tableNumber: order.tableId == null
+                                ? null
+                                : tableNumberById[order.tableId],
+                          ),
                       ],
                     ),
             ),
@@ -174,10 +190,15 @@ class _KdsColumn extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order, required this.onAdvance});
+  const _OrderCard({
+    required this.order,
+    required this.onAdvance,
+    this.tableNumber,
+  });
 
   final OrderEntity order;
   final ValueChanged<OrderEntity> onAdvance;
+  final int? tableNumber;
 
   /// Orders younger than this threshold are considered "new".
   static const Duration _newThreshold = Duration(minutes: 2);
@@ -212,12 +233,16 @@ class _OrderCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  _orderNumber(order),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Flexible(
+                  child: Text(
+                    _orderNumber(order),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -241,10 +266,13 @@ class _OrderCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (order.tableId != null)
+                    if (tableNumber != null)
                       Chip(
-                        label: Text('${AppConstants.seats} ${order.tableId}'),
+                        label: Text(
+                          '${AppConstants.orderTablePrefix} $tableNumber',
+                        ),
                         visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                   ],
                 ),
