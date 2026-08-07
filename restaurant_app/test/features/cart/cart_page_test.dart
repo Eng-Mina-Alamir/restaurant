@@ -43,6 +43,7 @@ void main() {
   testWidgets('shows empty message when no items', (tester) async {
     await pumpWithCart(tester, const []);
     expect(find.text('العربة فارغة'), findsOneWidget);
+    expect(find.text('تصفح القائمة'), findsOneWidget);
   });
 
   testWidgets('renders item, quantity, price and totals', (tester) async {

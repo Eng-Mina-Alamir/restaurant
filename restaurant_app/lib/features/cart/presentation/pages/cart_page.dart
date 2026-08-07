@@ -37,6 +37,8 @@ class _CartPageState extends ConsumerState<CartPage> {
     }
   }
 
+  void _emptyCartBrowse() => context.go('/customer');
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
@@ -47,9 +49,11 @@ class _CartPageState extends ConsumerState<CartPage> {
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.cartTitle)),
       body: cart.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               message: AppConstants.cartEmpty,
               icon: Icons.shopping_cart_outlined,
+              actionLabel: AppConstants.cartEmptyBrowse,
+              onAction: _emptyCartBrowse,
             )
           : Column(
               children: [
