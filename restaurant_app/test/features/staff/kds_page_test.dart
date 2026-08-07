@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/kds/presentation/pages/kds_page.dart';
@@ -58,6 +59,44 @@ void main() {
     await tester.tap(find.text('قيد التحضير').last);
     await tester.pumpAndSettle();
     expect(find.text('جاهز للتسليم'), findsOneWidget);
+  });
+
+  testWidgets('advances an order through the full KDS workflow', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+    final orders = container.read(ordersControllerProvider.notifier);
+    await orders.placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: KdsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // pending -> preparing
+    await tester.tap(find.text('قيد التحضير').last);
+    await tester.pumpAndSettle();
+    expect(find.text('جاهز للتسليم'), findsOneWidget);
+
+    // preparing -> ready
+    await tester.tap(find.text('جاهز للتسليم').last);
+    await tester.pumpAndSettle();
+    expect(find.text('استكمال'), findsOneWidget);
+
+    // ready -> served: order leaves the KDS columns (only pending/preparing/ready shown)
+    await tester.tap(find.text('استكمال').last);
+    await tester.pumpAndSettle();
+
+    final placed = container.read(ordersControllerProvider).first;
+    expect(placed.status, OrderStatus.served);
+    expect(find.textContaining('برجر كلاسيك'), findsNothing);
   });
 
   testWidgets('shows modifier options and special notes on the card', (
