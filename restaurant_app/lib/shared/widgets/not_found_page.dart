@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
-import '../../../core/theme/spacing.dart';
+import 'empty_state.dart';
 
 /// Fallback page shown for unmatched routes (404 equivalent).
 class NotFoundPage extends StatelessWidget {
@@ -10,16 +11,12 @@ class NotFoundPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.back)),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off, size: 48),
-            SizedBox(height: AppSpacing.md),
-            Text('الصفحة غير موجودة'),
-          ],
-        ),
+      appBar: AppBar(title: const Text(AppConstants.notFoundTitle)),
+      body: EmptyState(
+        message: AppConstants.notFoundTitle,
+        icon: Icons.search_off,
+        actionLabel: AppConstants.notFoundAction,
+        onAction: () => context.go('/'),
       ),
     );
   }

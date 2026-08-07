@@ -73,6 +73,8 @@ abstract final class AppConstants {
   static const String ok = 'حسناً';
   static const String delete = 'حذف';
   static const String back = 'رجوع';
+  static const String notFoundTitle = 'الصفحة غير موجودة';
+  static const String notFoundAction = 'العودة للرئيسية';
   static const String loading = 'جارٍ التحميل…';
   static const String optional = '(اختياري)';
 
