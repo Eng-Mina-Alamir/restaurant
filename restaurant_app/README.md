@@ -10,10 +10,10 @@ Built with **Clean Architecture** (presentation / domain / data), **Riverpod**, 
 
 | Role       | Entry route | Purpose                                   |
 |------------|-------------|-------------------------------------------|
-| Customer   | `/customer` | QR scan, browse menu, order, self-pay     |
-| Waiter     | `/waiter`   | Table management, take orders, statuses    |
+| Customer   | `/customer` | Browse menu, dietary filters, order, self-pay |
+| Waiter     | `/waiter`   | Table management (zones), take orders, statuses |
 | Kitchen    | `/kds`      | Kitchen Display System (order columns)     |
-| Manager    | `/manager`  | Sales analytics, discounts, staff          |
+| Manager    | `/manager`  | Sales analytics, order status breakdown, active orders |
 | Driver     | `/driver`   | Accept deliveries, live tracking, statuses |
 
 ## Architecture
@@ -46,6 +46,20 @@ flutter test                                                # unit + widget test
 
 > No emulator/device is required for the current milestone: everything is verified with
 > `flutter analyze`, `dart format`, and pure-Dart tests.
+
+## Demo login
+
+The app runs fully offline with demo accounts (one-tap role chips on the login screen):
+
+| Account               | Password | Role    |
+|-----------------------|----------|---------|
+| `customer@demo.com`   | `123456` | Customer |
+| `waiter@demo.com`     | `123456` | Waiter  |
+| `kitchen@demo.com`    | `123456` | Kitchen |
+| `manager@demo.com`    | `123456` | Manager |
+| `driver@demo.com`     | `123456` | Driver  |
+
+Sessions persist across restarts; use the logout action in any role home to switch users.
 
 ## Environment
 
@@ -92,7 +106,10 @@ lib/
 - [x] Kitchen Display System (pending/preparing/ready columns + status advance)
 - [x] New-order notification service with KDS badge
 - [x] Delivery driver flow (accept / start / complete assignments)
-- [x] Manager dashboard (sales metrics, active orders, top items)
+- [x] Manager dashboard (sales metrics, active orders, top items, status breakdown)
+- [x] Demo auth with persisted sessions + one-tap role login + logout
+- [x] Menu item details: dietary/availability badges, ratings, search + filters
+- [x] Table zone locations, KDS order summaries, driver delivery details
 - [ ] Live backend integration (Dio datasources, real persistence)
 - [ ] Push notifications / audio alerts for new orders
 - [ ] QR ordering + self-pay
@@ -105,7 +122,7 @@ The project is verified entirely offline with:
 ```bash
 flutter analyze     # 0 issues
 dart format --set-exit-if-changed .   # consistently formatted
-flutter test        # 83 unit + widget tests
+flutter test        # 159 unit + widget tests
 ```
 
 All feature controllers (cart, orders, tables, delivery, metrics, notifications)

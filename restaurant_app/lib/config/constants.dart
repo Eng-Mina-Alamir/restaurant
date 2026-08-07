@@ -67,7 +67,6 @@ abstract final class AppConstants {
 
   // ── Menu ───────────────────────────────────────────────────────────────────
   static const String menuTitle = 'القائمة';
-  static const String searchHint = 'ابحث عن طبق…';
   static const String categoriesLabel = 'التصنيفات';
   static const String featuredLabel = 'الأطباق المميزة';
   static const String noItemsFound = 'لا توجد أصناف مطابقة';
