@@ -25,4 +25,16 @@ void main() {
       expect(Formatters.formatCurrency(56.0).contains('56'), isTrue);
     });
   });
+
+  group('Formatters.formatOrderId', () {
+    test('extracts digits and prefixes with #', () {
+      expect(Formatters.formatOrderId('ORD-1024-A'), '#1024');
+      expect(Formatters.formatOrderId('order_7'), '#7');
+      expect(Formatters.formatOrderId('1024'), '#1024');
+    });
+
+    test('falls back to raw id when no digits present', () {
+      expect(Formatters.formatOrderId('ABC'), 'ABC');
+    });
+  });
 }

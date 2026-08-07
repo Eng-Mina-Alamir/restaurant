@@ -176,7 +176,7 @@ class _ActiveOrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _orderNumber(order),
+                  Formatters.formatOrderId(order.id),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -238,7 +238,4 @@ class _ActiveOrderCard extends StatelessWidget {
       ),
     );
   }
-
-  String _orderNumber(OrderEntity order) =>
-      '#${order.id.replaceAll(RegExp(r'[^0-9]'), '')}';
 }

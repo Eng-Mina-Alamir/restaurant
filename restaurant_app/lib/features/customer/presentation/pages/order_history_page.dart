@@ -93,7 +93,7 @@ class _OrderHistoryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _orderNumber(order),
+                  Formatters.formatOrderId(order.id),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -154,10 +154,5 @@ class _OrderHistoryCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _orderNumber(OrderEntity order) {
-    final digits = order.id.replaceAll(RegExp(r'[^0-9]'), '');
-    return '#$digits';
   }
 }

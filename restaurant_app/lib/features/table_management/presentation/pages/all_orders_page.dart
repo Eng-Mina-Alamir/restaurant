@@ -114,7 +114,7 @@ class _OrderStatusCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _orderNumber(order),
+                  Formatters.formatOrderId(order.id),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -181,12 +181,6 @@ class _OrderStatusCard extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String _orderNumber(OrderEntity order) {
-    final digits = order.id.replaceAll(RegExp(r'[^0-9]'), '');
-    final number = int.tryParse(digits) ?? 0;
-    return Formatters.formatOrderNumber(number);
   }
 
   OrderStatus? _nextStatus(OrderStatus current) {

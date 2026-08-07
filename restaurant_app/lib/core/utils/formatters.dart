@@ -42,6 +42,14 @@ abstract final class Formatters {
   /// Formats an order id as a human-friendly order number (e.g. `#1024`).
   static String formatOrderNumber(int orderNumber) => '#$orderNumber';
 
+  /// Extracts the numeric part of an order id and formats it as a friendly
+  /// order number (e.g. `ORD-1024-A` → `#1024`). Falls back to the raw id
+  /// when it contains no digits.
+  static String formatOrderId(String orderId) {
+    final digits = orderId.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? orderId : formatOrderNumber(int.parse(digits));
+  }
+
   /// Estimates delivery time (minutes) from a route distance, assuming a
   /// typical urban delivery speed of 30 km/h (~8.33 m/s), with a 10 minute
   /// pickup/prep offset. Pure function so it is unit-testable.
