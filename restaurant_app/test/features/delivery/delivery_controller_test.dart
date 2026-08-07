@@ -39,6 +39,15 @@ void main() {
       expect(controller.state.first.deliveryStatus, DeliveryStatus.delivered);
       expect(controller.state.first.deliveredTime, isNotNull);
     });
+
+    test('fail marks an assignment as failed', () async {
+      final controller = container.read(deliveryControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+      final id = controller.state.first.id;
+
+      await controller.fail(id);
+      expect(controller.state.first.deliveryStatus, DeliveryStatus.failed);
+    });
   });
 
   testWidgets('driver home renders assignments and actions', (tester) async {
