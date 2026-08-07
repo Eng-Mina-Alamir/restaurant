@@ -170,7 +170,7 @@ class _DeliveryCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '#${assignment.orderId}',
+                  Formatters.formatOrderId(assignment.orderId),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

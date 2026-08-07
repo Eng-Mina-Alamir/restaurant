@@ -40,9 +40,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Two seeded demo assignments.
-    expect(find.textContaining('#ORD-0101'), findsOneWidget);
-    expect(find.textContaining('#ORD-0104'), findsOneWidget);
+    // Two seeded demo assignments (formatted as friendly order numbers).
+    expect(find.textContaining('#101'), findsOneWidget);
+    expect(find.textContaining('#104'), findsOneWidget);
 
     // Distance formatted for the first card (>1km -> km).
     expect(find.textContaining('2.4 كم'), findsOneWidget);
@@ -99,8 +99,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Both seeded assignments visible initially.
-    expect(find.textContaining('#ORD-0101'), findsOneWidget);
-    expect(find.textContaining('#ORD-0104'), findsOneWidget);
+    expect(find.textContaining('#101'), findsOneWidget);
+    expect(find.textContaining('#104'), findsOneWidget);
 
     // Filter to pending only — the accepted assignment disappears.
     await tester.tap(
@@ -113,7 +113,7 @@ void main() {
       find.widgetWithText(ChoiceChip, AppConstants.driverFilterAll),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('#ORD-0101'), findsOneWidget);
-    expect(find.textContaining('#ORD-0104'), findsOneWidget);
+    expect(find.textContaining('#101'), findsOneWidget);
+    expect(find.textContaining('#104'), findsOneWidget);
   });
 }

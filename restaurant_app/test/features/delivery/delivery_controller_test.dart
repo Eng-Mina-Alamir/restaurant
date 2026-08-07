@@ -47,7 +47,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('ORD-'), findsWidgets);
+    expect(find.textContaining('#'), findsWidgets);
     expect(find.text('قبول التوصيل'), findsWidgets);
   });
 }
