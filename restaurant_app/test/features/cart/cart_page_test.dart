@@ -65,4 +65,12 @@ void main() {
     await tester.pump();
     expect(find.text('2'), findsOneWidget);
   });
+
+  testWidgets('shows special notes on the cart line', (tester) async {
+    await pumpWithCart(tester, const [
+      CartItem(menuItem: burger, specialNotes: 'بدون بصل'),
+    ]);
+
+    expect(find.textContaining('ملاحظات الطلب: بدون بصل'), findsOneWidget);
+  });
 }

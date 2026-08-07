@@ -150,6 +150,15 @@ class _CartLine extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (item.specialNotes?.trim().isNotEmpty ?? false) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${AppConstants.specialNotesLabel}: ${item.specialNotes}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     Formatters.formatCurrency(item.linePrice),
@@ -225,7 +234,7 @@ class _TotalsFooter extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             _Row(
-              label: 'الضريبة (15%)',
+              label: AppConstants.taxLabel,
               value: Formatters.formatCurrency(taxAmount),
             ),
             const Divider(height: AppSpacing.lg),
