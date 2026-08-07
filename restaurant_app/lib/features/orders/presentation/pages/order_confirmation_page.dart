@@ -111,11 +111,8 @@ class OrderConfirmationPage extends StatelessWidget {
     );
   }
 
-  static String formattedOrderNumber(OrderEntity order) {
-    final digits = order.id.replaceAll(RegExp(r'[^0-9]'), '');
-    final number = int.tryParse(digits) ?? 0;
-    return Formatters.formatOrderNumber(number);
-  }
+  static String formattedOrderNumber(OrderEntity order) =>
+      Formatters.formatOrderId(order.id);
 }
 
 class _Card extends StatelessWidget {
