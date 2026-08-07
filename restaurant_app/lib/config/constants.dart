@@ -122,6 +122,7 @@ abstract final class AppConstants {
   static const String dietAll = 'الكل';
   static const String dietVegetarian = 'نباتي';
   static const String dietSpicy = 'حار';
+  static const String itemUnavailable = 'غير متوفر';
   static const String metricsByPayment = 'الإيرادات حسب طريقة الدفع';
   static const String paymentUnknown = 'غير محدد';
   static const String reorderFailed = 'لا يوجد أصناف لإعادة طلبها';

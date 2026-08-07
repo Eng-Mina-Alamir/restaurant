@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/menu_item_detail_sheet.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
@@ -14,6 +15,65 @@ void main() {
     description: 'وصف',
     price: 28,
   );
+
+  const spicyVeggie = MenuItem(
+    id: 'b2',
+    categoryId: 'برجر',
+    name: 'برجر حار نباتي',
+    description: 'وصف',
+    price: 30,
+    isVegetarian: true,
+    isSpicy: true,
+  );
+
+  const unavailable = MenuItem(
+    id: 'b3',
+    categoryId: 'برجر',
+    name: 'برجر غير متوفر',
+    description: 'وصف',
+    price: 26,
+    isAvailable: false,
+  );
+
+  testWidgets('shows dietary and availability badges', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: _Host(menuItem: spicyVeggie)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppConstants.dietVegetarian), findsOneWidget);
+    expect(find.text(AppConstants.dietSpicy), findsOneWidget);
+    expect(find.text(AppConstants.itemUnavailable), findsNothing);
+  });
+
+  testWidgets('shows unavailable badge for out-of-stock items', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: _Host(menuItem: unavailable)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppConstants.itemUnavailable), findsOneWidget);
+    expect(find.text(AppConstants.dietVegetarian), findsNothing);
+    expect(find.text(AppConstants.dietSpicy), findsNothing);
+  });
 
   testWidgets('adds item with special notes to the cart', (tester) async {
     final container = ProviderContainer();

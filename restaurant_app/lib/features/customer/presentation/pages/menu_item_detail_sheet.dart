@@ -73,6 +73,32 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (item.isVegetarian || item.isSpicy || !item.isAvailable)
+                Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: [
+                      if (item.isVegetarian)
+                        const _DetailBadge(
+                          icon: Icons.eco,
+                          label: AppConstants.dietVegetarian,
+                        ),
+                      if (item.isSpicy)
+                        const _DetailBadge(
+                          icon: Icons.local_fire_department,
+                          label: AppConstants.dietSpicy,
+                        ),
+                      if (!item.isAvailable)
+                        const _DetailBadge(
+                          icon: Icons.block,
+                          label: AppConstants.itemUnavailable,
+                          isError: true,
+                        ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 Formatters.formatCurrency(_unitPrice(item) * _quantity),
@@ -282,6 +308,40 @@ class _QuantityStepper extends StatelessWidget {
           onPressed: onIncrement,
         ),
       ],
+    );
+  }
+}
+
+/// Small pill shown in the detail sheet for dietary/availability attributes.
+class _DetailBadge extends StatelessWidget {
+  const _DetailBadge({
+    required this.icon,
+    required this.label,
+    this.isError = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isError
+        ? Theme.of(context).colorScheme.error
+        : Theme.of(context).colorScheme.primary;
+    final background = isError
+        ? Theme.of(context).colorScheme.errorContainer
+        : Theme.of(context).colorScheme.secondaryContainer;
+    return Chip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label),
+      labelStyle: Theme.of(
+        context,
+      ).textTheme.labelMedium?.copyWith(color: color),
+      backgroundColor: background,
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 }

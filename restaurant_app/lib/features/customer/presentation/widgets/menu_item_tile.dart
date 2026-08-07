@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../menu/domain/entities/menu_item.dart';
@@ -47,11 +48,18 @@ class MenuItemTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (item.isVegetarian) const _Badge('نباتي'),
+                        if (item.isVegetarian)
+                          const _Badge(AppConstants.dietVegetarian),
                         if (item.isSpicy)
-                          const _Badge('حار', color: Colors.red),
+                          const _Badge(
+                            AppConstants.dietSpicy,
+                            color: Colors.red,
+                          ),
                         if (!item.isAvailable)
-                          const _Badge('غير متوفر', color: Colors.grey),
+                          const _Badge(
+                            AppConstants.itemUnavailable,
+                            color: Colors.grey,
+                          ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
