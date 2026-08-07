@@ -169,6 +169,7 @@ abstract final class AppConstants {
   static const String actionStartDelivery = 'بدء التوصيل';
   static const String actionCompleteDelivery = 'تسليم الطلب';
   static const String deliveryLocationLabel = 'العنوان';
+  static const String customerPhoneLabel = 'رقم العميل';
   static const String deliveryFeeLabel = 'رسوم التوصيل';
   static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
 

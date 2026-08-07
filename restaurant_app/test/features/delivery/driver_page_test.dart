@@ -51,6 +51,8 @@ void main() {
     // Delivery fee uses its own label rather than the generic total label.
     expect(find.textContaining('رسوم التوصيل:'), findsWidgets);
     expect(find.textContaining('الإجمالي:'), findsNothing);
+    // Customer phone is shown for coordination.
+    expect(find.textContaining('رقم العميل: 0551234567'), findsOneWidget);
   });
 
   testWidgets('filters assignments by status chip', (tester) async {

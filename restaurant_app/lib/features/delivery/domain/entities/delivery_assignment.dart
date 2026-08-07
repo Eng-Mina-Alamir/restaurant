@@ -21,6 +21,9 @@ abstract class DeliveryAssignment with _$DeliveryAssignment {
     @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
     DateTime? deliveredTime,
     required String deliveryLocation,
+
+    /// Customer phone number for coordination during the trip.
+    String? customerPhone,
     @Default(0) double latitude,
     @Default(0) double longitude,
     @JsonKey(

@@ -29,6 +29,9 @@ mixin _$DeliveryAssignment {
   @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
   DateTime? get deliveredTime => throw _privateConstructorUsedError;
   String get deliveryLocation => throw _privateConstructorUsedError;
+
+  /// Customer phone number for coordination during the trip.
+  String? get customerPhone => throw _privateConstructorUsedError;
   double get latitude => throw _privateConstructorUsedError;
   double get longitude => throw _privateConstructorUsedError;
   @JsonKey(
@@ -67,6 +70,7 @@ abstract class $DeliveryAssignmentCopyWith<$Res> {
     @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
     DateTime? deliveredTime,
     String deliveryLocation,
+    String? customerPhone,
     double latitude,
     double longitude,
     @JsonKey(
@@ -102,6 +106,7 @@ class _$DeliveryAssignmentCopyWithImpl<$Res, $Val extends DeliveryAssignment>
     Object? pickupTime = null,
     Object? deliveredTime = freezed,
     Object? deliveryLocation = null,
+    Object? customerPhone = freezed,
     Object? latitude = null,
     Object? longitude = null,
     Object? deliveryStatus = null,
@@ -135,6 +140,10 @@ class _$DeliveryAssignmentCopyWithImpl<$Res, $Val extends DeliveryAssignment>
                 ? _value.deliveryLocation
                 : deliveryLocation // ignore: cast_nullable_to_non_nullable
                       as String,
+            customerPhone: freezed == customerPhone
+                ? _value.customerPhone
+                : customerPhone // ignore: cast_nullable_to_non_nullable
+                      as String?,
             latitude: null == latitude
                 ? _value.latitude
                 : latitude // ignore: cast_nullable_to_non_nullable
@@ -183,6 +192,7 @@ abstract class _$$DeliveryAssignmentImplCopyWith<$Res>
     @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
     DateTime? deliveredTime,
     String deliveryLocation,
+    String? customerPhone,
     double latitude,
     double longitude,
     @JsonKey(
@@ -217,6 +227,7 @@ class __$$DeliveryAssignmentImplCopyWithImpl<$Res>
     Object? pickupTime = null,
     Object? deliveredTime = freezed,
     Object? deliveryLocation = null,
+    Object? customerPhone = freezed,
     Object? latitude = null,
     Object? longitude = null,
     Object? deliveryStatus = null,
@@ -250,6 +261,10 @@ class __$$DeliveryAssignmentImplCopyWithImpl<$Res>
             ? _value.deliveryLocation
             : deliveryLocation // ignore: cast_nullable_to_non_nullable
                   as String,
+        customerPhone: freezed == customerPhone
+            ? _value.customerPhone
+            : customerPhone // ignore: cast_nullable_to_non_nullable
+                  as String?,
         latitude: null == latitude
             ? _value.latitude
             : latitude // ignore: cast_nullable_to_non_nullable
@@ -291,6 +306,7 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
     @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
     this.deliveredTime,
     required this.deliveryLocation,
+    this.customerPhone,
     this.latitude = 0,
     this.longitude = 0,
     @JsonKey(
@@ -321,6 +337,10 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
   final DateTime? deliveredTime;
   @override
   final String deliveryLocation;
+
+  /// Customer phone number for coordination during the trip.
+  @override
+  final String? customerPhone;
   @override
   @JsonKey()
   final double latitude;
@@ -343,7 +363,7 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
 
   @override
   String toString() {
-    return 'DeliveryAssignment(id: $id, orderId: $orderId, driverId: $driverId, pickupTime: $pickupTime, deliveredTime: $deliveredTime, deliveryLocation: $deliveryLocation, latitude: $latitude, longitude: $longitude, deliveryStatus: $deliveryStatus, deliveryFee: $deliveryFee, routeOptimized: $routeOptimized, routeDistanceMeters: $routeDistanceMeters)';
+    return 'DeliveryAssignment(id: $id, orderId: $orderId, driverId: $driverId, pickupTime: $pickupTime, deliveredTime: $deliveredTime, deliveryLocation: $deliveryLocation, customerPhone: $customerPhone, latitude: $latitude, longitude: $longitude, deliveryStatus: $deliveryStatus, deliveryFee: $deliveryFee, routeOptimized: $routeOptimized, routeDistanceMeters: $routeDistanceMeters)';
   }
 
   @override
@@ -361,6 +381,8 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
                 other.deliveredTime == deliveredTime) &&
             (identical(other.deliveryLocation, deliveryLocation) ||
                 other.deliveryLocation == deliveryLocation) &&
+            (identical(other.customerPhone, customerPhone) ||
+                other.customerPhone == customerPhone) &&
             (identical(other.latitude, latitude) ||
                 other.latitude == latitude) &&
             (identical(other.longitude, longitude) ||
@@ -385,6 +407,7 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
     pickupTime,
     deliveredTime,
     deliveryLocation,
+    customerPhone,
     latitude,
     longitude,
     deliveryStatus,
@@ -420,6 +443,7 @@ abstract class _DeliveryAssignment implements DeliveryAssignment {
     @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
     final DateTime? deliveredTime,
     required final String deliveryLocation,
+    final String? customerPhone,
     final double latitude,
     final double longitude,
     @JsonKey(
@@ -450,6 +474,10 @@ abstract class _DeliveryAssignment implements DeliveryAssignment {
   DateTime? get deliveredTime;
   @override
   String get deliveryLocation;
+
+  /// Customer phone number for coordination during the trip.
+  @override
+  String? get customerPhone;
   @override
   double get latitude;
   @override

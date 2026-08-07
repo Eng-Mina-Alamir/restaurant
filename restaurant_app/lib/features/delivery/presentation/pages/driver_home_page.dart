@@ -179,6 +179,20 @@ class _DeliveryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (assignment.customerPhone != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  const Icon(Icons.phone_outlined, size: 18),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '${AppConstants.customerPhoneLabel}: '
+                    '${assignment.customerPhone}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
             if (assignment.routeDistanceMeters != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Row(
