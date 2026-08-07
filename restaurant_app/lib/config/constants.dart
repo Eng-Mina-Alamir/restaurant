@@ -5,11 +5,6 @@
 abstract final class AppConstants {
   AppConstants._();
 
-  // ── App ────────────────────────────────────────────────────────────────────
-  static const String appName = 'مطعمي';
-  static const String appTagline = 'طبخك المفضل في مكان واحد';
-  static const String currency = 'ر.س';
-
   // ── Auth / Login ───────────────────────────────────────────────────────────
   static const String loginTitle = 'تسجيل الدخول';
   static const String loginSubtitle = 'مرحباً بعودتك! سجّل للوصول إلى طلباتك';
