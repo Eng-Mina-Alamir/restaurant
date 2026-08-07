@@ -132,13 +132,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   }
 
   /// Orders that are still active for kitchen display (not terminal).
-  List<OrderEntity> get activeOrders => state
-      .where(
-        (o) =>
-            o.status != OrderStatus.completed &&
-            o.status != OrderStatus.cancelled,
-      )
-      .toList();
+  List<OrderEntity> get activeOrders =>
+      state.where((o) => !o.status.isTerminal).toList();
 }
 
 /// Single shared new-order notifier for badge/sound alerts.

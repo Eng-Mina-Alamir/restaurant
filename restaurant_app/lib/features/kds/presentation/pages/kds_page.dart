@@ -55,13 +55,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
       for (final t in tables) t.id: t.tableNumber,
     };
 
-    final active = orders
-        .where(
-          (o) =>
-              o.status != OrderStatus.completed &&
-              o.status != OrderStatus.cancelled,
-        )
-        .toList();
+    final active = orders.where((o) => !o.status.isTerminal).toList();
 
     final pending = active.where((o) => o.status == OrderStatus.pending);
     final preparing = active.where((o) => o.status == OrderStatus.preparing);

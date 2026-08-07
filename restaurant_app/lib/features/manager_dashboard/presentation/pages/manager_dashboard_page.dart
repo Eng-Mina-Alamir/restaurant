@@ -226,13 +226,7 @@ class ManagerDashboardPage extends ConsumerWidget {
 
   String _activeOrders(WidgetRef ref) {
     final orders = ref.watch(ordersControllerProvider);
-    final active = orders
-        .where(
-          (o) =>
-              o.status != OrderStatus.completed &&
-              o.status != OrderStatus.cancelled,
-        )
-        .length;
+    final active = orders.where((o) => !o.status.isTerminal).length;
     return '$active';
   }
 }

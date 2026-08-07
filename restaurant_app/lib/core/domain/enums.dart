@@ -54,6 +54,10 @@ enum OrderStatus {
 
   String get labelAr => OrderStatusAr.labelOf(name);
 
+  /// Whether the order reached a final state and no longer needs action.
+  bool get isTerminal =>
+      this == OrderStatus.completed || this == OrderStatus.cancelled;
+
   static OrderStatus fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'pending':

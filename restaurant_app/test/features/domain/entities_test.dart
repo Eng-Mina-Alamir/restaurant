@@ -30,6 +30,21 @@ void main() {
       expect(OrderStatus.completed.labelAr, 'مكتمل');
     });
 
+    test('OrderStatus isTerminal flags only completed and cancelled', () {
+      expect(OrderStatus.completed.isTerminal, isTrue);
+      expect(OrderStatus.cancelled.isTerminal, isTrue);
+      for (final status in OrderStatus.values) {
+        if (status != OrderStatus.completed &&
+            status != OrderStatus.cancelled) {
+          expect(
+            status.isTerminal,
+            isFalse,
+            reason: '$status should be active',
+          );
+        }
+      }
+    });
+
     test('UserRole.fromName maps roles', () {
       expect(UserRole.fromName('kitchen'), UserRole.kitchen);
       expect(UserRole.fromName('driver'), UserRole.driver);
