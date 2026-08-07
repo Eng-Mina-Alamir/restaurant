@@ -50,6 +50,14 @@ abstract final class Formatters {
     return digits.isEmpty ? orderId : formatOrderNumber(int.parse(digits));
   }
 
+  /// Whole minutes elapsed since [createdAt], clamped at zero when [createdAt]
+  /// is in the future. Pure and injectable so it is unit-testable.
+  static int elapsedMinutes(DateTime createdAt, {DateTime? now}) {
+    final diff = (now ?? DateTime.now()).difference(createdAt);
+    final minutes = diff.inMinutes;
+    return minutes < 0 ? 0 : minutes;
+  }
+
   /// Estimates delivery time (minutes) from a route distance, assuming a
   /// typical urban delivery speed of 30 km/h (~8.33 m/s), with a 10 minute
   /// pickup/prep offset. Pure function so it is unit-testable.

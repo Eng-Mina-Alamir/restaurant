@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +25,25 @@ class KdsPage extends ConsumerStatefulWidget {
 }
 
 class _KdsPageState extends ConsumerState<KdsPage> {
+  static const _elapsedRefreshInterval = Duration(minutes: 1);
+
+  Timer? _elapsedTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep the "منذ N دقيقة" counters fresh even when no order changes occur.
+    _elapsedTimer = Timer.periodic(_elapsedRefreshInterval, (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _elapsedTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final orders = ref.watch(ordersControllerProvider);
@@ -358,9 +379,6 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  int _elapsedMinutes(DateTime createdAt) {
-    final diff = DateTime.now().difference(createdAt);
-    final minutes = diff.inMinutes;
-    return minutes < 0 ? 0 : minutes;
-  }
+  int _elapsedMinutes(DateTime createdAt) =>
+      Formatters.elapsedMinutes(createdAt);
 }

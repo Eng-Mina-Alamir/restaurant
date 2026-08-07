@@ -37,4 +37,26 @@ void main() {
       expect(Formatters.formatOrderId('ABC'), 'ABC');
     });
   });
+
+  group('Formatters.elapsedMinutes', () {
+    final now = DateTime(2026, 8, 7, 12, 0);
+
+    test('returns whole minutes elapsed since the timestamp', () {
+      expect(
+        Formatters.elapsedMinutes(DateTime(2026, 8, 7, 11, 58), now: now),
+        2,
+      );
+      expect(
+        Formatters.elapsedMinutes(DateTime(2026, 8, 7, 11, 0), now: now),
+        60,
+      );
+    });
+
+    test('clamps to zero for future timestamps', () {
+      expect(
+        Formatters.elapsedMinutes(DateTime(2026, 8, 7, 12, 5), now: now),
+        0,
+      );
+    });
+  });
 }
