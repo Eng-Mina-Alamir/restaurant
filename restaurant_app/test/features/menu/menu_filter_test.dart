@@ -55,4 +55,28 @@ void main() {
     expect(items, isNotEmpty);
     expect(items.every((i) => i.isSpicy), isTrue);
   });
+
+  test('filterMenu combines search query with dietary filter', () {
+    // "بيتزا" appears for both regular and spicy pizzas; the spicy filter
+    // should keep only the spicy variant.
+    final items = filterMenu(
+      menu,
+      kAllCategoriesFilter,
+      'بيتزا',
+      MenuDietFilter.spicy,
+    );
+    expect(items, isNotEmpty);
+    expect(items.every((i) => i.isSpicy && i.name.contains('بيتزا')), isTrue);
+  });
+
+  test('filterMenu handles a null menu gracefully', () {
+    expect(filterMenu(null, kAllCategoriesFilter), isEmpty);
+    expect(filterMenu(null, 'مشروبات', 'برتقال'), isEmpty);
+  });
+
+  test('filterMenu trims search whitespace before matching', () {
+    final trimmed = filterMenu(menu, kAllCategoriesFilter, '  برجر  ');
+    final untrimmed = filterMenu(menu, kAllCategoriesFilter, 'برجر');
+    expect(trimmed.length, untrimmed.length);
+  });
 }
