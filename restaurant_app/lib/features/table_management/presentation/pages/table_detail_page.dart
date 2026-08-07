@@ -129,6 +129,20 @@ class _TableInfoRow extends StatelessWidget {
                   '${table.capacity} ${AppConstants.seats}',
                   style: theme.textTheme.titleMedium,
                 ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.place_outlined, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      table.location,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
                 Text(
                   tableStatusLabel(table.status),
                   style: theme.textTheme.bodySmall?.copyWith(

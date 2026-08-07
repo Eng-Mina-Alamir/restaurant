@@ -30,6 +30,9 @@ void main() {
 
     expect(find.textContaining('تفاصيل الطاولة'), findsOneWidget);
     expect(find.text('لا يوجد طلب نشط'), findsWidgets);
+    // Seed table 1 is in the "تراس" zone.
+    expect(find.text('تراس'), findsOneWidget);
+    expect(find.byIcon(Icons.place_outlined), findsOneWidget);
   });
 
   testWidgets('shows active order items after placing one', (tester) async {
