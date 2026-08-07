@@ -54,6 +54,18 @@ void main() {
     expect(added, isFalse);
   });
 
+  testWidgets('shows rating when present and hides it when absent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(base.copyWith(rating: 4.6)));
+    expect(find.text('4.6'), findsOneWidget);
+    expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+
+    await tester.pumpWidget(wrap(base));
+    expect(find.text('4.6'), findsNothing);
+    expect(find.byIcon(Icons.star_rounded), findsNothing);
+  });
+
   testWidgets('add button triggers onAdd when available', (tester) async {
     var added = false;
     await tester.pumpWidget(

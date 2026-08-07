@@ -74,14 +74,33 @@ class MenuItemTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Text(
-                      Formatters.formatCurrency(item.price),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: item.isAvailable
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.outline,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          Formatters.formatCurrency(item.price),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: item.isAvailable
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outline,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (item.rating != null) ...[
+                          const SizedBox(width: AppSpacing.sm),
+                          Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: Colors.amber.shade700,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            item.rating!.toStringAsFixed(1),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
