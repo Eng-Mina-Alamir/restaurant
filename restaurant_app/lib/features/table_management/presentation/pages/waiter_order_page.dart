@@ -73,7 +73,12 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
       // KDS picks up new orders automatically; return to the floor.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('#${order.id} ${AppConstants.sentToKitchen}')),
+        SnackBar(
+          content: Text(
+            '${Formatters.formatOrderId(order.id)} '
+            '${AppConstants.sentToKitchen}',
+          ),
+        ),
       );
       context.go('/waiter');
     } else {
