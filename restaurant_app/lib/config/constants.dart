@@ -130,6 +130,7 @@ abstract final class AppConstants {
   static const String waiterPendingCount = 'قيد الانتظار';
   static const String waiterPreparingCount = 'قيد التحضير';
   static const String waiterReadyCount = 'جاهزة للتسليم';
+  static const String driverFilterAll = 'الكل';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';

@@ -9,32 +9,53 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../controllers/delivery_controller.dart';
 
-/// Delivery driver home: live list of assignments with lifecycle actions.
-class DriverHomePage extends ConsumerWidget {
+/// Delivery driver home: live list of assignments with lifecycle actions and a
+/// status filter.
+class DriverHomePage extends ConsumerStatefulWidget {
   const DriverHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DriverHomePage> createState() => _DriverHomePageState();
+}
+
+class _DriverHomePageState extends ConsumerState<DriverHomePage> {
+  DeliveryStatus? _filter;
+
+  @override
+  Widget build(BuildContext context) {
     final assignments = ref.watch(deliveryControllerProvider);
+    final visible = _filter == null
+        ? assignments
+        : assignments.where((a) => a.deliveryStatus == _filter).toList();
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.driverTitle)),
-      body: assignments.isEmpty
-          ? const EmptyState(
-              message: AppConstants.noDeliveryJobs,
-              icon: Icons.local_shipping_outlined,
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: assignments.length,
-              itemBuilder: (context, index) {
-                final assignment = assignments[index];
-                return _DeliveryCard(
-                  assignment: assignment,
-                  onAction: () => _handleAction(ref, assignment),
-                );
-              },
-            ),
+      body: Column(
+        children: [
+          _StatusFilterBar(
+            selected: _filter,
+            onChanged: (s) => setState(() => _filter = s),
+          ),
+          Expanded(
+            child: visible.isEmpty
+                ? const EmptyState(
+                    message: AppConstants.noDeliveryJobs,
+                    icon: Icons.local_shipping_outlined,
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: visible.length,
+                    itemBuilder: (context, index) {
+                      final assignment = visible[index];
+                      return _DeliveryCard(
+                        assignment: assignment,
+                        onAction: () => _handleAction(ref, assignment),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -54,6 +75,54 @@ class DriverHomePage extends ConsumerWidget {
         break;
     }
   }
+}
+
+class _StatusFilterBar extends StatelessWidget {
+  const _StatusFilterBar({required this.selected, required this.onChanged});
+
+  final DeliveryStatus? selected;
+  final ValueChanged<DeliveryStatus?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+            child: ChoiceChip(
+              label: const Text(AppConstants.driverFilterAll),
+              selected: selected == null,
+              onSelected: (_) => onChanged(null),
+            ),
+          ),
+          for (final status in DeliveryStatus.values)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+              child: ChoiceChip(
+                label: Text(_statusShortLabel(status)),
+                selected: selected == status,
+                onSelected: (_) => onChanged(status),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _statusShortLabel(DeliveryStatus status) => switch (status) {
+    DeliveryStatus.pending => AppConstants.deliveryPending,
+    DeliveryStatus.accepted => AppConstants.deliveryAccepted,
+    DeliveryStatus.pickedUp => AppConstants.deliveryPickedUp,
+    DeliveryStatus.inTransit => AppConstants.deliveryInTransit,
+    DeliveryStatus.delivered => AppConstants.deliveryDelivered,
+    DeliveryStatus.failed => AppConstants.deliveryFailed,
+  };
 }
 
 class _DeliveryCard extends StatelessWidget {
