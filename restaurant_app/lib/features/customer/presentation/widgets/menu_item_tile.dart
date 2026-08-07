@@ -108,7 +108,9 @@ class MenuItemTile extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 icon: const Icon(Icons.add),
-                tooltip: hasModifiers ? 'تخصيص الطلب' : 'أضف إلى السلة',
+                tooltip: hasModifiers
+                    ? AppConstants.customizeOrder
+                    : AppConstants.addToCart,
                 onPressed: item.isAvailable ? onAdd : null,
               ),
             ],

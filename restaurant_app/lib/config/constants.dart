@@ -46,6 +46,10 @@ abstract final class AppConstants {
   static const String taxLabel = 'الضريبة (15%)';
   static const String estimatedTimeLabel = 'الوقت المتوقع';
   static const String minutes = 'دقيقة';
+  static const String sincePrefix = 'منذ';
+  static const String distanceLabel = 'المسافة';
+  static const String unitKm = 'كم';
+  static const String unitMeter = 'م';
   static const String statusLabel = 'الحالة';
   static const String backToMenu = 'العودة إلى القائمة';
 
@@ -56,6 +60,7 @@ abstract final class AppConstants {
   static const String clearCart = 'إفراغ السلة';
   static const String cartCleared = 'تم إفراغ السلة';
   static const String addToCart = 'أضف إلى السلة';
+  static const String customizeOrder = 'تخصيص الطلب';
   static const String checkout = 'إتمام الطلب';
   static const String totalLabel = 'الإجمالي';
   static const String itemCount = 'عدد الأصناف';

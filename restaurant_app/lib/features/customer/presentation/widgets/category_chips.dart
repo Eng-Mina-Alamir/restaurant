@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 
@@ -30,7 +31,9 @@ class CategoryChips extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = all[index];
           final isSelected = category == selected;
-          final label = category == kAllCategoriesFilter ? 'الكل' : category;
+          final label = category == kAllCategoriesFilter
+              ? AppConstants.dietAll
+              : category;
           return ChoiceChip(
             label: Text(label),
             selected: isSelected,

@@ -213,7 +213,8 @@ class _DeliveryCard extends StatelessWidget {
                   const Icon(Icons.route_outlined, size: 18),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    'المسافة: ${_formatDistance(assignment.routeDistanceMeters!)}',
+                    '${AppConstants.distanceLabel}: '
+                    '${_formatDistance(assignment.routeDistanceMeters!)}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -271,8 +272,10 @@ class _DeliveryCard extends StatelessWidget {
   }
 
   String _formatDistance(double meters) {
-    if (meters >= 1000) return '${(meters / 1000).toStringAsFixed(1)} كم';
-    return '${meters.round()} م';
+    if (meters >= 1000) {
+      return '${(meters / 1000).toStringAsFixed(1)} ${AppConstants.unitKm}';
+    }
+    return '${meters.round()} ${AppConstants.unitMeter}';
   }
 }
 

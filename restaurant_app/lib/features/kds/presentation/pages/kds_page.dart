@@ -336,7 +336,9 @@ class _OrderCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.xs),
                 child: Text(
-                  'منذ ${_elapsedMinutes(order.createdAt)} دقيقة',
+                  '${AppConstants.sincePrefix} '
+                  '${_elapsedMinutes(order.createdAt)} '
+                  '${AppConstants.minutes}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.tertiary,
                   ),
