@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../models/user_model.dart';
@@ -71,11 +72,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
       final data = response.data;
       if (data == null) {
-        throw const ServerException('رمز غير صالح');
+        throw const ServerException(AppConstants.errorInvalidToken);
       }
       final token = data['token'] as String?;
       if (token == null || token.isEmpty) {
-        throw const ServerException('رمز غير صالح');
+        throw const ServerException(AppConstants.errorInvalidToken);
       }
       return token;
     } on DioException catch (error) {
@@ -98,7 +99,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         ? payload!['user']! as Map<String, dynamic>
         : payload;
     if (data == null) {
-      throw const ServerException('استجابة غير صالحة');
+      throw const ServerException(AppConstants.errorInvalidResponse);
     }
     return UserModel.fromJson(data);
   }
@@ -110,11 +111,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.unknown) {
       return NetworkException(
-        'خطأ في الاتصال',
+        AppConstants.errorNoNetwork,
         statusCode: statusCode,
         type: error.type.name,
       );
     }
-    return ServerException('حدث خطأ في الخادم', statusCode: statusCode);
+    return ServerException(AppConstants.errorServer, statusCode: statusCode);
   }
 }

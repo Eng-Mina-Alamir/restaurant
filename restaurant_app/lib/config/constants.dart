@@ -202,6 +202,9 @@ abstract final class AppConstants {
   static const String errorNoNetwork = 'لا يوجد اتصال بالإنترنت';
   static const String errorTimeout = 'انتهت مهلة الطلب، حاول مرة أخرى';
   static const String errorCache = 'تعذر حفظ البيانات محلياً';
+  static const String errorDemoUnavailable = 'غير متاح في وضع العرض';
+  static const String errorInvalidToken = 'رمز غير صالح';
+  static const String errorInvalidResponse = 'استجابة غير صالحة';
 }
 
 /// Arabic labels for order statuses.

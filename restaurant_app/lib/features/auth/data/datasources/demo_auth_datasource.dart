@@ -1,3 +1,4 @@
+import '../../../../config/constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/domain/enums.dart';
 import '../models/user_model.dart';
@@ -84,7 +85,7 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<UserModel> login(String identifier, String password) async {
     final user = DemoAuthDataSource.authenticate(identifier, password);
     if (user == null) {
-      throw const ServerException('بيانات دخول غير صحيحة');
+      throw const ServerException(AppConstants.errorInvalidCredentials);
     }
     return user;
   }
@@ -94,12 +95,12 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
     required String otp,
     required String phone,
   }) async {
-    throw const NetworkException('غير متاح في وضع العرض');
+    throw const NetworkException(AppConstants.errorDemoUnavailable);
   }
 
   @override
   Future<String> refreshToken(String refreshToken) async {
-    throw const NetworkException('غير متاح في وضع العرض');
+    throw const NetworkException(AppConstants.errorDemoUnavailable);
   }
 
   @override
