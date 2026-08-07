@@ -35,6 +35,25 @@ void main() {
     isAvailable: false,
   );
 
+  const withRequiredGroup = MenuItem(
+    id: 'b4',
+    categoryId: 'برجر',
+    name: 'برجر بالتخصيص',
+    description: 'وصف',
+    price: 20,
+    modifierGroups: [
+      MenuModifierGroup(
+        id: 'g1',
+        title: 'الحجم',
+        isRequired: true,
+        options: [
+          MenuModifierOption(id: 'o1', name: 'وسط', extraPrice: 0),
+          MenuModifierOption(id: 'o2', name: 'كبير', extraPrice: 8),
+        ],
+      ),
+    ],
+  );
+
   testWidgets('shows dietary and availability badges', (tester) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -121,6 +140,40 @@ void main() {
     final cart = container.read(cartControllerProvider);
     expect(cart, hasLength(1));
     expect(cart.first.specialNotes, isNull);
+  });
+
+  testWidgets('requires a selection for a required modifier group', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: _Host(menuItem: withRequiredGroup)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Add button is disabled until a required option is chosen.
+    final addButton = find.widgetWithText(FilledButton, 'أضف إلى السلة');
+    expect(tester.widget<FilledButton>(addButton).enabled, isFalse);
+
+    await tester.tap(find.textContaining('كبير'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<FilledButton>(addButton).enabled, isTrue);
+
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    final cart = container.read(cartControllerProvider);
+    expect(cart, hasLength(1));
+    expect(cart.first.selectedModifiers.single.name, 'كبير');
   });
 }
 
