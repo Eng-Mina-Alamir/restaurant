@@ -64,4 +64,30 @@ void main() {
 
     expect(find.textContaining('قيد التحضير'), findsWidgets);
   });
+
+  testWidgets('filters orders by status chip', (tester) async {
+    final container = await seedOrder();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: AllOrdersPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The seeded order is pending; only it should be listed.
+    expect(find.textContaining('#1'), findsOneWidget);
+
+    // Filter to "confirmed" -> no pending orders match, empty state shows.
+    await tester.tap(find.text('مؤكد'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('لا توجد طلبات'), findsOneWidget);
+
+    // Back to "الكل" -> the pending order reappears.
+    await tester.tap(find.text('الكل'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('#1'), findsOneWidget);
+  });
 }

@@ -100,9 +100,7 @@ class _OrderStatusCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final next = _nextStatus(order.status);
-    final isTerminal =
-        order.status == OrderStatus.completed ||
-        order.status == OrderStatus.cancelled;
+    final isTerminal = order.status.isTerminal;
 
     return Card(
       child: Padding(
