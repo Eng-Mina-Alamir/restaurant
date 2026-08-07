@@ -38,7 +38,15 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             onPressed: () => context.push('/customer/orders'),
           ),
           IconButton(
-            icon: const Icon(Icons.shopping_cart_outlined),
+            icon: Badge(
+              isLabelVisible: ref.watch(
+                cartControllerProvider.select((c) => c.isNotEmpty),
+              ),
+              label: Text(
+                '${ref.watch(cartControllerProvider.select((c) => c.fold<int>(0, (sum, item) => sum + item.quantity)))}',
+              ),
+              child: const Icon(Icons.shopping_cart_outlined),
+            ),
             tooltip: AppConstants.cartTitle,
             onPressed: () => _openCart(context),
           ),
