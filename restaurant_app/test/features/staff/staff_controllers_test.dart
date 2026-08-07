@@ -59,6 +59,28 @@ void main() {
       expect(released.status, TableStatus.available);
       expect(released.currentOrderId, isNull);
     });
+
+    test('setReserved marks a table reserved then available', () async {
+      final controller = container.read(tableControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      await controller.setReserved('t1', reserved: true);
+      expect(controller.tableById('t1')!.status, TableStatus.reserved);
+
+      await controller.setReserved('t1', reserved: false);
+      expect(controller.tableById('t1')!.status, TableStatus.available);
+    });
+
+    test('release with needsCleaning marks the table needs-cleaning', () async {
+      final controller = container.read(tableControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      await controller.occupy('t1', orderId: 'ORD-0001');
+      await controller.release('t1', needsCleaning: true);
+      final released = controller.tableById('t1')!;
+      expect(released.status, TableStatus.needsCleaning);
+      expect(released.currentOrderId, isNull);
+    });
   });
 
   group('OrdersController status transitions', () {
