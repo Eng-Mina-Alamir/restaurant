@@ -110,4 +110,22 @@ void main() {
 
     expect(find.text(AppConstants.noItemsFound), findsOneWidget);
   });
+
+  testWidgets('diet chips filter to vegetarian items only', (tester) async {
+    await pumpPage(tester);
+
+    // Tap the vegetarian chip (a ChoiceChip in the diet filter row).
+    await tester.tap(
+      find.widgetWithText(ChoiceChip, AppConstants.dietVegetarian),
+    );
+    await tester.pumpAndSettle();
+
+    // All visible items should be vegetarian.
+    final vegetarianCount = MenuSeedData.items
+        .where((i) => i.isVegetarian)
+        .length;
+    expect(vegetarianCount, greaterThan(0));
+    final nonVeg = MenuSeedData.items.firstWhere((i) => !i.isVegetarian);
+    expect(find.text(nonVeg.name), findsNothing);
+  });
 }
