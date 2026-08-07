@@ -6,6 +6,7 @@ import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/customer_home_page.dart';
+import 'package:restaurant_app/features/customer/presentation/widgets/category_chips.dart';
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 
 void main() {
@@ -127,5 +128,34 @@ void main() {
     expect(vegetarianCount, greaterThan(0));
     final nonVeg = MenuSeedData.items.firstWhere((i) => !i.isVegetarian);
     expect(find.text(nonVeg.name), findsNothing);
+  });
+
+  testWidgets('category chips narrow the menu to one category', (tester) async {
+    await pumpPage(tester);
+
+    // Tap the desserts category chip.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'حلويات'));
+    await tester.pumpAndSettle();
+
+    final desserts = MenuSeedData.items
+        .where((i) => i.categoryId == 'حلويات')
+        .toList();
+    expect(desserts, isNotEmpty);
+    for (final item in desserts) {
+      expect(find.text(item.name), findsWidgets);
+    }
+    // A burger item should no longer be visible.
+    final burger = MenuSeedData.items.firstWhere((i) => i.categoryId == 'برجر');
+    expect(find.text(burger.name), findsNothing);
+
+    // Back to "الكل" restores the full menu (category row's all-chip).
+    await tester.tap(
+      find.descendant(
+        of: find.byType(CategoryChips),
+        matching: find.widgetWithText(ChoiceChip, AppConstants.dietAll),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(burger.name), findsWidgets);
   });
 }
