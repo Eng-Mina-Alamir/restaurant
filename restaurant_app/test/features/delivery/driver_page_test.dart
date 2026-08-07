@@ -116,4 +116,34 @@ void main() {
     expect(find.textContaining('#101'), findsOneWidget);
     expect(find.textContaining('#104'), findsOneWidget);
   });
+
+  testWidgets('action button advances a pending assignment to accepted', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: DriverHomePage())),
+    );
+    await tester.pumpAndSettle();
+
+    // First assignment is pending -> shows the accept action.
+    final acceptButton = find.widgetWithText(
+      FilledButton,
+      AppConstants.actionAccept,
+    );
+    expect(acceptButton, findsOneWidget);
+    expect(
+      find.text(AppConstants.actionStartDelivery),
+      findsOneWidget, // second assignment is already accepted
+    );
+
+    await tester.tap(acceptButton);
+    await tester.pumpAndSettle();
+
+    // Now both are accepted: no pending accept action remains.
+    expect(
+      find.widgetWithText(FilledButton, AppConstants.actionAccept),
+      findsNothing,
+    );
+    expect(find.text(AppConstants.actionStartDelivery), findsNWidgets(2));
+  });
 }
