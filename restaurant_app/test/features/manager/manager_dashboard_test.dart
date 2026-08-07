@@ -82,4 +82,39 @@ void main() {
     expect(find.text('إجمالي المبيعات'), findsOneWidget);
     expect(find.text('عدد الطلبات'), findsOneWidget);
   });
+
+  testWidgets('shows an order status breakdown when orders exist', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: ManagerDashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // One pending order in the seeded flow.
+    expect(find.text('الطلبات حسب الحالة'), findsOneWidget);
+    expect(find.textContaining('قيد الانتظار: 1'), findsOneWidget);
+  });
+
+  testWidgets('shows no-data placeholder when there are no orders', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: ManagerDashboardPage())),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('الطلبات حسب الحالة'), findsOneWidget);
+    expect(find.text('لا توجد بيانات بعد'), findsWidgets);
+  });
 }

@@ -133,6 +133,7 @@ abstract final class AppConstants {
   static const String dietSpicy = 'حار';
   static const String itemUnavailable = 'غير متوفر';
   static const String metricsByPayment = 'الإيرادات حسب طريقة الدفع';
+  static const String metricsOrdersByStatus = 'الطلبات حسب الحالة';
   static const String paymentUnknown = 'غير محدد';
   static const String reorderFailed = 'لا يوجد أصناف لإعادة طلبها';
   static const String reorderSkipped = 'تم تخطي';

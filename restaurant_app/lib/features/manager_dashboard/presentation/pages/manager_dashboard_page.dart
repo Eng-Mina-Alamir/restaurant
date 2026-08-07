@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
+import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/metrics_controller.dart';
 
@@ -83,6 +85,13 @@ class ManagerDashboardPage extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              AppConstants.metricsOrdersByStatus,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _StatusBreakdown(orders: ref.watch(ordersControllerProvider)),
             const SizedBox(height: AppSpacing.lg),
             Text(
               AppConstants.metricsItemsSold,
@@ -220,8 +229,8 @@ class ManagerDashboardPage extends ConsumerWidget {
     final active = orders
         .where(
           (o) =>
-              !o.status.toString().contains('completed') &&
-              !o.status.toString().contains('cancelled'),
+              o.status != OrderStatus.completed &&
+              o.status != OrderStatus.cancelled,
         )
         .length;
     return '$active';
@@ -265,6 +274,46 @@ class _MetricCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Live count of orders per status (chips shown when there is any activity).
+class _StatusBreakdown extends StatelessWidget {
+  const _StatusBreakdown({required this.orders});
+
+  final List<OrderEntity> orders;
+
+  @override
+  Widget build(BuildContext context) {
+    if (orders.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Text(AppConstants.metricsNoData),
+        ),
+      );
+    }
+    final counts = <OrderStatus, int>{};
+    for (final order in orders) {
+      counts[order.status] = (counts[order.status] ?? 0) + 1;
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            for (final status in OrderStatus.values)
+              if ((counts[status] ?? 0) > 0)
+                Chip(
+                  label: Text('${status.labelAr}: ${counts[status]}'),
+                  visualDensity: VisualDensity.compact,
+                ),
           ],
         ),
       ),
