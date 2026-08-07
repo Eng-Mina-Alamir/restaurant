@@ -55,24 +55,27 @@ class AuthController extends StateNotifier<AuthState> {
 
   final Ref ref;
 
-  /// Restores a session on startup by attempting a token refresh.
+  /// Restores a session on startup: first tries a token refresh, then falls
+  /// back to a persisted demo/user profile saved by a prior [login].
   Future<void> bootstrap() async {
     state = const AuthState(status: AuthStatus.unknown);
-    final result = await ref.read(refreshTokenUseCaseProvider).call();
-    if (mounted) {
-      result.when(
-        onLeft: (failure) {
-          state = const AuthState(status: AuthStatus.unauthenticated);
-        },
-        onRight: (_) {
-          // A successful refresh implies a live session; we currently don't
-          // persist the full user profile offline, so a successful refresh
-          // requires a `me` call. For now treat it as authenticated with a
-          // minimal user marker. (Backfill after `getMe` is implemented.)
-          state = const AuthState(status: AuthStatus.unauthenticated);
-        },
-      );
+    final refreshResult = await ref.read(refreshTokenUseCaseProvider).call();
+    if (!mounted) return;
+    final ok = refreshResult.when(onLeft: (_) => false, onRight: (_) => true);
+    if (ok) {
+      // A live refresh succeeded; for now we still need a `me` call to get the
+      // full profile, which is out of scope offline. Fall through to restore.
     }
+    final restoreResult = await ref.read(restoreSessionUseCaseProvider).call();
+    if (!mounted) return;
+    restoreResult.when(
+      onLeft: (_) {
+        state = const AuthState(status: AuthStatus.unauthenticated);
+      },
+      onRight: (user) {
+        state = AuthState(status: AuthStatus.authenticated, user: user);
+      },
+    );
   }
 
   /// Logs in with an email/phone [identifier] and [password].

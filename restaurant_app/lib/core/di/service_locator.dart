@@ -9,6 +9,7 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/refresh_token_usecase.dart';
+import '../../features/auth/domain/usecases/restore_session_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/menu/data/repositories/menu_repository_impl.dart';
 import '../../features/menu/domain/repositories/menu_repository.dart';
@@ -57,6 +58,8 @@ class ServiceLocator {
   static LogoutUseCase get logoutUseCase => LogoutUseCase(authRepository);
   static RefreshTokenUseCase get refreshTokenUseCase =>
       RefreshTokenUseCase(authRepository);
+  static RestoreSessionUseCase get restoreSessionUseCase =>
+      RestoreSessionUseCase(authRepository);
 }
 
 // ── Riverpod providers ─────────────────────────────────────────────────────────
@@ -106,6 +109,10 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>((ref) {
 
 final refreshTokenUseCaseProvider = Provider<RefreshTokenUseCase>((ref) {
   return RefreshTokenUseCase(ref.watch(authRepositoryProvider));
+});
+
+final restoreSessionUseCaseProvider = Provider<RestoreSessionUseCase>((ref) {
+  return RestoreSessionUseCase(ref.watch(authRepositoryProvider));
 });
 
 // ── Menu ───────────────────────────────────────────────────────────────────────

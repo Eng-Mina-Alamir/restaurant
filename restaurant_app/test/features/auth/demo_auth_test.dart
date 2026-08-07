@@ -67,5 +67,41 @@ void main() {
       expect(state.isAuthenticated, isFalse);
       expect(state.authFailure, isNotNull);
     });
+
+    test('bootstrap restores a persisted demo session after login', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await container
+          .read(authControllerProvider.notifier)
+          .login('manager@demo.com', '123456');
+      expect(container.read(authControllerProvider).isAuthenticated, isTrue);
+
+      // Simulate a fresh app bootstrap; the persisted session should be
+      // restored from secure storage.
+      await container.read(authControllerProvider.notifier).bootstrap();
+
+      final state = container.read(authControllerProvider);
+      expect(state.isAuthenticated, isTrue);
+      expect(state.user?.role, UserRole.manager);
+    });
+
+    test(
+      'bootstrap stays unauthenticated after logout clears the session',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await container
+            .read(authControllerProvider.notifier)
+            .login('customer@demo.com', '123456');
+        await container.read(authControllerProvider.notifier).logout();
+
+        await container.read(authControllerProvider.notifier).bootstrap();
+
+        final state = container.read(authControllerProvider);
+        expect(state.isAuthenticated, isFalse);
+      },
+    );
   });
 }

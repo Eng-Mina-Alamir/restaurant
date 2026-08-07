@@ -26,6 +26,13 @@ abstract class AuthRepository {
   /// Returns the new access token on success.
   Future<Either<Failure, String>> refreshToken();
 
+  /// Restores a previously persisted user session (offline / demo mode).
+  ///
+  /// Returns the [UserEntity] that was saved by a successful [login] call, or
+  /// [UnauthorizedFailure] when no session exists (first launch or after
+  /// [logout]).
+  Future<Either<Failure, UserEntity>> restoreSession();
+
   /// Logs the current user out and clears all locally persisted auth data.
   Future<Either<Failure, void>> logout();
 }
