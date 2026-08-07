@@ -36,14 +36,17 @@ class OrderHistoryPage extends ConsumerWidget {
 
   void _reorder(WidgetRef ref, OrderEntity order, BuildContext context) {
     final cart = ref.read(cartControllerProvider.notifier);
-    // A past order with no items means the whole re-order is a no-op.
-    if (order.items.isEmpty) {
+    // Only currently-available items can be reordered.
+    final availableItems = order.items.where((i) => i.menuItem.isAvailable);
+    // A past order with no items (or whose items are all unavailable now)
+    // means the whole re-order is a no-op.
+    if (availableItems.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text(AppConstants.reorderFailed)));
       return;
     }
-    for (final item in order.items) {
+    for (final item in availableItems) {
       cart.addItem(
         CartItem(
           menuItem: item.menuItem,
@@ -53,10 +56,14 @@ class OrderHistoryPage extends ConsumerWidget {
         ),
       );
     }
+    final unavailableCount = order.items.length - availableItems.length;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          '${AppConstants.reorderAction} — ${AppConstants.checkout}',
+          unavailableCount > 0
+              ? '${AppConstants.reorderAction} — ${AppConstants.checkout} '
+                    '(${AppConstants.reorderSkipped} $unavailableCount)'
+              : '${AppConstants.reorderAction} — ${AppConstants.checkout}',
         ),
       ),
     );

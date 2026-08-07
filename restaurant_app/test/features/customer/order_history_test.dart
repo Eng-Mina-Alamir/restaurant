@@ -105,4 +105,103 @@ void main() {
     // Reorder navigates straight to the cart for review/checkout.
     expect(find.byType(CartPage), findsOneWidget);
   });
+
+  testWidgets('reorder skips unavailable items', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    // fries becomes unavailable after the original order was placed.
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: fries));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+    final unavailableFries = fries.copyWith(isAvailable: false);
+
+    final orders = container.read(ordersControllerProvider.notifier);
+    final placed = orders.state.single;
+    orders.state = [
+      placed.copyWith(
+        items: [placed.items.single.copyWith(menuItem: unavailableFries)],
+      ),
+    ];
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const OrderHistoryPage(),
+        ),
+        GoRoute(
+          path: '/customer/cart',
+          builder: (context, state) => const CartPage(),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أعد الطلب'));
+    await tester.pumpAndSettle();
+
+    // No items were added because the only item is now unavailable.
+    expect(cart.state, isEmpty);
+    expect(find.text('لا يوجد أصناف لإعادة طلبها'), findsOneWidget);
+  });
+
+  testWidgets('reorder reports skipped items when some are unavailable', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+    cart.addItem(const CartItem(menuItem: fries));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    // Fries becomes unavailable; burger stays available.
+    final orders = container.read(ordersControllerProvider.notifier);
+    final placed = orders.state.single;
+    final burgerItem = placed.items.firstWhere(
+      (i) => i.menuItem.id == burger.id,
+    );
+    final friesItem = placed.items
+        .firstWhere((i) => i.menuItem.id == fries.id)
+        .copyWith(menuItem: fries.copyWith(isAvailable: false));
+    orders.state = [
+      placed.copyWith(items: [burgerItem, friesItem]),
+    ];
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const OrderHistoryPage(),
+        ),
+        GoRoute(
+          path: '/customer/cart',
+          builder: (context, state) => const CartPage(),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أعد الطلب'));
+    await tester.pumpAndSettle();
+
+    // Only the available burger is added; fries is reported as skipped.
+    expect(cart.state, hasLength(1));
+    expect(cart.state.first.menuItem.id, burger.id);
+    expect(find.textContaining('تم تخطي'), findsOneWidget);
+  });
 }

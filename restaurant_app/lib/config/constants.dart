@@ -124,6 +124,7 @@ abstract final class AppConstants {
   static const String metricsByPayment = 'الإيرادات حسب طريقة الدفع';
   static const String paymentUnknown = 'غير محدد';
   static const String reorderFailed = 'لا يوجد أصناف لإعادة طلبها';
+  static const String reorderSkipped = 'تم تخطي';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';
