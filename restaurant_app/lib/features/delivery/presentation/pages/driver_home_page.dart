@@ -286,7 +286,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = _statusLabel(status);
+    final label = deliveryStatusShortLabel(status);
     final color = _statusColor(status);
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -302,23 +302,6 @@ class _StatusChip extends StatelessWidget {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
       ),
     );
-  }
-
-  String _statusLabel(DeliveryStatus status) {
-    switch (status) {
-      case DeliveryStatus.pending:
-        return AppConstants.deliveryPending;
-      case DeliveryStatus.accepted:
-        return AppConstants.deliveryAccepted;
-      case DeliveryStatus.pickedUp:
-        return AppConstants.deliveryPickedUp;
-      case DeliveryStatus.inTransit:
-        return AppConstants.deliveryInTransit;
-      case DeliveryStatus.delivered:
-        return AppConstants.deliveryDelivered;
-      case DeliveryStatus.failed:
-        return AppConstants.deliveryFailed;
-    }
   }
 
   Color _statusColor(DeliveryStatus status) {
