@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/customer_home_page.dart';
@@ -78,5 +79,35 @@ void main() {
 
     // Badge label shows the total unit count (2).
     expect(find.text('2'), findsOneWidget);
+  });
+
+  testWidgets('search field narrows the visible items', (tester) async {
+    await pumpPage(tester);
+
+    await tester.enterText(find.byType(TextField), 'برجر');
+    await tester.pumpAndSettle();
+
+    // Only burger items remain visible.
+    final burgerItems = MenuSeedData.items
+        .where((i) => i.name.contains('برجر'))
+        .toList();
+    expect(burgerItems, isNotEmpty);
+    for (final item in burgerItems) {
+      expect(find.text(item.name), findsWidgets);
+    }
+    // An unrelated item (e.g. a dessert) should be filtered out.
+    final nonBurger = MenuSeedData.items.firstWhere(
+      (i) => !i.name.contains('برجر') && !i.description.contains('برجر'),
+    );
+    expect(find.text(nonBurger.name), findsNothing);
+  });
+
+  testWidgets('search with no matches shows the empty state', (tester) async {
+    await pumpPage(tester);
+
+    await tester.enterText(find.byType(TextField), 'zzz-not-found');
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppConstants.noItemsFound), findsOneWidget);
   });
 }
