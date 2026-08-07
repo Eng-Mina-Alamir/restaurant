@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
@@ -96,7 +97,10 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
               const SizedBox(height: AppSpacing.sm),
               Expanded(
                 child: items.isEmpty
-                    ? const Center(child: Text(AppConstants.noItemsFound))
+                    ? const EmptyState(
+                        message: AppConstants.noItemsFound,
+                        icon: Icons.search_off,
+                      )
                     : ListView.builder(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         itemCount: items.length,

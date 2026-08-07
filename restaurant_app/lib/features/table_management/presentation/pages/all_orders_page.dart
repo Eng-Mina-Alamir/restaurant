@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 
@@ -36,7 +37,7 @@ class _AllOrdersPageState extends ConsumerState<AllOrdersPage> {
           const Divider(height: 1),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('لا توجد طلبات حالياً'))
+                ? const EmptyOrdersState()
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: filtered.length,

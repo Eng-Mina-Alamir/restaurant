@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -22,7 +23,7 @@ class OrderHistoryPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.orderHistoryTitle)),
       body: orders.isEmpty
-          ? const Center(child: Text(AppConstants.emptyOrders))
+          ? EmptyOrdersState(onAction: () => context.go('/customer'))
           : ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: orders.length,

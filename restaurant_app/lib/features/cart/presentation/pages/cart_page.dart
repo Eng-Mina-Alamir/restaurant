@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../presentation/controllers/cart_controller.dart';
 import '../../domain/cart_totals.dart';
@@ -46,7 +47,10 @@ class _CartPageState extends ConsumerState<CartPage> {
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.cartTitle)),
       body: cart.isEmpty
-          ? const Center(child: Text(AppConstants.cartEmpty))
+          ? const EmptyState(
+              message: AppConstants.cartEmpty,
+              icon: Icons.shopping_cart_outlined,
+            )
           : Column(
               children: [
                 Expanded(

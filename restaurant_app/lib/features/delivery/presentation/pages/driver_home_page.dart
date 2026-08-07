@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../controllers/delivery_controller.dart';
 
@@ -19,7 +20,10 @@ class DriverHomePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.driverTitle)),
       body: assignments.isEmpty
-          ? const Center(child: Text(AppConstants.noDeliveryJobs))
+          ? const EmptyState(
+              message: AppConstants.noDeliveryJobs,
+              icon: Icons.local_shipping_outlined,
+            )
           : ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: assignments.length,

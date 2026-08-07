@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/restaurant_table.dart';
@@ -29,7 +30,10 @@ class TableDetailPage extends ConsumerWidget {
     if (table == null) {
       return Scaffold(
         appBar: AppBar(title: const Text(AppConstants.tableDetailTitle)),
-        body: const Center(child: Text(AppConstants.tableNoOrder)),
+        body: const EmptyState(
+          message: AppConstants.tableNoOrder,
+          icon: Icons.table_restaurant_outlined,
+        ),
       );
     }
 
