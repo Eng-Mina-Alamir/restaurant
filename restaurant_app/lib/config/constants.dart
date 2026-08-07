@@ -53,6 +53,8 @@ abstract final class AppConstants {
   static const String cartTitle = 'سلة الطلب';
   static const String cartEmpty = 'العربة فارغة';
   static const String cartEmptyBrowse = 'تصفح القائمة';
+  static const String clearCart = 'إفراغ السلة';
+  static const String cartCleared = 'تم إفراغ السلة';
   static const String addToCart = 'أضف إلى السلة';
   static const String checkout = 'إتمام الطلب';
   static const String totalLabel = 'الإجمالي';

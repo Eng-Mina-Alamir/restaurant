@@ -47,7 +47,22 @@ class _CartPageState extends ConsumerState<CartPage> {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.cartTitle)),
+      appBar: AppBar(
+        title: const Text(AppConstants.cartTitle),
+        actions: [
+          if (cart.isNotEmpty)
+            IconButton(
+              tooltip: AppConstants.clearCart,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              onPressed: () {
+                ref.read(cartControllerProvider.notifier).clear();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(AppConstants.cartCleared)),
+                );
+              },
+            ),
+        ],
+      ),
       body: cart.isEmpty
           ? EmptyState(
               message: AppConstants.cartEmpty,

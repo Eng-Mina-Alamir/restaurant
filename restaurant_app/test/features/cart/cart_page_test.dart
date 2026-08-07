@@ -74,4 +74,16 @@ void main() {
 
     expect(find.textContaining('ملاحظات الطلب: بدون بصل'), findsOneWidget);
   });
+
+  testWidgets('clear button empties the cart', (tester) async {
+    await pumpWithCart(tester, const [CartItem(menuItem: burger)]);
+    expect(find.text('برجر كلاسيك'), findsOneWidget);
+    expect(find.byTooltip('إفراغ السلة'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('إفراغ السلة'));
+    await tester.pump();
+
+    expect(find.text('العربة فارغة'), findsOneWidget);
+    expect(find.text('تم إفراغ السلة'), findsOneWidget);
+  });
 }
