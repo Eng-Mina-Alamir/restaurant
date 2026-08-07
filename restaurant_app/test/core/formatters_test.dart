@@ -38,6 +38,18 @@ void main() {
     });
   });
 
+  group('Formatters.orderNumberFromId', () {
+    test('extracts the numeric part of an order id', () {
+      expect(Formatters.orderNumberFromId('ORD-0101'), 101);
+      expect(Formatters.orderNumberFromId('order_7'), 7);
+      expect(Formatters.orderNumberFromId('1024'), 1024);
+    });
+
+    test('returns null when no digits are present', () {
+      expect(Formatters.orderNumberFromId('ABC'), isNull);
+    });
+  });
+
   group('Formatters.elapsedMinutes', () {
     final now = DateTime(2026, 8, 7, 12, 0);
 

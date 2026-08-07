@@ -42,12 +42,19 @@ abstract final class Formatters {
   /// Formats an order id as a human-friendly order number (e.g. `#1024`).
   static String formatOrderNumber(int orderNumber) => '#$orderNumber';
 
+  /// Extracts the numeric part of an order id (e.g. `ORD-1024-A` → `1024`),
+  /// or `null` when the id contains no digits.
+  static int? orderNumberFromId(String orderId) {
+    final digits = orderId.replaceAll(RegExp(r'[^0-9]'), '');
+    return digits.isEmpty ? null : int.parse(digits);
+  }
+
   /// Extracts the numeric part of an order id and formats it as a friendly
   /// order number (e.g. `ORD-1024-A` → `#1024`). Falls back to the raw id
   /// when it contains no digits.
   static String formatOrderId(String orderId) {
-    final digits = orderId.replaceAll(RegExp(r'[^0-9]'), '');
-    return digits.isEmpty ? orderId : formatOrderNumber(int.parse(digits));
+    final number = orderNumberFromId(orderId);
+    return number == null ? orderId : formatOrderNumber(number);
   }
 
   /// Whole minutes elapsed since [createdAt], clamped at zero when [createdAt]

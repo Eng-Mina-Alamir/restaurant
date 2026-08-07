@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
@@ -40,9 +41,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
   int get _nextNumber {
     final maxNumber = state.fold<int>(0, (max, order) {
-      final n = int.tryParse(
-        order.id.replaceFirst('ORD-', '').replaceAll(RegExp(r'[^0-9]'), ''),
-      );
+      final n = Formatters.orderNumberFromId(order.id);
       return (n ?? 0) > max ? (n ?? 0) : max;
     });
     return maxNumber + 1;
