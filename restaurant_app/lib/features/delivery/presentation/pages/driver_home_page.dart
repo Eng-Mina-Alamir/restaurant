@@ -222,7 +222,7 @@ class _DeliveryCard extends StatelessWidget {
             if (assignment.deliveryFee != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '${AppConstants.orderTotalLabel}: '
+                '${AppConstants.deliveryFeeLabel}: '
                 '${Formatters.formatCurrency(assignment.deliveryFee!)}',
                 style: theme.textTheme.bodySmall,
               ),

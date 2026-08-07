@@ -48,6 +48,9 @@ void main() {
     expect(find.textContaining('2.4 كم'), findsOneWidget);
     expect(find.textContaining('المسافة:'), findsWidgets);
     expect(find.textContaining('وقت الجهوزية:'), findsWidgets);
+    // Delivery fee uses its own label rather than the generic total label.
+    expect(find.textContaining('رسوم التوصيل:'), findsWidgets);
+    expect(find.textContaining('الإجمالي:'), findsNothing);
   });
 
   testWidgets('filters assignments by status chip', (tester) async {
