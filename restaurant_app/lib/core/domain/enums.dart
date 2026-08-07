@@ -17,11 +17,11 @@ enum OrderType {
   String get labelAr {
     switch (this) {
       case OrderType.dineIn:
-        return 'في المطعم';
+        return AppConstants.orderTypeDineIn;
       case OrderType.takeaway:
-        return 'طلب سفري';
+        return AppConstants.orderTypeTakeaway;
       case OrderType.delivery:
-        return 'توصيل';
+        return AppConstants.orderTypeDelivery;
     }
   }
 
@@ -128,17 +128,17 @@ enum UserRole {
   String get labelAr {
     switch (this) {
       case UserRole.customer:
-        return 'عميل';
+        return AppConstants.roleCustomer;
       case UserRole.waiter:
-        return 'نادل';
+        return AppConstants.roleWaiter;
       case UserRole.kitchen:
-        return 'مطبخ';
+        return AppConstants.roleKitchen;
       case UserRole.manager:
-        return 'مدير';
+        return AppConstants.roleManager;
       case UserRole.admin:
-        return 'مسؤول';
+        return AppConstants.roleAdmin;
       case UserRole.driver:
-        return 'سائق';
+        return AppConstants.roleDriver;
     }
   }
 

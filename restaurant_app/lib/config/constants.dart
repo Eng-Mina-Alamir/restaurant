@@ -124,6 +124,15 @@ abstract final class AppConstants {
   static const String paymentWallet = 'محفظة رقمية';
   static const String paymentOnline = 'دفع أونلاين';
   static const String paymentMethodDisplayLabel = 'الدفع';
+  static const String orderTypeDineIn = 'في المطعم';
+  static const String orderTypeTakeaway = 'طلب سفري';
+  static const String orderTypeDelivery = 'توصيل';
+  static const String roleCustomer = 'عميل';
+  static const String roleWaiter = 'نادل';
+  static const String roleKitchen = 'مطبخ';
+  static const String roleManager = 'مدير';
+  static const String roleAdmin = 'مسؤول';
+  static const String roleDriver = 'سائق';
   static const String cartEmptySend = 'أضف أصنافاً أولاً';
   static const String metricsByCategory = 'الإيرادات حسب الفئة';
   static const String deliveryEtaLabel = 'الوقت المتوقع للوصول';
