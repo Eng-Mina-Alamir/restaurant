@@ -27,7 +27,7 @@ class WaiterTableCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = tableStatusColor(table.status);
-    final statusLabel = tableStatusLabel(table.status);
+    final statusLabel = table.status.labelAr;
 
     return Card(
       clipBehavior: Clip.antiAlias,

@@ -168,20 +168,6 @@ class _CountChip extends StatelessWidget {
   }
 }
 
-/// Resolves the Arabic label for a [TableStatus].
-String tableStatusLabel(TableStatus status) {
-  switch (status) {
-    case TableStatus.available:
-      return AppConstants.tableStatusAvailable;
-    case TableStatus.occupied:
-      return AppConstants.tableStatusOccupied;
-    case TableStatus.reserved:
-      return AppConstants.tableStatusReserved;
-    case TableStatus.needsCleaning:
-      return AppConstants.tableStatusNeedsCleaning;
-  }
-}
-
 /// Color used to signal the table status in the grid.
 Color tableStatusColor(TableStatus status) {
   switch (status) {

@@ -88,13 +88,13 @@ enum TableStatus {
   String get labelAr {
     switch (this) {
       case TableStatus.available:
-        return 'متاحة';
+        return AppConstants.tableStatusAvailable;
       case TableStatus.occupied:
-        return 'مشغولة';
+        return AppConstants.tableStatusOccupied;
       case TableStatus.reserved:
-        return 'محجوزة';
+        return AppConstants.tableStatusReserved;
       case TableStatus.needsCleaning:
-        return 'تحتاج تنظيف';
+        return AppConstants.tableStatusNeedsCleaning;
     }
   }
 

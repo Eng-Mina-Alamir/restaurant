@@ -45,11 +45,11 @@ void main() {
     expect(find.byIcon(Icons.place_outlined), findsWidgets);
   });
 
-  test('tableStatusLabel maps every status to an Arabic label', () {
-    expect(tableStatusLabel(TableStatus.available), 'متاحة');
-    expect(tableStatusLabel(TableStatus.occupied), 'مشغولة');
-    expect(tableStatusLabel(TableStatus.reserved), 'محجوزة');
-    expect(tableStatusLabel(TableStatus.needsCleaning), 'تحتاج تنظيف');
+  test('TableStatus labelAr maps every status to an Arabic label', () {
+    expect(TableStatus.available.labelAr, 'متاحة');
+    expect(TableStatus.occupied.labelAr, 'مشغولة');
+    expect(TableStatus.reserved.labelAr, 'محجوزة');
+    expect(TableStatus.needsCleaning.labelAr, 'تحتاج تنظيف');
   });
 
   test('tableStatusColor returns a distinct color per status', () {
