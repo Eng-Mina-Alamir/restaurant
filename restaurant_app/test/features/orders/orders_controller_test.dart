@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -79,6 +80,47 @@ void main() {
 
     expect(first!.id, 'ORD-0001');
     expect(second!.id, 'ORD-0002');
+  });
+
+  test('updateStatus advances the order and keeps it in state', () async {
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+
+    final orders = container.read(ordersControllerProvider.notifier);
+    final placed = await orders.placeOrder();
+
+    final updated = await orders.updateStatus(
+      placed!.id,
+      OrderStatus.preparing,
+    );
+    expect(updated, isNotNull);
+    expect(updated!.status, OrderStatus.preparing);
+    expect(
+      container.read(ordersControllerProvider).first.status,
+      OrderStatus.preparing,
+    );
+  });
+
+  test('updateStatus returns null for an unknown order id', () async {
+    final orders = container.read(ordersControllerProvider.notifier);
+    final updated = await orders.updateStatus('ORD-9999', OrderStatus.ready);
+    expect(updated, isNull);
+  });
+
+  test('activeOrders excludes terminal orders', () async {
+    final cart = container.read(cartControllerProvider.notifier);
+    final orders = container.read(ordersControllerProvider.notifier);
+
+    cart.addItem(const CartItem(menuItem: burger));
+    final first = await orders.placeOrder();
+    cart.addItem(const CartItem(menuItem: burger));
+    final second = await orders.placeOrder();
+
+    await orders.updateStatus(first!.id, OrderStatus.completed);
+
+    final active = orders.activeOrders;
+    expect(active, hasLength(1));
+    expect(active.first.id, second!.id);
   });
 
   test('InMemoryOrderRepository returns created orders oldest-first', () async {
