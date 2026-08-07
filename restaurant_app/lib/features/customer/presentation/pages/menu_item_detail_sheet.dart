@@ -33,7 +33,14 @@ class MenuItemDetailSheet extends ConsumerStatefulWidget {
 class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
   final Map<String, String?> _selectedOptionByGroup = {};
   final Set<String> _checkedOptionIds = {};
+  final TextEditingController _notesController = TextEditingController();
   int _quantity = 1;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +86,20 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                 ...item.modifierGroups.map(_buildGroup),
               ],
               const SizedBox(height: AppSpacing.lg),
+              TextField(
+                controller: _notesController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: AppConstants.specialNotesLabel,
+                  hintText: AppConstants.specialNotesHint,
+                  prefixIcon: const Icon(Icons.notes),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 children: [
                   _QuantityStepper(
@@ -153,6 +174,9 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
             menuItem: widget.menuItem,
             quantity: _quantity,
             selectedModifiers: selectedOptions,
+            specialNotes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
           ),
         );
     Navigator.of(context).pop();
