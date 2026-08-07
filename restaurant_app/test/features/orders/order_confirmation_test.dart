@@ -57,4 +57,21 @@ void main() {
     expect(find.text('#1'), findsOneWidget);
     expect(find.text('##1'), findsNothing);
   });
+
+  testWidgets('shows the payment method label when provided', (tester) async {
+    final withPayment = order.copyWith(paymentMethod: PaymentMethod.card);
+
+    await tester.pumpWidget(
+      MaterialApp(home: OrderConfirmationPage(order: withPayment)),
+    );
+
+    expect(find.text('بطاقة'), findsOneWidget);
+    expect(find.text('الدفع'), findsOneWidget);
+
+    // Without a payment method no label is rendered.
+    await tester.pumpWidget(
+      MaterialApp(home: OrderConfirmationPage(order: order)),
+    );
+    expect(find.text('الدفع'), findsNothing);
+  });
 }
