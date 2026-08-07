@@ -112,7 +112,7 @@ class _StatusFilterBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
               child: ChoiceChip(
-                label: Text(_statusShortLabel(status)),
+                label: Text(status.labelAr),
                 selected: selected == status,
                 onSelected: (_) => onChanged(status),
               ),
@@ -121,15 +121,6 @@ class _StatusFilterBar extends StatelessWidget {
       ),
     );
   }
-
-  String _statusShortLabel(DeliveryStatus status) => switch (status) {
-    DeliveryStatus.pending => AppConstants.deliveryPending,
-    DeliveryStatus.accepted => AppConstants.deliveryAccepted,
-    DeliveryStatus.pickedUp => AppConstants.deliveryPickedUp,
-    DeliveryStatus.inTransit => AppConstants.deliveryInTransit,
-    DeliveryStatus.delivered => AppConstants.deliveryDelivered,
-    DeliveryStatus.failed => AppConstants.deliveryFailed,
-  };
 }
 
 class _DeliveryCard extends StatelessWidget {
