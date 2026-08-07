@@ -3,9 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
+import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
+import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
+import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/waiter_dashboard_page.dart';
 
 void main() {
+  const burger = MenuItem(
+    id: 'b1',
+    categoryId: 'برجر',
+    name: 'برجر كلاسيك',
+    description: 'وصف',
+    price: 28,
+  );
   Future<void> pumpPage(WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: WaiterDashboardPage())),
@@ -42,5 +53,35 @@ void main() {
       tableStatusColor(TableStatus.needsCleaning),
     };
     expect(colors, hasLength(4));
+  });
+
+  testWidgets('shows an active orders summary when orders exist', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    // Place a pending order so the summary row appears.
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: WaiterDashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('الطلبات النشطة'), findsOneWidget);
+    expect(find.textContaining('قيد الانتظار: 1'), findsOneWidget);
+  });
+
+  testWidgets('hides the summary when there are no active orders', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    expect(find.text('الطلبات النشطة'), findsNothing);
   });
 }

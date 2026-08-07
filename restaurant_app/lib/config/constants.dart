@@ -126,6 +126,10 @@ abstract final class AppConstants {
   static const String paymentUnknown = 'غير محدد';
   static const String reorderFailed = 'لا يوجد أصناف لإعادة طلبها';
   static const String reorderSkipped = 'تم تخطي';
+  static const String waiterOrdersSummary = 'الطلبات النشطة';
+  static const String waiterPendingCount = 'قيد الانتظار';
+  static const String waiterPreparingCount = 'قيد التحضير';
+  static const String waiterReadyCount = 'جاهزة للتسليم';
 
   // ── KDS / Kitchen ─────────────────────────────────────────────────────────
   static const String kdsTitle = 'شاشة المطبخ';
