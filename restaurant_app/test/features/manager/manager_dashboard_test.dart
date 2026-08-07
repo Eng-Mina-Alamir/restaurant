@@ -70,6 +70,30 @@ void main() {
       final metrics = computeMetrics(container.read(ordersControllerProvider));
       expect(metrics.paymentMethodRevenue['بطاقة'], 32.2);
     });
+
+    test('counts completed orders in sales, pending ones do not', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final cart = container.read(cartControllerProvider.notifier);
+      cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+      final orders = container.read(ordersControllerProvider.notifier);
+      final placed = await orders.placeOrder();
+      expect(placed, isNotNull);
+
+      // Pending order is not yet revenue.
+      expect(
+        computeMetrics(container.read(ordersControllerProvider)).totalSales,
+        0,
+      );
+
+      // Completing it makes it count toward sales.
+      await orders.updateStatus(placed!.id, OrderStatus.completed);
+      expect(
+        computeMetrics(container.read(ordersControllerProvider)).totalSales,
+        32.2,
+      );
+    });
   });
 
   testWidgets('manager dashboard renders metric cards', (tester) async {

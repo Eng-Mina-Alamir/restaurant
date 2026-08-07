@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/sales_metrics.dart';
@@ -26,7 +27,7 @@ SalesMetrics computeMetrics(List<OrderEntity> orders) {
   }
 
   final completed = orders
-      .where((o) => o.status.toString().contains('completed'))
+      .where((o) => o.status == OrderStatus.completed)
       .toList();
   final totalSales = completed.fold<double>(0, (sum, o) => sum + o.totalAmount);
 
