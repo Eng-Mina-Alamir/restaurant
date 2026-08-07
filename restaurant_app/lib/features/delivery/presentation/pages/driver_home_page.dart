@@ -6,6 +6,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/logout_action_button.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../controllers/delivery_controller.dart';
 
@@ -29,7 +30,10 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
         : assignments.where((a) => a.deliveryStatus == _filter).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.driverTitle)),
+      appBar: AppBar(
+        title: const Text(AppConstants.driverTitle),
+        actions: const [LogoutActionButton()],
+      ),
       body: Column(
         children: [
           _StatusFilterBar(

@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 
@@ -53,6 +54,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                 ),
               ),
             ),
+          const LogoutActionButton(),
         ],
       ),
       body: active.isEmpty

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
@@ -51,6 +52,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             tooltip: AppConstants.cartTitle,
             onPressed: () => _openCart(context),
           ),
+          const LogoutActionButton(),
         ],
       ),
       body: menuAsync.when(

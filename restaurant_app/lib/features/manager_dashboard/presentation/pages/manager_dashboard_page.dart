@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/metrics_controller.dart';
 
@@ -25,6 +26,7 @@ class ManagerDashboardPage extends ConsumerWidget {
             icon: const Icon(Icons.receipt_long),
             onPressed: () => context.push('/manager/orders'),
           ),
+          const LogoutActionButton(),
         ],
       ),
       body: metrics.when(

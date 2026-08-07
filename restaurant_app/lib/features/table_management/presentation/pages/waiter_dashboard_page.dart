@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/table_controller.dart';
@@ -21,7 +22,10 @@ class WaiterDashboardPage extends ConsumerWidget {
     final orders = ref.watch(ordersControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text(AppConstants.tablesTitle)),
+      appBar: AppBar(
+        title: const Text(AppConstants.tablesTitle),
+        actions: const [LogoutActionButton()],
+      ),
       body: tables.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : Column(
