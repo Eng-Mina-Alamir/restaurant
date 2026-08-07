@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../cart/domain/cart_totals.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
@@ -29,12 +30,20 @@ class WaiterOrderPage extends ConsumerStatefulWidget {
 
 class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
   bool _sending = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
 
   @override
   void initState() {
     super.initState();
     // Reset the shared cart so the waiter builds a fresh order for this table.
     Future.microtask(() => ref.read(cartControllerProvider.notifier).clear());
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _addItem(MenuItem item) {
@@ -97,25 +106,52 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
         data: (data) {
-          final items = filterMenu(data, selectedCategory);
+          final items = filterMenu(data, selectedCategory, _query);
           return Column(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: MenuItemTile(
-                        item: item,
-                        onTap: () => _addItem(item),
-                        onAdd: () => _addItem(item),
-                      ),
-                    );
-                  },
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
                 ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _query = value),
+                  decoration: InputDecoration(
+                    hintText: AppConstants.searchMenuHint,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: items.isEmpty
+                    ? const EmptyState(
+                        message: AppConstants.noItemsFound,
+                        icon: Icons.search_off,
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: MenuItemTile(
+                              item: item,
+                              onTap: () => _addItem(item),
+                              onAdd: () => _addItem(item),
+                            ),
+                          );
+                        },
+                      ),
               ),
               _BottomBar(
                 itemCount: cart.length,
