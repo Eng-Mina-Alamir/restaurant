@@ -105,4 +105,24 @@ void main() {
 
     expect(find.text('جديد'), findsOneWidget);
   });
+
+  testWidgets('shows item count and order total on the card', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final cart = container.read(cartControllerProvider.notifier);
+    cart.addItem(const CartItem(menuItem: burger, quantity: 2));
+    await container.read(ordersControllerProvider.notifier).placeOrder();
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: KdsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 2 × burger line plus the summary row both show a count.
+    expect(find.text('عدد الأصناف: 2'), findsOneWidget);
+  });
 }
