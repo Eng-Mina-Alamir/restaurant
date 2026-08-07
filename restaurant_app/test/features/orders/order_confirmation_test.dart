@@ -47,4 +47,14 @@ void main() {
     expect(find.textContaining('ملخص الطلب'), findsOneWidget);
     expect(find.textContaining('64.40'), findsOneWidget);
   });
+
+  testWidgets('shows a single-hash friendly order number', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: OrderConfirmationPage(order: order)),
+    );
+
+    // ORD-0001 → #1 (no double hash).
+    expect(find.text('#1'), findsOneWidget);
+    expect(find.text('##1'), findsNothing);
+  });
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/restaurant_table.dart';
 import 'waiter_dashboard_page.dart';
 
@@ -93,7 +94,7 @@ class WaiterTableCard extends StatelessWidget {
               if (table.currentOrderId != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '#${table.currentOrderId}',
+                  Formatters.formatOrderId(table.currentOrderId!),
                   style: theme.textTheme.labelSmall,
                   overflow: TextOverflow.ellipsis,
                 ),

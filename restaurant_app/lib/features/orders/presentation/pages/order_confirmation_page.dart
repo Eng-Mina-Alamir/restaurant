@@ -46,7 +46,7 @@ class OrderConfirmationPage extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Center(
             child: Text(
-              '#${formattedOrderNumber(order)}',
+              formattedOrderNumber(order),
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.bold,
