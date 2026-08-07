@@ -195,6 +195,20 @@ abstract final class MenuSeedData {
       rating: 4.2,
       orderCount: 650,
     ),
+    const MenuItem(
+      id: 'item-drink-mojito',
+      categoryId: 'مشروبات',
+      name: 'موهيتو بالنعناع',
+      description: 'موهيتو منعش بالنعناع والليمون',
+      price: 14.0,
+      isAvailable: true,
+      isVegetarian: true,
+      isSpicy: false,
+      preparationTime: 4,
+      modifierGroups: [],
+      rating: 4.6,
+      orderCount: 90,
+    ),
 
     // ── حلويات ───────────────────────────────────────────────────────────
     const MenuItem(
@@ -239,6 +253,51 @@ abstract final class MenuSeedData {
       modifierGroups: [],
       rating: 4.5,
       orderCount: 320,
+    ),
+
+    // ── بيتزا ──────────────────────────────────────────────────────────────
+    const MenuItem(
+      id: 'item-pizza-spicy',
+      categoryId: 'بيتزا',
+      name: 'بيتزا حارة',
+      description: 'بيتزا بجبنة الموزاريلا وشرائح الفلفل الحار والسجق',
+      price: 32.0,
+      isAvailable: true,
+      isVegetarian: false,
+      isSpicy: true,
+      preparationTime: 18,
+      modifierGroups: [
+        MenuModifierGroup(
+          id: 'mod-pizza-size',
+          title: 'الحجم',
+          isRequired: true,
+          maxSelection: 1,
+          options: [
+            MenuModifierOption(id: 'opt-size-med', name: 'وسط', extraPrice: 0),
+            MenuModifierOption(
+              id: 'opt-size-large',
+              name: 'كبير',
+              extraPrice: 8,
+            ),
+          ],
+        ),
+      ],
+      rating: 4.3,
+      orderCount: 85,
+    ),
+    const MenuItem(
+      id: 'item-burger-veggie',
+      categoryId: 'برجر',
+      name: 'برجر نباتي',
+      description: 'قرص نباتي مشوي مع خس وطماطم وصوص الثوم',
+      price: 30.0,
+      isAvailable: true,
+      isVegetarian: true,
+      isSpicy: false,
+      preparationTime: 14,
+      modifierGroups: [],
+      rating: 4.1,
+      orderCount: 60,
     ),
   ];
 
