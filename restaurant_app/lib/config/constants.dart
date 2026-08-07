@@ -6,32 +6,15 @@ abstract final class AppConstants {
   AppConstants._();
 
   // ── Auth / Login ───────────────────────────────────────────────────────────
-  static const String loginTitle = 'تسجيل الدخول';
   static const String loginSubtitle = 'مرحباً بعودتك! سجّل للوصول إلى طلباتك';
-  static const String phoneTab = 'جوال';
-  static const String emailTab = 'بريد إلكتروني';
-  static const String phoneLabel = 'رقم الجوال';
   static const String emailLabel = 'البريد الإلكتروني';
   static const String passwordLabel = 'كلمة المرور';
-  static const String otpLabel = 'رمز التحقق';
   static const String loginButton = 'دخول';
-  static const String loginWithOtpButton = 'تسجيل الدخول بالرمز';
-  static const String sendOtpButton = 'إرسال الرمز';
-  static const String resendOtpButton = 'إعادة إرسال الرمز';
-  static const String forgotPassword = 'نسيت كلمة المرور؟';
-  static const String noAccount = 'ليس لديك حساب؟';
-  static const String createAccount = 'إنشاء حساب جديد';
-  static const String welcome = 'أهلاً بك';
 
   // ── Orders ─────────────────────────────────────────────────────────────────
-  static const String ordersTitle = 'الطلبات';
-  static const String orderDetailsTitle = 'تفاصيل الطلب';
   static const String orderNumberLabel = 'رقم الطلب';
   static const String orderTotalLabel = 'الإجمالي';
-  static const String orderStatusLabel = 'الحالة';
   static const String emptyOrders = 'لا توجد طلبات حالياً';
-  static const String cancelOrder = 'إلغاء الطلب';
-  static const String reorder = 'إعادة الطلب';
   static const String orderConfirmationTitle = 'تأكيد الطلب';
   static const String orderPlacedMessage =
       'تم استلام طلبك بنجاح! سنقوم بتحضيره قريباً.';
@@ -58,55 +41,36 @@ abstract final class AppConstants {
   static const String customizeOrder = 'تخصيص الطلب';
   static const String checkout = 'إتمام الطلب';
   static const String totalLabel = 'الإجمالي';
-  static const String itemCount = 'عدد الأصناف';
 
   // ── Menu ───────────────────────────────────────────────────────────────────
   static const String menuTitle = 'القائمة';
-  static const String categoriesLabel = 'التصنيفات';
-  static const String featuredLabel = 'الأطباق المميزة';
   static const String noItemsFound = 'لا توجد أصناف مطابقة';
 
   // ── Common UI ──────────────────────────────────────────────────────────────
-  static const String save = 'حفظ';
-  static const String cancel = 'إلغاء';
-  static const String confirm = 'تأكيد';
-  static const String retry = 'إعادة المحاولة';
   static const String ok = 'حسناً';
   static const String delete = 'حذف';
-  static const String back = 'رجوع';
   static const String notFoundTitle = 'الصفحة غير موجودة';
   static const String notFoundAction = 'العودة للرئيسية';
-  static const String loading = 'جارٍ التحميل…';
-  static const String optional = '(اختياري)';
 
   // ── Staff / Tables ──────────────────────────────────────────────────────────
-  static const String staffTitle = 'شاشة الموظفين';
   static const String tablesTitle = 'الطاولات';
   static const String tableStatusAvailable = 'متاحة';
   static const String tableStatusOccupied = 'مشغولة';
   static const String tableStatusReserved = 'محجوزة';
   static const String tableStatusNeedsCleaning = 'تحتاج تنظيف';
-  static const String tableCapacityLabel = 'مقاعد';
   static const String tableActionTakeOrder = 'أخذ الطلب';
   static const String tableActionRelease = 'تسليم الطاولة';
-  static const String tableActionClean = 'تم التنظيف';
   static const String tableActionReserve = 'حجز';
-  static const String tableNoActiveOrder = 'لا يوجد طلب نشط';
   static const String seats = 'مقاعد';
   static const String sendToKitchen = 'إرسال إلى المطبخ';
   static const String sentToKitchen = 'تم إرسال الطلب إلى المطبخ';
-  static const String newOrderAlert = 'طلب جديد';
   static const String orderHistoryTitle = 'سجل الطلبات';
   static const String reorderAction = 'أعد الطلب';
   static const String tableDetailTitle = 'تفاصيل الطاولة';
   static const String tableActiveOrder = 'الطلب النشط';
   static const String tableNoOrder = 'لا يوجد طلب نشط';
-  static const String actionCleanTable = 'تم التنظيف';
-  static const String actionReserveTable = 'حجز الطاولة';
-  static const String actionReleaseTable = 'تسليم الطاولة';
   static const String allOrdersTitle = 'جميع الطلبات';
   static const String filterAll = 'الكل';
-  static const String noOrdersFound = 'لا توجد طلبات حالياً';
   static const String orderCompletedToaster = 'تم تحديث حالة الطلب';
   static const String orderItemsCount = 'عناصر';
   static const String orderTablePrefix = 'طاولة';
@@ -171,7 +135,6 @@ abstract final class AppConstants {
   static const String metricsOverview = 'نظرة عامة';
   static const String metricsItemsSold = 'الأصناف الأكثر مبيعاً';
   static const String metricsNoData = 'لا توجد بيانات بعد';
-  static const String salesTitle = 'المبيعات';
 
   // ── Driver / Delivery ────────────────────────────────────────────────────
   static const String driverTitle = 'شاشة السائق';
@@ -190,11 +153,6 @@ abstract final class AppConstants {
   static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
 
   // ── Validation messages ────────────────────────────────────────────────────
-  static const String invalidEmail = 'أدخل بريداً إلكترونياً صحيحاً';
-  static const String invalidPhone =
-      'أدخل رقم جوال سعودياً صحيحاً (05xxxxxxxx)';
-  static const String invalidOtp = 'أدخل رمز التحقق المكوّن من 6 أرقام';
-  static const String invalidName = 'أدخل اسماً صحيحاً';
   static const String requiredField = 'هذا الحقل مطلوب';
 
   // ── Error messages ─────────────────────────────────────────────────────────
@@ -206,7 +164,6 @@ abstract final class AppConstants {
       'انتهت الجلسة، سجّل الدخول مرة أخرى';
   static const String errorCartEmpty = 'العربة فارغة';
   static const String errorNoNetwork = 'لا يوجد اتصال بالإنترنت';
-  static const String errorTimeout = 'انتهت مهلة الطلب، حاول مرة أخرى';
   static const String errorCache = 'تعذر حفظ البيانات محلياً';
   static const String errorDemoUnavailable = 'غير متاح في وضع العرض';
   static const String errorInvalidToken = 'رمز غير صالح';
