@@ -163,7 +163,7 @@ class _KdsColumn extends StatelessWidget {
               child: orders.isEmpty
                   ? Center(
                       child: Text(
-                        '—',
+                        AppConstants.kdsEmptyColumn,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),

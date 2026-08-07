@@ -51,6 +51,8 @@ void main() {
     // Order appears under pending column.
     expect(find.textContaining('برجر كلاسيك'), findsOneWidget);
     expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
+    // Empty columns show a contextual placeholder.
+    expect(find.text('لا توجد طلبات'), findsWidgets);
 
     // Advance to preparing.
     await tester.tap(find.text('قيد التحضير').last);
