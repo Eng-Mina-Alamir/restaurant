@@ -55,6 +55,43 @@ void main() {
     expect(find.textContaining('رقم العميل: 0551234567'), findsOneWidget);
   });
 
+  testWidgets('shows a contextual empty message for a status with no jobs', (
+    tester,
+  ) async {
+    final container = ProviderContainer(
+      overrides: [
+        deliveryRepositoryProvider.overrideWithValue(
+          InMemoryDeliveryRepository(seed: const []),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Filter to "delivered" which has no seeded jobs.
+    final deliveredChip = find.widgetWithText(
+      ChoiceChip,
+      AppConstants.deliveryDelivered,
+    );
+    await tester.ensureVisible(deliveredChip);
+    await tester.pumpAndSettle();
+    await tester.tap(deliveredChip);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        '${AppConstants.deliveryDelivered} — ${AppConstants.noDeliveryJobs}',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('filters assignments by status chip', (tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: DriverHomePage())),
