@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:restaurant_app/features/auth/presentation/pages/login_page.dart';
 
 void main() {
@@ -19,15 +20,25 @@ void main() {
     expect(find.byType(ActionChip), findsWidgets);
   });
 
-  testWidgets('tapping a demo chip fills the credentials fields', (
+  testWidgets('tapping a demo chip logs in to that role immediately', (
     tester,
   ) async {
-    await pump(tester);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: LoginPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ActionChip, 'مدير'));
     await tester.pumpAndSettle();
 
-    expect(find.text('manager@demo.com'), findsOneWidget);
-    expect(find.text('123456'), findsWidgets);
+    final auth = container.read(authControllerProvider);
+    expect(auth.isAuthenticated, isTrue);
+    expect(auth.user?.email, 'manager@demo.com');
   });
 }

@@ -127,9 +127,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _DemoAccounts(
-                    identifierController: _identifierController,
-                    passwordController: _passwordController,
                     visible: AppConfig.useDemoAuth,
+                    onSelect: (role) {
+                      _identifierController.text =
+                          DemoAuthDataSource.accounts[role]!;
+                      _passwordController.text = DemoAuthDataSource.password;
+                      _submit();
+                    },
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   FilledButton(
@@ -152,18 +156,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 }
 
-/// Demo-account quick fill shown when offline auth is enabled, so reviewers
-/// can jump into any role without a backend.
+/// Demo-account quick login shown when offline auth is enabled, so reviewers
+/// can jump into any role with a single tap.
 class _DemoAccounts extends StatelessWidget {
-  const _DemoAccounts({
-    required this.identifierController,
-    required this.passwordController,
-    required this.visible,
-  });
+  const _DemoAccounts({required this.visible, required this.onSelect});
 
-  final TextEditingController identifierController;
-  final TextEditingController passwordController;
   final bool visible;
+  final ValueChanged<UserRole> onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -198,11 +197,7 @@ class _DemoAccounts extends StatelessWidget {
                   ActionChip(
                     avatar: Icon(_roleIcon(role), size: 18),
                     label: Text(role.labelAr),
-                    onPressed: () {
-                      identifierController.text =
-                          DemoAuthDataSource.accounts[role]!;
-                      passwordController.text = DemoAuthDataSource.password;
-                    },
+                    onPressed: () => onSelect(role),
                   ),
               ],
             ),
