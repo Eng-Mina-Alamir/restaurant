@@ -16,6 +16,9 @@ abstract class RestaurantTable with _$RestaurantTable {
     required String id,
     required int tableNumber,
     @Default(4) int capacity,
+
+    /// Physical zone/location of the table (e.g. "صالة", "حديقة", "تراس").
+    @Default('صالة') String location,
     @JsonKey(
       fromJson: _tableStatusFromJson,
       toJson: _tableStatusToString,

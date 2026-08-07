@@ -24,6 +24,9 @@ mixin _$RestaurantTable {
   String get id => throw _privateConstructorUsedError;
   int get tableNumber => throw _privateConstructorUsedError;
   int get capacity => throw _privateConstructorUsedError;
+
+  /// Physical zone/location of the table (e.g. "صالة", "حديقة", "تراس").
+  String get location => throw _privateConstructorUsedError;
   @JsonKey(
     fromJson: _tableStatusFromJson,
     toJson: _tableStatusToString,
@@ -56,6 +59,7 @@ abstract class $RestaurantTableCopyWith<$Res> {
     String id,
     int tableNumber,
     int capacity,
+    String location,
     @JsonKey(
       fromJson: _tableStatusFromJson,
       toJson: _tableStatusToString,
@@ -87,6 +91,7 @@ class _$RestaurantTableCopyWithImpl<$Res, $Val extends RestaurantTable>
     Object? id = null,
     Object? tableNumber = null,
     Object? capacity = null,
+    Object? location = null,
     Object? status = null,
     Object? currentOrderId = freezed,
     Object? assignedWaiterId = freezed,
@@ -106,6 +111,10 @@ class _$RestaurantTableCopyWithImpl<$Res, $Val extends RestaurantTable>
                 ? _value.capacity
                 : capacity // ignore: cast_nullable_to_non_nullable
                       as int,
+            location: null == location
+                ? _value.location
+                : location // ignore: cast_nullable_to_non_nullable
+                      as String,
             status: null == status
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
@@ -141,6 +150,7 @@ abstract class _$$RestaurantTableImplCopyWith<$Res>
     String id,
     int tableNumber,
     int capacity,
+    String location,
     @JsonKey(
       fromJson: _tableStatusFromJson,
       toJson: _tableStatusToString,
@@ -171,6 +181,7 @@ class __$$RestaurantTableImplCopyWithImpl<$Res>
     Object? id = null,
     Object? tableNumber = null,
     Object? capacity = null,
+    Object? location = null,
     Object? status = null,
     Object? currentOrderId = freezed,
     Object? assignedWaiterId = freezed,
@@ -190,6 +201,10 @@ class __$$RestaurantTableImplCopyWithImpl<$Res>
             ? _value.capacity
             : capacity // ignore: cast_nullable_to_non_nullable
                   as int,
+        location: null == location
+            ? _value.location
+            : location // ignore: cast_nullable_to_non_nullable
+                  as String,
         status: null == status
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
@@ -218,6 +233,7 @@ class _$RestaurantTableImpl implements _RestaurantTable {
     required this.id,
     required this.tableNumber,
     this.capacity = 4,
+    this.location = 'صالة',
     @JsonKey(
       fromJson: _tableStatusFromJson,
       toJson: _tableStatusToString,
@@ -240,6 +256,11 @@ class _$RestaurantTableImpl implements _RestaurantTable {
   @override
   @JsonKey()
   final int capacity;
+
+  /// Physical zone/location of the table (e.g. "صالة", "حديقة", "تراس").
+  @override
+  @JsonKey()
+  final String location;
   @override
   @JsonKey(
     fromJson: _tableStatusFromJson,
@@ -257,7 +278,7 @@ class _$RestaurantTableImpl implements _RestaurantTable {
 
   @override
   String toString() {
-    return 'RestaurantTable(id: $id, tableNumber: $tableNumber, capacity: $capacity, status: $status, currentOrderId: $currentOrderId, assignedWaiterId: $assignedWaiterId, lastUpdated: $lastUpdated)';
+    return 'RestaurantTable(id: $id, tableNumber: $tableNumber, capacity: $capacity, location: $location, status: $status, currentOrderId: $currentOrderId, assignedWaiterId: $assignedWaiterId, lastUpdated: $lastUpdated)';
   }
 
   @override
@@ -270,6 +291,8 @@ class _$RestaurantTableImpl implements _RestaurantTable {
                 other.tableNumber == tableNumber) &&
             (identical(other.capacity, capacity) ||
                 other.capacity == capacity) &&
+            (identical(other.location, location) ||
+                other.location == location) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.currentOrderId, currentOrderId) ||
                 other.currentOrderId == currentOrderId) &&
@@ -286,6 +309,7 @@ class _$RestaurantTableImpl implements _RestaurantTable {
     id,
     tableNumber,
     capacity,
+    location,
     status,
     currentOrderId,
     assignedWaiterId,
@@ -314,6 +338,7 @@ abstract class _RestaurantTable implements RestaurantTable {
     required final String id,
     required final int tableNumber,
     final int capacity,
+    final String location,
     @JsonKey(
       fromJson: _tableStatusFromJson,
       toJson: _tableStatusToString,
@@ -335,6 +360,10 @@ abstract class _RestaurantTable implements RestaurantTable {
   int get tableNumber;
   @override
   int get capacity;
+
+  /// Physical zone/location of the table (e.g. "صالة", "حديقة", "تراس").
+  @override
+  String get location;
   @override
   @JsonKey(
     fromJson: _tableStatusFromJson,

@@ -78,6 +78,16 @@ class WaiterTableCard extends StatelessWidget {
                   const Icon(Icons.chair_outlined, size: 16),
                   const SizedBox(width: AppSpacing.xs),
                   Text('${table.capacity} ${AppConstants.seats}'),
+                  const SizedBox(width: AppSpacing.md),
+                  const Icon(Icons.place_outlined, size: 16),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      table.location,
+                      style: theme.textTheme.labelSmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
               if (table.currentOrderId != null) ...[

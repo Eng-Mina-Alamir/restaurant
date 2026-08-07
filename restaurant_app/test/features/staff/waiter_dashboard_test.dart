@@ -38,6 +38,13 @@ void main() {
     expect(find.text('أخذ الطلب'), findsWidgets);
   });
 
+  testWidgets('shows the table location label', (tester) async {
+    await pumpPage(tester);
+    // Table 1 sits in the "تراس" zone (seed data).
+    expect(find.text('تراس'), findsWidgets);
+    expect(find.byIcon(Icons.place_outlined), findsWidgets);
+  });
+
   test('tableStatusLabel maps every status to an Arabic label', () {
     expect(tableStatusLabel(TableStatus.available), 'متاحة');
     expect(tableStatusLabel(TableStatus.occupied), 'مشغولة');

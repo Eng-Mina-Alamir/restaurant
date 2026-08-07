@@ -177,11 +177,19 @@ void main() {
         id: 't1',
         tableNumber: 5,
         capacity: 6,
+        location: 'حديقة',
         status: TableStatus.occupied,
         currentOrderId: 'o1',
       );
       final json = table.toJson();
       expect(RestaurantTable.fromJson(json), table);
+      // Default location is the main hall.
+      const defaulted = RestaurantTable(
+        id: 't2',
+        tableNumber: 6,
+        status: TableStatus.available,
+      );
+      expect(defaulted.location, 'صالة');
     });
 
     test('DeliveryAssignment', () {
