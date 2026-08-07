@@ -122,7 +122,7 @@ The project is verified entirely offline with:
 ```bash
 flutter analyze     # 0 issues
 dart format --set-exit-if-changed .   # consistently formatted
-flutter test        # 159 unit + widget tests
+flutter test        # 175 unit + widget tests
 ```
 
 All feature controllers (cart, orders, tables, delivery, metrics, notifications)
