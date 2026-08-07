@@ -104,6 +104,9 @@ abstract final class AppConstants {
   static const String filterAll = 'الكل';
   static const String noOrdersFound = 'لا توجد طلبات حالياً';
   static const String orderCompletedToaster = 'تم تحديث حالة الطلب';
+  static const String orderItemsCount = 'عناصر';
+  static const String orderTablePrefix = 'طاولة';
+  static const String orderMoveTo = 'نقل إلى:';
   static const String searchMenuHint = 'ابحث عن صنف...';
   static const String demoAccountsTitle = 'حسابات تجريبية';
   static const String demoPasswordHint = 'كلمة المرور: 123456';

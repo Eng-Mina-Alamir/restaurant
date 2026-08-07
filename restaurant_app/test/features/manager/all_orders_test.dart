@@ -55,7 +55,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('#ORD-'), findsOneWidget);
+    expect(find.textContaining('#1'), findsOneWidget);
     expect(find.textContaining('نقل إلى'), findsWidgets);
 
     // Advance the order (pending -> preparing).

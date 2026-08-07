@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -27,7 +28,7 @@ class _AllOrdersPageState extends ConsumerState<AllOrdersPage> {
         : orders.where((o) => o.status == _filter).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('جميع الطلبات')),
+      appBar: AppBar(title: const Text(AppConstants.allOrdersTitle)),
       body: Column(
         children: [
           _StatusFilterBar(
@@ -70,7 +71,7 @@ class _StatusFilterBar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(
-              label: const Text('الكل'),
+              label: const Text(AppConstants.filterAll),
               selected: selected == null,
               onSelected: (_) => onChanged(null),
             ),
@@ -113,7 +114,7 @@ class _OrderStatusCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '#${order.id}',
+                  _orderNumber(order),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -139,7 +140,8 @@ class _OrderStatusCard extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${order.items.length} عناصر • ${Formatters.formatCurrency(order.totalAmount)}',
+              '${order.items.length} ${AppConstants.orderItemsCount} • '
+              '${Formatters.formatCurrency(order.totalAmount)}',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 6),
@@ -151,7 +153,7 @@ class _OrderStatusCard extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'طاولة ${order.tableId}',
+                  '${AppConstants.orderTablePrefix} ${order.tableId}',
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -165,18 +167,26 @@ class _OrderStatusCard extends ConsumerWidget {
                         .updateStatus(order.id, next);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('تم تحديث حالة الطلب')),
+                        const SnackBar(
+                          content: Text(AppConstants.orderCompletedToaster),
+                        ),
                       );
                     }
                   },
                   icon: const Icon(Icons.fast_forward),
-                  label: Text('نقل إلى: ${next.labelAr}'),
+                  label: Text('${AppConstants.orderMoveTo} ${next.labelAr}'),
                 ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  String _orderNumber(OrderEntity order) {
+    final digits = order.id.replaceAll(RegExp(r'[^0-9]'), '');
+    final number = int.tryParse(digits) ?? 0;
+    return Formatters.formatOrderNumber(number);
   }
 
   OrderStatus? _nextStatus(OrderStatus current) {
