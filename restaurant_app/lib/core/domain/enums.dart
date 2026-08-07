@@ -191,13 +191,13 @@ enum PaymentMethod {
   String get labelAr {
     switch (this) {
       case PaymentMethod.cash:
-        return 'نقداً';
+        return AppConstants.paymentCash;
       case PaymentMethod.card:
-        return 'بطاقة';
+        return AppConstants.paymentCard;
       case PaymentMethod.wallet:
-        return 'محفظة رقمية';
+        return AppConstants.paymentWallet;
       case PaymentMethod.online:
-        return 'دفع أونلاين';
+        return AppConstants.paymentOnline;
     }
   }
 
