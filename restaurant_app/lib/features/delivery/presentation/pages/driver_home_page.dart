@@ -45,7 +45,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                 ? EmptyState(
                     message: _filter == null
                         ? AppConstants.noDeliveryJobs
-                        : '${deliveryStatusShortLabel(_filter!)} — '
+                        : '${_filter!.labelAr} — '
                               '${AppConstants.noDeliveryJobs}',
                     icon: Icons.local_shipping_outlined,
                   )
@@ -131,16 +131,6 @@ class _StatusFilterBar extends StatelessWidget {
     DeliveryStatus.failed => AppConstants.deliveryFailed,
   };
 }
-
-/// Short Arabic label for a delivery status used in the filter chips.
-String deliveryStatusShortLabel(DeliveryStatus status) => switch (status) {
-  DeliveryStatus.pending => AppConstants.deliveryPending,
-  DeliveryStatus.accepted => AppConstants.deliveryAccepted,
-  DeliveryStatus.pickedUp => AppConstants.deliveryPickedUp,
-  DeliveryStatus.inTransit => AppConstants.deliveryInTransit,
-  DeliveryStatus.delivered => AppConstants.deliveryDelivered,
-  DeliveryStatus.failed => AppConstants.deliveryFailed,
-};
 
 class _DeliveryCard extends StatelessWidget {
   const _DeliveryCard({required this.assignment, required this.onAction});
@@ -286,7 +276,7 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = deliveryStatusShortLabel(status);
+    final label = status.labelAr;
     final color = _statusColor(status);
     return Container(
       padding: const EdgeInsets.symmetric(

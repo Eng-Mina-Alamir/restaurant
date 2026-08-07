@@ -230,17 +230,17 @@ enum DeliveryStatus {
   String get labelAr {
     switch (this) {
       case DeliveryStatus.pending:
-        return 'بانتظار التوكيل';
+        return AppConstants.deliveryPending;
       case DeliveryStatus.accepted:
-        return 'مقبول';
+        return AppConstants.deliveryAccepted;
       case DeliveryStatus.pickedUp:
-        return 'تم الاستلام';
+        return AppConstants.deliveryPickedUp;
       case DeliveryStatus.inTransit:
-        return 'قيد التوصيل';
+        return AppConstants.deliveryInTransit;
       case DeliveryStatus.delivered:
-        return 'تم التسليم';
+        return AppConstants.deliveryDelivered;
       case DeliveryStatus.failed:
-        return 'فشل التسليم';
+        return AppConstants.deliveryFailed;
     }
   }
 
