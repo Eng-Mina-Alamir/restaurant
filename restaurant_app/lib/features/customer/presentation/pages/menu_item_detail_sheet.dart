@@ -153,6 +153,7 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
   }
 
   bool get _canSubmit {
+    if (!widget.menuItem.isAvailable) return false;
     for (final group in widget.menuItem.modifierGroups) {
       if (group.isRequired) {
         final selected = _selectedOptionByGroup[group.id];
@@ -294,7 +295,7 @@ class _QuantityStepper extends StatelessWidget {
       children: [
         IconButton.outlined(
           icon: const Icon(Icons.remove),
-          onPressed: onDecrement,
+          onPressed: quantity <= 1 ? null : onDecrement,
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),

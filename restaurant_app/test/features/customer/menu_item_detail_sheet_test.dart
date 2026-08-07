@@ -92,6 +92,10 @@ void main() {
     expect(find.text(AppConstants.itemUnavailable), findsOneWidget);
     expect(find.text(AppConstants.dietVegetarian), findsNothing);
     expect(find.text(AppConstants.dietSpicy), findsNothing);
+
+    // Add button is disabled for out-of-stock items.
+    final addButton = find.widgetWithText(FilledButton, 'أضف إلى السلة');
+    expect(tester.widget<FilledButton>(addButton).enabled, isFalse);
   });
 
   testWidgets('adds item with special notes to the cart', (tester) async {
@@ -174,6 +178,27 @@ void main() {
     final cart = container.read(cartControllerProvider);
     expect(cart, hasLength(1));
     expect(cart.first.selectedModifiers.single.name, 'كبير');
+  });
+
+  testWidgets('decrement is disabled when quantity is already one', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: _Host(menuItem: burger)),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final decrement = find.widgetWithIcon(IconButton, Icons.remove);
+    expect(tester.widget<IconButton>(decrement).onPressed, isNull);
   });
 }
 
