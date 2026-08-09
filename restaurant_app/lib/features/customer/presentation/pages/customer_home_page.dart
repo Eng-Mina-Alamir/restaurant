@@ -11,6 +11,7 @@ import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../pages/menu_item_detail_sheet.dart';
+import '../pages/qr_scan_page.dart';
 import '../widgets/category_chips.dart';
 import '../widgets/menu_item_tile.dart';
 
@@ -34,6 +35,30 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       appBar: AppBar(
         title: const Text(AppConstants.menuTitle),
         actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final tableId = ref.watch(activeTableIdProvider);
+              return IconButton(
+                icon: Icon(
+                  tableId != null
+                      ? Icons.qr_code_2
+                      : Icons.qr_code_scanner,
+                  color: tableId != null ? Colors.green : null,
+                ),
+                tooltip: tableId != null
+                    ? 'طاولة: $tableId'
+                    : 'مسح QR الطاولة',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QrScanPage(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: AppConstants.orderHistoryTitle,

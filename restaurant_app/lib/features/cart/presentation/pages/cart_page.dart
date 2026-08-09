@@ -11,6 +11,7 @@ import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../presentation/controllers/cart_controller.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
+import '../widgets/split_bill_sheet.dart';
 
 /// Shows the cart contents with quantity controls and a totals footer.
 class CartPage extends ConsumerStatefulWidget {
@@ -50,6 +51,12 @@ class _CartPageState extends ConsumerState<CartPage> {
       appBar: AppBar(
         title: const Text(AppConstants.cartTitle),
         actions: [
+          if (cart.isNotEmpty)
+            IconButton(
+              tooltip: 'تقسيم الفاتورة',
+              icon: const Icon(Icons.people_alt_outlined),
+              onPressed: () => showSplitBillSheet(context),
+            ),
           if (cart.isNotEmpty)
             IconButton(
               tooltip: AppConstants.clearCart,

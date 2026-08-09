@@ -41,6 +41,9 @@ class _RestaurantAppState extends ConsumerState<RestaurantApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Force the router to re-evaluate its redirects when the auth state changes.
+    ref.listen(authControllerProvider, (_, __) => _router.refresh());
+
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,

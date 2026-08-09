@@ -12,6 +12,18 @@ import '../../domain/entities/cart_item.dart';
 class CartController extends StateNotifier<List<CartItem>> {
   CartController() : super(const []);
 
+  /// The table ID set by QR scanning. Null means takeaway / no table.
+  String? _tableId;
+
+  /// The table ID currently linked to this cart session (set via QR scan).
+  String? get activeTableId => _tableId;
+
+  /// Links this cart session to a dine-in [tableId] (from QR scan).
+  void setTableId(String tableId) => _tableId = tableId;
+
+  /// Clears the linked table (e.g. on logout or new session).
+  void clearTableId() => _tableId = null;
+
   /// Number of distinct line items.
   int get itemCount => state.length;
 
@@ -63,8 +75,18 @@ class CartController extends StateNotifier<List<CartItem>> {
     state = state.where((e) => e.configKey != configKey).toList();
   }
 
-  /// Empties the cart.
-  void clear() => state = const [];
+  /// Empties the cart and clears the linked table.
+  void clear() {
+    state = const [];
+    _tableId = null;
+  }
+
+  /// Returns the per-person amount when splitting the total evenly across
+  /// [numPersons].
+  double splitTotal(int numPersons) {
+    if (numPersons <= 0) return totals.totalAmount;
+    return totals.totalAmount / numPersons;
+  }
 
   void _mutate(String configKey, CartItem Function(CartItem) transform) {
     final index = state.indexWhere((e) => e.configKey == configKey);
@@ -83,4 +105,9 @@ final cartControllerProvider =
 /// The payment method the customer has selected at checkout.
 final selectedPaymentMethodProvider = StateProvider<PaymentMethod>(
   (ref) => PaymentMethod.cash,
+);
+
+/// Exposes the active table id from the cart controller (read-only).
+final activeTableIdProvider = Provider<String?>(
+  (ref) => ref.watch(cartControllerProvider.notifier).activeTableId,
 );

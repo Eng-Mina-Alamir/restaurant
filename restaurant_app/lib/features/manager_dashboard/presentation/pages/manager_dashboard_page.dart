@@ -93,6 +93,61 @@ class ManagerDashboardPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             _StatusBreakdown(orders: ref.watch(ordersControllerProvider)),
             const SizedBox(height: AppSpacing.lg),
+
+            // ── Quick Actions grid ──────────────────────────────────────────
+            Text(
+              'الإجراءات السريعة',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 3,
+              crossAxisSpacing: AppSpacing.sm,
+              mainAxisSpacing: AppSpacing.sm,
+              childAspectRatio: 1.0,
+              children: [
+                _QuickAction(
+                  icon: Icons.local_offer_rounded,
+                  label: 'الخصومات',
+                  color: Colors.deepOrange,
+                  onTap: () => context.push('/manager/discounts'),
+                ),
+                _QuickAction(
+                  icon: Icons.inventory_2_outlined,
+                  label: 'المخزون',
+                  color: Colors.teal,
+                  onTap: () => context.push('/manager/inventory'),
+                ),
+                _QuickAction(
+                  icon: Icons.people_alt_rounded,
+                  label: 'الموظفون',
+                  color: Colors.indigo,
+                  onTap: () => context.push('/manager/staff'),
+                ),
+                _QuickAction(
+                  icon: Icons.receipt_long_rounded,
+                  label: 'الفواتير',
+                  color: Colors.brown,
+                  onTap: () => context.push('/manager/invoices'),
+                ),
+                _QuickAction(
+                  icon: Icons.qr_code_2,
+                  label: 'رموز QR',
+                  color: Colors.blueGrey,
+                  onTap: () => context.push('/manager/qr-codes'),
+                ),
+                _QuickAction(
+                  icon: Icons.receipt_long,
+                  label: 'الطلبات',
+                  color: Colors.blue,
+                  onTap: () => context.push('/manager/orders'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppSpacing.lg),
             Text(
               AppConstants.metricsItemsSold,
               style: Theme.of(context).textTheme.titleLarge,
@@ -308,6 +363,57 @@ class _StatusBreakdown extends StatelessWidget {
                   label: Text('${status.labelAr}: ${counts[status]}'),
                   visualDensity: VisualDensity.compact,
                 ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Quick Action tile ──────────────────────────────────────────────────────────
+
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 1,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 26),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

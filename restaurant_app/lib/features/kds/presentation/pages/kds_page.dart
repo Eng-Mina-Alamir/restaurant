@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/notifications/kds_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -28,6 +29,8 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   static const _elapsedRefreshInterval = Duration(minutes: 1);
 
   Timer? _elapsedTimer;
+  final KdsAlertService _alertService = KdsAlertService();
+  int _lastOrderCount = 0;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   @override
   void dispose() {
     _elapsedTimer?.cancel();
+    _alertService.dispose();
     super.dispose();
   }
 
@@ -56,6 +60,13 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     };
 
     final active = orders.where((o) => !o.status.isTerminal).toList();
+
+    // Alert when new pending orders arrive
+    final pendingCount = active.where((o) => o.status == OrderStatus.pending).length;
+    if (pendingCount > _lastOrderCount) {
+      _alertService.alertNewOrder();
+    }
+    _lastOrderCount = pendingCount;
 
     final pending = active.where((o) => o.status == OrderStatus.pending);
     final preparing = active.where((o) => o.status == OrderStatus.preparing);

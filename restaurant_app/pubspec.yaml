@@ -25,6 +25,9 @@ dependencies:
   # Networking
   dio: ^5.4.0
 
+  # Real-time / WebSocket
+  web_socket_channel: ^3.0.1
+
   # Code generation annotations
   freezed_annotation: ^2.4.1
   json_annotation: ^4.9.0
@@ -36,6 +39,24 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+
+  # QR code scanning & generation
+  mobile_scanner: ^7.0.0
+  qr_flutter: ^4.1.0
+
+  # Image caching
+  cached_network_image: ^3.4.1
+
+  # Audio alerts (KDS)
+  audioplayers: ^6.0.0
+
+  # Maps & GPS (driver tracking)
+  flutter_map: ^8.0.0
+  latlong2: ^0.9.1
+  geolocator: ^13.0.0
+
+  # Image capture (delivery proof)
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

@@ -11,6 +11,11 @@ import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
+import '../../features/manager_dashboard/presentation/pages/discounts_page.dart';
+import '../../features/manager_dashboard/presentation/pages/inventory_page.dart';
+import '../../features/manager_dashboard/presentation/pages/staff_performance_page.dart';
+import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
+import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
 import '../../features/table_management/presentation/pages/all_orders_page.dart';
 import '../../features/table_management/presentation/pages/table_detail_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
@@ -103,6 +108,26 @@ GoRouter createAppRouter({required WidgetRef ref}) {
           GoRoute(
             path: 'orders',
             builder: (context, state) => const AllOrdersPage(),
+          ),
+          GoRoute(
+            path: 'discounts',
+            builder: (context, state) => const DiscountsPage(),
+          ),
+          GoRoute(
+            path: 'inventory',
+            builder: (context, state) => const InventoryPage(),
+          ),
+          GoRoute(
+            path: 'staff',
+            builder: (context, state) => const StaffPerformancePage(),
+          ),
+          GoRoute(
+            path: 'invoices',
+            builder: (context, state) => const InvoicesPage(),
+          ),
+          GoRoute(
+            path: 'qr-codes',
+            builder: (context, state) => const QrGeneratorPage(),
           ),
         ],
       ),
