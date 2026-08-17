@@ -70,7 +70,7 @@ class DiscountEntity {
 // ── Mock data ──────────────────────────────────────────────────────────────────
 
 final _mockDiscounts = [
-  DiscountEntity(
+  const DiscountEntity(
     id: 'disc-1',
     name: 'خصم الأحد',
     type: DiscountType.percentage,
@@ -78,7 +78,7 @@ final _mockDiscounts = [
     isActive: true,
     minOrderAmount: 50,
   ),
-  DiscountEntity(
+  const DiscountEntity(
     id: 'disc-2',
     name: 'خصم الطلب الأول',
     type: DiscountType.fixedAmount,
@@ -94,7 +94,7 @@ final _mockDiscounts = [
     couponCode: 'RAMADAN25',
     expiresAt: DateTime(2026, 12, 31),
   ),
-  DiscountEntity(
+  const DiscountEntity(
     id: 'disc-4',
     name: 'خصم العملاء الجدد',
     type: DiscountType.percentage,
@@ -334,7 +334,7 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
             ),
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<DiscountType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'نوع الخصم'),
               items: const [
                 DropdownMenuItem(

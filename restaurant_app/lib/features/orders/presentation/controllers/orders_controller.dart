@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/network/connectivity_service.dart';
+import '../../../../core/network/realtime_service.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../cart/domain/entities/cart_item.dart';
@@ -29,12 +33,81 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
 /// [OrderEntity] through [OrderMapper], then clears the cart so the user can
 /// start a fresh order.
 class OrdersController extends StateNotifier<List<OrderEntity>> {
-  OrdersController(this._repository, this._cart, this._newOrderNotifier)
-    : super(const []);
+  OrdersController(
+    this._repository,
+    this._cart,
+    this._newOrderNotifier, {
+    RealtimeService? realtimeService,
+    ConnectivityService? connectivityService,
+  })  : _realtimeService = realtimeService,
+        _connectivityService = connectivityService,
+        super(const []) {
+    _initRealtime();
+    _initConnectivity();
+  }
 
   final OrderRepository _repository;
   final CartController _cart;
   final NewOrderNotifier _newOrderNotifier;
+  final RealtimeService? _realtimeService;
+  final ConnectivityService? _connectivityService;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
+  StreamSubscription<ConnectivityStatus>? _connectivitySub;
+  final List<OrderEntity> _offlineQueue = [];
+
+  List<OrderEntity> get offlineQueue => List.unmodifiable(_offlineQueue);
+  int get pendingSyncCount => _offlineQueue.length;
+
+  void _initConnectivity() {
+    final connectivity = _connectivityService;
+    if (connectivity == null) return;
+    _connectivitySub = connectivity.onStatusChanged.listen((status) {
+      if (status == ConnectivityStatus.online) {
+        syncOfflineOrders();
+      }
+    });
+  }
+
+  /// Synchronizes pending offline orders when connectivity returns.
+  Future<void> syncOfflineOrders() async {
+    if (_offlineQueue.isEmpty) return;
+    final toSync = List<OrderEntity>.of(_offlineQueue);
+    for (final order in toSync) {
+      _realtimeService?.broadcastOrderCreated(order.toJson());
+    }
+    _offlineQueue.clear();
+  }
+
+  void _initRealtime() {
+    final realtime = _realtimeService;
+    if (realtime == null) return;
+    _realtimeSub = realtime.events.listen((event) {
+      if (event.type == RealtimeEventType.orderCreated) {
+        try {
+          final order = OrderEntity.fromJson(event.payload);
+          final exists = state.any((o) => o.id == order.id);
+          if (!exists) {
+            state = [...state, order];
+            _newOrderNotifier.notifyNewOrder();
+          }
+        } catch (_) {}
+      } else if (event.type == RealtimeEventType.orderStatusChanged) {
+        try {
+          final orderId =
+              (event.payload['orderId'] ?? event.payload['id'])?.toString();
+          final statusName = event.payload['status']?.toString();
+          if (orderId != null && statusName != null) {
+            final newStatus = OrderStatus.fromName(statusName);
+            final index = state.indexWhere((o) => o.id == orderId);
+            if (index != -1 && state[index].status != newStatus) {
+              final updated = state[index].copyWith(status: newStatus);
+              state = [...state]..[index] = updated;
+            }
+          }
+        } catch (_) {}
+      }
+    });
+  }
 
   /// True once an order is being created, preventing double-taps.
   bool _placing = false;
@@ -73,6 +146,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         state = [...state, created];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
+        if (_connectivityService?.isOnline == false) {
+          _offlineQueue.add(created);
+        } else {
+          _realtimeService?.broadcastOrderCreated(created.toJson());
+        }
       }
       return created;
     } finally {
@@ -108,6 +186,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         state = [...state, created];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
+        if (_connectivityService?.isOnline == false) {
+          _offlineQueue.add(created);
+        } else {
+          _realtimeService?.broadcastOrderCreated(created.toJson());
+        }
       }
       return created;
     } finally {
@@ -126,6 +209,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final updated = state[index].copyWith(status: status);
     state = [...state]..[index] = updated;
 
+    _realtimeService?.broadcastOrderStatusChanged(orderId, status.name);
+
     // Persist the updated order through the repository.
     final result = await _repository.createOrder(updated);
     return result.when(onLeft: (_) => null, onRight: (o) => o);
@@ -134,6 +219,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// Orders that are still active for kitchen display (not terminal).
   List<OrderEntity> get activeOrders =>
       state.where((o) => !o.status.isTerminal).toList();
+
+  @override
+  void dispose() {
+    _realtimeSub?.cancel();
+    _connectivitySub?.cancel();
+    super.dispose();
+  }
 }
 
 /// Single shared new-order notifier for badge/sound alerts.
@@ -149,5 +241,7 @@ final ordersControllerProvider =
         ref.watch(orderRepositoryProvider),
         ref.watch(cartControllerProvider.notifier),
         ref.watch(newOrderNotifierProvider),
+        realtimeService: ref.watch(realtimeServiceProvider),
+        connectivityService: ref.watch(connectivityServiceProvider),
       );
     });

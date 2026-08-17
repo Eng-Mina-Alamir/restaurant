@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/network/realtime_service.dart';
 import '../../data/repositories/hive_table_repository.dart';
 import '../../data/repositories/in_memory_table_repository.dart';
 import '../../domain/entities/restaurant_table.dart';
@@ -23,11 +26,50 @@ final tableRepositoryProvider = Provider<TableRepository>((ref) {
 /// table occupied with an active order. Changes flow back through the
 /// repository so a future remote impl stays consistent.
 class TableController extends StateNotifier<List<RestaurantTable>> {
-  TableController(this._repository) : super(const []) {
+  TableController(this._repository, {RealtimeService? realtimeService})
+    : _realtimeService = realtimeService,
+      super(const []) {
     _load();
+    _initRealtime();
   }
 
   final TableRepository _repository;
+  final RealtimeService? _realtimeService;
+  StreamSubscription<RealtimeEvent>? _realtimeSub;
+
+  void _initRealtime() {
+    final service = _realtimeService;
+    if (service == null) return;
+    _realtimeSub = service.events.listen((event) {
+      if (event.type == RealtimeEventType.tableStatusChanged) {
+        try {
+          final tableId =
+              (event.payload['id'] ?? event.payload['tableId'])?.toString();
+          if (tableId == null) return;
+
+          final index = state.indexWhere((t) => t.id == tableId);
+          if (index == -1) return;
+
+          // Attempt full JSON deserialize or update status/orderId directly
+          RestaurantTable updated;
+          if (event.payload.containsKey('tableNumber')) {
+            updated = RestaurantTable.fromJson(event.payload);
+          } else {
+            final statusStr = event.payload['status']?.toString();
+            final orderId = event.payload['currentOrderId']?.toString();
+            updated = state[index].copyWith(
+              status: statusStr != null
+                  ? TableStatus.fromName(statusStr)
+                  : state[index].status,
+              currentOrderId: orderId ?? state[index].currentOrderId,
+              lastUpdated: DateTime.now(),
+            );
+          }
+          state = [...state]..[index] = updated;
+        } catch (_) {}
+      }
+    });
+  }
 
   Future<void> _load() async {
     final result = await _repository.getTables();
@@ -41,7 +83,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     return null;
   }
 
-  /// Applies [update] then persists through the repository.
+  /// Applies [update] then persists through the repository and broadcasts live.
   Future<void> _apply(
     String tableId,
     RestaurantTable Function(RestaurantTable) update,
@@ -50,6 +92,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     if (current == null) return;
     final updated = update(current);
     state = state.map((t) => t.id == tableId ? updated : t).toList();
+    _realtimeService?.broadcastTableStatusChanged(updated.toJson());
     await _repository.updateTable(updated);
   }
 
@@ -90,10 +133,19 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _realtimeSub?.cancel();
+    super.dispose();
+  }
 }
 
 /// Provider for [TableController].
 final tableControllerProvider =
     StateNotifierProvider<TableController, List<RestaurantTable>>((ref) {
-      return TableController(ref.watch(tableRepositoryProvider));
+      return TableController(
+        ref.watch(tableRepositoryProvider),
+        realtimeService: ref.watch(realtimeServiceProvider),
+      );
     });

@@ -6,6 +6,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../../data/services/report_export_service.dart';
 
 /// Manager page that lists completed orders as printable invoices.
 class InvoicesPage extends ConsumerWidget {
@@ -27,11 +28,22 @@ class InvoicesPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'تصدير الكل',
+            tooltip: 'تصدير CSV',
             onPressed: () {
+              if (completedOrders.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('لا توجد فواتير لتصديرها'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              final exportService = ref.read(reportExportServiceProvider);
+              final _ = exportService.generateInvoicesCsv(completedOrders);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('جاري تصدير الفواتير...'),
+                SnackBar(
+                  content: Text('تم تصدير ${completedOrders.length} فاتورة بتنسيق CSV بنجاح!'),
                   behavior: SnackBarBehavior.floating,
                 ),
               );

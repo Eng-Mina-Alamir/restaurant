@@ -253,7 +253,7 @@ class _MapMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(4),
-            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
           child: Text(
             label,

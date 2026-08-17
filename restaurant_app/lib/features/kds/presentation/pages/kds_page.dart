@@ -10,6 +10,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
+import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
@@ -68,54 +69,103 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     }
     _lastOrderCount = pendingCount;
 
-    final pending = active.where((o) => o.status == OrderStatus.pending);
-    final preparing = active.where((o) => o.status == OrderStatus.preparing);
-    final ready = active.where((o) => o.status == OrderStatus.ready);
+    final pendingList = active.where((o) => o.status == OrderStatus.pending).toList();
+    final preparingList = active.where((o) => o.status == OrderStatus.preparing).toList();
+    final readyList = active.where((o) => o.status == OrderStatus.ready).toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppConstants.kdsTitle),
-        actions: [
-          if (badge > 0)
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
-              child: Center(
-                child: Badge(
-                  label: Text('$badge'),
-                  child: const Icon(Icons.notifications_active),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(AppConstants.kdsTitle),
+          actions: [
+            if (badge > 0)
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.md),
+                child: Center(
+                  child: Badge(
+                    label: Text('$badge'),
+                    child: const Icon(Icons.notifications_active),
+                  ),
                 ),
               ),
-            ),
-          const LogoutActionButton(),
-        ],
+            const LogoutActionButton(),
+          ],
+          bottom: AppBreakpoints.isMobile(context) && active.isNotEmpty
+              ? TabBar(
+                  tabs: [
+                    Tab(
+                      text: '${AppConstants.kdsPending} (${pendingList.length})',
+                    ),
+                    Tab(
+                      text:
+                          '${AppConstants.kdsPreparing} (${preparingList.length})',
+                    ),
+                    Tab(
+                      text: '${AppConstants.kdsReady} (${readyList.length})',
+                    ),
+                  ],
+                )
+              : null,
+        ),
+        body: active.isEmpty
+            ? const EmptyOrdersState()
+            : ResponsiveLayout(
+                mobile: TabBarView(
+                  children: [
+                    _KdsColumn(
+                      title: AppConstants.kdsPending,
+                      color: Colors.orange,
+                      orders: pendingList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                      isExpanded: false,
+                    ),
+                    _KdsColumn(
+                      title: AppConstants.kdsPreparing,
+                      color: Colors.blue,
+                      orders: preparingList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                      isExpanded: false,
+                    ),
+                    _KdsColumn(
+                      title: AppConstants.kdsReady,
+                      color: Colors.green,
+                      orders: readyList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                      isExpanded: false,
+                    ),
+                  ],
+                ),
+                tablet: Row(
+                  children: [
+                    _KdsColumn(
+                      title: AppConstants.kdsPending,
+                      color: Colors.orange,
+                      orders: pendingList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                    ),
+                    _KdsColumn(
+                      title: AppConstants.kdsPreparing,
+                      color: Colors.blue,
+                      orders: preparingList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                    ),
+                    _KdsColumn(
+                      title: AppConstants.kdsReady,
+                      color: Colors.green,
+                      orders: readyList,
+                      onAdvance: (order) => _advance(context, ref, order),
+                      tableNumberById: tableNumberById,
+                    ),
+                  ],
+                ),
+              ),
       ),
-      body: active.isEmpty
-          ? const EmptyOrdersState()
-          : Row(
-              children: [
-                _KdsColumn(
-                  title: AppConstants.kdsPending,
-                  color: Colors.orange,
-                  orders: pending.toList(),
-                  onAdvance: (order) => _advance(context, ref, order),
-                  tableNumberById: tableNumberById,
-                ),
-                _KdsColumn(
-                  title: AppConstants.kdsPreparing,
-                  color: Colors.blue,
-                  orders: preparing.toList(),
-                  onAdvance: (order) => _advance(context, ref, order),
-                  tableNumberById: tableNumberById,
-                ),
-                _KdsColumn(
-                  title: AppConstants.kdsReady,
-                  color: Colors.green,
-                  orders: ready.toList(),
-                  onAdvance: (order) => _advance(context, ref, order),
-                  tableNumberById: tableNumberById,
-                ),
-              ],
-            ),
     );
   }
 
@@ -156,6 +206,7 @@ class _KdsColumn extends StatelessWidget {
     required this.orders,
     required this.onAdvance,
     required this.tableNumberById,
+    this.isExpanded = true,
   });
 
   final String title;
@@ -163,55 +214,59 @@ class _KdsColumn extends StatelessWidget {
   final List<OrderEntity> orders;
   final ValueChanged<OrderEntity> onAdvance;
   final Map<String, int> tableNumberById;
+  final bool isExpanded;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.all(AppSpacing.xs),
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '$title (${orders.length})',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Expanded(
-              child: orders.isEmpty
-                  ? Center(
-                      child: Text(
-                        AppConstants.kdsEmptyColumn,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+    final content = Container(
+      margin: const EdgeInsets.all(AppSpacing.xs),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '$title (${orders.length})',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(color: color),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Expanded(
+            child: orders.isEmpty
+                ? Center(
+                    child: Text(
+                      AppConstants.kdsEmptyColumn,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    )
-                  : ListView(
-                      children: [
-                        for (final order in orders)
-                          _OrderCard(
-                            order: order,
-                            onAdvance: onAdvance,
-                            tableNumber: order.tableId == null
-                                ? null
-                                : tableNumberById[order.tableId],
-                          ),
-                      ],
                     ),
-            ),
-          ],
-        ),
+                  )
+                : ListView(
+                    children: [
+                      for (final order in orders)
+                        _OrderCard(
+                          order: order,
+                          onAdvance: onAdvance,
+                          tableNumber: order.tableId == null
+                              ? null
+                              : tableNumberById[order.tableId],
+                        ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
+
+    if (isExpanded) {
+      return Expanded(child: content);
+    }
+    return content;
   }
 }
 

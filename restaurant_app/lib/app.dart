@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'config/app_config.dart';
+import 'core/l10n/app_localizations.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/controllers/auth_controller.dart';
@@ -44,13 +45,15 @@ class _RestaurantAppState extends ConsumerState<RestaurantApp> {
     // Force the router to re-evaluate its redirects when the auth state changes.
     ref.listen(authControllerProvider, (_, __) => _router.refresh());
 
+    final activeLocale = ref.watch(localeControllerProvider);
+
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       routerConfig: _router,
-      locale: const Locale('ar'),
+      locale: activeLocale,
       supportedLocales: const [Locale('ar'), Locale('en')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

@@ -10,12 +10,15 @@ import '../../features/orders/presentation/pages/order_confirmation_page.dart';
 import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
-import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
+import '../../features/manager_dashboard/presentation/pages/alerts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/discounts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/inventory_page.dart';
-import '../../features/manager_dashboard/presentation/pages/staff_performance_page.dart';
 import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
+import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
+import '../../features/manager_dashboard/presentation/pages/staff_performance_page.dart';
+import '../../features/settings/presentation/pages/privacy_policy_page.dart';
+import '../../features/settings/presentation/pages/terms_page.dart';
 import '../../features/table_management/presentation/pages/all_orders_page.dart';
 import '../../features/table_management/presentation/pages/table_detail_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
@@ -129,11 +132,23 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             path: 'qr-codes',
             builder: (context, state) => const QrGeneratorPage(),
           ),
+          GoRoute(
+            path: 'alerts',
+            builder: (context, state) => const AlertsPage(),
+          ),
         ],
       ),
       GoRoute(
         path: '/driver',
         builder: (context, state) => const DriverHomePage(),
+      ),
+      GoRoute(
+        path: '/privacy-policy',
+        builder: (context, state) => const PrivacyPolicyPage(),
+      ),
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const TermsPage(),
       ),
       GoRoute(
         path: '/:page',

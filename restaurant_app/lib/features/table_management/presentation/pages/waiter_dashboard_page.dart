@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
+import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/table_controller.dart';
@@ -40,32 +41,43 @@ class WaiterDashboardPage extends ConsumerWidget {
                   child: _OrdersSummary(orders: orders),
                 ),
                 Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.15,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                        ),
-                    itemCount: tables.length,
-                    itemBuilder: (context, index) {
-                      final table = tables[index];
-                      return WaiterTableCard(
-                        table: table,
-                        onTap: () {
-                          context.push('/waiter/table/${table.id}');
+                  child: ResponsiveBuilder(
+                    builder: (context, screenType, constraints) {
+                      final cols = AppBreakpoints.gridColumnsForWidth(
+                        constraints.maxWidth,
+                        minColumns: 2,
+                        maxColumns: 5,
+                      );
+                      final ratio = screenType == ScreenType.mobile ? 1.15 : 1.25;
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: cols,
+                              childAspectRatio: ratio,
+                              crossAxisSpacing: AppSpacing.md,
+                              mainAxisSpacing: AppSpacing.md,
+                            ),
+                        itemCount: tables.length,
+                        itemBuilder: (context, index) {
+                          final table = tables[index];
+                          return WaiterTableCard(
+                            table: table,
+                            onTap: () {
+                              context.push('/waiter/table/${table.id}');
+                            },
+                            onTakeOrder: () {
+                              context.push('/waiter/order/${table.id}');
+                            },
+                            onRelease: () => ref
+                                .read(tableControllerProvider.notifier)
+                                .release(table.id),
+                            onReserve: () => ref
+                                .read(tableControllerProvider.notifier)
+                                .setReserved(table.id, reserved: true),
+                          );
                         },
-                        onTakeOrder: () {
-                          context.push('/waiter/order/${table.id}');
-                        },
-                        onRelease: () => ref
-                            .read(tableControllerProvider.notifier)
-                            .release(table.id),
-                        onReserve: () => ref
-                            .read(tableControllerProvider.notifier)
-                            .setReserved(table.id, reserved: true),
                       );
                     },
                   ),

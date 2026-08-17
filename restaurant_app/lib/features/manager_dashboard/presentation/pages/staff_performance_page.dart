@@ -189,7 +189,7 @@ class _TopPerformerBanner extends StatelessWidget {
                 ),
                 Text(
                   performer.role,
-                  style: TextStyle(color: Colors.white70),
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),

@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../../config/app_config.dart';
 import '../../config/environment.dart';
 import '../utils/logger.dart';
 
@@ -26,14 +28,22 @@ class RealtimeEvent {
   final Map<String, dynamic> payload;
 
   factory RealtimeEvent.fromRaw(String raw) {
-    // Minimal JSON-like parsing without a full json_decode to stay lightweight.
-    // In production, replace with proper json.decode + typed models.
     try {
-      // Very simple pattern: {"type":"orderCreated","data":{...}}
-      final typeMatch = RegExp(r'"type"\s*:\s*"(\w+)"').firstMatch(raw);
-      final typeName = typeMatch?.group(1) ?? '';
-      final eventType = _typeFromString(typeName);
-      return RealtimeEvent(type: eventType, payload: {'raw': raw});
+      final dynamic decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        final typeName = (decoded['type'] ?? decoded['event'])?.toString() ?? '';
+        final eventType = _typeFromString(typeName);
+        final payloadData = decoded['data'] is Map<String, dynamic>
+            ? decoded['data'] as Map<String, dynamic>
+            : (decoded['payload'] is Map<String, dynamic>
+                ? decoded['payload'] as Map<String, dynamic>
+                : decoded);
+        return RealtimeEvent(type: eventType, payload: payloadData);
+      }
+      return RealtimeEvent(
+        type: RealtimeEventType.unknown,
+        payload: {'raw': raw},
+      );
     } catch (_) {
       return RealtimeEvent(
         type: RealtimeEventType.unknown,
@@ -45,12 +55,16 @@ class RealtimeEvent {
   static RealtimeEventType _typeFromString(String s) {
     switch (s) {
       case 'orderCreated':
+      case 'order_created':
         return RealtimeEventType.orderCreated;
       case 'orderStatusChanged':
+      case 'order_status_changed':
         return RealtimeEventType.orderStatusChanged;
       case 'tableStatusChanged':
+      case 'table_status_changed':
         return RealtimeEventType.tableStatusChanged;
       case 'driverLocationUpdated':
+      case 'driver_location_updated':
         return RealtimeEventType.driverLocationUpdated;
       default:
         return RealtimeEventType.unknown;
@@ -127,16 +141,58 @@ class RealtimeService {
   /// Sends a raw [message] string to the server.
   void send(String message) {
     try {
-      _channel?.sink.add(message);
+      if (_channel != null) {
+        _channel?.sink.add(message);
+      } else {
+        // In demo / test mode without an active remote socket, loop back to the stream
+        final event = RealtimeEvent.fromRaw(message);
+        _controller?.add(event);
+      }
     } catch (e) {
       AppLogger.error('RealtimeService: Send failed: $e');
     }
+  }
+
+  /// Broadcasts a typed event with payload to the WebSocket server.
+  void sendEvent(String type, Map<String, dynamic> data) {
+    final msg = jsonEncode({'type': type, 'data': data});
+    send(msg);
+  }
+
+  /// Broadcasts a newly created order.
+  void broadcastOrderCreated(Map<String, dynamic> orderJson) {
+    sendEvent('orderCreated', orderJson);
+  }
+
+  /// Broadcasts an updated order status.
+  void broadcastOrderStatusChanged(String orderId, String statusName) {
+    sendEvent('orderStatusChanged', {'orderId': orderId, 'id': orderId, 'status': statusName});
+  }
+
+  /// Broadcasts an updated table status.
+  void broadcastTableStatusChanged(Map<String, dynamic> tableJson) {
+    sendEvent('tableStatusChanged', tableJson);
+  }
+
+  /// Broadcasts a driver location update.
+  void broadcastDriverLocation({
+    required String driverId,
+    required double latitude,
+    required double longitude,
+  }) {
+    sendEvent('driverLocationUpdated', {
+      'driverId': driverId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   /// Closes the connection and cleans up resources.
   void disconnect() {
     _disposed = true;
     _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _channel?.sink.close();
     _controller?.close();
   }
@@ -145,7 +201,9 @@ class RealtimeService {
 /// Provider exposing a shared [RealtimeService] instance.
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   final service = RealtimeService();
-  service.connect();
+  if (!AppConfig.useDemoAuth) {
+    service.connect();
+  }
   ref.onDispose(service.disconnect);
   return service;
 });

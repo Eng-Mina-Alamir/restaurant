@@ -34,6 +34,12 @@ class LocalCacheService {
     await _box.put(key, jsonEncode(items));
   }
 
+  /// Reads a single raw string value from [key].
+  String? readString(String key) => _box.get(key);
+
+  /// Writes a single string value to [key].
+  Future<void> writeString(String key, String value) => _box.put(key, value);
+
   /// Removes a single stored collection.
   Future<void> removeKey(String key) => _box.delete(key);
 }

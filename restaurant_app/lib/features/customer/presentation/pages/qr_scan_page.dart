@@ -117,7 +117,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
             right: 0,
             child: Column(
               children: [
-                Icon(Icons.qr_code_scanner, color: Colors.white70, size: 32),
+                const Icon(Icons.qr_code_scanner, color: Colors.white70, size: 32),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'وجّه الكاميرا نحو رمز QR الموجود على الطاولة',

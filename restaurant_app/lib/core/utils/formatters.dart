@@ -26,17 +26,29 @@ abstract final class Formatters {
 
   /// Formats [date] with an Arabic locale (e.g. `6 أغسطس 2026`).
   static String formatDate(DateTime date) {
-    return DateFormat(_datePattern, AppConfig.locale).format(date);
+    try {
+      return DateFormat(_datePattern, AppConfig.locale).format(date);
+    } catch (_) {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   /// Formats [time] in 24-hour form (e.g. `19:30`).
   static String formatTime(DateTime time) {
-    return DateFormat(_timePattern, AppConfig.locale).format(time);
+    try {
+      return DateFormat(_timePattern, AppConfig.locale).format(time);
+    } catch (_) {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   /// Formats [dateTime] combining date and time (e.g. `6 أغسطس 2026، 19:30`).
   static String formatDateTime(DateTime dateTime) {
-    return DateFormat(_dateTimePattern, AppConfig.locale).format(dateTime);
+    try {
+      return DateFormat(_dateTimePattern, AppConfig.locale).format(dateTime);
+    } catch (_) {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   /// Formats an order id as a human-friendly order number (e.g. `#1024`).

@@ -49,10 +49,10 @@ class QrGeneratorPage extends ConsumerWidget {
           : GridView.builder(
           padding: const EdgeInsets.all(AppSpacing.lg),
           gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 220,
+            maxCrossAxisExtent: 240,
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 0.85,
+            childAspectRatio: 0.70,
           ),
           itemCount: tables.length,
           itemBuilder: (context, index) {
