@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../data/services/report_export_service.dart';
 import '../controllers/financial_reports_controller.dart';
 
 class FinancialReportsPage extends ConsumerWidget {
@@ -19,6 +20,25 @@ class FinancialReportsPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('التقارير المالية والأرباح (P&L)'),
         actions: [
+          IconButton(
+            tooltip: 'تصدير تقرير مالي CSV',
+            icon: const Icon(Icons.download_outlined),
+            onPressed: () {
+              final exportService = ref.read(reportExportServiceProvider);
+              final _ = exportService.generateFinancialReportCsv(
+                metrics,
+                state.selectedPeriod.labelAr,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'تم تصدير تقرير بيان الأرباح والخسائر (${state.selectedPeriod.labelAr}) بنجاح!',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'تحديث البيانات',
             icon: const Icon(Icons.refresh),

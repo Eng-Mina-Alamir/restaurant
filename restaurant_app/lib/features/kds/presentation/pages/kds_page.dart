@@ -181,6 +181,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     ref.read(newOrderNotifierProvider).reset();
     final next = _nextStatus(order.status);
     if (next == null) return;
+    _alertService.alertOrderReady();
     await ref
         .read(ordersControllerProvider.notifier)
         .updateStatus(order.id, next);

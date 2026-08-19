@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/data/app_cache.dart';
+import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/network/realtime_service.dart';
@@ -39,8 +40,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     this._newOrderNotifier, {
     RealtimeService? realtimeService,
     ConnectivityService? connectivityService,
+    OfflineQueueService? offlineQueueService,
   })  : _realtimeService = realtimeService,
         _connectivityService = connectivityService,
+        _offlineQueueService = offlineQueueService,
         super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -51,6 +54,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final NewOrderNotifier _newOrderNotifier;
   final RealtimeService? _realtimeService;
   final ConnectivityService? _connectivityService;
+  final OfflineQueueService? _offlineQueueService;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   StreamSubscription<ConnectivityStatus>? _connectivitySub;
   final List<OrderEntity> _offlineQueue = [];
@@ -70,12 +74,24 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
   /// Synchronizes pending offline orders when connectivity returns.
   Future<void> syncOfflineOrders() async {
-    if (_offlineQueue.isEmpty) return;
-    final toSync = List<OrderEntity>.of(_offlineQueue);
-    for (final order in toSync) {
-      _realtimeService?.broadcastOrderCreated(order.toJson());
+    if (_offlineQueue.isNotEmpty) {
+      final toSync = List<OrderEntity>.of(_offlineQueue);
+      for (final order in toSync) {
+        _realtimeService?.broadcastOrderCreated(order.toJson());
+      }
+      _offlineQueue.clear();
     }
-    _offlineQueue.clear();
+
+    final queueService = _offlineQueueService;
+    if (queueService != null && queueService.hasPending) {
+      await queueService.drainWith((type, payload) async {
+        if (type == 'createOrder') {
+          _realtimeService?.broadcastOrderCreated(payload);
+          return true;
+        }
+        return true;
+      });
+    }
   }
 
   void _initRealtime() {
@@ -148,6 +164,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         _newOrderNotifier.notifyNewOrder();
         if (_connectivityService?.isOnline == false) {
           _offlineQueue.add(created);
+          _offlineQueueService?.enqueue(
+            operationType: 'createOrder',
+            payload: created.toJson(),
+          );
         } else {
           _realtimeService?.broadcastOrderCreated(created.toJson());
         }
@@ -188,6 +208,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         _newOrderNotifier.notifyNewOrder();
         if (_connectivityService?.isOnline == false) {
           _offlineQueue.add(created);
+          _offlineQueueService?.enqueue(
+            operationType: 'createOrder',
+            payload: created.toJson(),
+          );
         } else {
           _realtimeService?.broadcastOrderCreated(created.toJson());
         }
@@ -243,5 +267,6 @@ final ordersControllerProvider =
         ref.watch(newOrderNotifierProvider),
         realtimeService: ref.watch(realtimeServiceProvider),
         connectivityService: ref.watch(connectivityServiceProvider),
+        offlineQueueService: ref.watch(offlineQueueServiceProvider),
       );
     });

@@ -107,6 +107,11 @@ final selectedPaymentMethodProvider = StateProvider<PaymentMethod>(
   (ref) => PaymentMethod.cash,
 );
 
+/// The order type (dineIn, takeaway, delivery) selected by the customer.
+final selectedOrderTypeProvider = StateProvider<OrderType>(
+  (ref) => OrderType.dineIn,
+);
+
 /// Exposes the active table id from the cart controller (read-only).
 final activeTableIdProvider = Provider<String?>(
   (ref) => ref.watch(cartControllerProvider.notifier).activeTableId,

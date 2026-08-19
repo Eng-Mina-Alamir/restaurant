@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
+import '../../../../shared/widgets/theme_mode_switch_button.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
@@ -35,18 +36,18 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
       appBar: AppBar(
         title: const Text(AppConstants.menuTitle),
         actions: [
+          const ThemeModeSwitchButton(),
           Consumer(
             builder: (context, ref, _) {
-              final tableId = ref.watch(activeTableIdProvider);
+              final activeTable = ref.watch(activeTableIdProvider);
               return IconButton(
                 icon: Icon(
-                  tableId != null
-                      ? Icons.qr_code_2
+                  activeTable != null
+                      ? Icons.table_restaurant
                       : Icons.qr_code_scanner,
-                  color: tableId != null ? Colors.green : null,
                 ),
-                tooltip: tableId != null
-                    ? 'طاولة: $tableId'
+                tooltip: activeTable != null
+                    ? 'طاولة $activeTable'
                     : 'مسح QR الطاولة',
                 onPressed: () {
                   Navigator.push(
@@ -69,6 +70,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             icon: const Icon(Icons.history),
             tooltip: AppConstants.orderHistoryTitle,
             onPressed: () => context.push('/customer/orders'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'الإشعارات والتنبيهات',
+            onPressed: () => context.push('/notifications'),
           ),
 
           IconButton(

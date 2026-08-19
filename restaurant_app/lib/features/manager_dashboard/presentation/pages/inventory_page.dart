@@ -3,132 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../inventory/domain/entities/inventory_item_entity.dart';
+import '../../../inventory/presentation/controllers/inventory_controller.dart';
+import '../../data/services/report_export_service.dart';
 
-/// Stock level status for an inventory item.
-enum StockStatus {
-  sufficient,  // كافٍ
-  low,         // منخفض
-  outOfStock,  // منتهي
-}
-
-/// Represents a tracked inventory item.
-class InventoryItem {
-  const InventoryItem({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.currentStock,
-    required this.unit,
-    required this.minThreshold,
-    required this.costPerUnit,
-  });
-
-  final String id;
-  final String name;
-  final String category;
-  final double currentStock;
-  final String unit;
-  final double minThreshold;
-  final double costPerUnit;
-
-  StockStatus get status {
-    if (currentStock <= 0) return StockStatus.outOfStock;
-    if (currentStock <= minThreshold) return StockStatus.low;
-    return StockStatus.sufficient;
-  }
-
-  String get statusLabel {
-    switch (status) {
-      case StockStatus.sufficient:
-        return 'كافٍ';
-      case StockStatus.low:
-        return 'منخفض';
-      case StockStatus.outOfStock:
-        return 'منتهي';
-    }
-  }
-
-  Color statusColor(ColorScheme cs) {
-    switch (status) {
-      case StockStatus.sufficient:
-        return Colors.green;
-      case StockStatus.low:
-        return Colors.orange;
-      case StockStatus.outOfStock:
-        return cs.error;
-    }
-  }
-
-  double get totalValue => currentStock * costPerUnit;
-}
-
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-final _mockInventory = [
-  const InventoryItem(
-    id: 'inv-1',
-    name: 'لحم بقري مفروم',
-    category: 'لحوم',
-    currentStock: 12,
-    unit: 'كغ',
-    minThreshold: 5,
-    costPerUnit: 55,
-  ),
-  const InventoryItem(
-    id: 'inv-2',
-    name: 'خبز برجر',
-    category: 'مخبوزات',
-    currentStock: 3,
-    unit: 'كرتون',
-    minThreshold: 5,
-    costPerUnit: 25,
-  ),
-  const InventoryItem(
-    id: 'inv-3',
-    name: 'زيت نباتي',
-    category: 'مواد غذائية',
-    currentStock: 0,
-    unit: 'لتر',
-    minThreshold: 10,
-    costPerUnit: 12,
-  ),
-  const InventoryItem(
-    id: 'inv-4',
-    name: 'طماطم طازجة',
-    category: 'خضروات',
-    currentStock: 20,
-    unit: 'كغ',
-    minThreshold: 8,
-    costPerUnit: 6,
-  ),
-  const InventoryItem(
-    id: 'inv-5',
-    name: 'جبن شيدر',
-    category: 'ألبان',
-    currentStock: 4,
-    unit: 'كغ',
-    minThreshold: 5,
-    costPerUnit: 45,
-  ),
-  const InventoryItem(
-    id: 'inv-6',
-    name: 'دجاج مبرد',
-    category: 'لحوم',
-    currentStock: 25,
-    unit: 'كغ',
-    minThreshold: 10,
-    costPerUnit: 30,
-  ),
-];
-
-// ── Provider ──────────────────────────────────────────────────────────────────
-
-final inventoryProvider =
-    StateProvider<List<InventoryItem>>((ref) => _mockInventory);
-
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-/// Manager inventory management page showing stock levels and alerts.
+/// Full-featured Manager Inventory Management Page.
 class InventoryPage extends ConsumerStatefulWidget {
   const InventoryPage({super.key});
 
@@ -144,24 +23,36 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final allItems = ref.watch(inventoryProvider);
-
-    final filtered = allItems.where((item) {
-      final matchesSearch = item.name.contains(_searchQuery) ||
-          item.category.contains(_searchQuery);
-      final matchesStatus =
-          _filterStatus == null || item.status == _filterStatus;
-      return matchesSearch && matchesStatus;
-    }).toList();
-
-    final outOfStock = allItems.where((i) => i.status == StockStatus.outOfStock).length;
-    final low = allItems.where((i) => i.status == StockStatus.low).length;
-    final totalValue = allItems.fold<double>(0, (sum, i) => sum + i.totalValue);
+    final inventoryAsync = ref.watch(inventoryControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المخزون'),
+        title: const Text('إدارة المخزون والتوريد'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: 'تصدير تقرير المخزون CSV',
+            onPressed: () {
+              final items = inventoryAsync.valueOrNull ?? [];
+              if (items.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('لا توجد عناصر في المخزون لتصديرها'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              final exportService = ref.read(reportExportServiceProvider);
+              final _ = exportService.generateInventoryCsv(items);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('تم تصدير تقرير ${items.length} صنف بنجاح!'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+          ),
           PopupMenuButton<StockStatus?>(
             icon: const Icon(Icons.filter_list),
             tooltip: 'تصفية حسب الحالة',
@@ -170,104 +61,412 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               const PopupMenuItem(value: null, child: Text('الكل')),
               const PopupMenuItem(
                 value: StockStatus.outOfStock,
-                child: Text('منتهي'),
+                child: Text('🔴 منتهي'),
               ),
               const PopupMenuItem(
                 value: StockStatus.low,
-                child: Text('منخفض'),
+                child: Text('🟡 منخفض'),
               ),
               const PopupMenuItem(
                 value: StockStatus.sufficient,
-                child: Text('كافٍ'),
+                child: Text('🟢 كافٍ'),
               ),
             ],
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Summary cards
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Row(
-              children: [
-                _SummaryChip(
-                  label: 'منتهية',
-                  count: '$outOfStock',
-                  color: colorScheme.error,
-                  onTap: () => setState(
-                    () => _filterStatus = outOfStock > 0
-                        ? StockStatus.outOfStock
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                _SummaryChip(
-                  label: 'منخفضة',
-                  count: '$low',
-                  color: Colors.orange,
-                  onTap: () => setState(
-                    () => _filterStatus =
-                        low > 0 ? StockStatus.low : null,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'القيمة: ${Formatters.formatCurrency(totalValue)}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'بحث في المخزون...',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
+      body: inventoryAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: AppSpacing.md),
+              Text('خطأ: $err'),
+              const SizedBox(height: AppSpacing.sm),
+              FilledButton(
+                onPressed: () => ref.read(inventoryControllerProvider.notifier).load(),
+                child: const Text('إعادة المحاولة'),
               ),
-              onChanged: (q) => setState(() => _searchQuery = q),
-            ),
+            ],
           ),
+        ),
+        data: (allItems) {
+          final filtered = allItems.where((item) {
+            final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                item.category.toLowerCase().contains(_searchQuery.toLowerCase());
+            final matchesStatus = _filterStatus == null || item.status == _filterStatus;
+            return matchesSearch && matchesStatus;
+          }).toList();
 
-          const SizedBox(height: AppSpacing.md),
+          final outOfStock = allItems.where((i) => i.status == StockStatus.outOfStock).length;
+          final low = allItems.where((i) => i.status == StockStatus.low).length;
+          final totalValue = allItems.fold<double>(0, (sum, i) => sum + i.totalValue);
 
-          // Items list
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                0,
-                AppSpacing.md,
-                AppSpacing.xl,
+          return Column(
+            children: [
+              // Summary cards
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Row(
+                  children: [
+                    _SummaryChip(
+                      label: 'منتهية',
+                      count: '$outOfStock',
+                      color: colorScheme.error,
+                      onTap: () => setState(
+                        () => _filterStatus = outOfStock > 0 ? StockStatus.outOfStock : null,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _SummaryChip(
+                      label: 'منخفضة',
+                      count: '$low',
+                      color: Colors.orange,
+                      onTap: () => setState(
+                        () => _filterStatus = low > 0 ? StockStatus.low : null,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'إجمالي القيمة: ${Formatters.formatCurrency(totalValue)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              itemCount: filtered.length,
-              separatorBuilder: (_, __) =>
-                  const SizedBox(height: AppSpacing.sm),
-              itemBuilder: (context, i) =>
-                  _InventoryCard(item: filtered[i], allItems: allItems),
-            ),
-          ),
-        ],
+
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'بحث في أصناف المخزون والفئات...',
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onChanged: (q) => setState(() => _searchQuery = q),
+                ),
+              ),
+
+              const SizedBox(height: AppSpacing.md),
+
+              // Items list
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inventory_2_outlined,
+                                size: 56, color: colorScheme.onSurfaceVariant),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'لا توجد أصناف مطابقة للبحث أو التصفية',
+                              style: TextStyle(color: colorScheme.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.md,
+                          0,
+                          AppSpacing.md,
+                          AppSpacing.xl * 2,
+                        ),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: AppSpacing.sm),
+                        itemBuilder: (context, i) => _InventoryCard(
+                          item: filtered[i],
+                          onRestock: () => _showRestockDialog(context, filtered[i]),
+                          onEdit: () => _showEditDialog(context, filtered[i]),
+                          onDelete: () => _showDeleteDialog(context, filtered[i]),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddItem(context),
-        icon: const Icon(Icons.add),
-        label: const Text('صنف جديد'),
+        onPressed: () => _showAddItemDialog(context),
+        icon: const Icon(Icons.add_circle_outline),
+        label: const Text('إضافة صنف جديد'),
       ),
     );
   }
 
-  void _showAddItem(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('سيتم إضافة هذه الميزة في الإصدار القادم'),
-        behavior: SnackBarBehavior.floating,
+  void _showAddItemDialog(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    final nameCtrl = TextEditingController();
+    final catCtrl = TextEditingController();
+    final stockCtrl = TextEditingController();
+    final unitCtrl = TextEditingController(text: 'كغ');
+    final thresholdCtrl = TextEditingController();
+    final costCtrl = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.add_box_outlined, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('إضافة صنف مخزون جديد'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'اسم الصنف *'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: catCtrl,
+                decoration: const InputDecoration(labelText: 'الفئة (لحوم، خضروات، ...) *'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: stockCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'الكمية الحالية *'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: unitCtrl,
+                      decoration: const InputDecoration(labelText: 'الوحدة (كغ، لتر، كرتون)'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: thresholdCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'حد التنبيه الأدنى *'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: costCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(labelText: 'التكلفة للوحدة (ر.س) *'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final name = nameCtrl.text.trim();
+              final cat = catCtrl.text.trim();
+              final stock = double.tryParse(stockCtrl.text.trim()) ?? 0.0;
+              final unit = unitCtrl.text.trim().isEmpty ? 'كغ' : unitCtrl.text.trim();
+              final threshold = double.tryParse(thresholdCtrl.text.trim()) ?? 0.0;
+              final cost = double.tryParse(costCtrl.text.trim()) ?? 0.0;
+
+              if (name.isEmpty || cat.isEmpty) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
+                );
+                return;
+              }
+
+              Navigator.pop(ctx);
+              final ok = await ref.read(inventoryControllerProvider.notifier).addItem(
+                    name: name,
+                    category: cat,
+                    currentStock: stock,
+                    unit: unit,
+                    minThreshold: threshold,
+                    costPerUnit: cost,
+                  );
+
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(ok ? 'تمت إضافة الصنف "$name" بنجاح' : 'تعذر إضافة الصنف'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRestockDialog(BuildContext context, InventoryItemEntity item) {
+    final messenger = ScaffoldMessenger.of(context);
+    final amountCtrl = TextEditingController();
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('إعادة تخزين: ${item.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('الكمية الحالية: ${item.currentStock} ${item.unit}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'الكمية المضافة (${item.unit})',
+                hintText: 'مثال: 10',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final amount = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
+              if (amount <= 0) return;
+              Navigator.pop(ctx);
+              await ref.read(inventoryControllerProvider.notifier).restock(item.id, amount);
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text('تمت إضافة $amount ${item.unit} إلى ${item.name}'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('تأكيد الإضافة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context, InventoryItemEntity item) {
+    final messenger = ScaffoldMessenger.of(context);
+    final stockCtrl = TextEditingController(text: '${item.currentStock}');
+    final thresholdCtrl = TextEditingController(text: '${item.minThreshold}');
+    final costCtrl = TextEditingController(text: '${item.costPerUnit}');
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('تعديل: ${item.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: stockCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'الكمية الحالية (${item.unit})'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: thresholdCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'حد التنبيه الأدنى (${item.unit})'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: costCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'تكلفة الوحدة (ر.س)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final stock = double.tryParse(stockCtrl.text.trim()) ?? item.currentStock;
+              final threshold = double.tryParse(thresholdCtrl.text.trim()) ?? item.minThreshold;
+              final cost = double.tryParse(costCtrl.text.trim()) ?? item.costPerUnit;
+
+              Navigator.pop(ctx);
+              await ref.read(inventoryControllerProvider.notifier).updateItem(
+                    item.copyWith(
+                      currentStock: stock,
+                      minThreshold: threshold,
+                      costPerUnit: cost,
+                    ),
+                  );
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('تم تحديث بيانات الصنف بنجاح'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('حفظ التعديلات'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, InventoryItemEntity item) {
+    final messenger = ScaffoldMessenger.of(context);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف الصنف من المخزون'),
+        content: Text('هل أنت متأكد من رغبتك في حذف "${item.name}" نهائياً؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(inventoryControllerProvider.notifier).deleteItem(item.id);
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text('تم حذف "${item.name}"'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('حذف'),
+          ),
+        ],
       ),
     );
   }
@@ -275,13 +474,21 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
 
 // ── Inventory card ─────────────────────────────────────────────────────────────
 
-class _InventoryCard extends ConsumerWidget {
-  const _InventoryCard({required this.item, required this.allItems});
-  final InventoryItem item;
-  final List<InventoryItem> allItems;
+class _InventoryCard extends StatelessWidget {
+  const _InventoryCard({
+    required this.item,
+    required this.onRestock,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final InventoryItemEntity item;
+  final VoidCallback onRestock;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final statusColor = item.statusColor(colorScheme);
@@ -335,13 +542,42 @@ class _InventoryCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 20),
+                  onSelected: (val) {
+                    if (val == 'edit') onEdit();
+                    if (val == 'delete') onDelete();
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 18),
+                          SizedBox(width: 8),
+                          Text('تعديل الصنف'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          SizedBox(width: 8),
+                          Text('حذف', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Text(
-                  '${item.currentStock} ${item.unit}',
+                  '${item.currentStock.toStringAsFixed(1)} ${item.unit}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: statusColor,
@@ -349,7 +585,7 @@ class _InventoryCard extends ConsumerWidget {
                 ),
                 const Spacer(),
                 Text(
-                  'الحد الأدنى: ${item.minThreshold} ${item.unit}',
+                  'الحد الأدنى: ${item.minThreshold.toStringAsFixed(1)} ${item.unit}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -361,8 +597,7 @@ class _InventoryCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: progress,
-                backgroundColor:
-                    colorScheme.surfaceContainerHighest,
+                backgroundColor: colorScheme.surfaceContainerHighest,
                 valueColor: AlwaysStoppedAnimation<Color>(statusColor),
                 minHeight: 6,
               ),
@@ -373,7 +608,7 @@ class _InventoryCard extends ConsumerWidget {
               children: [
                 Text(
                   'القيمة: ${Formatters.formatCurrency(item.totalValue)}',
-                  style: theme.textTheme.bodySmall,
+                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.add_circle_outline, size: 16),
@@ -382,15 +617,7 @@ class _InventoryCard extends ConsumerWidget {
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                   ),
-                  onPressed: () {
-                    // Placeholder for restock action
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('إعادة تخزين: ${item.name}'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
+                  onPressed: onRestock,
                 ),
               ],
             ),

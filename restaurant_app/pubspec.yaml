@@ -61,6 +61,9 @@ dependencies:
   # Charts & Analytics
   fl_chart: ^0.68.0
 
+  # Typography & Custom Fonts
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

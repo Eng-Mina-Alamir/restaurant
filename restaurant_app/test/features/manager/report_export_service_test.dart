@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/features/inventory/domain/entities/inventory_item_entity.dart';
 import 'package:restaurant_app/features/manager_dashboard/data/services/report_export_service.dart';
+import 'package:restaurant_app/features/manager_dashboard/domain/entities/financial_report_entity.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_item.dart';
@@ -44,6 +46,59 @@ void main() {
       expect(csv, contains('ORD-789'));
       expect(csv, contains('محلي / داخلي'));
       expect(csv, contains('مكتمل'));
+    });
+
+    test('generateInventoryCsv exports inventory columns and values', () {
+      final items = [
+        const InventoryItemEntity(
+          id: 'inv-1',
+          name: 'لحم بقري',
+          category: 'لحوم',
+          currentStock: 15.0,
+          unit: 'كغ',
+          minThreshold: 5.0,
+          costPerUnit: 50.0,
+        ),
+      ];
+
+      final csv = service.generateInventoryCsv(items);
+      expect(csv.startsWith('\uFEFF'), isTrue);
+      expect(csv, contains('معرف الصنف,اسم الصنف,الفئة,الكمية الحالية'));
+      expect(csv, contains('لحم بقري'));
+      expect(csv, contains('750.00'));
+    });
+
+    test('generateFinancialReportCsv exports P&L statement summary', () {
+      const metrics = FinancialReportMetrics(
+        grossRevenue: 10000.0,
+        cogs: 3000.0,
+        operatingCosts: 2500.0,
+        netProfit: 4500.0,
+        grossMarginPercentage: 70.0,
+        netMarginPercentage: 45.0,
+        averageOrderValue: 100.0,
+        totalOrders: 100,
+        completedOrders: 100,
+        cancelledOrders: 0,
+        paymentBreakdown: {'cash': 5000.0, 'card': 5000.0},
+        topProfitableItems: [
+          ItemProfitability(
+            itemName: 'برجر ترفل',
+            unitsSold: 50,
+            revenue: 2500.0,
+            estimatedCost: 500.0,
+            profit: 2000.0,
+            marginPercent: 80.0,
+          ),
+        ],
+      );
+
+      final csv = service.generateFinancialReportCsv(metrics, 'هذا الشهر');
+      expect(csv.startsWith('\uFEFF'), isTrue);
+      expect(csv, contains('بيان الأرباح والخسائر والتحليل المالي - هذا الشهر'));
+      expect(csv, contains('إجمالي الإيرادات والمبيعات,10000.00'));
+      expect(csv, contains('صافي الربح التشغيلي (Net Income),4500.00'));
+      expect(csv, contains('برجر ترفل'));
     });
 
     test('generateZatcaReceiptText includes required ZATCA tax invoice headers', () {

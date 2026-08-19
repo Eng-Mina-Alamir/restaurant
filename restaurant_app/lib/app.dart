@@ -7,6 +7,7 @@ import 'config/app_config.dart';
 import 'core/l10n/app_localizations.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'features/auth/presentation/controllers/auth_controller.dart';
 
 /// Root application widget.
@@ -46,12 +47,14 @@ class _RestaurantAppState extends ConsumerState<RestaurantApp> {
     ref.listen(authControllerProvider, (_, __) => _router.refresh());
 
     final activeLocale = ref.watch(localeControllerProvider);
+    final themeMode = ref.watch(themeModeControllerProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       routerConfig: _router,
       locale: activeLocale,
       supportedLocales: const [Locale('ar'), Locale('en')],

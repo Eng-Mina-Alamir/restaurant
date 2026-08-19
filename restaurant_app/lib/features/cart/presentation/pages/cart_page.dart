@@ -363,6 +363,12 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                 ),
               ),
 
+            const SizedBox(height: AppSpacing.sm),
+            _OrderTypeSelector(
+              orderType: ref.watch(selectedOrderTypeProvider),
+              onChanged: (t) =>
+                  ref.read(selectedOrderTypeProvider.notifier).state = t,
+            ),
             const SizedBox(height: AppSpacing.md),
             _PaymentSelector(
               paymentMethod: widget.paymentMethod,
@@ -413,6 +419,94 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
   }
 }
 
+class _OrderTypeSelector extends StatelessWidget {
+  const _OrderTypeSelector({
+    required this.orderType,
+    required this.onChanged,
+  });
+
+  final OrderType orderType;
+  final ValueChanged<OrderType> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'نوع الطلب',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: ChoiceChip(
+                avatar: const Icon(Icons.table_restaurant, size: 16),
+                label: const Text('تناول محلي'),
+                selected: orderType == OrderType.dineIn,
+                onSelected: (_) => onChanged(OrderType.dineIn),
+                selectedColor: colorScheme.primary,
+                labelStyle: TextStyle(
+                  color: orderType == OrderType.dineIn
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
+                  fontSize: 11,
+                  fontWeight: orderType == OrderType.dineIn
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: ChoiceChip(
+                avatar: const Icon(Icons.shopping_bag_outlined, size: 16),
+                label: const Text('سفري / استلام'),
+                selected: orderType == OrderType.takeaway,
+                onSelected: (_) => onChanged(OrderType.takeaway),
+                selectedColor: colorScheme.primary,
+                labelStyle: TextStyle(
+                  color: orderType == OrderType.takeaway
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
+                  fontSize: 11,
+                  fontWeight: orderType == OrderType.takeaway
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: ChoiceChip(
+                avatar: const Icon(Icons.delivery_dining_outlined, size: 16),
+                label: const Text('توصيل'),
+                selected: orderType == OrderType.delivery,
+                onSelected: (_) => onChanged(OrderType.delivery),
+                selectedColor: colorScheme.primary,
+                labelStyle: TextStyle(
+                  color: orderType == OrderType.delivery
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurface,
+                  fontSize: 11,
+                  fontWeight: orderType == OrderType.delivery
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
 class _PaymentSelector extends StatelessWidget {
   const _PaymentSelector({
@@ -425,30 +519,94 @@ class _PaymentSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           AppConstants.paymentMethodLabel,
-          style: Theme.of(context).textTheme.titleSmall,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
-        const Spacer(),
-        SegmentedButton<PaymentMethod>(
-          segments: const [
-            ButtonSegment(
-              value: PaymentMethod.cash,
-              icon: Icon(Icons.payments_outlined),
-              label: Text(AppConstants.paymentCash),
-            ),
-            ButtonSegment(
-              value: PaymentMethod.card,
-              icon: Icon(Icons.credit_card),
-              label: Text(AppConstants.paymentCard),
-            ),
-          ],
-          selected: {paymentMethod},
-          onSelectionChanged: (selection) => onChanged(selection.first),
+        const SizedBox(height: AppSpacing.xs),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _PaymentChip(
+                method: PaymentMethod.cash,
+                icon: Icons.payments_outlined,
+                label: AppConstants.paymentCash,
+                isSelected: paymentMethod == PaymentMethod.cash,
+                onTap: () => onChanged(PaymentMethod.cash),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              _PaymentChip(
+                method: PaymentMethod.card,
+                icon: Icons.credit_card,
+                label: AppConstants.paymentCard,
+                isSelected: paymentMethod == PaymentMethod.card,
+                onTap: () => onChanged(PaymentMethod.card),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              _PaymentChip(
+                method: PaymentMethod.wallet,
+                icon: Icons.account_balance_wallet_outlined,
+                label: AppConstants.paymentWallet,
+                isSelected: paymentMethod == PaymentMethod.wallet,
+                onTap: () => onChanged(PaymentMethod.wallet),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              _PaymentChip(
+                method: PaymentMethod.online,
+                icon: Icons.language,
+                label: AppConstants.paymentOnline,
+                isSelected: paymentMethod == PaymentMethod.online,
+                onTap: () => onChanged(PaymentMethod.online),
+              ),
+            ],
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _PaymentChip extends StatelessWidget {
+  const _PaymentChip({
+    required this.method,
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final PaymentMethod method;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return ChoiceChip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: isSelected ? colorScheme.onPrimary : colorScheme.primary,
+      ),
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onTap(),
+      selectedColor: colorScheme.primary,
+      labelStyle: TextStyle(
+        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 13,
+      ),
     );
   }
 }

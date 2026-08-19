@@ -42,6 +42,24 @@ class AlertsController extends StateNotifier<List<AlertEntity>> {
     ),
   ];
 
+  /// Emits a dynamic smart alert (e.g. from low stock, delayed order, or negative review).
+  void addSmartAlert({
+    required String title,
+    required String message,
+    required AlertSeverity severity,
+    required AlertCategory category,
+  }) {
+    final alert = AlertEntity(
+      id: 'ALT-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      message: message,
+      severity: severity,
+      category: category,
+      createdAt: DateTime.now(),
+    );
+    state = [alert, ...state];
+  }
+
   /// Marks an alert as read.
   void markAsRead(String id) {
     state = state.map((a) => a.id == id ? a.copyWith(isRead: true) : a).toList();

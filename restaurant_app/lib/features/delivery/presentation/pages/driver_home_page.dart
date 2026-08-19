@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
@@ -9,9 +10,10 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../controllers/delivery_controller.dart';
+import '../widgets/live_tracking_map.dart';
 
-/// Delivery driver home: live list of assignments with lifecycle actions and a
-/// status filter.
+/// Delivery driver home: live list of assignments with lifecycle actions,
+/// live map tracking and status filter.
 class DriverHomePage extends ConsumerStatefulWidget {
   const DriverHomePage({super.key});
 
@@ -57,11 +59,102 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                       return _DeliveryCard(
                         assignment: assignment,
                         onAction: () => _handleAction(ref, assignment),
+                        onOpenMap: () => _showTrackingMap(context, ref, assignment),
                       );
                     },
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showTrackingMap(
+    BuildContext context,
+    WidgetRef ref,
+    DeliveryAssignment assignment,
+  ) {
+    const pickup = LatLng(24.7136, 46.6753);
+    final delivery = LatLng(
+      assignment.latitude != 0 ? assignment.latitude : 24.7220,
+      assignment.longitude != 0 ? assignment.longitude : 46.6850,
+    );
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.82,
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  const Icon(Icons.map_rounded, color: Colors.blue),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'خريطة التتبع المباشر - طلب ${assignment.orderId}',
+                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: LiveTrackingMap(
+                  pickupLatLng: pickup,
+                  deliveryLatLng: delivery,
+                  deliveryLabel: assignment.deliveryLocation,
+                  onLocationUpdate: (pos) {
+                    ref.read(deliveryControllerProvider.notifier).updateLocation(
+                          latitude: pos.latitude,
+                          longitude: pos.longitude,
+                        );
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_pin, color: Colors.red, size: 20),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      assignment.deliveryLocation,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (assignment.customerPhone != null) ...[
+                    const SizedBox(width: 8),
+                    Chip(
+                      label: Text(assignment.customerPhone!),
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(Icons.phone, size: 14),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -124,10 +217,15 @@ class _StatusFilterBar extends StatelessWidget {
 }
 
 class _DeliveryCard extends StatelessWidget {
-  const _DeliveryCard({required this.assignment, required this.onAction});
+  const _DeliveryCard({
+    required this.assignment,
+    required this.onAction,
+    required this.onOpenMap,
+  });
 
   final DeliveryAssignment assignment;
   final VoidCallback onAction;
+  final VoidCallback onOpenMap;
 
   @override
   Widget build(BuildContext context) {
@@ -236,16 +334,25 @@ class _DeliveryCard extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
             ],
-            if (actionLabel != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: onAction,
-                  child: Text(actionLabel),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('الخريطة والتتبع'),
+                  onPressed: onOpenMap,
                 ),
-              ),
-            ],
+                if (actionLabel != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: onAction,
+                      child: Text(actionLabel),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ),
       ),

@@ -19,6 +19,7 @@ import '../../features/manager_dashboard/presentation/pages/inventory_page.dart'
 import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
 import '../../features/coupons/presentation/pages/coupon_management_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/manager_dashboard/presentation/pages/financial_reports_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
@@ -84,6 +85,10 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
       ),
       GoRoute(
         path: '/customer',

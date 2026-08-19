@@ -26,17 +26,17 @@ class KdsAlertService {
       // Sound file may not exist in dev; fall through to haptic only.
     }
     try {
-      await HapticFeedback.heavyImpact();
+      unawaited(HapticFeedback.heavyImpact().catchError((_) {}));
     } catch (_) {
       // Haptics unsupported on web/desktop – ignore.
     }
   }
 
   /// Provides a light haptic tap when a kitchen user marks an order ready.
-  Future<void> alertOrderReady() async {
+  void alertOrderReady() {
     if (_disposed) return;
     try {
-      await HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
     } catch (_) {}
   }
 

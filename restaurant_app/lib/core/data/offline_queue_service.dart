@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 
 import '../utils/logger.dart';
@@ -45,7 +46,7 @@ class OfflineQueueService {
     if (_box == null || !_box!.isOpen) await init();
     final key = '${DateTime.now().millisecondsSinceEpoch}_$operationType';
     final value = jsonEncode({'type': operationType, 'payload': payload});
-    await _box!.put(key, value);
+    await _box?.put(key, value);
     AppLogger.info('OfflineQueueService: Enqueued $operationType – key=$key');
   }
 
@@ -58,6 +59,7 @@ class OfflineQueueService {
         handler,
   ) async {
     if (_box == null || !_box!.isOpen) await init();
+    if (_box == null) return 0;
     final keys = _box!.keys.toList();
     int replayed = 0;
 
@@ -99,3 +101,7 @@ class OfflineQueueService {
     _box = null;
   }
 }
+
+final offlineQueueServiceProvider = Provider<OfflineQueueService>((ref) {
+  return OfflineQueueService();
+});
