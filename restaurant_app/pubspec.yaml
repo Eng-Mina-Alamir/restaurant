@@ -50,10 +50,10 @@ dependencies:
   # Audio alerts (KDS)
   audioplayers: ^6.0.0
 
-  # Maps & GPS (driver tracking)
-  flutter_map: ^8.0.0
-  latlong2: ^0.9.1
+  # Maps & GPS (driver tracking with mhj_maps)
   geolocator: ^13.0.0
+  latlong2: ^0.9.1
+  mhj_maps: ^1.0.0
 
   # Image capture (delivery proof)
   image_picker: ^1.1.2

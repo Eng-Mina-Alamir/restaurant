@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:mhj_maps/mhj_maps.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
@@ -11,7 +10,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 
-/// Live order tracking page for customer with visual stage progress and live map.
+/// Live order tracking page for customer with visual stage progress and live map powered by [mhj_maps].
 class OrderTrackingPage extends ConsumerStatefulWidget {
   const OrderTrackingPage({super.key, required this.orderId});
 
@@ -22,13 +21,13 @@ class OrderTrackingPage extends ConsumerStatefulWidget {
 }
 
 class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
-  final MapController _mapController = MapController();
+  MhjMapsMapController? _mapController;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   // Default Riyadh coordinates
-  static const LatLng _restaurantLatLng = LatLng(24.7136, 46.6753);
-  static const LatLng _customerLatLng = LatLng(24.7236, 46.6953);
-  LatLng _driverLatLng = const LatLng(24.7180, 46.6850);
+  static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(lat: 24.7136, lng: 46.6753);
+  static const MhjMapsLatLng _customerLatLng = MhjMapsLatLng(lat: 24.7236, lng: 46.6953);
+  MhjMapsLatLng _driverLatLng = const MhjMapsLatLng(lat: 24.7180, lng: 46.6850);
 
   @override
   void initState() {
@@ -45,18 +44,51 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
           final lng = (event.payload['longitude'] as num?)?.toDouble();
           if (lat != null && lng != null && mounted) {
             setState(() {
-              _driverLatLng = LatLng(lat, lng);
+              _driverLatLng = MhjMapsLatLng(lat: lat, lng: lng);
             });
+            _updateMapMarkers();
           }
         } catch (_) {}
       }
     });
   }
 
+  void _updateMapMarkers() {
+    final ctrl = _mapController;
+    if (ctrl == null) return;
+
+    ctrl.clearMarkers();
+
+    // 1. Restaurant Pin
+    ctrl.addCustomMarker(
+      position: _restaurantLatLng,
+      child: const _PinMarker(
+        icon: Icons.restaurant,
+        color: Colors.orange,
+        label: 'المطعم',
+      ),
+    );
+
+    // 2. Customer Pin
+    ctrl.addCustomMarker(
+      position: _customerLatLng,
+      child: const _PinMarker(
+        icon: Icons.home,
+        color: Colors.green,
+        label: 'موقعك',
+      ),
+    );
+
+    // 3. Driver Moving Pin
+    ctrl.addCustomMarker(
+      position: _driverLatLng,
+      child: _DriverMarker(color: Theme.of(context).colorScheme.primary),
+    );
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();
-    _mapController.dispose();
     super.dispose();
   }
 
@@ -65,6 +97,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     final orders = ref.watch(ordersControllerProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     final order = orders.firstWhere(
       (o) => o.id == widget.orderId,
@@ -122,71 +155,19 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
             ),
           ),
 
-          // ── Map View ───────────────────────────────────────────────────
+          // ── Map View with MhjMaps ─────────────────────────────────────
           Expanded(
             flex: 3,
             child: ClipRRect(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: _driverLatLng,
-                  initialZoom: 14,
-                  minZoom: 10,
-                  maxZoom: 18,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate:
-                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.restaurant.app',
-                  ),
-                  PolylineLayer(
-                    polylines: [
-                      Polyline(
-                        points: [
-                          _restaurantLatLng,
-                          _driverLatLng,
-                          _customerLatLng,
-                        ],
-                        color: colorScheme.primary,
-                        strokeWidth: 4.0,
-                      ),
-                    ],
-                  ),
-                  MarkerLayer(
-                    markers: [
-                      // Restaurant Pin
-                      const Marker(
-                        point: _restaurantLatLng,
-                        width: 48,
-                        height: 48,
-                        child: _PinMarker(
-                          icon: Icons.restaurant,
-                          color: Colors.orange,
-                          label: 'المطعم',
-                        ),
-                      ),
-                      // Driver Moving Pin
-                      Marker(
-                        point: _driverLatLng,
-                        width: 52,
-                        height: 52,
-                        child: _DriverMarker(color: colorScheme.primary),
-                      ),
-                      // Customer Destination Pin
-                      const Marker(
-                        point: _customerLatLng,
-                        width: 48,
-                        height: 48,
-                        child: _PinMarker(
-                          icon: Icons.home,
-                          color: Colors.green,
-                          label: 'موقعك',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              child: MhjMapsMap(
+                center: _driverLatLng,
+                zoom: 14,
+                theme: isDark ? MhjMapsMapThemes.darkElegant : MhjMapsMapThemes.voyager,
+                showZoomControls: true,
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  _updateMapMarkers();
+                },
               ),
             ),
           ),
@@ -426,7 +407,7 @@ class _PinMarker extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
         ),
       ],

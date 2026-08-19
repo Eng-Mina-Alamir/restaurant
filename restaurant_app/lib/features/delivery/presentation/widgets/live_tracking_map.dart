@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mhj_maps/mhj_maps.dart';
 
 import '../../../../core/theme/spacing.dart';
 
-/// Displays a live-tracking map for the delivery driver.
+/// Displays a live-tracking map for the delivery driver powered by [mhj_maps].
 ///
 /// Shows:
-/// - The driver's current location (blue pulsing dot)
+/// - The driver's current location (pulsing animated dot)
 /// - The pickup location (restaurant marker)
-/// - The delivery destination (pin marker)
-/// - A polyline connecting all stops
+/// - The delivery destination (customer pin marker)
+/// - Live turn-by-turn route
 class LiveTrackingMap extends StatefulWidget {
   const LiveTrackingMap({
     super.key,
@@ -35,7 +35,7 @@ class LiveTrackingMap extends StatefulWidget {
 }
 
 class _LiveTrackingMapState extends State<LiveTrackingMap> {
-  final MapController _mapController = MapController();
+  MhjMapsMapController? _mapController;
   LatLng? _driverPosition;
   StreamSubscription<Position>? _locationSub;
   bool _locationPermitted = false;
@@ -65,6 +65,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
     final pos = LatLng(current.latitude, current.longitude);
     setState(() => _driverPosition = pos);
     widget.onLocationUpdate?.call(pos);
+    _updateMapMarkers();
 
     _locationSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -76,106 +77,92 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
       final latlng = LatLng(p.latitude, p.longitude);
       setState(() => _driverPosition = latlng);
       widget.onLocationUpdate?.call(latlng);
+      _updateMapMarkers();
     });
+  }
+
+  void _updateMapMarkers() {
+    final ctrl = _mapController;
+    if (ctrl == null) return;
+
+    ctrl.clearMarkers();
+
+    // 1. Pickup Restaurant Marker
+    ctrl.addCustomMarker(
+      position: MhjMapsLatLng(
+        lat: widget.pickupLatLng.latitude,
+        lng: widget.pickupLatLng.longitude,
+      ),
+      child: _MapMarker(
+        icon: Icons.store_rounded,
+        label: widget.pickupLabel,
+        color: Colors.orange.shade800,
+      ),
+    );
+
+    // 2. Customer Destination Marker
+    ctrl.addCustomMarker(
+      position: MhjMapsLatLng(
+        lat: widget.deliveryLatLng.latitude,
+        lng: widget.deliveryLatLng.longitude,
+      ),
+      child: _MapMarker(
+        icon: Icons.location_pin,
+        label: widget.deliveryLabel,
+        color: Colors.red.shade700,
+      ),
+    );
+
+    // 3. Live Driver Marker
+    if (_driverPosition != null) {
+      ctrl.addCustomMarker(
+        position: MhjMapsLatLng(
+          lat: _driverPosition!.latitude,
+          lng: _driverPosition!.longitude,
+        ),
+        child: _DriverDot(color: Theme.of(context).colorScheme.primary),
+      );
+    }
   }
 
   @override
   void dispose() {
     _locationSub?.cancel();
-    _mapController.dispose();
     super.dispose();
   }
 
-  List<LatLng> get _routePoints => [
-        if (_driverPosition != null) _driverPosition!,
-        widget.pickupLatLng,
-        widget.deliveryLatLng,
-      ];
-
-  LatLng get _center =>
-      _driverPosition ??
-      LatLng(
-        (widget.pickupLatLng.latitude + widget.deliveryLatLng.latitude) / 2,
-        (widget.pickupLatLng.longitude + widget.deliveryLatLng.longitude) / 2,
+  MhjMapsLatLng get _center => MhjMapsLatLng(
+        lat: _driverPosition?.latitude ??
+            (widget.pickupLatLng.latitude + widget.deliveryLatLng.latitude) / 2,
+        lng: _driverPosition?.longitude ??
+            (widget.pickupLatLng.longitude + widget.deliveryLatLng.longitude) / 2,
       );
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppSpacing.md),
       child: Stack(
         children: [
-          // ── Map ─────────────────────────────────────────────────────────
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: _center,
-              initialZoom: 13,
-              minZoom: 5,
-              maxZoom: 18,
-            ),
-            children: [
-              TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.restaurant.app',
-              ),
-              // Route polyline
-              if (_routePoints.length >= 2)
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: _routePoints,
-                      color: colorScheme.primary,
-                      strokeWidth: 4,
-                    ),
-                  ],
-                ),
-              // Markers
-              MarkerLayer(
-                markers: [
-                  // Pickup marker
-                  Marker(
-                    point: widget.pickupLatLng,
-                    width: 56,
-                    height: 56,
-                    child: _MapMarker(
-                      icon: Icons.store_rounded,
-                      label: widget.pickupLabel,
-                      color: colorScheme.tertiary,
-                    ),
-                  ),
-                  // Delivery marker
-                  Marker(
-                    point: widget.deliveryLatLng,
-                    width: 56,
-                    height: 56,
-                    child: _MapMarker(
-                      icon: Icons.location_pin,
-                      label: widget.deliveryLabel,
-                      color: colorScheme.error,
-                    ),
-                  ),
-                  // Driver marker
-                  if (_driverPosition != null)
-                    Marker(
-                      point: _driverPosition!,
-                      width: 48,
-                      height: 48,
-                      child: _DriverDot(color: colorScheme.primary),
-                    ),
-                ],
-              ),
-            ],
+          // ── MhjMaps Map Widget ──────────────────────────────────────────
+          MhjMapsMap(
+            center: _center,
+            zoom: 13,
+            theme: isDark ? MhjMapsMapThemes.darkElegant : MhjMapsMapThemes.voyager,
+            showZoomControls: false,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              _updateMapMarkers();
+            },
           ),
 
           // ── Location denied overlay ──────────────────────────────────────
           if (!_locationPermitted)
             Positioned.fill(
               child: Container(
-                color: Colors.black45,
+                color: Colors.black54,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -183,7 +170,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
                     const SizedBox(height: AppSpacing.sm),
                     const Text(
                       'يرجى السماح بالوصول إلى الموقع',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     FilledButton(
@@ -195,15 +182,21 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
               ),
             ),
 
-          // ── My location button ───────────────────────────────────────────
+          // ── Recenter My Location Floating Button ─────────────────────────
           Positioned(
             bottom: AppSpacing.md,
             right: AppSpacing.md,
             child: FloatingActionButton.small(
-              heroTag: 'locate_driver',
+              heroTag: 'locate_driver_mhj',
               onPressed: () {
-                if (_driverPosition != null) {
-                  _mapController.move(_driverPosition!, 15);
+                if (_driverPosition != null && _mapController != null) {
+                  _mapController!.moveTo(
+                    MhjMapsLatLng(
+                      lat: _driverPosition!.latitude,
+                      lng: _driverPosition!.longitude,
+                    ),
+                    zoom: 15,
+                  );
                 }
               },
               child: const Icon(Icons.my_location),
@@ -257,7 +250,7 @@ class _MapMarker extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
         ),
       ],
