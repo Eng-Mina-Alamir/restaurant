@@ -5,16 +5,16 @@
 /// (including test-only setup) without ties to the Flutter framework.
 abstract final class AppConfig {
   /// Human readable Arabic app name shown in the UI and app bar.
-  static const String appName = 'مطعمي';
+  static const String appName = 'مطعم ليالي المحروسة';
 
   /// Short tagline used on splash/login screens.
-  static const String appTagline = 'طبخك المفضل في مكان واحد';
+  static const String appTagline = 'أشهى المأكولات والمشويات المصرية الأصيلة';
 
   /// Current build version, matches the version in `pubspec.yaml`.
   static const String version = '1.0.0';
 
-  /// Default currency in which prices are displayed (Saudi Riyal).
-  static const String defaultCurrency = 'ر.س';
+  /// Default currency in which prices are displayed (Egyptian Pound).
+  static const String defaultCurrency = 'ج.م';
 
   /// Primary locale of the app.
   static const String locale = 'ar';

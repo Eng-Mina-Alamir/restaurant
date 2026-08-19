@@ -24,10 +24,10 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   MhjMapsMapController? _mapController;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
-  // Default Riyadh coordinates
-  static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(lat: 24.7136, lng: 46.6753);
-  static const MhjMapsLatLng _customerLatLng = MhjMapsLatLng(lat: 24.7236, lng: 46.6953);
-  MhjMapsLatLng _driverLatLng = const MhjMapsLatLng(lat: 24.7180, lng: 46.6850);
+  // Cairo Coordinates (Downtown, Nile, Zamalek)
+  static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(lat: 30.0444, lng: 31.2357);
+  static const MhjMapsLatLng _customerLatLng = MhjMapsLatLng(lat: 30.0626, lng: 31.2497);
+  MhjMapsLatLng _driverLatLng = const MhjMapsLatLng(lat: 30.0510, lng: 31.2410);
 
   @override
   void initState() {
@@ -197,7 +197,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'الكابتن خالد العتيبي',
+                                  'الكابتن طارق الدسوقي (طيار المحروسة)',
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -208,13 +208,13 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                                         size: 16, color: Colors.amber),
                                     const SizedBox(width: 2),
                                     Text(
-                                      '4.9 (120 توصيلة)',
+                                      '4.95 (340 توصيلة بالقاهرة)',
                                       style: theme.textTheme.bodySmall,
                                     ),
                                   ],
                                 ),
                                 Text(
-                                  'دراجة نارية • لوحة: ٤١٢٥ أ ب',
+                                  'موتوسيكل دايون • لوحة: ٥٤٨٢ ط س ص (القاهرة)',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                   ),
@@ -227,7 +227,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('جارٍ الاتصال بالسائق 0501234567...'),
+                                  content: Text('جارٍ الاتصال بالكابتن طارق 01066778899...'),
                                 ),
                               );
                             },

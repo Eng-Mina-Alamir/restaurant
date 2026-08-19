@@ -1,10 +1,7 @@
 import '../../../core/domain/enums.dart';
 import '../domain/entities/delivery_assignment.dart';
 
-/// Static seed data for delivery assignments used by the offline flow.
-///
-/// `DateTime` is not const-constructible, so the assignments are built lazily
-/// via [buildAssignments] rather than a const list.
+/// Static seed data for delivery assignments across Cairo & Giza neighborhoods.
 abstract final class DeliverySeedData {
   DeliverySeedData._();
 
@@ -14,10 +11,10 @@ abstract final class DeliverySeedData {
       orderId: 'ORD-0101',
       driverId: 'driver-demo',
       pickupTime: DateTime.fromMillisecondsSinceEpoch(0),
-      deliveryLocation: 'شارع الملك فهد، 12',
+      deliveryLocation: 'القاهرة - المعادي، شارع 9، عمارة 14',
       customerPhone: '0551234567',
       deliveryStatus: DeliveryStatus.pending,
-      deliveryFee: 15,
+      deliveryFee: 25,
       routeDistanceMeters: 2400,
     ),
     DeliveryAssignment(
@@ -25,10 +22,10 @@ abstract final class DeliverySeedData {
       orderId: 'ORD-0104',
       driverId: 'driver-demo',
       pickupTime: DateTime.fromMillisecondsSinceEpoch(0),
-      deliveryLocation: 'حي النرجس، 88',
+      deliveryLocation: 'الجيزة - الدقي، شارع مصدق، برج الأطباء',
       customerPhone: '0559876543',
       deliveryStatus: DeliveryStatus.accepted,
-      deliveryFee: 12,
+      deliveryFee: 20,
       routeDistanceMeters: 750,
     ),
   ];

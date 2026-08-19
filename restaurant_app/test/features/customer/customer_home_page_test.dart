@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/config/app_config.dart';
 import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
@@ -22,7 +23,7 @@ void main() {
 
     final firstItem = MenuSeedData.items.first;
     expect(find.text(firstItem.name), findsWidgets);
-    expect(find.textContaining('ر.س'), findsWidgets);
+    expect(find.textContaining(AppConfig.defaultCurrency), findsWidgets);
   });
 
   testWidgets('add button increments the cart unit count', (tester) async {

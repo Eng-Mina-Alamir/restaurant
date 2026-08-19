@@ -4,13 +4,7 @@ import '../../../../core/domain/enums.dart';
 import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
-/// Offline demo implementation of [AuthRemoteDataSource].
-///
-/// Lets reviewers explore every role without a live backend: well-known demo
-/// accounts authenticate locally and return a seeded [UserModel]. Real network
-/// calls (refresh/logout) fail gracefully with a network-ish exception.
-///
-/// Use only for development/demo builds; swap via `authRemoteDataSourceProvider`.
+/// Offline demo implementation of [AuthRemoteDataSource] with authentic Egyptian roles & accounts.
 abstract final class DemoAuthDataSource {
   static const String password = '123456';
 
@@ -48,11 +42,12 @@ abstract final class DemoAuthDataSource {
   static UserModel _userFor(UserRole role) {
     final email = accounts[role]!;
     final label = _roleLabel(role);
+    final phone = _rolePhone(role);
     return UserModel(
       id: 'demo-${role.name}',
       name: label,
       email: email,
-      phone: '0500000000',
+      phone: phone,
       role: role,
       restaurantId: 'demo-restaurant-1',
       token: 'demo-token-${role.name}',
@@ -64,17 +59,34 @@ abstract final class DemoAuthDataSource {
   static String _roleLabel(UserRole role) {
     switch (role) {
       case UserRole.customer:
-        return 'زبون تجريبي';
+        return 'أحمد السيد (عميل المحروسة)';
       case UserRole.waiter:
-        return 'نادل تجريبي';
+        return 'مينا الأمير (كابتن صالة)';
       case UserRole.kitchen:
-        return 'مطبخ تجريبي';
+        return 'الشيف محمود الشناوي (رئيس المطبخ)';
       case UserRole.manager:
-        return 'مدير تجريبي';
+        return 'م. كيرلس الأمير (مدير المطعم)';
       case UserRole.admin:
-        return 'مسؤول تجريبي';
+        return 'إدارة سلسلة مطاعم المحروسة';
       case UserRole.driver:
-        return 'سائق تجريبي';
+        return 'الكابتن طارق الدسوقي (مندوب التوصيل)';
+    }
+  }
+
+  static String _rolePhone(UserRole role) {
+    switch (role) {
+      case UserRole.customer:
+        return '01012345678';
+      case UserRole.waiter:
+        return '01234567890';
+      case UserRole.kitchen:
+        return '01122334455';
+      case UserRole.manager:
+        return '01098765432';
+      case UserRole.admin:
+        return '01555555555';
+      case UserRole.driver:
+        return '01066778899';
     }
   }
 }
@@ -127,4 +139,3 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
   @override
   Future<void> logout(String? token) async {}
 }
-
