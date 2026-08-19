@@ -173,11 +173,39 @@ class ManagerDashboardPage extends ConsumerWidget {
                       childAspectRatio: isWide ? 1.2 : 1.0,
                       children: [
                         _QuickAction(
+                          icon: Icons.restaurant_menu_rounded,
+                          label: 'القائمة',
+                          color: Colors.amber.shade800,
+                          onTap: () => context.push('/manager/menu'),
+                        ),
+
+                        _QuickAction(
+                          icon: Icons.table_restaurant_rounded,
+                          label: 'الطاولات',
+                          color: Colors.cyan.shade800,
+                          onTap: () => context.push('/manager/tables'),
+                        ),
+                        _QuickAction(
+                          icon: Icons.event_seat_rounded,
+                          label: 'الحجوزات',
+                          color: Colors.purple.shade700,
+                          onTap: () => context.push('/manager/reservations'),
+                        ),
+                        _QuickAction(
                           icon: Icons.local_offer_rounded,
                           label: 'الخصومات',
                           color: Colors.deepOrange,
                           onTap: () => context.push('/manager/discounts'),
                         ),
+                        _QuickAction(
+                          icon: Icons.confirmation_number_rounded,
+                          label: 'الكوبونات',
+                          color: Colors.amber.shade800,
+                          onTap: () => context.push('/manager/coupons'),
+                        ),
+
+
+
                         _QuickAction(
                           icon: Icons.inventory_2_outlined,
                           label: 'المخزون',
@@ -191,11 +219,25 @@ class ManagerDashboardPage extends ConsumerWidget {
                           onTap: () => context.push('/manager/staff'),
                         ),
                         _QuickAction(
+                          icon: Icons.manage_accounts_rounded,
+                          label: 'المستخدمون',
+                          color: Colors.blueGrey.shade700,
+                          onTap: () => context.push('/manager/users'),
+                        ),
+
+                        _QuickAction(
                           icon: Icons.receipt_long_rounded,
                           label: 'الفواتير',
                           color: Colors.brown,
                           onTap: () => context.push('/manager/invoices'),
                         ),
+                        _QuickAction(
+                          icon: Icons.analytics_outlined,
+                          label: 'الأرباح و P&L',
+                          color: Colors.green.shade800,
+                          onTap: () => context.push('/manager/financial-reports'),
+                        ),
+
                         _QuickAction(
                           icon: Icons.qr_code_2,
                           label: 'رموز QR',

@@ -104,5 +104,27 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  }) async {
+    return UserModel(
+      id: 'demo-user-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      email: email,
+      phone: phone,
+      role: role,
+      restaurantId: 'demo-restaurant-1',
+      token: 'demo-token-reg-${DateTime.now().millisecondsSinceEpoch}',
+      createdAt: DateTime.now(),
+      isActive: true,
+    );
+  }
+
+  @override
   Future<void> logout(String? token) async {}
 }
+

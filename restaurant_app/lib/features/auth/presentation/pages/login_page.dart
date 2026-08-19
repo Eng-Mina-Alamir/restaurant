@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_config.dart';
 import '../../../../config/constants.dart';
@@ -145,6 +146,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text(AppConstants.loginButton),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('ليس لديك حساب؟'),
+                      TextButton(
+                        onPressed: () => context.push('/register'),
+                        child: const Text('إنشاء حساب جديد'),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -12,4 +12,11 @@ abstract class TableRepository {
 
   /// Updates a table's status (and optionally links the active order).
   Future<Either<Failure, RestaurantTable>> updateTable(RestaurantTable table);
+
+  /// Adds a new table to the floor plan.
+  Future<Either<Failure, RestaurantTable>> addTable(RestaurantTable table);
+
+  /// Deletes a table by its ID.
+  Future<Either<Failure, void>> deleteTable(String id);
 }
+

@@ -1,3 +1,4 @@
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user_entity.dart';
@@ -26,6 +27,15 @@ abstract class AuthRepository {
   /// Returns the new access token on success.
   Future<Either<Failure, String>> refreshToken();
 
+  /// Registers a new user account with details and an optional role.
+  Future<Either<Failure, UserEntity>> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  });
+
   /// Restores a previously persisted user session (offline / demo mode).
   ///
   /// Returns the [UserEntity] that was saved by a successful [login] call, or
@@ -36,3 +46,4 @@ abstract class AuthRepository {
   /// Logs the current user out and clears all locally persisted auth data.
   Future<Either<Failure, void>> logout();
 }
+

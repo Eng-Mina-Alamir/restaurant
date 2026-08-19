@@ -7,6 +7,8 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../coupons/domain/entities/coupon_entity.dart';
+import '../../../coupons/presentation/controllers/coupon_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../presentation/controllers/cart_controller.dart';
 import '../../domain/cart_totals.dart';
@@ -43,9 +45,14 @@ class _CartPageState extends ConsumerState<CartPage> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
-    final totals = ref.watch(
-      cartControllerProvider.select((items) => _totalsOf(items)),
-    );
+    final appliedCoupon = ref.watch(appliedCouponProvider);
+    final rawSubtotal =
+        cart.fold<double>(0, (sum, item) => sum + item.linePrice);
+    final discountAmount = appliedCoupon != null
+        ? appliedCoupon.calculateDiscount(rawSubtotal)
+        : 0.0;
+    final totals = CartTotals.fromItems(cart, discountAmount: discountAmount);
+
 
     return Scaffold(
       appBar: AppBar(
@@ -63,6 +70,7 @@ class _CartPageState extends ConsumerState<CartPage> {
               icon: const Icon(Icons.delete_sweep_outlined),
               onPressed: () {
                 ref.read(cartControllerProvider.notifier).clear();
+                ref.read(appliedCouponProvider.notifier).remove();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text(AppConstants.cartCleared)),
                 );
@@ -102,6 +110,8 @@ class _CartPageState extends ConsumerState<CartPage> {
                 ),
                 _TotalsFooter(
                   subtotal: totals.subtotal,
+                  discountAmount: totals.discountAmount,
+                  appliedCoupon: appliedCoupon,
                   taxAmount: totals.taxAmount,
                   totalAmount: totals.totalAmount,
                   placing: _placing,
@@ -115,30 +125,11 @@ class _CartPageState extends ConsumerState<CartPage> {
             ),
     );
   }
-
-  static _TotalsData _totalsOf(List<CartItem> items) {
-    final totals = CartTotals.fromItems(items);
-    return _TotalsData(
-      subtotal: totals.subtotal,
-      taxAmount: totals.taxAmount,
-      totalAmount: totals.totalAmount,
-    );
-  }
-}
-
-class _TotalsData {
-  const _TotalsData({
-    required this.subtotal,
-    required this.taxAmount,
-    required this.totalAmount,
-  });
-
-  final double subtotal;
-  final double taxAmount;
-  final double totalAmount;
 }
 
 class _CartLine extends StatelessWidget {
+
+
   const _CartLine({
     required this.item,
     required this.onIncrement,
@@ -226,9 +217,11 @@ class _CartLine extends StatelessWidget {
   }
 }
 
-class _TotalsFooter extends StatelessWidget {
+class _TotalsFooter extends ConsumerStatefulWidget {
   const _TotalsFooter({
     required this.subtotal,
+    required this.discountAmount,
+    required this.appliedCoupon,
     required this.taxAmount,
     required this.totalAmount,
     required this.placing,
@@ -238,6 +231,8 @@ class _TotalsFooter extends StatelessWidget {
   });
 
   final double subtotal;
+  final double discountAmount;
+  final CouponEntity? appliedCoupon;
   final double taxAmount;
   final double totalAmount;
   final bool placing;
@@ -246,31 +241,155 @@ class _TotalsFooter extends StatelessWidget {
   final VoidCallback onCheckout;
 
   @override
+  ConsumerState<_TotalsFooter> createState() => _TotalsFooterState();
+}
+
+class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
+  final _couponController = TextEditingController();
+  bool _validating = false;
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _validating = true);
+    final repo = ref.read(couponRepositoryProvider);
+    final result = await repo.validateAndGetCoupon(code, widget.subtotal);
+    if (!mounted) return;
+    setState(() => _validating = false);
+
+    result.when(
+      onLeft: (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failure.message),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      },
+      onRight: (coupon) {
+        ref.read(appliedCouponProvider.notifier).apply(coupon);
+        _couponController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 تم تطبيق كود الخصم "${coupon.code}" بنجاح!'),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
+
+
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ── Coupon / Promo Code Input ──
+            if (widget.appliedCoupon == null)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _couponController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: 'أدخل كود الخصم (مثال: WELCOME50)',
+                        prefixIcon: const Icon(Icons.local_offer_outlined),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.tonal(
+                    onPressed: _validating ? null : _applyCoupon,
+                    child: _validating
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('تطبيق'),
+                  ),
+                ],
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        'كوبون: ${widget.appliedCoupon!.code} (${widget.appliedCoupon!.title})',
+                        style: const TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                      tooltip: 'إلغاء الكوبون',
+                      onPressed: () {
+                        ref.read(appliedCouponProvider.notifier).remove();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: AppSpacing.md),
             _PaymentSelector(
-              paymentMethod: paymentMethod,
-              onChanged: onPaymentChanged,
+              paymentMethod: widget.paymentMethod,
+              onChanged: widget.onPaymentChanged,
             ),
             const SizedBox(height: AppSpacing.md),
             _Row(
-              label: AppConstants.totalLabel,
-              value: Formatters.formatCurrency(subtotal),
+              label: AppConstants.subtotalLabel,
+              value: Formatters.formatCurrency(widget.subtotal),
             ),
+            if (widget.discountAmount > 0) ...[
+              const SizedBox(height: AppSpacing.xs),
+              _Row(
+                label: 'خصم الكوبون',
+                value: '- ${Formatters.formatCurrency(widget.discountAmount)}',
+                valueColor: Colors.green,
+              ),
+            ],
             const SizedBox(height: AppSpacing.xs),
             _Row(
               label: AppConstants.taxLabel,
-              value: Formatters.formatCurrency(taxAmount),
+              value: Formatters.formatCurrency(widget.taxAmount),
             ),
             const Divider(height: AppSpacing.lg),
             _Row(
               label: AppConstants.orderTotalLabel,
-              value: Formatters.formatCurrency(totalAmount),
+              value: Formatters.formatCurrency(widget.totalAmount),
               emphasized: true,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -278,10 +397,8 @@ class _TotalsFooter extends StatelessWidget {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
               ),
-              // 30s guard so the trailing async _checkout can complete
-              // without leaving the button disabled.
-              onPressed: placing ? null : onCheckout,
-              child: placing
+              onPressed: widget.placing ? null : widget.onCheckout,
+              child: widget.placing
                   ? const SizedBox(
                       width: 22,
                       height: 22,
@@ -295,6 +412,7 @@ class _TotalsFooter extends StatelessWidget {
     );
   }
 }
+
 
 class _PaymentSelector extends StatelessWidget {
   const _PaymentSelector({
@@ -340,11 +458,13 @@ class _Row extends StatelessWidget {
     required this.label,
     required this.value,
     this.emphasized = false,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final bool emphasized;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -364,12 +484,16 @@ class _Row extends StatelessWidget {
           value,
           style: emphasized
               ? theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.primary,
+                  color: valueColor ?? theme.colorScheme.primary,
                   fontWeight: FontWeight.w800,
                 )
-              : theme.textTheme.bodyMedium,
+              : theme.textTheme.bodyMedium?.copyWith(
+                  color: valueColor,
+                  fontWeight: valueColor != null ? FontWeight.bold : null,
+                ),
         ),
       ],
     );
   }
 }
+

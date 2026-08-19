@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
@@ -40,6 +41,33 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Left<Failure, UserEntity>(ServerFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, UserEntity>> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  }) async {
+    try {
+      final model = await _remoteDataSource.register(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+        role: role,
+      );
+      await _persistToken(model.token);
+      await _persistSession(model);
+      return Right<Failure, UserEntity>(model.toEntity());
+    } on AppException catch (error) {
+      return Left<Failure, UserEntity>(_toFailure(error));
+    } catch (_) {
+      return const Left<Failure, UserEntity>(ServerFailure());
+    }
+  }
+
 
   @override
   Future<Either<Failure, UserEntity>> verifyOtp({

@@ -60,10 +60,17 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.stars_rounded),
+            tooltip: 'برنامج الولاء والمكافآت',
+            color: Colors.amber.shade700,
+            onPressed: () => context.push('/customer/loyalty'),
+          ),
+          IconButton(
             icon: const Icon(Icons.history),
             tooltip: AppConstants.orderHistoryTitle,
             onPressed: () => context.push('/customer/orders'),
           ),
+
           IconButton(
             icon: Badge(
               isLabelVisible: ref.watch(

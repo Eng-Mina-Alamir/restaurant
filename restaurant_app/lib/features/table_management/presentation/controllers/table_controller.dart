@@ -134,6 +134,70 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     );
   }
 
+  /// Adds a new table to the restaurant floor.
+  Future<void> addTable({
+    required int tableNumber,
+    required int capacity,
+    String? assignedWaiterId,
+  }) async {
+    final newTable = RestaurantTable(
+      id: 'tbl-${DateTime.now().millisecondsSinceEpoch}',
+      tableNumber: tableNumber,
+      capacity: capacity,
+      status: TableStatus.available,
+      assignedWaiterId: assignedWaiterId,
+      lastUpdated: DateTime.now(),
+    );
+    final result = await _repository.addTable(newTable);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (saved) {
+        state = [...state, saved]
+          ..sort((a, b) => a.tableNumber.compareTo(b.tableNumber));
+        _realtimeService?.broadcastTableStatusChanged(saved.toJson());
+      },
+    );
+  }
+
+  /// Edits an existing table's capacity or assigned waiter.
+  Future<void> editTable(
+    String tableId, {
+    int? tableNumber,
+    int? capacity,
+    String? assignedWaiterId,
+    TableStatus? status,
+  }) async {
+    final current = tableById(tableId);
+    if (current == null) return;
+    final updated = current.copyWith(
+      tableNumber: tableNumber ?? current.tableNumber,
+      capacity: capacity ?? current.capacity,
+      assignedWaiterId: assignedWaiterId ?? current.assignedWaiterId,
+      status: status ?? current.status,
+      lastUpdated: DateTime.now(),
+    );
+    final result = await _repository.updateTable(updated);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (saved) {
+        state = state.map((t) => t.id == tableId ? saved : t).toList()
+          ..sort((a, b) => a.tableNumber.compareTo(b.tableNumber));
+        _realtimeService?.broadcastTableStatusChanged(saved.toJson());
+      },
+    );
+  }
+
+  /// Deletes a table by [tableId].
+  Future<void> deleteTable(String tableId) async {
+    final result = await _repository.deleteTable(tableId);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) {
+        state = state.where((t) => t.id != tableId).toList();
+      },
+    );
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();

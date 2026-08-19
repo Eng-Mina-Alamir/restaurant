@@ -128,6 +128,45 @@ class PushNotificationService {
     );
   }
 
+  /// Dispatches a new table order alert for Waiters.
+  void notifyNewTableOrder({
+    required int tableNumber,
+    required String orderId,
+  }) {
+    showNotification(
+      title: 'طلب جديد - طاولة $tableNumber 🍽️',
+      body: 'تم استلام طلب جديد #$orderId للطاولة رقم $tableNumber',
+      category: NotificationCategory.newOrder,
+      data: {'tableNumber': tableNumber, 'orderId': orderId, 'role': 'waiter'},
+    );
+  }
+
+  /// Dispatches an order cancellation alert for Kitchen staff.
+  void notifyKitchenCancelledOrder({
+    required String orderId,
+    String? reason,
+  }) {
+    showNotification(
+      title: '⚠️ تنبيه: إلغاء طلب #$orderId',
+      body: reason != null ? 'سبب الإلغاء: $reason' : 'يرجى إيقاف تحضير هذا الطلب فوراً',
+      category: NotificationCategory.orderStatus,
+      data: {'orderId': orderId, 'role': 'kitchen'},
+    );
+  }
+
+  /// Dispatches loyalty points earned notification for customer.
+  void notifyLoyaltyPointsEarned({
+    required int pointsEarned,
+    required int totalPoints,
+  }) {
+    showNotification(
+      title: '🎉 كسبت $pointsEarned نقطة ولاء جديدة!',
+      body: 'رصيد نقاطك الحالي أصبح $totalPoints نقطة. يمكنك استبدالها بمكافآت قيّمة.',
+      category: NotificationCategory.system,
+      data: {'points': pointsEarned, 'total': totalPoints},
+    );
+  }
+
   /// Marks a notification as read in the history list.
   void markAsRead(String id) {
     final idx = _history.indexWhere((n) => n.id == id);
@@ -135,6 +174,7 @@ class PushNotificationService {
       _history[idx] = _history[idx].copyWith(isRead: true);
     }
   }
+
 
   /// Clears all stored notifications.
   void clearAll() {

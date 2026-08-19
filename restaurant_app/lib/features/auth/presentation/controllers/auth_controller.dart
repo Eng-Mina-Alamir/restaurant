@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/user_entity.dart';
 
@@ -84,6 +85,31 @@ class AuthController extends StateNotifier<AuthState> {
     final result = await ref
         .read(loginUseCaseProvider)
         .call(identifier, password);
+    if (!mounted) return;
+    result.when(
+      onLeft: _onFailure,
+      onRight: (user) {
+        state = AuthState(status: AuthStatus.authenticated, user: user);
+      },
+    );
+  }
+
+  /// Registers a new user with [name], [email], [phone], [password], and [role].
+  Future<void> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  }) async {
+    state = state.copyWith(status: AuthStatus.unknown, clearFailure: true);
+    final result = await ref.read(registerUseCaseProvider).call(
+          name: name,
+          email: email,
+          phone: phone,
+          password: password,
+          role: role,
+        );
     if (!mounted) return;
     result.when(
       onLeft: _onFailure,

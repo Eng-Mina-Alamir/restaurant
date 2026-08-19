@@ -9,6 +9,7 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/refresh_token_usecase.dart';
+import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../../features/auth/domain/usecases/restore_session_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/menu/data/repositories/menu_repository_impl.dart';
@@ -53,6 +54,7 @@ class ServiceLocator {
   // ── Auth use cases ────────────────────────────────────────────────────────
 
   static LoginUseCase get loginUseCase => LoginUseCase(authRepository);
+  static RegisterUseCase get registerUseCase => RegisterUseCase(authRepository);
   static VerifyOtpUseCase get verifyOtpUseCase =>
       VerifyOtpUseCase(authRepository);
   static LogoutUseCase get logoutUseCase => LogoutUseCase(authRepository);
@@ -99,6 +101,10 @@ final loginUseCaseProvider = Provider<LoginUseCase>((ref) {
   return LoginUseCase(ref.watch(authRepositoryProvider));
 });
 
+final registerUseCaseProvider = Provider<RegisterUseCase>((ref) {
+  return RegisterUseCase(ref.watch(authRepositoryProvider));
+});
+
 final verifyOtpUseCaseProvider = Provider<VerifyOtpUseCase>((ref) {
   return VerifyOtpUseCase(ref.watch(authRepositoryProvider));
 });
@@ -117,6 +123,9 @@ final restoreSessionUseCaseProvider = Provider<RestoreSessionUseCase>((ref) {
 
 // ── Menu ───────────────────────────────────────────────────────────────────────
 
+final _sharedMenuRepository = MenuRepositoryImpl();
+
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
-  return const MenuRepositoryImpl();
+  return _sharedMenuRepository;
 });
+

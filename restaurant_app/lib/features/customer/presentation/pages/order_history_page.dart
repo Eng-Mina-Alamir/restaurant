@@ -142,13 +142,24 @@ class _OrderHistoryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: OutlinedButton.icon(
-                onPressed: onReorder,
-                icon: const Icon(Icons.replay),
-                label: const Text(AppConstants.reorderAction),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (!order.status.isTerminal)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => context.push('/customer/track/${order.id}'),
+                      icon: const Icon(Icons.location_on, size: 16),
+                      label: const Text('تتبع'),
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: onReorder,
+                  icon: const Icon(Icons.replay, size: 16),
+                  label: const Text(AppConstants.reorderAction),
+                ),
+              ],
             ),
           ],
         ),
@@ -156,3 +167,4 @@ class _OrderHistoryCard extends StatelessWidget {
     );
   }
 }
+

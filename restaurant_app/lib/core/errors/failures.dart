@@ -12,6 +12,13 @@ abstract class Failure {
 
   const Failure(this.message);
 
+  const factory Failure.validation([String message]) = ValidationFailure;
+  const factory Failure.server([String message, int? statusCode]) = ServerFailure;
+  const factory Failure.network([String message]) = NetworkFailure;
+  const factory Failure.cache([String message]) = CacheFailure;
+  const factory Failure.unauthorized([String message]) = UnauthorizedFailure;
+  const factory Failure.notFound([String message]) = NotFoundFailure;
+
   @override
   String toString() => '$runtimeType: $message';
 }
@@ -37,6 +44,11 @@ class ValidationFailure extends Failure {
   const ValidationFailure([super.message = AppConstants.errorGeneric]);
 }
 
+/// Failure caused by item or entity not found.
+class NotFoundFailure extends Failure {
+  const NotFoundFailure([super.message = 'العنصر غير موجود']);
+}
+
 /// Failure caused by a local cache/storage problem.
 class CacheFailure extends Failure {
   const CacheFailure([super.message = AppConstants.errorCache]);
@@ -46,3 +58,4 @@ class CacheFailure extends Failure {
 class UnauthorizedFailure extends Failure {
   const UnauthorizedFailure([super.message = AppConstants.errorSessionExpired]);
 }
+

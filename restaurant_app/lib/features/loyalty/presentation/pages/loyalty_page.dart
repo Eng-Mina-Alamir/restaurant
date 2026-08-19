@@ -1,0 +1,465 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
+import '../../domain/entities/loyalty_entity.dart';
+import '../controllers/loyalty_controller.dart';
+
+class LoyaltyPage extends ConsumerWidget {
+  const LoyaltyPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accountAsync = ref.watch(loyaltyControllerProvider);
+    final rewardsAsync = ref.watch(availableRewardsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('برنامج الولاء والمكافآت'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () =>
+                ref.read(loyaltyControllerProvider.notifier).loadAccount(),
+          ),
+        ],
+      ),
+      body: accountAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('خطأ: $err')),
+        data: (account) {
+          final nextTier = account.tier.nextTier;
+          final nextTierPoints = nextTier?.minPoints ?? account.lifetimePoints;
+          final currentTierPoints = account.tier.minPoints;
+          final progress = nextTier == null
+              ? 1.0
+              : ((account.lifetimePoints - currentTierPoints) /
+                      (nextTierPoints - currentTierPoints))
+                  .clamp(0.0, 1.0);
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Tier Card ───────────────────────────────────────────────
+                _TierBanner(
+                  account: account,
+                  progress: progress,
+                  nextTier: nextTier,
+                  nextTierPoints: nextTierPoints,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── Rewards Catalog ────────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'المكافآت المتاحة للاستبدال',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.stars_rounded,
+                            color: Colors.amber.shade700, size: 20),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${account.currentPoints} نقطة',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                rewardsAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (_, __) =>
+                      const Text('تعذر تحميل المكافآت حالياً'),
+                  data: (rewards) => Column(
+                    children: [
+                      for (final reward in rewards)
+                        _RewardCard(
+                          reward: reward,
+                          userPoints: account.currentPoints,
+                          onRedeem: () => _confirmRedeem(context, ref, reward),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // ── Points History ──────────────────────────────────────────
+                Text(
+                  'سجل النقاط والمعاملات',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (account.transactions.isEmpty)
+                  const EmptyState(
+                    message: 'لا توجد معاملات نقاط سابقة',
+                    icon: Icons.history,
+                  )
+                else
+                  Card(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: account.transactions.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final tx = account.transactions[index];
+                        final isPositive = tx.points > 0;
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: isPositive
+                                ? Colors.green.withValues(alpha: 0.15)
+                                : Colors.red.withValues(alpha: 0.15),
+                            child: Icon(
+                              isPositive
+                                  ? Icons.add_circle_outline
+                                  : Icons.remove_circle_outline,
+                              color: isPositive ? Colors.green : Colors.red,
+                            ),
+                          ),
+                          title: Text(tx.description),
+                          subtitle: Text(
+                            Formatters.formatDateTime(tx.createdAt),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          trailing: Text(
+                            '${isPositive ? '+' : ''}${tx.points} نقطة',
+                            style: TextStyle(
+                              color: isPositive ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmRedeem(
+    BuildContext context,
+    WidgetRef ref,
+    LoyaltyReward reward,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('استبدال: ${reward.title}'),
+        content: Text(
+          'هل تريد استبدال ${reward.pointsCost} نقطة للحصول على "${reward.description}"؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final ok = await ref
+                  .read(loyaltyControllerProvider.notifier)
+                  .redeemReward(reward);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? '🎉 تم استبدال المكافأة بنجاح وتمت إضافة القسيمة لحسابك!'
+                          : 'عفواً، رصيد نقاطك غير كافٍ',
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('تأكيد الاستبدال'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierBanner extends StatelessWidget {
+  final LoyaltyAccount account;
+  final double progress;
+  final LoyaltyTier? nextTier;
+  final int nextTierPoints;
+
+  const _TierBanner({
+    required this.account,
+    required this.progress,
+    required this.nextTier,
+    required this.nextTierPoints,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tier = account.tier;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            tier.color.withValues(alpha: 0.85),
+            tier.color.withValues(alpha: 0.4),
+            theme.colorScheme.primaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: tier.color.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.workspace_premium,
+                            color: Colors.white, size: 16),
+
+                        const SizedBox(width: 4),
+                        Text(
+                          'المستوى ${tier.labelAr}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '${account.currentPoints}',
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Text(
+                    'نقطة ولاء صالحة للاستخدام',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.4),
+                ),
+                child: Center(
+                  child: Text(
+                    '${tier.multiplier}x',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (nextTier != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'المستوى القادم: ${nextTier!.labelAr}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  '${nextTierPoints - account.lifetimePoints} نقطة متبقية',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.white.withValues(alpha: 0.5),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ] else
+            const Text(
+              '👑 وصلت لأعلى مستوى في برنامج الولاء (VIP النخبة)!',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RewardCard extends StatelessWidget {
+  final LoyaltyReward reward;
+  final int userPoints;
+  final VoidCallback onRedeem;
+
+  const _RewardCard({
+    required this.reward,
+    required this.userPoints,
+    required this.onRedeem,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final canAfford = userPoints >= reward.pointsCost;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: canAfford
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.card_giftcard_rounded,
+                color: canAfford
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    reward.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reward.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.stars_rounded,
+                        size: 16,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${reward.pointsCost} نقطة',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: canAfford
+                              ? colorScheme.primary
+                              : colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilledButton.tonal(
+              onPressed: canAfford ? onRedeem : null,
+              child: const Text('استبدال'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

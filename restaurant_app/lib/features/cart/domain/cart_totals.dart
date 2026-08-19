@@ -13,27 +13,36 @@ const double kTaxRate = 0.15;
 class CartTotals {
   const CartTotals({
     required this.subtotal,
+    this.discountAmount = 0.0,
     required this.taxAmount,
     required this.totalAmount,
   });
 
   final double subtotal;
+  final double discountAmount;
   final double taxAmount;
   final double totalAmount;
 
-  /// Computes the totals for [items].
-  factory CartTotals.fromItems(Iterable<CartItem> items) {
+  /// Computes the totals for [items] with optional discount.
+  factory CartTotals.fromItems(
+    Iterable<CartItem> items, {
+    double discountAmount = 0.0,
+  }) {
     final subtotal = items.fold<double>(0, (sum, item) => sum + item.linePrice);
-    final taxAmount = subtotal * kTaxRate;
+    final effectiveSubtotal =
+        (subtotal - discountAmount).clamp(0.0, double.infinity);
+    final taxAmount = effectiveSubtotal * kTaxRate;
     return CartTotals(
       subtotal: subtotal,
+      discountAmount: discountAmount,
       taxAmount: taxAmount,
-      totalAmount: subtotal + taxAmount,
+      totalAmount: effectiveSubtotal + taxAmount,
     );
   }
 
   @override
   String toString() =>
-      'CartTotals(subtotal: $subtotal, taxAmount: $taxAmount, '
-      'totalAmount: $totalAmount)';
+      'CartTotals(subtotal: $subtotal, discount: $discountAmount, '
+      'taxAmount: $taxAmount, totalAmount: $totalAmount)';
 }
+

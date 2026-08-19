@@ -14,6 +14,7 @@ import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
+import '../widgets/ticket_print_dialog.dart';
 
 /// Kitchen Display System: live order columns (pending / preparing / ready).
 ///
@@ -69,9 +70,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     }
     _lastOrderCount = pendingCount;
 
-    final pendingList = active.where((o) => o.status == OrderStatus.pending).toList();
-    final preparingList = active.where((o) => o.status == OrderStatus.preparing).toList();
-    final readyList = active.where((o) => o.status == OrderStatus.ready).toList();
+    final pendingList = active.where((o) => o.status == OrderStatus.pending).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final preparingList = active.where((o) => o.status == OrderStatus.preparing).toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final readyList = active.where((o) => o.status == OrderStatus.ready).toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return DefaultTabController(
       length: 3,
@@ -286,6 +290,18 @@ class _OrderCard extends StatelessWidget {
 
   bool get _isNew => DateTime.now().difference(order.createdAt) < _newThreshold;
 
+  Color _getUrgencyColor(int minutes) {
+    if (minutes < 5) return Colors.green;
+    if (minutes < 10) return Colors.orange;
+    return Colors.red;
+  }
+
+  String _getUrgencyBadge(int minutes) {
+    if (minutes < 5) return '🟢 في الوقت ($minutes د)';
+    if (minutes < 10) return '🟡 تنبيه ($minutes د)';
+    return '🔴 متأخر! ($minutes د)';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -296,15 +312,20 @@ class _OrderCard extends StatelessWidget {
       _ => AppConstants.ok,
     };
 
-    final highlight = _isNew ? theme.colorScheme.primary : null;
+    final elapsed = _elapsedMinutes(order.createdAt);
+    final urgencyColor = _getUrgencyColor(elapsed);
+    final highlight = _isNew ? theme.colorScheme.primary : urgencyColor;
+
+    final displayTable = tableNumber ??
+        (order.tableId != null
+            ? int.tryParse(order.tableId!.replaceAll(RegExp(r'[^0-9]'), ''))
+            : null);
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: highlight != null
-            ? BorderSide(color: highlight, width: 1.5)
-            : BorderSide.none,
+        side: BorderSide(color: highlight, width: 1.8),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
@@ -337,21 +358,34 @@ class _OrderCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: highlight!.withValues(alpha: 0.15),
+                          color: theme.colorScheme.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
                           AppConstants.kdsNewBadge,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: highlight,
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    if (tableNumber != null)
+                    if (displayTable != null)
                       Chip(
                         label: Text(
-                          '${AppConstants.orderTablePrefix} $tableNumber',
+                          '${AppConstants.orderTablePrefix} $displayTable',
                         ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )
+                    else if (order.orderType == OrderType.takeaway)
+                      const Chip(
+                        label: Text('سفري'),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )
+                    else if (order.orderType == OrderType.delivery)
+                      const Chip(
+                        label: Text('توصيل 🚗'),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -363,7 +397,9 @@ class _OrderCard extends StatelessWidget {
             for (final item in order.items) ...[
               Text(
                 '${item.quantity} × ${item.menuItem.name}',
-                style: theme.textTheme.bodySmall,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               if (item.selectedModifiers.isNotEmpty)
                 Padding(
@@ -387,6 +423,7 @@ class _OrderCard extends StatelessWidget {
                     '${AppConstants.specialNotesLabel}: ${item.specialNotes}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold,
                       fontSize: 11,
                     ),
                   ),
@@ -413,32 +450,53 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (_elapsedMinutes(order.createdAt) >= 1)
+            if (elapsed >= 1)
               Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  '${AppConstants.sincePrefix} '
-                  '${_elapsedMinutes(order.createdAt)} '
-                  '${AppConstants.minutes}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.tertiary,
+                  _getUrgencyBadge(elapsed),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: urgencyColor,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             const SizedBox(height: AppSpacing.sm),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              ),
-              onPressed: () => onAdvance(order),
-              child: Text(buttonLabel),
+            Row(
+              children: [
+                IconButton.outlined(
+                  tooltip: 'طباعة تذكرة المطبخ',
+                  icon: const Icon(Icons.print_outlined, size: 18),
+                  onPressed: () => TicketPrintDialog.show(
+                    context,
+                    order: order,
+                    tableDisplay: displayTable?.toString(),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: FilledButton.tonal(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xs,
+                      ),
+                    ),
+                    onPressed: () => onAdvance(order),
+                    child: Text(buttonLabel),
+                  ),
+                ),
+              ],
             ),
+
           ],
         ),
       ),
     );
+
   }
 
   int _elapsedMinutes(DateTime createdAt) =>
       Formatters.elapsedMinutes(createdAt);
 }
+

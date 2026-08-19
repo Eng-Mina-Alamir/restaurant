@@ -7,6 +7,8 @@ import '../../../../core/theme/spacing.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
+import '../../../ratings/domain/entities/rating_entity.dart';
+import '../../../ratings/presentation/widgets/rating_dialog.dart';
 
 /// Bottom sheet allowing the customer to pick modifiers for [menuItem] and add
 /// the configured product to the cart.
@@ -100,13 +102,37 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                   ),
                 ),
               const SizedBox(height: AppSpacing.md),
-              Text(
-                Formatters.formatCurrency(_unitPrice(item) * _quantity),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w800,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    Formatters.formatCurrency(_unitPrice(item) * _quantity),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.star, color: Colors.amber, size: 20),
+                    label: Text(
+                      '${item.rating ?? 4.8} (تقييم الوجبة)',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () {
+                      RatingDialog.show(
+                        context,
+                        targetId: item.id,
+                        targetType: RatingTargetType.menuItem,
+                        title: 'تقييم وجبة ${item.name}',
+                        subtitle: 'ما رأيك في المذاق والجودة؟',
+                      );
+                    },
+                  ),
+                ],
               ),
+
               if (item.modifierGroups.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
                 ...item.modifierGroups.map(_buildGroup),

@@ -4,7 +4,7 @@ import 'package:restaurant_app/features/menu/data/repositories/menu_repository_i
 import 'package:restaurant_app/features/menu/domain/entities/menu.dart';
 
 void main() {
-  const menuRepository = MenuRepositoryImpl();
+  final menuRepository = MenuRepositoryImpl();
 
   group('MenuRepository', () {
     test(

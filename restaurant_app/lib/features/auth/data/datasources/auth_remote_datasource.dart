@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/network/api_endpoints.dart';
 import '../models/user_model.dart';
@@ -20,9 +21,19 @@ abstract class AuthRemoteDataSource {
   /// Exchanges [refreshToken] for a new access token, returning the token.
   Future<String> refreshToken(String refreshToken);
 
+  /// Registers a new user account with provided details.
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  });
+
   /// Ends the session for the given access [token].
   Future<void> logout(String? token);
 }
+
 
 /// Dio-backed implementation of [AuthRemoteDataSource].
 ///
@@ -79,6 +90,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const ServerException(AppConstants.errorInvalidToken);
       }
       return token;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
+  @override
+  Future<UserModel> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    UserRole role = UserRole.customer,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.login,
+        data: <String, dynamic>{
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+          'role': role.name,
+        },
+      );
+      return _parseUser(response.data);
     } on DioException catch (error) {
       throw _mapDioException(error);
     }

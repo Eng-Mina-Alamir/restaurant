@@ -33,7 +33,68 @@ class MenuController extends AsyncNotifier<Menu> {
       onRight: (menu) => menu,
     );
   }
+
+  /// Adds a new menu item and refreshes state.
+  Future<void> addItem(MenuItem item) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.addMenuItem(item);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
+
+  /// Updates an existing menu item and refreshes state.
+  Future<void> updateItem(MenuItem item) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.updateMenuItem(item);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
+
+  /// Deletes a menu item by [itemId].
+  Future<void> deleteItem(String itemId) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.deleteMenuItem(itemId);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
+
+  /// Toggles availability of [itemId].
+  Future<void> toggleAvailability(String itemId, bool isAvailable) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.toggleAvailability(itemId, isAvailable);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
+
+  /// Adds a new category.
+  Future<void> addCategory(String categoryName) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.addCategory(categoryName);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
+
+  /// Deletes a category by [categoryName].
+  Future<void> deleteCategory(String categoryName) async {
+    final repo = ref.read(menuRepositoryProvider);
+    final result = await repo.deleteCategory(categoryName);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (_) => ref.invalidateSelf(),
+    );
+  }
 }
+
 
 final menuControllerProvider = AsyncNotifierProvider<MenuController, Menu>(
   MenuController.new,

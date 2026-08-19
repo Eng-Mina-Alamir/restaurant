@@ -45,6 +45,33 @@ class HiveTableRepository implements TableRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, RestaurantTable>> addTable(
+    RestaurantTable table,
+  ) async {
+    try {
+      final all = await _load();
+      all.add(table);
+      await _cache.writeList(cacheKey, all.map((t) => t.toJson()).toList());
+      return Right<Failure, RestaurantTable>(table);
+    } catch (e) {
+      return Left<Failure, RestaurantTable>(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteTable(String id) async {
+    try {
+      final all = await _load();
+      all.removeWhere((t) => t.id == id);
+      await _cache.writeList(cacheKey, all.map((t) => t.toJson()).toList());
+      return const Right<Failure, void>(null);
+    } catch (e) {
+      return Left<Failure, void>(CacheFailure(e.toString()));
+    }
+  }
+
+
   Future<List<RestaurantTable>> _load() async {
     var list = _cache.readList(cacheKey).map(RestaurantTable.fromJson).toList();
     if (list.isEmpty) {

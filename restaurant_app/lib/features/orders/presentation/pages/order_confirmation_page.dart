@@ -98,8 +98,15 @@ class OrderConfirmationPage extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           _Row(label: AppConstants.statusLabel, value: order.status.labelAr),
-          const SizedBox(height: AppSpacing.lg),
           FilledButton.icon(
+            onPressed: () {
+              context.push('/customer/track/${order.id}');
+            },
+            icon: const Icon(Icons.location_on),
+            label: const Text('تتبع الطلب مباشرة'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
             onPressed: () {
               context.go('/customer');
             },
@@ -110,6 +117,7 @@ class OrderConfirmationPage extends StatelessWidget {
       ),
     );
   }
+
 
   static String formattedOrderNumber(OrderEntity order) =>
       Formatters.formatOrderId(order.id);

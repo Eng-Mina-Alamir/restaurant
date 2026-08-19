@@ -39,4 +39,21 @@ class InMemoryTableRepository implements TableRepository {
     _tables[table.id] = table;
     return Right<Failure, RestaurantTable>(table);
   }
+
+  @override
+  Future<Either<Failure, RestaurantTable>> addTable(
+    RestaurantTable table,
+  ) async {
+    _ensureSeeded();
+    _tables[table.id] = table;
+    return Right<Failure, RestaurantTable>(table);
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteTable(String id) async {
+    _ensureSeeded();
+    _tables.remove(id);
+    return const Right<Failure, void>(null);
+  }
 }
+

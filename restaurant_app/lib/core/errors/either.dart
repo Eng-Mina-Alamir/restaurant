@@ -10,6 +10,9 @@
 sealed class Either<L, R> {
   const Either();
 
+  bool get isLeft => this is Left<L, R>;
+  bool get isRight => this is Right<L, R>;
+
   /// Pattern-matches this [Either], invoking [onLeft] for a [Left] value and
   /// [onRight] for a [Right] value.
   TResult when<TResult>({
@@ -22,6 +25,7 @@ sealed class Either<L, R> {
     };
   }
 }
+
 
 /// Failure side of an [Either]; carries the reason an operation failed.
 final class Left<L, R> extends Either<L, R> {

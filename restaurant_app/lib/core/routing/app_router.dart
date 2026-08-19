@@ -3,9 +3,12 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
 import '../../features/customer/presentation/pages/order_history_page.dart';
+import '../../features/customer/presentation/pages/order_tracking_page.dart';
+import '../../features/loyalty/presentation/pages/loyalty_page.dart';
 import '../../features/orders/presentation/pages/order_confirmation_page.dart';
 import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
@@ -14,13 +17,20 @@ import '../../features/manager_dashboard/presentation/pages/alerts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/discounts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/inventory_page.dart';
 import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
+import '../../features/coupons/presentation/pages/coupon_management_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/manager_dashboard/presentation/pages/financial_reports_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
 import '../../features/manager_dashboard/presentation/pages/staff_performance_page.dart';
+import '../../features/manager_dashboard/presentation/pages/user_management_page.dart';
+import '../../features/menu/presentation/pages/menu_management_page.dart';
+import '../../features/reservations/presentation/pages/reservations_page.dart';
 import '../../features/settings/presentation/pages/privacy_policy_page.dart';
 import '../../features/settings/presentation/pages/terms_page.dart';
 import '../../features/table_management/presentation/pages/all_orders_page.dart';
 import '../../features/table_management/presentation/pages/table_detail_page.dart';
+import '../../features/table_management/presentation/pages/table_management_crud_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
 import '../../features/table_management/presentation/pages/waiter_order_page.dart';
 import '../../shared/widgets/not_found_page.dart';
@@ -46,18 +56,19 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       }
 
       final loggingIn = state.matchedLocation == '/login';
+      final registering = state.matchedLocation == '/register';
 
       if (auth.status == AuthStatus.unauthenticated) {
-        return loggingIn ? null : '/login';
+        return (loggingIn || registering) ? null : '/login';
       }
 
       final user = auth.user;
       if (user == null) {
-        return loggingIn ? null : '/login';
+        return (loggingIn || registering) ? null : '/login';
       }
 
-      // Authenticated users landing on /login (or /) go to their role home.
-      if (loggingIn || state.matchedLocation == '/') {
+      // Authenticated users landing on /login (or / or /register) go to their role home.
+      if (loggingIn || registering || state.matchedLocation == '/') {
         return user.role.homeRoute;
       }
 
@@ -66,6 +77,14 @@ GoRouter createAppRouter({required WidgetRef ref}) {
     routes: [
       GoRoute(path: '/', redirect: (context, state) => '/login'),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsPage(),
+      ),
       GoRoute(
         path: '/customer',
         builder: (context, state) => const CustomerHomePage(),
@@ -85,8 +104,19 @@ GoRouter createAppRouter({required WidgetRef ref}) {
               return OrderConfirmationPage(order: order);
             },
           ),
+          GoRoute(
+            path: 'track/:orderId',
+            builder: (context, state) => OrderTrackingPage(
+              orderId: state.pathParameters['orderId'] ?? 'ORD-0001',
+            ),
+          ),
+          GoRoute(
+            path: 'loyalty',
+            builder: (context, state) => const LoyaltyPage(),
+          ),
         ],
       ),
+
       GoRoute(
         path: '/waiter',
         builder: (context, state) => const WaiterDashboardPage(),
@@ -136,8 +166,37 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             path: 'alerts',
             builder: (context, state) => const AlertsPage(),
           ),
+          GoRoute(
+            path: 'menu',
+            builder: (context, state) => const MenuManagementPage(),
+          ),
+          GoRoute(
+            path: 'tables',
+            builder: (context, state) => const TableManagementCrudPage(),
+          ),
+          GoRoute(
+            path: 'reservations',
+            builder: (context, state) => const ReservationsPage(),
+          ),
+          GoRoute(
+            path: 'users',
+            builder: (context, state) => const UserManagementPage(),
+          ),
+          GoRoute(
+            path: 'coupons',
+            builder: (context, state) => const CouponManagementPage(),
+          ),
+          GoRoute(
+            path: 'financial-reports',
+            builder: (context, state) => const FinancialReportsPage(),
+          ),
         ],
       ),
+
+
+
+
+
       GoRoute(
         path: '/driver',
         builder: (context, state) => const DriverHomePage(),
