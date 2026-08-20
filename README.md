@@ -7,7 +7,7 @@
 ![Supabase](https://img.shields.io/badge/Supabase-Backend%20%26%20Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Riverpod](https://img.shields.io/badge/State-Riverpod%202.x-black?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/Tests-815%2F815%20Passed-success?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=for-the-badge)
 
 **نظام متكامل لإدارة المطاعم وطلبات الطعام يغطي 5 أدوار مختلفة بنظام الوقت الفعلي (Real-time WebSockets) والهيكل البرمجي النظيف (Clean Architecture).**
 
@@ -133,5 +133,8 @@ flutter run
 
 ---
 
-## 📄 الترخيص (License)
-المشروع مرخص تحت رخصة **MIT License**.
+## 📄 حقوق الملكية والترخيص (License)
+**جميع الحقوق محفوظة © 2026 م. مينا الأمير (All Rights Reserved).**
+
+هذا المشروع ملكية خاصة ومحمية بموجب قوانين الملكية الفكرية، ولا يُسمح بالنسخ أو التعديل أو إعادة التوزيع أو الاستخدام التجاري دون إذن خطي مسبق من صاحب العمل.
+
