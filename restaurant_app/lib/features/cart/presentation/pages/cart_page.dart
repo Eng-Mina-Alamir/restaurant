@@ -11,6 +11,7 @@ import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../coupons/domain/entities/coupon_entity.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
+import '../../../customer/presentation/widgets/address_map_picker_sheet.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../presentation/controllers/cart_controller.dart';
 import '../../domain/cart_totals.dart';
@@ -392,6 +393,63 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
               onChanged: (t) =>
                   ref.read(selectedOrderTypeProvider.notifier).state = t,
             ),
+            if (ref.watch(selectedOrderTypeProvider) == OrderType.delivery) ...[
+              const SizedBox(height: AppSpacing.sm),
+              InkWell(
+                onTap: () async {
+                  final result = await AddressMapPickerSheet.show(context);
+                  if (result != null) {
+                    ref.read(selectedDeliveryAddressProvider.notifier).state =
+                        result.formattedAddress;
+                  }
+                },
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.map_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                        size: 22,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'موقع التوصيل على الخريطة',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              ref.watch(selectedDeliveryAddressProvider) ??
+                                  'انقر لتحديد العنوان على الخريطة',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.edit_location_alt_outlined, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             _PaymentSelector(
               paymentMethod: widget.paymentMethod,

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,8 +8,13 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_http_overrides.dart';
 
 void main() {
+  setUpAll(() {
+    HttpOverrides.global = TestHttpOverrides();
+  });
+
   group('OrderTrackingPage Widget Tests', () {
     testWidgets('renders order details, status stepper and driver info', (tester) async {
       const burger = MenuItem(

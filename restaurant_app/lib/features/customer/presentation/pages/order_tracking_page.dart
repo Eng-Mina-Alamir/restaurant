@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:mhj_maps/mhj_maps.dart';
+
+import '../../../delivery/presentation/widgets/live_tracking_map.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
@@ -155,20 +158,17 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
             ),
           ),
 
-          // ── Map View with MhjMaps ─────────────────────────────────────
+          // ── Map View with Comprehensive LiveTrackingMap ─────────────
           Expanded(
             flex: 3,
-            child: ClipRRect(
-              child: MhjMapsMap(
-                center: _driverLatLng,
-                zoom: 14,
-                theme: isDark ? MhjMapsMapThemes.darkElegant : MhjMapsMapThemes.voyager,
-                showZoomControls: true,
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                  _updateMapMarkers();
-                },
-              ),
+            child: LiveTrackingMap(
+              pickupLatLng: LatLng(_restaurantLatLng.lat, _restaurantLatLng.lng),
+              deliveryLatLng: LatLng(_customerLatLng.lat, _customerLatLng.lng),
+              pickupLabel: 'المطعم',
+              deliveryLabel: 'عنوانك',
+              showControls: true,
+              showNavigationHud: true,
+              showDeliveryRadius: true,
             ),
           ),
 

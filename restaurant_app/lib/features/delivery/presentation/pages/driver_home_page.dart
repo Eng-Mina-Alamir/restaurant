@@ -85,7 +85,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.82,
+        height: MediaQuery.of(ctx).size.height * 0.90,
         decoration: BoxDecoration(
           color: Theme.of(ctx).scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -96,11 +96,11 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  const Icon(Icons.map_rounded, color: Colors.blue),
+                  const Icon(Icons.navigation_rounded, color: Colors.blue),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'خريطة التتبع المباشر - طلب ${assignment.orderId}',
+                      'ملاحة وتتبع الطلب ${Formatters.formatOrderId(assignment.orderId)}',
                       style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -119,7 +119,12 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                 child: LiveTrackingMap(
                   pickupLatLng: pickup,
                   deliveryLatLng: delivery,
+                  pickupLabel: 'مطعم الأصالة',
                   deliveryLabel: assignment.deliveryLocation,
+                  showControls: true,
+                  showNavigationHud: true,
+                  showDeliveryRadius: true,
+                  deliveryRadiusMeters: 10000,
                   onLocationUpdate: (pos) {
                     ref.read(deliveryControllerProvider.notifier).updateLocation(
                           latitude: pos.latitude,

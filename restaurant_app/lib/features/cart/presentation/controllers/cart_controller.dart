@@ -122,3 +122,9 @@ final selectedOrderTypeProvider = StateProvider<OrderType>(
 final activeTableIdProvider = Provider<String?>(
   (ref) => ref.watch(cartControllerProvider.notifier).activeTableId,
 );
+
+/// The selected delivery address string resolved from the interactive map picker.
+final selectedDeliveryAddressProvider = StateProvider<String?>(
+  (ref) => 'حي الزمالك، شارع 26 يوليو، القاهرة',
+);
+
