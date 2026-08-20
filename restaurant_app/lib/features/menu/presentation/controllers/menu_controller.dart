@@ -38,9 +38,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> addItem(MenuItem item) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.addMenuItem(item);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 
@@ -48,9 +51,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> updateItem(MenuItem item) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.updateMenuItem(item);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 
@@ -58,9 +64,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> deleteItem(String itemId) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.deleteMenuItem(itemId);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 
@@ -68,9 +77,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> toggleAvailability(String itemId, bool isAvailable) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.toggleAvailability(itemId, isAvailable);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 
@@ -78,9 +90,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> addCategory(String categoryName) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.addCategory(categoryName);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 
@@ -88,9 +103,12 @@ class MenuController extends AsyncNotifier<Menu> {
   Future<void> deleteCategory(String categoryName) async {
     final repo = ref.read(menuRepositoryProvider);
     final result = await repo.deleteCategory(categoryName);
-    result.when(
-      onLeft: (_) => null,
-      onRight: (_) => ref.invalidateSelf(),
+    await result.when(
+      onLeft: (_) async => null,
+      onRight: (_) async {
+        ref.invalidateSelf();
+        await future;
+      },
     );
   }
 }

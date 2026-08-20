@@ -14,6 +14,9 @@ import 'package:restaurant_app/features/reservations/presentation/controllers/re
 import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_repository.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
 
+import 'package:restaurant_app/core/di/service_locator.dart';
+import 'package:restaurant_app/features/menu/data/repositories/menu_repository_impl.dart';
+
 /// Creates a [ProviderContainer] preconfigured with in-memory test doubles
 /// for isolated timeline and integration test runs without remote network calls.
 ProviderContainer createTestContainer({
@@ -21,6 +24,7 @@ ProviderContainer createTestContainer({
 }) {
   return ProviderContainer(
     overrides: [
+      menuRepositoryProvider.overrideWithValue(MenuRepositoryImpl()),
       orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
       tableRepositoryProvider.overrideWithValue(InMemoryTableRepository()),
       couponRepositoryProvider.overrideWithValue(InMemoryCouponRepository()),

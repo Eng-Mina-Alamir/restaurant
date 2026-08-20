@@ -13,6 +13,8 @@ import 'core/utils/logger.dart';
 const String _sentryDsn = String.fromEnvironment('SENTRY_DSN');
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // 1. Control logging: emit logs only in debug mode
   AppLogger.enabled = kDebugMode;
 
@@ -40,7 +42,6 @@ Future<void> main() async {
 
   Future<void> appRunner() async {
     await runZonedGuarded(() async {
-      WidgetsFlutterBinding.ensureInitialized();
 
       // Initialize Supabase backend
       try {

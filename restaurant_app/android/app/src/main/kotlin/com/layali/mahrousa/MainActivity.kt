@@ -1,4 +1,4 @@
-package com.restaurant.restaurant_app
+package com.layali.mahrousa
 
 import io.flutter.embedding.android.FlutterActivity
 
