@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -7,6 +6,7 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_repository.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Concurrency & High-Load Stress Integration Tests', () {
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('Rapid order placement and status transitions through ProviderContainer', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
 
       final cart = container.read(cartControllerProvider.notifier);
       final orders = container.read(ordersControllerProvider.notifier);

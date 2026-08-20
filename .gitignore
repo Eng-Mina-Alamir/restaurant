@@ -26,3 +26,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Internal Agent / Tool state
+.commandcode/
+.agents/
+.gemini/

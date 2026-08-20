@@ -9,6 +9,7 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/controlle
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -28,7 +29,7 @@ void main() {
     });
 
     test('aggregates order totals and item popularity', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -45,7 +46,7 @@ void main() {
     });
 
     test('category revenue aggregates multiple orders', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -59,7 +60,7 @@ void main() {
     });
 
     test('tracks revenue by payment method', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -72,7 +73,7 @@ void main() {
     });
 
     test('counts completed orders in sales, pending ones do not', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -110,7 +111,7 @@ void main() {
   testWidgets('shows an order status breakdown when orders exist', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);

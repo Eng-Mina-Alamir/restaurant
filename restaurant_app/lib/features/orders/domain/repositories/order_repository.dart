@@ -1,3 +1,4 @@
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/order_entity.dart';
@@ -13,4 +14,10 @@ abstract class OrderRepository {
 
   /// Returns all orders placed in the current session, oldest first.
   Future<Either<Failure, List<OrderEntity>>> getOrders();
+
+  /// Updates the status of an existing order.
+  Future<Either<Failure, void>> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  );
 }

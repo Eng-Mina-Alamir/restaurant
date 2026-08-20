@@ -11,6 +11,7 @@ import 'package:restaurant_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_history_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   setUpAll(() async {
@@ -41,7 +42,7 @@ void main() {
   });
 
   testWidgets('lists placed orders with reorder action', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -67,7 +68,7 @@ void main() {
   });
 
   testWidgets('reorder adds items back to the cart', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -107,7 +108,7 @@ void main() {
   });
 
   testWidgets('reorder skips unavailable items', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     // fries becomes unavailable after the original order was placed.
@@ -155,7 +156,7 @@ void main() {
   testWidgets('reorder reports skipped items when some are unavailable', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);

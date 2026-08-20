@@ -11,6 +11,7 @@ import 'package:restaurant_app/features/orders/data/repositories/in_memory_order
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/order_mapper.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const cheese = MenuModifierOption(id: 'c1', name: 'جبنة', extraPrice: 4);
@@ -25,7 +26,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
-    container = ProviderContainer();
+    container = createTestContainer();
   });
 
   tearDown(() => container.dispose());

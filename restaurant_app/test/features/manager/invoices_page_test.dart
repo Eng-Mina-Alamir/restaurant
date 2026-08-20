@@ -7,6 +7,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/invoices_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -33,7 +34,7 @@ void main() {
     });
 
     testWidgets('shows invoice card when completed orders exist and clicking export triggers snackbar', (tester) async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);

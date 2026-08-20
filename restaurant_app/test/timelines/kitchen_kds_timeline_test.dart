@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/printing/ticket_printer_service.dart';
@@ -6,6 +5,7 @@ import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 5: Kitchen KDS Station Full Journey Test', () {
@@ -26,7 +26,7 @@ void main() {
     );
 
     test('Kitchen KDS Timeline: Order Inflow -> Alert Sound -> Station Dispatch -> Prep Timer Progression -> Print Ticket -> Mark Ready', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/payment/payment_service.dart';
@@ -6,11 +5,12 @@ import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Payment Checkout Flow Integration Test', () {
     test('add items to cart, process payment through PaymentService, and place order', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cartController = container.read(cartControllerProvider.notifier);

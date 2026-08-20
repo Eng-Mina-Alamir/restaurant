@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -9,6 +8,7 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 1: Dine-In Customer Full Journey Test', () {
@@ -41,7 +41,7 @@ void main() {
     );
 
     test('Customer Dine-In Timeline: QR Scan -> Browse -> Cart -> Coupon -> Order -> Live Prep -> Serve -> Loyalty & Rating', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       // ── Step 1: Customer arrives at table and scans QR code ───────────────

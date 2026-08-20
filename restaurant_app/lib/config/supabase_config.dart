@@ -26,6 +26,9 @@ abstract final class SupabaseConfig {
   static const String ratingsTable = 'ratings';
   static const String inventoryTable = 'inventory';
   static const String driverLocationsTable = 'driver_locations';
+  static const String loyaltyAccountsTable = 'loyalty_accounts';
+  static const String loyaltyTransactionsTable = 'loyalty_transactions';
+  static const String loyaltyRewardsTable = 'loyalty_rewards';
 
   // ── Storage Buckets ───────────────────────────────────────────────────────
   static const String menuBucket = 'menu-images';

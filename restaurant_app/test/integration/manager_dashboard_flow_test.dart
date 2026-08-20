@@ -8,10 +8,11 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/pages/dis
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/financial_reports_page.dart';
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/inventory_page.dart';
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   testWidgets('Manager dashboard full navigation flow', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final router = GoRouter(

@@ -1,13 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Delivery Complete Flow Integration Test', () {
     test('end-to-end driver lifecycle: assignment -> accept -> start -> update location -> deliver', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final deliveryRepo = container.read(deliveryRepositoryProvider);

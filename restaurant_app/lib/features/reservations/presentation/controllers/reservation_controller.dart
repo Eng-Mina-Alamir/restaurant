@@ -1,11 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../domain/entities/reservation_entity.dart';
 import '../../domain/repositories/reservation_repository.dart';
 import '../../data/repositories/in_memory_reservation_repository.dart';
+import '../../data/repositories/supabase_reservation_repository.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
 
 final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
+  if (AppConfig.useSupabase) {
+    return SupabaseReservationRepository(
+      supabase: ref.watch(supabaseClientProvider),
+    );
+  }
   return InMemoryReservationRepository();
 });
 

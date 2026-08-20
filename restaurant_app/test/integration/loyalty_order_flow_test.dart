@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -7,6 +6,7 @@ import 'package:restaurant_app/features/loyalty/domain/entities/loyalty_entity.d
 import 'package:restaurant_app/features/loyalty/presentation/controllers/loyalty_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   const meal = MenuItem(
@@ -18,7 +18,7 @@ void main() {
   );
 
   test('Order & Loyalty Earn-Redeem Integration Flow', () async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);

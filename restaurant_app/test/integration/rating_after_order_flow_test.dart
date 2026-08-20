@@ -1,12 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Rating After Order Flow Integration Test', () {
     test('submits meal and driver ratings after order completion and verifies calculations', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final ratingController = container.read(ratingSubmissionControllerProvider.notifier);

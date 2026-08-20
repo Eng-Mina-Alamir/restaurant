@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -6,6 +5,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 4: Waiter / Captain Full Journey Test', () {
@@ -26,7 +26,7 @@ void main() {
     );
 
     test('Waiter Timeline: Login -> Floor Overview -> Seat Guests -> Take Table Order -> Kitchen Sync -> Serve -> Split Bill -> Clean & Free', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final tableNotifier = container.read(tableControllerProvider.notifier);

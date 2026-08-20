@@ -1,13 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/reservations/presentation/controllers/reservation_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 3: Customer Table Reservation Journey Test', () {
     test('Reservation Timeline: Pick Time & Table -> Confirm Booking -> Table becomes Reserved -> Arrive & Seat -> Release', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final tableNotifier = container.read(tableControllerProvider.notifier);

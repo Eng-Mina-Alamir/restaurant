@@ -6,9 +6,10 @@ import '../../../../config/app_config.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
 
-/// User registration page allowing new accounts to be created.
+/// User registration page allowing new customer accounts to be created.
 class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
@@ -24,7 +25,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  UserRole _selectedRole = UserRole.customer;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _submitting = false;
@@ -55,7 +55,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),
           password: _passwordController.text,
-          role: _selectedRole,
+          role: UserRole.customer,
         );
 
     if (!mounted) return;
@@ -109,49 +109,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Role Selection
-                  Text(
-                    'نوع الحساب',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: [
-                      _RoleChip(
-                        role: UserRole.customer,
-                        label: 'عميل',
-                        icon: Icons.person_outline,
-                        selected: _selectedRole == UserRole.customer,
-                        onSelected: () => setState(
-                          () => _selectedRole = UserRole.customer,
-                        ),
-                      ),
-                      _RoleChip(
-                        role: UserRole.waiter,
-                        label: 'نادل / كابتن',
-                        icon: Icons.restaurant_menu,
-                        selected: _selectedRole == UserRole.waiter,
-                        onSelected: () => setState(
-                          () => _selectedRole = UserRole.waiter,
-                        ),
-                      ),
-                      _RoleChip(
-                        role: UserRole.driver,
-                        label: 'سائق توصيل',
-                        icon: Icons.delivery_dining,
-                        selected: _selectedRole == UserRole.driver,
-                        onSelected: () => setState(
-                          () => _selectedRole = UserRole.driver,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xl),
 
                   // Name Field
                   TextFormField(
@@ -164,6 +122,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'يرجى إدخال الاسم';
+                      }
+                      if (!Validators.isValidName(value)) {
+                        return 'يرجى إدخال اسم صحيح';
                       }
                       return null;
                     },
@@ -183,7 +144,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       if (value == null || value.trim().isEmpty) {
                         return AppConstants.requiredField;
                       }
-                      if (!value.contains('@') || !value.contains('.')) {
+                      if (!Validators.isValidEmail(value)) {
                         return 'بريد إلكتروني غير صالح';
                       }
                       return null;
@@ -199,6 +160,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     decoration: const InputDecoration(
                       labelText: 'رقم الهاتف',
                       prefixIcon: Icon(Icons.phone_outlined),
+                      hintText: '05xxxxxxxx أو 01xxxxxxxxx',
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -303,37 +265,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({
-    required this.role,
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final UserRole role;
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return ChoiceChip(
-      avatar: Icon(
-        icon,
-        size: 18,
-        color: selected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
-      ),
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
     );
   }
 }

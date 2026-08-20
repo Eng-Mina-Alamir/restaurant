@@ -5,6 +5,7 @@ import 'package:restaurant_app/core/notifications/new_order_notifier.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
+import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 
 void main() {
@@ -44,7 +45,11 @@ void main() {
   });
 
   test('placing an order notifies the shared notifier', () async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(newOrderNotifierProvider);

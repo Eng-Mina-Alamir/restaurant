@@ -8,6 +8,7 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/table_detail_page.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -36,7 +37,7 @@ void main() {
   });
 
   testWidgets('shows active order items after placing one', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     // Pump first so TableController's async load completes.

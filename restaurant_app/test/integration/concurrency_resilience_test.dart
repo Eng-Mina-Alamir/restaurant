@@ -1,10 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Concurrency & Resilience Integration Tests', () {
@@ -17,7 +17,7 @@ void main() {
     );
 
     test('Rapid simultaneous cart additions maintain exact state count and total', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('Concurrent order status modifications maintain atomic consistency', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);

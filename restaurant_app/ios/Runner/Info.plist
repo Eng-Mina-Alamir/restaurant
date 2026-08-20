@@ -26,6 +26,10 @@
 	<string>يستخدم التطبيق الموقع الجغرافي لتحديد عنوان التوصيل وتتبع مسار المندوب لحظياً على الخريطة.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>يستخدم التطبيق الموقع الجغرافي لتتبع مسار المندوب أثناء توصيل الطلب.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

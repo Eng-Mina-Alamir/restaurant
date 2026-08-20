@@ -4,12 +4,13 @@ import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/reservations/domain/entities/reservation_entity.dart';
 import 'package:restaurant_app/features/reservations/presentation/controllers/reservation_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   late ProviderContainer container;
 
   setUp(() async {
-    container = ProviderContainer();
+    container = createTestContainer();
     // Warm up both controllers
     container.read(tableControllerProvider.notifier);
     container.read(reservationControllerProvider.notifier);

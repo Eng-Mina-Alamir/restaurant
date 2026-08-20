@@ -15,6 +15,8 @@ import 'package:restaurant_app/features/auth/data/models/user_model.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/coupons/domain/entities/coupon_entity.dart';
 
+import '../../helpers/test_container.dart';
+
 /// Global QA Test initialization for GoogleFonts and Hive
 bool _qaEnvInitialized = false;
 void initQaTestEnvironment() {
@@ -211,8 +213,8 @@ ProviderContainer createQaContainer({
   ConnectivityService? connectivityService,
   List<Override> additionalOverrides = const [],
 }) {
-  final container = ProviderContainer(
-    overrides: [
+  final container = createTestContainer(
+    additionalOverrides: [
       if (authDataSource != null)
         authRemoteDataSourceProvider.overrideWithValue(authDataSource),
       if (realtimeService != null)
@@ -238,7 +240,7 @@ Future<void> pumpQaWidget(
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() => tester.view.resetPhysicalSize());
 
-  final effectiveContainer = container ?? ProviderContainer();
+  final effectiveContainer = container ?? createTestContainer();
   if (container == null) {
     addTearDown(effectiveContainer.dispose);
   }

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/payment/payment_service.dart';
@@ -9,6 +8,7 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 2: Delivery Customer Journey Test', () {
@@ -21,7 +21,7 @@ void main() {
     );
 
     test('Customer Delivery Timeline: Set Address -> Calc Fee -> Checkout Card -> Live GPS -> Delivered -> Rate Driver', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       // ── Step 1: Customer sets delivery mode & calculates distance fee ──────

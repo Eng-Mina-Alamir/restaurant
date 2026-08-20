@@ -1,3 +1,5 @@
+import 'supabase_config.dart';
+
 /// Deployment environments supported by the app.
 ///
 /// See spec section 8.1 for base-URL resolution rules.
@@ -31,7 +33,7 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'https://staging-api.restaurant.example.com';
       case Environment.production:
-        return 'https://iovxfvkaswdediephqep.supabase.co/rest/v1';
+        return '${SupabaseConfig.url}/rest/v1';
     }
   }
 
@@ -43,7 +45,8 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'wss://staging-api.restaurant.example.com';
       case Environment.production:
-        return 'wss://iovxfvkaswdediephqep.supabase.co/realtime/v1/websocket';
+        final rawHost = SupabaseConfig.url.replaceAll(RegExp(r'^https?:\/\/'), '');
+        return 'wss://$rawHost/realtime/v1/websocket';
     }
   }
 }

@@ -8,6 +8,7 @@ import 'package:restaurant_app/features/customer/presentation/pages/customer_hom
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/orders/presentation/pages/order_confirmation_page.dart';
+import '../helpers/test_container.dart';
 
 /// End-to-end style flow test: browse menu → add item → open cart →
 /// checkout → land on confirmation with the placed order.
@@ -15,7 +16,7 @@ void main() {
   testWidgets('customer can complete an order from menu to confirmation', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final router = GoRouter(

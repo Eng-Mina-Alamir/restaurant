@@ -7,6 +7,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -20,7 +21,7 @@ void main() {
   late ProviderContainer container;
 
   setUp(() {
-    container = ProviderContainer();
+    container = createTestContainer();
   });
 
   tearDown(() => container.dispose());

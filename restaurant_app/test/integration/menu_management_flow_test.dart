@@ -1,12 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/menu/presentation/controllers/menu_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Menu Management Flow Integration Test', () {
     test('adds custom menu item, filters menu, and verifies availability toggle', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final menuNotifier = container.read(menuControllerProvider.notifier);

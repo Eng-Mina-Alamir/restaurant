@@ -1,10 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 6: Delivery Driver Operations Journey Test', () {
@@ -17,7 +17,7 @@ void main() {
     );
 
     test('Driver Timeline: View Assigned Orders -> Pickup from Kitchen -> In-Transit GPS -> Photo Proof -> Complete Delivery', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);

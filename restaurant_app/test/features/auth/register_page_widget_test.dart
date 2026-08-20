@@ -5,7 +5,7 @@ import 'package:restaurant_app/features/auth/presentation/pages/register_page.da
 
 void main() {
   group('RegisterPage Widget Tests', () {
-    testWidgets('renders registration form and role selection', (tester) async {
+    testWidgets('renders registration form with secure customer role and validation', (tester) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -19,11 +19,8 @@ void main() {
       );
 
       expect(find.text('إنشاء حساب جديد'), findsOneWidget);
-      expect(find.text('نوع الحساب'), findsOneWidget);
-      expect(find.text('عميل'), findsOneWidget);
-      expect(find.text('نادل / كابتن'), findsOneWidget);
-      expect(find.text('سائق توصيل'), findsOneWidget);
       expect(find.text('الاسم بالكامل'), findsOneWidget);
+      expect(find.text('رقم الهاتف'), findsOneWidget);
       expect(find.text('إنشاء الحساب والمتابعة'), findsOneWidget);
 
       await tester.ensureVisible(find.text('إنشاء الحساب والمتابعة'));

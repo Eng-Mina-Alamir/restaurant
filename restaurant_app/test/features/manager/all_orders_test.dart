@@ -8,6 +8,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/all_orders_page.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   setUpAll(() async {
@@ -23,7 +24,7 @@ void main() {
   );
 
   Future<ProviderContainer> seedOrder() async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     container
         .read(cartControllerProvider.notifier)
         .addItem(const CartItem(menuItem: burger, quantity: 1));

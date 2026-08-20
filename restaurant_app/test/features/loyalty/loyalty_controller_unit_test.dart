@@ -2,12 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/features/loyalty/domain/entities/loyalty_entity.dart';
 import 'package:restaurant_app/features/loyalty/presentation/controllers/loyalty_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   late ProviderContainer container;
 
   setUp(() {
-    container = ProviderContainer();
+    container = createTestContainer();
   });
 
   tearDown(() {

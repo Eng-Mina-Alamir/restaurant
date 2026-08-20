@@ -30,6 +30,18 @@ class _FakeOrderRepository implements OrderRepository {
   Future<Either<Failure, List<OrderEntity>>> getOrders() async {
     return Right(List.unmodifiable(orders));
   }
+
+  @override
+  Future<Either<Failure, void>> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    final index = orders.indexWhere((o) => o.id == orderId);
+    if (index != -1) {
+      orders[index] = orders[index].copyWith(status: status);
+    }
+    return const Right(null);
+  }
 }
 
 void main() {

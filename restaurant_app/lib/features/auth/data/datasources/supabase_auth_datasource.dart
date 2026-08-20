@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../config/supabase_config.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/logger.dart';
 import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
@@ -30,15 +31,22 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       final user = response.user;
       if (user == null) {
-        throw const ServerException('فشل تسجيل الدخول: لم يتم العثور على بيانات المستخدم');
+        throw const ServerException(
+          'فشل تسجيل الدخول: لم يتم العثور على بيانات المستخدم',
+        );
       }
 
-      return await _fetchOrConstructProfile(user, response.session?.accessToken);
+      return await _fetchOrConstructProfile(
+        user,
+        response.session?.accessToken,
+      );
     } on AuthException catch (e) {
+      AppLogger.warning('Supabase login AuthException: ${e.message}');
       throw InvalidCredentialsException(e.message);
-    } catch (e) {
+    } catch (e, st) {
       if (e is AppException) rethrow;
-      throw ServerException('خطأ في الاتصال بالخادم: $e');
+      AppLogger.error('Supabase login unexpected error', error: e, stackTrace: st);
+      throw const ServerException('حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً');
     }
   }
 
@@ -57,27 +65,26 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {
           'name': name.trim(),
           'phone': phone.trim(),
-          'role': role.name,
         },
       );
 
       final user = response.user;
       if (user == null) {
-        throw const ServerException('فشل إنشاء الحساب');
+        throw const ServerException('فشل إنشاء الحساب، يرجى التحقق من البيانات والمحاولة مرة أخرى');
       }
 
-      // Upsert profile in `profiles` table
+      // Upsert profile in `profiles` table (server trigger forces role to customer for safety)
       try {
         await _supabase.from(SupabaseConfig.profilesTable).upsert({
           'id': user.id,
           'name': name.trim(),
           'email': email.trim(),
           'phone': phone.trim(),
-          'role': role.name,
+          'role': UserRole.customer.name,
           'created_at': DateTime.now().toIso8601String(),
         });
-      } catch (_) {
-        // If RLS prevents direct upsert or trigger handles it, continue
+      } catch (profileError) {
+        AppLogger.warning('Direct profile upsert skipped/handled by trigger: $profileError');
       }
 
       return UserModel(
@@ -85,15 +92,17 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         name: name,
         email: email,
         phone: phone,
-        role: role,
+        role: UserRole.customer,
         token: response.session?.accessToken,
         createdAt: DateTime.now(),
       );
     } on AuthException catch (e) {
+      AppLogger.warning('Supabase register AuthException: ${e.message}');
       throw ServerException(e.message);
-    } catch (e) {
+    } catch (e, st) {
       if (e is AppException) rethrow;
-      throw ServerException('خطأ في التسجيل: $e');
+      AppLogger.error('Supabase register unexpected error', error: e, stackTrace: st);
+      throw const ServerException('حدث خطأ في التسجيل، يرجى المحاولة مرة أخرى');
     }
   }
 
@@ -114,12 +123,17 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw const ServerException('رمز التحقق غير صحيح');
       }
 
-      return await _fetchOrConstructProfile(user, response.session?.accessToken);
+      return await _fetchOrConstructProfile(
+        user,
+        response.session?.accessToken,
+      );
     } on AuthException catch (e) {
+      AppLogger.warning('Supabase verifyOtp AuthException: ${e.message}');
       throw InvalidCredentialsException(e.message);
-    } catch (e) {
+    } catch (e, st) {
       if (e is AppException) rethrow;
-      throw ServerException('خطأ أثناء التحقق: $e');
+      AppLogger.error('Supabase verifyOtp error', error: e, stackTrace: st);
+      throw const ServerException('خطأ أثناء التحقق، يرجى المحاولة مرة أخرى');
     }
   }
 
@@ -129,13 +143,15 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await _supabase.auth.refreshSession();
       final token = response.session?.accessToken;
       if (token == null || token.isEmpty) {
-        throw const ServerException('جلسة العمل منتهية');
+        throw const ServerException('جلسة العمل منتهية، يرجى إعادة تسجيل الدخول');
       }
       return token;
     } on AuthException catch (e) {
+      AppLogger.warning('Supabase refreshToken AuthException: ${e.message}');
       throw ServerException(e.message);
-    } catch (e) {
-      throw ServerException('فشل تجديد الجلسة: $e');
+    } catch (e, st) {
+      AppLogger.error('Supabase refreshToken error', error: e, stackTrace: st);
+      throw const ServerException('فشل تجديد الجلسة');
     }
   }
 
@@ -143,8 +159,8 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> logout(String? token) async {
     try {
       await _supabase.auth.signOut();
-    } catch (_) {
-      // Clean exit
+    } catch (e) {
+      AppLogger.warning('Supabase signOut notice: $e');
     }
   }
 
@@ -170,8 +186,8 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
               : DateTime.now(),
         );
       }
-    } catch (_) {
-      // Fallback to user metadata
+    } catch (e) {
+      AppLogger.warning('Could not load profile from table, falling back to metadata: $e');
     }
 
     final meta = user.userMetadata ?? {};

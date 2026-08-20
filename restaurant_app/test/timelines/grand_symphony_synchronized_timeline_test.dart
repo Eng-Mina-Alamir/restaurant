@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/payment/payment_service.dart';
@@ -13,6 +12,7 @@ import 'package:restaurant_app/features/orders/presentation/controllers/orders_c
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   group('Timeline 8: Grand Symphony Multi-Role Synchronized Journey Test', () {
@@ -44,7 +44,7 @@ void main() {
     );
 
     test('Grand Symphony: Manager opens floor -> Customer scans & orders -> Kitchen prepares & prints -> Waiter serves -> Customer pays & rates -> Manager gets real-time analytics', () async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final tableNotifier = container.read(tableControllerProvider.notifier);

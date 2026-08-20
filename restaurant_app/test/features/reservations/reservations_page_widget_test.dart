@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:restaurant_app/features/reservations/presentation/pages/reservations_page.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   setUpAll(() async {
@@ -11,9 +12,13 @@ void main() {
 
   group('ReservationsPage Widget Tests', () {
     testWidgets('renders reservations list and filter chips', (tester) async {
+      final container = createTestContainer();
+      addTearDown(container.dispose);
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: ReservationsPage(),
           ),
         ),
@@ -27,9 +32,13 @@ void main() {
     });
 
     testWidgets('tapping add reservation opens bottom sheet', (tester) async {
+      final container = createTestContainer();
+      addTearDown(container.dispose);
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: ReservationsPage(),
           ),
         ),

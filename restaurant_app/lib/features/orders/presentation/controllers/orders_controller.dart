@@ -6,11 +6,13 @@ import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/errors/either.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
@@ -85,17 +87,29 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     if (_offlineQueue.isNotEmpty) {
       final toSync = List<OrderEntity>.of(_offlineQueue);
       for (final order in toSync) {
-        _realtimeService?.broadcastOrderCreated(order.toJson());
+        final result = await _repository.createOrder(order);
+        if (result.isRight) {
+          _realtimeService?.broadcastOrderCreated(order.toJson());
+          _offlineQueue.removeWhere((o) => o.id == order.id);
+        }
       }
-      _offlineQueue.clear();
     }
 
     final queueService = _offlineQueueService;
     if (queueService != null && queueService.hasPending) {
       await queueService.drainWith((type, payload) async {
         if (type == 'createOrder') {
-          _realtimeService?.broadcastOrderCreated(payload);
-          return true;
+          try {
+            final order = OrderEntity.fromJson(payload);
+            final result = await _repository.createOrder(order);
+            if (result.isRight) {
+              _realtimeService?.broadcastOrderCreated(payload);
+              return true;
+            }
+            return false;
+          } catch (_) {
+            return true;
+          }
         }
         return true;
       });
@@ -123,9 +137,12 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           if (orderId != null && statusName != null) {
             final newStatus = OrderStatus.fromName(statusName);
             final index = state.indexWhere((o) => o.id == orderId);
-            if (index != -1 && state[index].status != newStatus) {
-              final updated = state[index].copyWith(status: newStatus);
-              state = [...state]..[index] = updated;
+            if (index != -1) {
+              final currentStatus = state[index].status;
+              if (currentStatus != newStatus && currentStatus.canTransitionTo(newStatus)) {
+                final updated = state[index].copyWith(status: newStatus);
+                state = [...state]..[index] = updated;
+              }
             }
           }
         } catch (_) {}
@@ -164,24 +181,46 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         paymentMethod: paymentMethod,
       );
 
-      final result = await _repository.createOrder(order);
-      final created = result.when(onLeft: (_) => null, onRight: (o) => o);
-      if (created != null) {
-        state = [...state, created];
+      final isOffline = _connectivityService?.isOnline == false;
+      if (isOffline) {
+        state = [...state, order];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
-        if (_connectivityService?.isOnline == false) {
-          _offlineQueue.add(created);
-          _offlineQueueService?.enqueue(
+        _offlineQueue.add(order);
+        try {
+          await _offlineQueueService?.enqueue(
             operationType: 'createOrder',
-            payload: created.toJson(),
-            idempotencyKey: created.id,
+            payload: order.toJson(),
+            idempotencyKey: order.id,
           );
-        } else {
-          _realtimeService?.broadcastOrderCreated(created.toJson());
-        }
+        } catch (_) {}
+        return order;
       }
-      return created;
+
+      final result = await _repository.createOrder(order);
+      switch (result) {
+        case Left(:final value):
+          AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          state = [...state, order];
+          _cart.clear();
+          _offlineQueue.add(order);
+          try {
+            await _offlineQueueService?.enqueue(
+              operationType: 'createOrder',
+              payload: order.toJson(),
+              idempotencyKey: order.id,
+            );
+          } catch (_) {}
+          _newOrderNotifier.notifyNewOrder();
+          _realtimeService?.broadcastOrderCreated(order.toJson());
+          return order;
+        case Right(:final value):
+          state = [...state, value];
+          _cart.clear();
+          _newOrderNotifier.notifyNewOrder();
+          _realtimeService?.broadcastOrderCreated(value.toJson());
+          return value;
+      }
     } finally {
       _placing = false;
     }
@@ -209,24 +248,46 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         paymentMethod: paymentMethod,
       );
 
-      final result = await _repository.createOrder(order);
-      final created = result.when(onLeft: (_) => null, onRight: (o) => o);
-      if (created != null) {
-        state = [...state, created];
+      final isOffline = _connectivityService?.isOnline == false;
+      if (isOffline) {
+        state = [...state, order];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
-        if (_connectivityService?.isOnline == false) {
-          _offlineQueue.add(created);
-          _offlineQueueService?.enqueue(
+        _offlineQueue.add(order);
+        try {
+          await _offlineQueueService?.enqueue(
             operationType: 'createOrder',
-            payload: created.toJson(),
-            idempotencyKey: created.id,
+            payload: order.toJson(),
+            idempotencyKey: order.id,
           );
-        } else {
-          _realtimeService?.broadcastOrderCreated(created.toJson());
-        }
+        } catch (_) {}
+        return order;
       }
-      return created;
+
+      final result = await _repository.createOrder(order);
+      switch (result) {
+        case Left(:final value):
+          AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          state = [...state, order];
+          _cart.clear();
+          _offlineQueue.add(order);
+          try {
+            await _offlineQueueService?.enqueue(
+              operationType: 'createOrder',
+              payload: order.toJson(),
+              idempotencyKey: order.id,
+            );
+          } catch (_) {}
+          _newOrderNotifier.notifyNewOrder();
+          _realtimeService?.broadcastOrderCreated(order.toJson());
+          return order;
+        case Right(:final value):
+          state = [...state, value];
+          _cart.clear();
+          _newOrderNotifier.notifyNewOrder();
+          _realtimeService?.broadcastOrderCreated(value.toJson());
+          return value;
+      }
     } finally {
       _placing = false;
     }
@@ -245,9 +306,12 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
     _realtimeService?.broadcastOrderStatusChanged(orderId, status.name);
 
-    // Persist the updated order through the repository.
-    final result = await _repository.createOrder(updated);
-    return result.when(onLeft: (_) => null, onRight: (o) => o);
+    // Persist the updated order status through the repository.
+    final result = await _repository.updateOrderStatus(orderId, status);
+    return result.when(
+      onLeft: (_) => null,
+      onRight: (_) => updated,
+    );
   }
 
   /// Orders that are still active for kitchen display (not terminal).

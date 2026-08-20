@@ -22,16 +22,29 @@ class SupabaseOrderRepository implements OrderRepository {
   final LocalCacheService? _cache;
   static const String _cacheKey = 'orders_v1';
 
+  static final RegExp _uuidRegex = RegExp(
+    r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+  );
+
+  static String? _sanitizeUuid(String? input, {String? defaultFallback}) {
+    if (input == null || input.isEmpty) return defaultFallback;
+    if (_uuidRegex.hasMatch(input)) return input;
+    return defaultFallback;
+  }
+
   @override
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
     try {
       // 1. Insert into Supabase `orders` table
       final orderRow = {
         'id': order.id,
-        'restaurant_id': order.restaurantId,
-        'customer_id': order.customerId,
-        'table_id': order.tableId,
-        'waiter_id': order.waiterId,
+        'restaurant_id': _sanitizeUuid(
+          order.restaurantId,
+          defaultFallback: '00000000-0000-0000-0000-000000000001',
+        ),
+        'customer_id': _sanitizeUuid(order.customerId),
+        'table_id': _sanitizeUuid(order.tableId),
+        'waiter_id': _sanitizeUuid(order.waiterId),
         'order_type': order.orderType.name,
         'status': order.status.name,
         'subtotal': order.subtotal,
@@ -48,15 +61,17 @@ class SupabaseOrderRepository implements OrderRepository {
       try {
         await _supabase.from(SupabaseConfig.ordersTable).upsert(orderRow);
       } catch (e) {
-        if (e.toString().contains('items_json')) {
-          final rowWithoutItemsJson = Map<String, dynamic>.from(orderRow)..remove('items_json');
-          await _supabase.from(SupabaseConfig.ordersTable).upsert(rowWithoutItemsJson);
+        if (e.toString().contains('items_json') || e.toString().contains('restaurant_id')) {
+          final rowCleaned = Map<String, dynamic>.from(orderRow)
+            ..remove('items_json')
+            ..remove('restaurant_id');
+          await _supabase.from(SupabaseConfig.ordersTable).upsert(rowCleaned);
         } else {
           rethrow;
         }
       }
 
-      // 2. Also insert line items into `order_items` table if table exists
+      // 2. Also insert line items into `order_items` table (delete-then-insert to prevent duplicates)
       try {
         final itemsPayload = order.items.map((item) => {
           'order_id': order.id,
@@ -71,6 +86,13 @@ class SupabaseOrderRepository implements OrderRepository {
         }).toList();
 
         if (itemsPayload.isNotEmpty) {
+          try {
+            await _supabase
+                .from(SupabaseConfig.orderItemsTable)
+                .delete()
+                .eq('order_id', order.id);
+          } catch (_) {}
+
           await _supabase.from(SupabaseConfig.orderItemsTable).upsert(itemsPayload);
         }
       } catch (e) {
@@ -85,7 +107,9 @@ class SupabaseOrderRepository implements OrderRepository {
       AppLogger.error('Supabase createOrder error: $e');
       // Save locally so orders aren't lost
       await _cacheOrderLocally(order);
-      return Right<Failure, OrderEntity>(order);
+      return Left<Failure, OrderEntity>(
+        ServerFailure('فشل حفظ الطلب في السيرفر: $e'),
+      );
     }
   }
 
@@ -150,6 +174,7 @@ class SupabaseOrderRepository implements OrderRepository {
   }
 
   /// Updates status of an order in Supabase.
+  @override
   Future<Either<Failure, void>> updateOrderStatus(String orderId, OrderStatus status) async {
     try {
       await _supabase.from(SupabaseConfig.ordersTable).update({

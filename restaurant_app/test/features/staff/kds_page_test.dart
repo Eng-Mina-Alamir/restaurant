@@ -8,6 +8,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/kds/presentation/pages/kds_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -33,7 +34,7 @@ void main() {
   });
 
   testWidgets('shows a sent order and advances its status', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -64,7 +65,7 @@ void main() {
   testWidgets('advances an order through the full KDS workflow', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -102,7 +103,7 @@ void main() {
   testWidgets('shows modifier options and special notes on the card', (
     tester,
   ) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -129,7 +130,7 @@ void main() {
   });
 
   testWidgets('shows new badge for freshly placed orders', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -148,7 +149,7 @@ void main() {
   });
 
   testWidgets('shows item count and order total on the card', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
@@ -168,7 +169,7 @@ void main() {
   });
 
   testWidgets('shows the table number instead of the raw id', (tester) async {
-    final container = ProviderContainer();
+    final container = createTestContainer();
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);

@@ -1,3 +1,4 @@
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/order_entity.dart';
@@ -27,5 +28,18 @@ class InMemoryOrderRepository implements OrderRepository {
   @override
   Future<Either<Failure, List<OrderEntity>>> getOrders() async {
     return Right<Failure, List<OrderEntity>>(List<OrderEntity>.of(_orders));
+  }
+
+  @override
+  Future<Either<Failure, void>> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index == -1) {
+      return const Left(NotFoundFailure('الطلب غير موجود'));
+    }
+    _orders[index] = _orders[index].copyWith(status: status);
+    return const Right(null);
   }
 }

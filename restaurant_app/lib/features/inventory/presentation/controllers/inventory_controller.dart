@@ -1,10 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/in_memory_inventory_repository.dart';
+import '../../data/repositories/supabase_inventory_repository.dart';
 import '../../domain/entities/inventory_item_entity.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
+  if (AppConfig.useSupabase) {
+    return SupabaseInventoryRepository(
+      supabase: ref.watch(supabaseClientProvider),
+    );
+  }
   return InMemoryInventoryRepository();
 });
 

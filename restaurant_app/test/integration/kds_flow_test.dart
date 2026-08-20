@@ -6,6 +6,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/kds/presentation/pages/kds_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   const pizza = MenuItem(
@@ -18,7 +19,7 @@ void main() {
 
   group('KDS Flow Integration', () {
     testWidgets('Full lifecycle: Order arrives -> Preparing -> Ready -> Completed', (tester) async {
-      final container = ProviderContainer();
+      final container = createTestContainer();
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);

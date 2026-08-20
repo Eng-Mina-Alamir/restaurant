@@ -1,4 +1,5 @@
 import '../../../../core/data/local_cache_service.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/order_entity.dart';
@@ -38,6 +39,25 @@ class HiveOrderRepository implements OrderRepository {
       return Right<Failure, List<OrderEntity>>(await _loadAll());
     } catch (e) {
       return Left<Failure, List<OrderEntity>>(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
+    try {
+      final all = await _loadAll();
+      final index = all.indexWhere((o) => o.id == orderId);
+      if (index == -1) {
+        return const Left(NotFoundFailure('الطلب غير موجود'));
+      }
+      all[index] = all[index].copyWith(status: status);
+      await _saveAll(all);
+      return const Right(null);
+    } catch (e) {
+      return Left<Failure, void>(CacheFailure(e.toString()));
     }
   }
 

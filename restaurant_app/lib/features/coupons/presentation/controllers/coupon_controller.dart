@@ -1,10 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/in_memory_coupon_repository.dart';
+import '../../data/repositories/supabase_coupon_repository.dart';
 import '../../domain/entities/coupon_entity.dart';
 import '../../domain/repositories/coupon_repository.dart';
 
 final couponRepositoryProvider = Provider<CouponRepository>((ref) {
+  if (AppConfig.useSupabase) {
+    return SupabaseCouponRepository(
+      supabase: ref.watch(supabaseClientProvider),
+    );
+  }
   return InMemoryCouponRepository();
 });
 

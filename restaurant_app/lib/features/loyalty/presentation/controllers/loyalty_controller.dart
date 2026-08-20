@@ -1,11 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/in_memory_loyalty_repository.dart';
+import '../../data/repositories/supabase_loyalty_repository.dart';
 import '../../domain/entities/loyalty_entity.dart';
 import '../../domain/repositories/loyalty_repository.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 final loyaltyRepositoryProvider = Provider<LoyaltyRepository>((ref) {
+  if (AppConfig.useSupabase) {
+    return SupabaseLoyaltyRepository(
+      supabase: ref.watch(supabaseClientProvider),
+    );
+  }
   return InMemoryLoyaltyRepository();
 });
 
