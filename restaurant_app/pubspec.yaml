@@ -1,5 +1,5 @@
 name: restaurant_app
-description: "Restaurant management application - POS, orders, KDS, delivery and manager dashboard."
+description: "Enterprise Multi-Role Restaurant Management System (Customer Dine-in/Delivery, Waiter POS, KDS, Driver Live Tracking, and Manager Dashboard) built with Flutter, Riverpod, and Supabase Realtime."
 publish_to: 'none'
 
 version: 1.0.0+1
