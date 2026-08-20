@@ -166,6 +166,8 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
               deliveryLatLng: LatLng(_customerLatLng.lat, _customerLatLng.lng),
               pickupLabel: 'المطعم',
               deliveryLabel: 'عنوانك',
+              initialTheme:
+                  isDark ? AppMapThemeOption.dark : AppMapThemeOption.voyager,
               showControls: true,
               showNavigationHud: true,
               showDeliveryRadius: true,
