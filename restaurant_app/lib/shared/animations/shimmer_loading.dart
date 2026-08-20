@@ -38,6 +38,10 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return widget.child;
+    }
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final base = widget.baseColor ??
@@ -56,7 +60,8 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
               stops: const [0.1, 0.5, 0.9],
               begin: const Alignment(-1.0, -0.3),
               end: const Alignment(1.0, 0.3),
-              transform: _SlidingGradientTransform(slidePercent: _controller.value),
+              transform:
+                  _SlidingGradientTransform(slidePercent: _controller.value),
             ).createShader(bounds);
           },
           child: child,
@@ -74,7 +79,11 @@ class _SlidingGradientTransform extends GradientTransform {
 
   @override
   Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
-    return Matrix4.translationValues(bounds.width * (slidePercent * 2 - 1), 0.0, 0.0);
+    return Matrix4.translationValues(
+      bounds.width * (slidePercent * 2 - 1),
+      0.0,
+      0.0,
+    );
   }
 }
 
@@ -98,8 +107,32 @@ class SkeletonBox extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.grey,
+          color: Colors.grey.shade400,
           borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
+    );
+  }
+}
+
+/// Circular Skeleton placeholder with shimmer.
+class SkeletonCircle extends StatelessWidget {
+  const SkeletonCircle({
+    super.key,
+    required this.size,
+  });
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerLoading(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade400,
+          shape: BoxShape.circle,
         ),
       ),
     );

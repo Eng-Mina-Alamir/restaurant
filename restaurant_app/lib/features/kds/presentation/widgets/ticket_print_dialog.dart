@@ -49,7 +49,12 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
         children: [
           Icon(Icons.print_outlined, color: Colors.indigo),
           SizedBox(width: 8),
-          Text('معاينة تذكرة الطباعة الحرارية'),
+          Expanded(
+            child: Text(
+              'معاينة تذكرة الطباعة الحرارية',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
       content: SingleChildScrollView(

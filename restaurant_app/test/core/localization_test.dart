@@ -18,16 +18,22 @@ void main() {
       expect(AppLanguage.fromLocale(const Locale('ar')), AppLanguage.arabic);
     });
 
-    test('LocaleController defaults to Arabic and toggles correctly', () async {
+    test('LocaleController sets and toggles language correctly', () async {
       final controller = LocaleController();
+
+      // Explicitly set Arabic
+      await controller.setLanguage(AppLanguage.arabic);
       expect(controller.state, const Locale('ar'));
 
+      // Toggle to English
       await controller.toggleLanguage();
       expect(controller.state, const Locale('en'));
 
+      // Toggle back to Arabic
       await controller.toggleLanguage();
       expect(controller.state, const Locale('ar'));
 
+      // Set to English
       await controller.setLanguage(AppLanguage.english);
       expect(controller.state, const Locale('en'));
     });
@@ -36,10 +42,15 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      final notifier = container.read(localeControllerProvider.notifier);
+
+      // Set Arabic
+      await notifier.setLanguage(AppLanguage.arabic);
       expect(container.read(isRtlProvider), isTrue);
       expect(container.read(currentLanguageProvider), AppLanguage.arabic);
 
-      await container.read(localeControllerProvider.notifier).setLanguage(AppLanguage.english);
+      // Set English
+      await notifier.setLanguage(AppLanguage.english);
       expect(container.read(isRtlProvider), isFalse);
       expect(container.read(currentLanguageProvider), AppLanguage.english);
     });

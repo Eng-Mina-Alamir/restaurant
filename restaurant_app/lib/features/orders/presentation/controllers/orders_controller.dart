@@ -2,28 +2,36 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../data/repositories/hive_order_repository.dart';
 import '../../data/repositories/in_memory_order_repository.dart';
+import '../../data/repositories/supabase_order_repository.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/order_mapper.dart';
 import '../../domain/repositories/order_repository.dart';
 
 /// Provides the shared [OrderRepository].
 ///
-/// Uses the Hive-persisted implementation when the local cache is available,
-/// falling back to the in-memory repository (tests / unsupported platforms).
+/// Uses Supabase backend with local caching when enabled, or falls back to Hive/In-memory.
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   final cache = ref.watch(localCacheServiceProvider);
+  if (AppConfig.useSupabase) {
+    return SupabaseOrderRepository(
+      supabase: ref.watch(supabaseClientProvider),
+      cache: cache,
+    );
+  }
   if (cache != null) return HiveOrderRepository(cache);
   return InMemoryOrderRepository();
 });
@@ -167,6 +175,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _offlineQueueService?.enqueue(
             operationType: 'createOrder',
             payload: created.toJson(),
+            idempotencyKey: created.id,
           );
         } else {
           _realtimeService?.broadcastOrderCreated(created.toJson());
@@ -211,6 +220,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _offlineQueueService?.enqueue(
             operationType: 'createOrder',
             payload: created.toJson(),
+            idempotencyKey: created.id,
           );
         } else {
           _realtimeService?.broadcastOrderCreated(created.toJson());

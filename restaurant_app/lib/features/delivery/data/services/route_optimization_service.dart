@@ -49,15 +49,28 @@ class OptimizedRouteResult {
   final List<LatLng> polylinePoints;
 }
 
-/// Service providing route optimization and multi-stop planning for drivers.
+  /// Service providing route optimization and multi-stop planning for drivers.
 class RouteOptimizationService {
   const RouteOptimizationService();
 
   static const Distance _distanceCalculator = Distance();
 
+  /// Default maximum delivery service radius in kilometers.
+  static const double defaultMaxDeliveryRadiusKm = 30.0;
+
   /// Calculates geodesic distance between two points in kilometers.
   double distanceBetweenKm(LatLng p1, LatLng p2) {
     return _distanceCalculator.as(LengthUnit.Kilometer, p1, p2);
+  }
+
+  /// Checks if [targetLocation] is within the acceptable [maxRadiusKm] of [restaurantLocation].
+  bool isWithinDeliveryRadius(
+    LatLng restaurantLocation,
+    LatLng targetLocation, {
+    double maxRadiusKm = defaultMaxDeliveryRadiusKm,
+  }) {
+    final distance = distanceBetweenKm(restaurantLocation, targetLocation);
+    return distance <= maxRadiusKm;
   }
 
   /// Computes the optimal visiting order for [stops] starting from [startLocation].
@@ -78,6 +91,9 @@ class RouteOptimizationService {
         polylinePoints: [startLocation],
       );
     }
+
+    final effectiveSpeed = averageSpeedKmH <= 0 ? 30.0 : averageSpeedKmH;
+    final effectivePerStop = minutesPerStop < 0 ? 0 : minutesPerStop;
 
     final remaining = List<DeliveryStop>.of(stops);
     final ordered = <DeliveryStop>[];
@@ -101,13 +117,13 @@ class RouteOptimizationService {
       final nextStop = remaining.removeAt(nearestIndex);
       ordered.add(nextStop);
       polyline.add(nextStop.location);
-      totalKm += minDistance;
+      totalKm += minDistance.isFinite ? minDistance : 0.0;
       currentPoint = nextStop.location;
     }
 
     // Total travel time + service time at each delivery location
-    final travelMinutes = ((totalKm / averageSpeedKmH) * 60).ceil();
-    final totalDuration = travelMinutes + (ordered.length * minutesPerStop);
+    final travelMinutes = ((totalKm / effectiveSpeed) * 60).ceil();
+    final totalDuration = travelMinutes + (ordered.length * effectivePerStop);
 
     return OptimizedRouteResult(
       orderedStops: ordered,

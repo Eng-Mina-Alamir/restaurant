@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/animations/animated_press_card.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 
 /// A single menu item card with availability badges, price and an add-to-cart
-/// affordance.
+/// affordance with tactile micro-interactions.
 class MenuItemTile extends StatelessWidget {
   const MenuItemTile({super.key, required this.item, this.onTap, this.onAdd});
 
@@ -19,102 +20,101 @@ class MenuItemTile extends StatelessWidget {
     final theme = Theme.of(context);
     final hasModifiers = item.modifierGroups.isNotEmpty;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return AnimatedPressCard(
+      onTap: item.isAvailable ? onTap : null,
       color: item.isAvailable
-          ? null
+          ? theme.cardTheme.color
           : theme.colorScheme.surfaceContainerHighest.withValues(alpha: .5),
-      child: InkWell(
-        onTap: item.isAvailable ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: item.isAvailable
-                                  ? null
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        if (item.isVegetarian)
-                          const _Badge(AppConstants.dietVegetarian),
-                        if (item.isSpicy)
-                          const _Badge(
-                            AppConstants.dietSpicy,
-                            color: Colors.red,
-                          ),
-                        if (!item.isAvailable)
-                          const _Badge(
-                            AppConstants.itemUnavailable,
-                            color: Colors.grey,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      item.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: item.isAvailable
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.colorScheme.outline,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Text(
-                          Formatters.formatCurrency(item.price),
+      borderRadius: AppRadius.md,
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.name,
                           style: theme.textTheme.titleMedium?.copyWith(
-                            color: item.isAvailable
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.outline,
                             fontWeight: FontWeight.w700,
+                            color: item.isAvailable
+                                ? null
+                                : theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        if (item.rating != null) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          Icon(
-                            Icons.star_rounded,
-                            size: 16,
-                            color: Colors.amber.shade700,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            item.rating!.toStringAsFixed(1),
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
+                      if (item.isVegetarian)
+                        const _Badge(AppConstants.dietVegetarian),
+                      if (item.isSpicy)
+                        const _Badge(
+                          AppConstants.dietSpicy,
+                          color: Colors.red,
+                        ),
+                      if (!item.isAvailable)
+                        const _Badge(
+                          AppConstants.itemUnavailable,
+                          color: Colors.grey,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    item.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: item.isAvailable
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.outline,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Text(
+                        Formatters.formatCurrency(item.price),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: item.isAvailable
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (item.rating != null) ...[
+                        const SizedBox(width: AppSpacing.sm),
+                        Icon(
+                          Icons.star_rounded,
+                          size: 16,
+                          color: Colors.amber.shade700,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          item.rating!.toStringAsFixed(1),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton.filled(
-                icon: const Icon(Icons.add),
-                tooltip: hasModifiers
-                    ? AppConstants.customizeOrder
-                    : AppConstants.addToCart,
-                onPressed: item.isAvailable ? onAdd : null,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            IconButton.filled(
+              icon: const Icon(Icons.add),
+              tooltip: hasModifiers
+                  ? AppConstants.customizeOrder
+                  : AppConstants.addToCart,
+              onPressed: item.isAvailable ? onAdd : null,
+            ),
+          ],
         ),
       ),
     );

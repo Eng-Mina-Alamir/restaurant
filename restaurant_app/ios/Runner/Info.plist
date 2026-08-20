@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Restaurant App</string>
+	<string>مطعم المحروسة</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -16,6 +16,16 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>restaurant_app</string>
+
+	<!-- Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>يستخدم التطبيق الكاميرا لمسح رمز QR للطاولات وتصوير إثبات تسليم الطلبات.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يستخدم التطبيق معرض الصور لرفع إثبات التسليم وتحديث الصور.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>يستخدم التطبيق الموقع الجغرافي لتحديد عنوان التوصيل وتتبع مسار المندوب لحظياً على الخريطة.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>يستخدم التطبيق الموقع الجغرافي لتتبع مسار المندوب أثناء توصيل الطلب.</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

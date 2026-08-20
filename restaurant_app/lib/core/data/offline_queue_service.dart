@@ -39,15 +39,39 @@ class OfflineQueueService {
   ///
   /// [operationType] is a string tag such as `'createOrder'` or
   /// `'updateTableStatus'` used to route the operation during drain.
-  Future<void> enqueue({
+  /// If [idempotencyKey] is provided, prevents duplicate entries with the same key.
+  Future<bool> enqueue({
     required String operationType,
     required Map<String, dynamic> payload,
+    String? idempotencyKey,
   }) async {
     if (_box == null || !_box!.isOpen) await init();
+    if (_box == null) return false;
+
+    // Check for duplicate idempotency key if provided
+    if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+      for (final raw in _box!.values) {
+        try {
+          final decoded = jsonDecode(raw) as Map<String, dynamic>;
+          if (decoded['idempotencyKey'] == idempotencyKey) {
+            AppLogger.info(
+              'OfflineQueueService: Duplicate idempotency key $idempotencyKey skipped',
+            );
+            return false;
+          }
+        } catch (_) {}
+      }
+    }
+
     final key = '${DateTime.now().millisecondsSinceEpoch}_$operationType';
-    final value = jsonEncode({'type': operationType, 'payload': payload});
+    final value = jsonEncode({
+      'type': operationType,
+      'payload': payload,
+      if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+    });
     await _box?.put(key, value);
     AppLogger.info('OfflineQueueService: Enqueued $operationType – key=$key');
+    return true;
   }
 
   /// Replays all pending operations by calling [handler] for each entry.

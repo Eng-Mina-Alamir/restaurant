@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// Smooth entry animation combining subtle vertical slide and opacity fade.
+/// Smooth entry animation combining subtle slide and opacity fade.
 class FadeSlideTransitionWidget extends StatefulWidget {
   const FadeSlideTransitionWidget({
     super.key,
@@ -9,6 +10,7 @@ class FadeSlideTransitionWidget extends StatefulWidget {
     this.delay = Duration.zero,
     this.offset = const Offset(0.0, 0.1),
     this.curve = Curves.easeOutCubic,
+    this.onComplete,
   });
 
   final Widget child;
@@ -16,9 +18,11 @@ class FadeSlideTransitionWidget extends StatefulWidget {
   final Duration delay;
   final Offset offset;
   final Curve curve;
+  final VoidCallback? onComplete;
 
   @override
-  State<FadeSlideTransitionWidget> createState() => _FadeSlideTransitionWidgetState();
+  State<FadeSlideTransitionWidget> createState() =>
+      _FadeSlideTransitionWidgetState();
 }
 
 class _FadeSlideTransitionWidgetState extends State<FadeSlideTransitionWidget>
@@ -26,6 +30,7 @@ class _FadeSlideTransitionWidgetState extends State<FadeSlideTransitionWidget>
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -38,22 +43,33 @@ class _FadeSlideTransitionWidgetState extends State<FadeSlideTransitionWidget>
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     if (widget.delay == Duration.zero) {
-      _controller.forward();
+      _controller.forward().then((_) {
+        if (mounted) widget.onComplete?.call();
+      });
     } else {
-      Future<void>.delayed(widget.delay, () {
-        if (mounted) _controller.forward();
+      _delayTimer = Timer(widget.delay, () {
+        if (mounted) {
+          _controller.forward().then((_) {
+            if (mounted) widget.onComplete?.call();
+          });
+        }
       });
     }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return widget.child;
+    }
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(

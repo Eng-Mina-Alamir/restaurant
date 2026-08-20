@@ -201,7 +201,7 @@ class RealtimeService {
 /// Provider exposing a shared [RealtimeService] instance.
 final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   final service = RealtimeService();
-  if (!AppConfig.useDemoAuth) {
+  if (!AppConfig.useDemoAuth && !AppConfig.useSupabase) {
     service.connect();
   }
   ref.onDispose(service.disconnect);

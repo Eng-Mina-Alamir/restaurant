@@ -58,6 +58,34 @@ enum OrderStatus {
   bool get isTerminal =>
       this == OrderStatus.completed || this == OrderStatus.cancelled;
 
+  /// Checks whether moving from this status to [next] is a valid business transition.
+  bool canTransitionTo(OrderStatus next) {
+    if (this == next) return true;
+    if (isTerminal) return false;
+
+    switch (this) {
+      case OrderStatus.pending:
+        return next == OrderStatus.confirmed ||
+            next == OrderStatus.preparing ||
+            next == OrderStatus.cancelled;
+      case OrderStatus.confirmed:
+        return next == OrderStatus.preparing ||
+            next == OrderStatus.cancelled;
+      case OrderStatus.preparing:
+        return next == OrderStatus.ready ||
+            next == OrderStatus.cancelled;
+      case OrderStatus.ready:
+        return next == OrderStatus.served ||
+            next == OrderStatus.completed ||
+            next == OrderStatus.cancelled;
+      case OrderStatus.served:
+        return next == OrderStatus.completed;
+      case OrderStatus.completed:
+      case OrderStatus.cancelled:
+        return false;
+    }
+  }
+
   static OrderStatus fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'pending':

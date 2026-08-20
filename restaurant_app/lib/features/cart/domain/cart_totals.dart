@@ -1,10 +1,11 @@
+import '../../../core/utils/financial_calculator.dart';
 import 'entities/cart_item.dart';
 
 /// Flat VAT percentage applied on the subtotal.
 ///
 /// Kept as a single source of truth so the cart totals and the final order
 /// always agree. (15% is a common regional VAT.)
-const double kTaxRate = 0.15;
+const double kTaxRate = FinancialCalculator.defaultVatRate;
 
 /// Derived money figures for a cart.
 ///
@@ -28,15 +29,21 @@ class CartTotals {
     Iterable<CartItem> items, {
     double discountAmount = 0.0,
   }) {
-    final subtotal = items.fold<double>(0, (sum, item) => sum + item.linePrice);
-    final effectiveSubtotal =
-        (subtotal - discountAmount).clamp(0.0, double.infinity);
-    final taxAmount = effectiveSubtotal * kTaxRate;
+    final rawSubtotal = items.fold<double>(0, (sum, item) => sum + item.linePrice);
+    final subtotal = FinancialCalculator.roundCurrency(rawSubtotal);
+    final effectiveSubtotal = FinancialCalculator.roundCurrency(
+      (subtotal - discountAmount).clamp(0.0, double.infinity),
+    );
+    final taxAmount = FinancialCalculator.calculateVat(effectiveSubtotal);
+    final totalAmount = FinancialCalculator.roundCurrency(
+      effectiveSubtotal + taxAmount,
+    );
+
     return CartTotals(
       subtotal: subtotal,
       discountAmount: discountAmount,
       taxAmount: taxAmount,
-      totalAmount: effectiveSubtotal + taxAmount,
+      totalAmount: totalAmount,
     );
   }
 

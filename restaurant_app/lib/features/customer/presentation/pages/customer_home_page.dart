@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/theme_mode_switch_button.dart';
@@ -16,7 +18,7 @@ import '../pages/qr_scan_page.dart';
 import '../widgets/category_chips.dart';
 import '../widgets/menu_item_tile.dart';
 
-/// Dine-in customer home: browse categories, view items, add to cart.
+/// Dine-in customer home: browse categories, view items, add to cart with smooth animations.
 class CustomerHomePage extends ConsumerStatefulWidget {
   const CustomerHomePage({super.key});
 
@@ -94,7 +96,18 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
         ],
       ),
       body: menuAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => ListView.builder(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          itemCount: 6,
+          itemBuilder: (context, index) => const Padding(
+            padding: EdgeInsets.only(bottom: AppSpacing.sm),
+            child: SkeletonBox(
+              width: double.infinity,
+              height: 90,
+              borderRadius: AppRadius.md,
+            ),
+          ),
+        ),
         error: (error, _) => Center(child: Text('$error')),
         data: (menu) {
           final items = filterMenu(menu, selected, query, diet);
@@ -141,14 +154,16 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                         message: AppConstants.noItemsFound,
                         icon: Icons.search_off,
                       )
-                    : ListView.builder(
+                    : StaggeredFadeSlideList(
                         padding: const EdgeInsets.all(AppSpacing.md),
                         itemCount: items.length,
+                        staggerDuration: const Duration(milliseconds: 40),
+                        animationDuration: const Duration(milliseconds: 350),
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return Padding(
                             padding: const EdgeInsets.only(
-                              bottom: AppSpacing.sm,
+                              bottom: AppSpacing.xs,
                             ),
                             child: MenuItemTile(
                               item: item,

@@ -2,19 +2,25 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/hive_table_repository.dart';
 import '../../data/repositories/in_memory_table_repository.dart';
+import '../../data/repositories/supabase_table_repository.dart';
+import '../../data/table_seed_data.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
 
 /// Shared [TableRepository].
 ///
-/// Hive-persisted when the local cache is available, in-memory otherwise
-/// (tests / unsupported platforms).
+/// Uses Supabase table repository when enabled, or falls back to Hive/In-memory.
 final tableRepositoryProvider = Provider<TableRepository>((ref) {
+  if (AppConfig.useSupabase) {
+    return SupabaseTableRepository(ref.watch(supabaseClientProvider));
+  }
   final cache = ref.watch(localCacheServiceProvider);
   if (cache != null) return HiveTableRepository(cache);
   return InMemoryTableRepository();
@@ -28,7 +34,7 @@ final tableRepositoryProvider = Provider<TableRepository>((ref) {
 class TableController extends StateNotifier<List<RestaurantTable>> {
   TableController(this._repository, {RealtimeService? realtimeService})
     : _realtimeService = realtimeService,
-      super(const []) {
+      super(TableSeedData.buildTables()) {
     _load();
     _initRealtime();
   }
@@ -73,6 +79,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
 
   Future<void> _load() async {
     final result = await _repository.getTables();
+    if (!mounted) return;
     state = result.when(onLeft: (_) => const [], onRight: (tables) => tables);
   }
 

@@ -34,9 +34,10 @@ import '../../features/table_management/presentation/pages/table_detail_page.dar
 import '../../features/table_management/presentation/pages/table_management_crud_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
 import '../../features/table_management/presentation/pages/waiter_order_page.dart';
+import '../../shared/animations/page_transitions.dart';
 import '../../shared/widgets/not_found_page.dart';
 
-/// Builds the root [GoRouter] with role-based redirects.
+/// Builds the root [GoRouter] with role-based redirects and smooth page transitions.
 ///
 /// Route map:
 ///   /login           – authentication
@@ -96,28 +97,49 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         routes: [
           GoRoute(
             path: 'orders',
-            builder: (context, state) => const OrderHistoryPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const OrderHistoryPage(),
+            ),
           ),
-          GoRoute(path: 'cart', builder: (context, state) => const CartPage()),
+          GoRoute(
+            path: 'cart',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const CartPage(),
+            ),
+          ),
           GoRoute(
             path: 'order-confirmation',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final order = state.extra as OrderEntity?;
               if (order == null) {
-                return const CustomerHomePage();
+                return AppPageTransitions.fadeSlide(
+                  key: state.pageKey,
+                  child: const CustomerHomePage(),
+                );
               }
-              return OrderConfirmationPage(order: order);
+              return AppPageTransitions.scaleFade(
+                key: state.pageKey,
+                child: OrderConfirmationPage(order: order),
+              );
             },
           ),
           GoRoute(
             path: 'track/:orderId',
-            builder: (context, state) => OrderTrackingPage(
-              orderId: state.pathParameters['orderId'] ?? 'ORD-0001',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: OrderTrackingPage(
+                orderId: state.pathParameters['orderId'] ?? 'ORD-0001',
+              ),
             ),
           ),
           GoRoute(
             path: 'loyalty',
-            builder: (context, state) => const LoyaltyPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const LoyaltyPage(),
+            ),
           ),
         ],
       ),
@@ -128,13 +150,17 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         routes: [
           GoRoute(
             path: 'table/:tableId',
-            builder: (context, state) =>
-                TableDetailPage(tableId: state.pathParameters['tableId']!),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: TableDetailPage(tableId: state.pathParameters['tableId']!),
+            ),
           ),
           GoRoute(
             path: 'order/:tableId',
-            builder: (context, state) =>
-                WaiterOrderPage(tableId: state.pathParameters['tableId']!),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: WaiterOrderPage(tableId: state.pathParameters['tableId']!),
+            ),
           ),
         ],
       ),

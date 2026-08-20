@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../storage/secure_storage_service.dart';
@@ -10,7 +12,7 @@ import 'api_endpoints.dart';
 /// using the stored refresh token. If the refresh succeeds the failed request
 /// is retried once; otherwise the original error is forwarded unchanged.
 ///
-/// Guards are in place against concurrent refreshes (`_isRefreshing`) and
+/// Guards are in place against concurrent refreshes (`_refreshCompleter`) and
 /// against retrying requests that already carry a fresh Authorization header,
 /// which prevents infinite loops.
 class AuthInterceptor extends Interceptor {
@@ -21,8 +23,8 @@ class AuthInterceptor extends Interceptor {
   final SecureStorageService _storage;
   final Dio? _dio;
 
-  /// Set while a token refresh is in flight to avoid duplicate refreshes.
-  bool _isRefreshing = false;
+  /// Holds the in-flight refresh task to allow concurrent 401 requests to wait and retry.
+  Completer<bool>? _refreshCompleter;
 
   @override
   Future<void> onRequest(
@@ -47,14 +49,24 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    // Never retry a request that is part of the refresh flow itself or that
-    // was already retried after a successful refresh.
-    if (_isRefreshing || _wasRefreshed(err)) {
+    // Never retry a request that was already retried after a successful refresh.
+    if (_wasRefreshed(err)) {
       handler.next(err);
       return;
     }
 
-    final refreshed = await _refreshAccessToken();
+    bool refreshed;
+    if (_refreshCompleter != null) {
+      // A token refresh is already in progress. Wait for it to complete.
+      refreshed = await _refreshCompleter!.future;
+    } else {
+      final completer = Completer<bool>();
+      _refreshCompleter = completer;
+      refreshed = await _refreshAccessToken();
+      completer.complete(refreshed);
+      _refreshCompleter = null;
+    }
+
     if (!refreshed) {
       handler.next(err);
       return;
@@ -66,6 +78,8 @@ class AuthInterceptor extends Interceptor {
       handler.resolve(response);
     } on DioException catch (retryError) {
       handler.next(retryError);
+    } catch (_) {
+      handler.next(err);
     }
   }
 
@@ -82,7 +96,6 @@ class AuthInterceptor extends Interceptor {
       return false;
     }
 
-    _isRefreshing = true;
     try {
       final response = await _postRefresh(refreshToken);
       final data = response.data;
@@ -103,8 +116,6 @@ class AuthInterceptor extends Interceptor {
       return false;
     } catch (_) {
       return false;
-    } finally {
-      _isRefreshing = false;
     }
   }
 

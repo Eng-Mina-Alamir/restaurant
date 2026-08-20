@@ -11,8 +11,8 @@ enum Environment { dev, staging, production }
 abstract final class EnvironmentConfig {
   /// The currently active environment.
   ///
-  /// Change this value to target a different backend.
-  static const Environment _current = Environment.dev;
+  /// Defaults to production for live Supabase deployment.
+  static const Environment _current = Environment.production;
 
   /// The active environment.
   static Environment get current => _current;
@@ -24,9 +24,6 @@ abstract final class EnvironmentConfig {
   static bool get isStaging => _current == Environment.staging;
 
   /// Base URL of the backend API for the active environment.
-  ///
-  /// Spec 8.1 – every environment exposes the same endpoint contract but on a
-  /// different host.
   static String get baseUrl {
     switch (_current) {
       case Environment.dev:
@@ -34,7 +31,7 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'https://staging-api.restaurant.example.com';
       case Environment.production:
-        return 'https://api.restaurant.example.com';
+        return 'https://iovxfvkaswdediephqep.supabase.co/rest/v1';
     }
   }
 
@@ -46,7 +43,7 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'wss://staging-api.restaurant.example.com';
       case Environment.production:
-        return 'wss://api.restaurant.example.com';
+        return 'wss://iovxfvkaswdediephqep.supabase.co/realtime/v1/websocket';
     }
   }
 }

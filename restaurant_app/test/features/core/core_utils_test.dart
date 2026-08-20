@@ -85,15 +85,18 @@ void main() {
   });
 
   group('EnvironmentConfig', () {
-    test('baseUrl resolves to dev for current env', () {
+    test('baseUrl resolves to production baseUrl', () {
       expect(
         EnvironmentConfig.baseUrl,
-        'https://dev-api.restaurant.example.com',
+        'https://iovxfvkaswdediephqep.supabase.co/rest/v1',
       );
     });
 
     test('wsUrl is derived', () {
-      expect(EnvironmentConfig.wsUrl, 'wss://dev-api.restaurant.example.com');
+      expect(
+        EnvironmentConfig.wsUrl,
+        'wss://iovxfvkaswdediephqep.supabase.co/realtime/v1/websocket',
+      );
     });
   });
 

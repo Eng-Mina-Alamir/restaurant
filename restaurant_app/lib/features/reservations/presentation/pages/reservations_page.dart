@@ -372,6 +372,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: selectedTableId,
                         items: tables
 

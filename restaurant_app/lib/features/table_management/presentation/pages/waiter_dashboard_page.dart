@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/animations/animated_counter.dart';
+import '../../../../shared/animations/fade_slide_transition.dart';
+import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -13,7 +16,7 @@ import '../controllers/table_controller.dart';
 import 'waiter_table_card.dart';
 
 /// Waiter / captain dashboard: a grid of restaurant tables with status-aware
-/// actions (take order, release, clean, reserve).
+/// actions (take order, release, clean, reserve) and smooth animations.
 class WaiterDashboardPage extends ConsumerWidget {
   const WaiterDashboardPage({super.key});
 
@@ -62,20 +65,25 @@ class WaiterDashboardPage extends ConsumerWidget {
                         itemCount: tables.length,
                         itemBuilder: (context, index) {
                           final table = tables[index];
-                          return WaiterTableCard(
-                            table: table,
-                            onTap: () {
-                              context.push('/waiter/table/${table.id}');
-                            },
-                            onTakeOrder: () {
-                              context.push('/waiter/order/${table.id}');
-                            },
-                            onRelease: () => ref
-                                .read(tableControllerProvider.notifier)
-                                .release(table.id),
-                            onReserve: () => ref
-                                .read(tableControllerProvider.notifier)
-                                .setReserved(table.id, reserved: true),
+                          return AnimatedListItem(
+                            index: index,
+                            staggerDuration: const Duration(milliseconds: 35),
+                            duration: const Duration(milliseconds: 350),
+                            child: WaiterTableCard(
+                              table: table,
+                              onTap: () {
+                                context.push('/waiter/table/${table.id}');
+                              },
+                              onTakeOrder: () {
+                                context.push('/waiter/order/${table.id}');
+                              },
+                              onRelease: () => ref
+                                  .read(tableControllerProvider.notifier)
+                                  .release(table.id),
+                              onReserve: () => ref
+                                  .read(tableControllerProvider.notifier)
+                                  .setReserved(table.id, reserved: true),
+                            ),
                           );
                         },
                       );
@@ -105,45 +113,47 @@ class _OrdersSummary extends StatelessWidget {
 
     if (total == 0) return const SizedBox.shrink();
 
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppConstants.waiterOrdersSummary,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Flexible(
-              child: Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  _CountChip(
-                    label: AppConstants.waiterPendingCount,
-                    count: pending,
-                    color: Colors.orange,
-                  ),
-                  _CountChip(
-                    label: AppConstants.waiterPreparingCount,
-                    count: preparing,
-                    color: Colors.blue,
-                  ),
-                  _CountChip(
-                    label: AppConstants.waiterReadyCount,
-                    count: ready,
-                    color: Colors.green,
-                  ),
-                ],
+    return FadeSlideTransitionWidget(
+      child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppConstants.waiterOrdersSummary,
+                style: Theme.of(context).textTheme.titleSmall,
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Flexible(
+                child: Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    _CountChip(
+                      label: AppConstants.waiterPendingCount,
+                      count: pending,
+                      color: Colors.orange,
+                    ),
+                    _CountChip(
+                      label: AppConstants.waiterPreparingCount,
+                      count: preparing,
+                      color: Colors.blue,
+                    ),
+                    _CountChip(
+                      label: AppConstants.waiterReadyCount,
+                      count: ready,
+                      color: Colors.green,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -166,30 +176,32 @@ class _CountChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
+        vertical: 3,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
-      child: Text(
-        '$label: $count',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+      child: AnimatedCounter(
+        value: count,
+        prefix: '$label: ',
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
 }
 
-/// Color used to signal the table status in the grid.
+/// Helper to return appropriate color for each table status.
 Color tableStatusColor(TableStatus status) {
-  switch (status) {
-    case TableStatus.available:
-      return Colors.green;
-    case TableStatus.occupied:
-      return Colors.deepOrange;
-    case TableStatus.reserved:
-      return Colors.blue;
-    case TableStatus.needsCleaning:
-      return Colors.brown;
-  }
+  return switch (status) {
+    TableStatus.available => Colors.green,
+    TableStatus.occupied => Colors.red,
+    TableStatus.reserved => Colors.orange,
+    TableStatus.needsCleaning => Colors.blueGrey,
+  };
 }

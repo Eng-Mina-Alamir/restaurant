@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/animated_press_card.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -482,13 +483,25 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
+    return AnimatedPressCard(
+      borderRadius: AppRadius.md,
+      border: Border.all(
+        color: color.withValues(alpha: 0.25),
+        width: 1.0,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 28),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               title,

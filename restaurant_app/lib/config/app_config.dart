@@ -25,7 +25,10 @@ abstract final class AppConfig {
   /// All locales supported by the app.
   static const List<String> supportedLocales = <String>[locale, fallbackLocale];
 
-  /// When true, auth uses the offline demo data source so every role can be
-  /// reviewed without a backend (see demo accounts on the login screen).
-  static const bool useDemoAuth = true;
+  /// When true, allows instant demo logins for testing and role walkthroughs;
+  /// In production, set to false to enforce live Supabase Auth email/password verification.
+  static const bool useDemoAuth = false;
+
+  /// Whether to use live Supabase backend for database, realtime, and storage.
+  static const bool useSupabase = true;
 }

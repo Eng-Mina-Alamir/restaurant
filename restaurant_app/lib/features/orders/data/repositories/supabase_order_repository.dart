@@ -1,0 +1,191 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
+import '../../../../core/domain/enums.dart';
+import '../../../../core/errors/either.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/logger.dart';
+import '../../domain/entities/order_entity.dart';
+import '../../domain/entities/order_item.dart';
+import '../../domain/repositories/order_repository.dart';
+
+/// Supabase-backed [OrderRepository] with offline local cache fallback and real-time support.
+class SupabaseOrderRepository implements OrderRepository {
+  SupabaseOrderRepository({
+    required SupabaseClient supabase,
+    LocalCacheService? cache,
+  })  : _supabase = supabase,
+        _cache = cache;
+
+  final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
+  static const String _cacheKey = 'orders_v1';
+
+  @override
+  Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
+    try {
+      // 1. Insert into Supabase `orders` table
+      final orderRow = {
+        'id': order.id,
+        'restaurant_id': order.restaurantId,
+        'customer_id': order.customerId,
+        'table_id': order.tableId,
+        'waiter_id': order.waiterId,
+        'order_type': order.orderType.name,
+        'status': order.status.name,
+        'subtotal': order.subtotal,
+        'tax_amount': order.taxAmount,
+        'discount_amount': order.discountAmount,
+        'total_amount': order.totalAmount,
+        'payment_method': order.paymentMethod?.name,
+        'delivery_address': order.deliveryAddress,
+        'delivery_notes': order.deliveryNotes,
+        'created_at': order.createdAt.toIso8601String(),
+        'items_json': order.items.map((i) => i.toJson()).toList(),
+      };
+
+      try {
+        await _supabase.from(SupabaseConfig.ordersTable).upsert(orderRow);
+      } catch (e) {
+        if (e.toString().contains('items_json')) {
+          final rowWithoutItemsJson = Map<String, dynamic>.from(orderRow)..remove('items_json');
+          await _supabase.from(SupabaseConfig.ordersTable).upsert(rowWithoutItemsJson);
+        } else {
+          rethrow;
+        }
+      }
+
+      // 2. Also insert line items into `order_items` table if table exists
+      try {
+        final itemsPayload = order.items.map((item) => {
+          'order_id': order.id,
+          'menu_item_id': item.menuItem.id,
+          'item_name': item.menuItem.name,
+          'price': item.menuItem.price,
+          'quantity': item.quantity,
+          'total_price': item.lineTotal,
+          'special_notes': item.specialNotes,
+          'modifiers_json': item.selectedModifiers.map((m) => m.toJson()).toList(),
+          'created_at': item.addedAt.toIso8601String(),
+        }).toList();
+
+        if (itemsPayload.isNotEmpty) {
+          await _supabase.from(SupabaseConfig.orderItemsTable).upsert(itemsPayload);
+        }
+      } catch (e) {
+        AppLogger.warning('Could not insert items into order_items table: $e');
+      }
+
+      // 3. Cache locally
+      await _cacheOrderLocally(order);
+
+      return Right<Failure, OrderEntity>(order);
+    } catch (e) {
+      AppLogger.error('Supabase createOrder error: $e');
+      // Save locally so orders aren't lost
+      await _cacheOrderLocally(order);
+      return Right<Failure, OrderEntity>(order);
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<OrderEntity>>> getOrders() async {
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .select()
+          .order('created_at', ascending: false);
+
+      final List<OrderEntity> orders = [];
+      for (final raw in (response as List)) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        
+        List<OrderItem> items = [];
+        if (map['items_json'] is List) {
+          items = (map['items_json'] as List)
+              .map((i) => OrderItem.fromJson(Map<String, dynamic>.from(i as Map)))
+              .toList();
+        }
+
+        orders.add(OrderEntity(
+          id: map['id']?.toString() ?? '',
+          restaurantId: map['restaurant_id'] as String? ?? 'restaurant-1',
+          customerId: map['customer_id'] as String?,
+          tableId: map['table_id'] as String?,
+          waiterId: map['waiter_id'] as String?,
+          orderType: OrderType.fromName(map['order_type'] as String?),
+          items: items,
+          status: OrderStatus.fromName(map['status'] as String?),
+          subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
+          taxAmount: (map['tax_amount'] as num?)?.toDouble() ?? 0.0,
+          discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0.0,
+          totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
+          paymentMethod: map['payment_method'] != null
+              ? PaymentMethod.fromName(map['payment_method'] as String)
+              : null,
+          deliveryAddress: map['delivery_address'] as String?,
+          deliveryNotes: map['delivery_notes'] as String?,
+          createdAt: map['created_at'] != null
+              ? DateTime.tryParse(map['created_at'] as String) ?? DateTime.now()
+              : DateTime.now(),
+          completedAt: map['completed_at'] != null
+              ? DateTime.tryParse(map['completed_at'] as String)
+              : null,
+          estimatedMinutes: (map['estimated_minutes'] as num?)?.toInt(),
+        ));
+      }
+
+      final cache = _cache;
+      if (orders.isNotEmpty && cache != null) {
+        await cache.writeList(_cacheKey, orders.map((o) => o.toJson()).toList());
+      }
+
+      return Right<Failure, List<OrderEntity>>(orders);
+    } catch (e) {
+      AppLogger.warning('Supabase getOrders failed: $e, loading from local cache');
+      final local = _loadFromCache();
+      return Right<Failure, List<OrderEntity>>(local);
+    }
+  }
+
+  /// Updates status of an order in Supabase.
+  Future<Either<Failure, void>> updateOrderStatus(String orderId, OrderStatus status) async {
+    try {
+      await _supabase.from(SupabaseConfig.ordersTable).update({
+        'status': status.name,
+        if (status == OrderStatus.completed || status == OrderStatus.served)
+          'completed_at': DateTime.now().toIso8601String(),
+      }).eq('id', orderId);
+      return const Right<Failure, void>(null);
+    } catch (e) {
+      return Left<Failure, void>(ServerFailure('فشل تحديث حالة الطلب: $e'));
+    }
+  }
+
+  Future<void> _cacheOrderLocally(OrderEntity order) async {
+    final cache = _cache;
+    if (cache == null) return;
+    try {
+      final all = _loadFromCache();
+      final index = all.indexWhere((o) => o.id == order.id);
+      if (index == -1) {
+        all.add(order);
+      } else {
+        all[index] = order;
+      }
+      await cache.writeList(_cacheKey, all.map((o) => o.toJson()).toList());
+    } catch (_) {}
+  }
+
+  List<OrderEntity> _loadFromCache() {
+    final cache = _cache;
+    if (cache == null) return [];
+    try {
+      return cache.readList(_cacheKey).map(OrderEntity.fromJson).toList()
+        ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    } catch (_) {
+      return [];
+    }
+  }
+}

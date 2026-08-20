@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/utils/financial_calculator.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
 
@@ -84,8 +85,13 @@ class CartController extends StateNotifier<List<CartItem>> {
   /// Returns the per-person amount when splitting the total evenly across
   /// [numPersons].
   double splitTotal(int numPersons) {
-    if (numPersons <= 0) return totals.totalAmount;
-    return totals.totalAmount / numPersons;
+    return FinancialCalculator.splitTotal(totals.totalAmount, numPersons);
+  }
+
+  /// Returns an exact list of per-person amounts across [numPersons] where
+  /// the sum is guaranteed to equal [totals.totalAmount] with remainder cents allocated.
+  List<double> splitTotalDetailed(int numPersons) {
+    return FinancialCalculator.splitBillDetailed(totals.totalAmount, numPersons);
   }
 
   void _mutate(String configKey, CartItem Function(CartItem) transform) {

@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,21 +22,34 @@ enum AppLanguage {
   }
 }
 
-/// Manages the application-wide active locale with caching.
+/// Manages the application-wide active locale with caching and device language detection.
 class LocaleController extends StateNotifier<Locale> {
   LocaleController([LocalCacheService? cache])
       : _cache = cache,
-        super(const Locale('ar')) {
+        super(_resolveDefaultLocale()) {
     _load();
   }
 
   final LocalCacheService? _cache;
   static const _cacheKey = 'app_selected_locale';
 
+  /// Resolves device language or falls back to Arabic
+  static Locale _resolveDefaultLocale() {
+    try {
+      final deviceLocale = ui.PlatformDispatcher.instance.locale;
+      if (deviceLocale.languageCode.toLowerCase() == 'en') {
+        return const Locale('en');
+      }
+    } catch (_) {}
+    return const Locale('ar');
+  }
+
   void _load() {
     final cached = _cache?.readString(_cacheKey);
     if (cached != null && (cached == 'ar' || cached == 'en')) {
       state = Locale(cached);
+    } else {
+      state = _resolveDefaultLocale();
     }
   }
 

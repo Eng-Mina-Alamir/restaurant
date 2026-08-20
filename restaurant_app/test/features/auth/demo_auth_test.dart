@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/core/di/service_locator.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/core/storage/in_memory_secure_storage_service.dart';
 import 'package:restaurant_app/features/auth/data/datasources/demo_auth_datasource.dart';
 import 'package:restaurant_app/features/auth/presentation/controllers/auth_controller.dart';
 
@@ -41,8 +43,17 @@ void main() {
   });
 
   group('AuthController via demo datasource', () {
+    ProviderContainer createContainer() {
+      return ProviderContainer(
+        overrides: [
+          authRemoteDataSourceProvider.overrideWithValue(DemoAuthRemoteDataSource()),
+          secureStorageServiceProvider.overrideWithValue(InMemorySecureStorageService()),
+        ],
+      );
+    }
+
     test('login succeeds for a demo driver via provider override', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       addTearDown(container.dispose);
 
       await container.read(authControllerProvider.notifier).bootstrap();
@@ -56,7 +67,7 @@ void main() {
     });
 
     test('failed login surfaces a failure and stays unauthenticated', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       addTearDown(container.dispose);
 
       await container
@@ -69,7 +80,7 @@ void main() {
     });
 
     test('bootstrap restores a persisted demo session after login', () async {
-      final container = ProviderContainer();
+      final container = createContainer();
       addTearDown(container.dispose);
 
       await container
@@ -89,7 +100,7 @@ void main() {
     test(
       'bootstrap stays unauthenticated after logout clears the session',
       () async {
-        final container = ProviderContainer();
+        final container = createContainer();
         addTearDown(container.dispose);
 
         await container

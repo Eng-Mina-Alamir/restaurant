@@ -6,6 +6,8 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/animations/scale_button.dart';
+import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../coupons/domain/entities/coupon_entity.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
@@ -93,17 +95,21 @@ class _CartPageState extends ConsumerState<CartPage> {
                     itemCount: cart.length,
                     itemBuilder: (context, index) {
                       final item = cart[index];
-                      return _CartLine(
-                        item: item,
-                        onIncrement: () => ref
-                            .read(cartControllerProvider.notifier)
-                            .increment(item.configKey),
-                        onDecrement: () => ref
-                            .read(cartControllerProvider.notifier)
-                            .decrement(item.configKey),
-                        onRemove: () => ref
-                            .read(cartControllerProvider.notifier)
-                            .removeItem(item.configKey),
+                      return AnimatedListItem(
+                        index: index,
+                        duration: const Duration(milliseconds: 300),
+                        child: _CartLine(
+                          item: item,
+                          onIncrement: () => ref
+                              .read(cartControllerProvider.notifier)
+                              .increment(item.configKey),
+                          onDecrement: () => ref
+                              .read(cartControllerProvider.notifier)
+                              .decrement(item.configKey),
+                          onRemove: () => ref
+                              .read(cartControllerProvider.notifier)
+                              .removeItem(item.configKey),
+                        ),
                       );
                     },
                   ),
@@ -194,21 +200,38 @@ class _CartLine extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton.outlined(
-                  icon: const Icon(Icons.remove),
-                  onPressed: onDecrement,
+                ScaleButton(
+                  onTap: onDecrement,
+                  child: IconButton.outlined(
+                    icon: const Icon(Icons.remove),
+                    onPressed: onDecrement,
+                  ),
                 ),
-                Text('${item.quantity}'),
-                IconButton.outlined(
-                  icon: const Icon(Icons.add),
-                  onPressed: onIncrement,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(
+                    '${item.quantity}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ScaleButton(
+                  onTap: onIncrement,
+                  child: IconButton.outlined(
+                    icon: const Icon(Icons.add),
+                    onPressed: onIncrement,
+                  ),
                 ),
               ],
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: AppConstants.delete,
-              onPressed: onRemove,
+            ScaleButton(
+              onTap: onRemove,
+              child: IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: AppConstants.delete,
+                onPressed: onRemove,
+              ),
             ),
           ],
         ),

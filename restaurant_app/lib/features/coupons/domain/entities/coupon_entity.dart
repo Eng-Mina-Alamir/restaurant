@@ -1,3 +1,5 @@
+import '../../../../core/utils/financial_calculator.dart';
+
 enum CouponDiscountType {
   percentage('نسبة مئوية (%)'),
   fixed('مبلغ ثابت (ريال)');
@@ -33,6 +35,13 @@ class CouponEntity {
     this.isActive = true,
   });
 
+  /// Normalizes and checks if [inputCode] matches this coupon's code
+  /// (case-insensitive and trimmed).
+  bool matchesCode(String? inputCode) {
+    if (inputCode == null) return false;
+    return code.trim().toUpperCase() == inputCode.trim().toUpperCase();
+  }
+
   /// Validates if coupon is currently valid for the given order subtotal.
   /// Returns null if valid, or error message string if invalid.
   String? validate(double subtotal) {
@@ -53,22 +62,24 @@ class CouponEntity {
 
   /// Computes the exact discount amount in SAR for the given subtotal.
   double calculateDiscount(double subtotal) {
+    if (subtotal <= 0) return 0.0;
     if (validate(subtotal) != null) return 0.0;
 
     double discount = 0.0;
     if (discountType == CouponDiscountType.percentage) {
-      discount = subtotal * (discountValue / 100.0);
-      if (maxDiscountAmount != null && discount > maxDiscountAmount!) {
-        discount = maxDiscountAmount!;
-      }
+      discount = FinancialCalculator.calculatePercentageDiscount(
+        subtotal: subtotal,
+        percentage: discountValue,
+        maxDiscount: maxDiscountAmount,
+      );
     } else {
-      discount = discountValue;
+      discount = FinancialCalculator.roundCurrency(discountValue);
     }
 
     if (discount > subtotal) {
       discount = subtotal;
     }
-    return discount;
+    return FinancialCalculator.roundCurrency(discount.clamp(0.0, subtotal));
   }
 
   CouponEntity copyWith({

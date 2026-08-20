@@ -6,11 +6,15 @@ class PulseBadge extends StatefulWidget {
     super.key,
     required this.color,
     this.size = 12.0,
+    this.maxScale = 2.2,
+    this.duration = const Duration(milliseconds: 1400),
     this.child,
   });
 
   final Color color;
   final double size;
+  final double maxScale;
+  final Duration duration;
   final Widget? child;
 
   @override
@@ -28,10 +32,10 @@ class _PulseBadgeState extends State<PulseBadge>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: widget.duration,
     )..repeat();
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 2.2).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: widget.maxScale).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad),
     );
 
@@ -48,6 +52,18 @@ class _PulseBadgeState extends State<PulseBadge>
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color,
+        ),
+        child: widget.child,
+      );
+    }
+
     return Stack(
       alignment: Alignment.center,
       children: [

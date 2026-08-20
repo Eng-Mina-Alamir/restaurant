@@ -6,14 +6,20 @@ class ScaleButton extends StatefulWidget {
     super.key,
     required this.child,
     required this.onTap,
+    this.onLongPress,
     this.scaleDown = 0.96,
-    this.duration = const Duration(milliseconds: 100),
+    this.duration = const Duration(milliseconds: 110),
+    this.curve = Curves.easeInOutCubic,
+    this.behavior = HitTestBehavior.opaque,
   });
 
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double scaleDown;
   final Duration duration;
+  final Curve curve;
+  final HitTestBehavior behavior;
 
   @override
   State<ScaleButton> createState() => _ScaleButtonState();
@@ -36,7 +42,7 @@ class _ScaleButtonState extends State<ScaleButton>
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: widget.scaleDown,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
   }
 
   @override
@@ -46,27 +52,41 @@ class _ScaleButtonState extends State<ScaleButton>
   }
 
   void _onTapDown(TapDownDetails _) {
-    if (widget.onTap != null) _controller.forward();
+    if (widget.onTap != null || widget.onLongPress != null) {
+      _controller.forward();
+    }
   }
 
   void _onTapUp(TapUpDetails _) {
     if (widget.onTap != null) {
       _controller.reverse();
       widget.onTap!();
+    } else {
+      _controller.reverse();
     }
   }
 
   void _onTapCancel() {
-    if (widget.onTap != null) _controller.reverse();
+    _controller.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return GestureDetector(
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        behavior: widget.behavior,
+        child: widget.child,
+      );
+    }
+
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
-      behavior: HitTestBehavior.opaque,
+      onLongPress: widget.onLongPress,
+      behavior: widget.behavior,
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) => Transform.scale(
