@@ -19,6 +19,7 @@ class _FakeAuthRepository implements AuthRepository {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     registeredName = name;
@@ -77,6 +78,7 @@ void main() {
         email: 'test@example.com',
         phone: '0501234567',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
 
       expect(res.isLeft, isTrue);
@@ -90,6 +92,7 @@ void main() {
         email: 'notanemail',
         phone: '0501234567',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
 
       expect(res.isLeft, isTrue);
@@ -102,6 +105,7 @@ void main() {
         email: 'ahmed@example.com',
         phone: '12345',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
 
       expect(res.isLeft, isTrue);
@@ -114,6 +118,7 @@ void main() {
         email: 'ahmed@example.com',
         phone: '0501234567',
         password: '123',
+        restaurantId: 'test-restaurant-id',
       );
 
       expect(res.isLeft, isTrue);
@@ -126,6 +131,7 @@ void main() {
         email: '  ahmed@example.com  ',
         phone: '  0501234567  ',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.waiter,
       );
 

@@ -32,6 +32,7 @@ class _FakeAuthRepository implements AuthRepository {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     if (failureToReturn != null) return Left(failureToReturn!);
@@ -161,6 +162,7 @@ void main() {
         email: 'waiter@test.com',
         phone: '0501112233',
         password: 'password',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.waiter,
       );
 

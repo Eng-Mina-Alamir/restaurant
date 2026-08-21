@@ -50,6 +50,7 @@ void main() {
         email: 'sara@demo.com',
         phone: '0509998877',
         password: '123',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.driver,
       );
 

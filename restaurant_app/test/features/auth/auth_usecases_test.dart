@@ -38,6 +38,7 @@ class FakeAuthRepository implements AuthRepository {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     if (shouldFail) {
@@ -130,6 +131,7 @@ void main() {
         email: 'waiter@restaurant.com',
         phone: '0555555555',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.waiter,
       );
 
@@ -146,6 +148,7 @@ void main() {
         email: 'bad-email',
         phone: '0555555555',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
       expect(badEmailResult.isLeft, isTrue);
 
@@ -154,6 +157,7 @@ void main() {
         email: 'good@email.com',
         phone: '0555555555',
         password: '123',
+        restaurantId: 'test-restaurant-id',
       );
       expect(shortPassResult.isLeft, isTrue);
     });

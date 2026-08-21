@@ -26,6 +26,7 @@ void main() {
         email: 'test@example.com',
         phone: '0501234567',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
       expect(result.isLeft, isTrue);
     });
@@ -36,6 +37,7 @@ void main() {
         email: 'invalid-email',
         phone: '0501234567',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
       );
       expect(result.isLeft, isTrue);
     });
@@ -46,6 +48,7 @@ void main() {
         email: 'test@example.com',
         phone: '0501234567',
         password: '123',
+        restaurantId: 'test-restaurant-id',
       );
       expect(result.isLeft, isTrue);
     });
@@ -56,6 +59,7 @@ void main() {
         email: 'khaled@example.com',
         phone: '0501234567',
         password: 'password123',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.customer,
       );
       expect(result.isRight, isTrue);

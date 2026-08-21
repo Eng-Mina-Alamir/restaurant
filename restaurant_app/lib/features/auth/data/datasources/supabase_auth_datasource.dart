@@ -45,8 +45,14 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw InvalidCredentialsException(e.message);
     } catch (e, st) {
       if (e is AppException) rethrow;
-      AppLogger.error('Supabase login unexpected error', error: e, stackTrace: st);
-      throw const ServerException('حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً');
+      AppLogger.error(
+        'Supabase login unexpected error',
+        error: e,
+        stackTrace: st,
+      );
+      throw const ServerException(
+        'حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً',
+      );
     }
   }
 
@@ -56,6 +62,7 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     try {
@@ -65,27 +72,19 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: {
           'name': name.trim(),
           'phone': phone.trim(),
+          'restaurant_id': restaurantId,
         },
       );
 
       final user = response.user;
       if (user == null) {
-        throw const ServerException('فشل إنشاء الحساب، يرجى التحقق من البيانات والمحاولة مرة أخرى');
+        throw const ServerException(
+          'فشل إنشاء الحساب، يرجى التحقق من البيانات والمحاولة مرة أخرى',
+        );
       }
 
-      // Upsert profile in `profiles` table (server trigger forces role to customer for safety)
-      try {
-        await _supabase.from(SupabaseConfig.profilesTable).upsert({
-          'id': user.id,
-          'name': name.trim(),
-          'email': email.trim(),
-          'phone': phone.trim(),
-          'role': UserRole.customer.name,
-          'created_at': DateTime.now().toIso8601String(),
-        });
-      } catch (profileError) {
-        AppLogger.warning('Direct profile upsert skipped/handled by trigger: $profileError');
-      }
+      // Profile is auto-created by the `on_auth_user_created` trigger on auth.users
+      // which calls handle_new_user() — no client-side insert needed.
 
       return UserModel(
         id: user.id,
@@ -101,7 +100,11 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerException(e.message);
     } catch (e, st) {
       if (e is AppException) rethrow;
-      AppLogger.error('Supabase register unexpected error', error: e, stackTrace: st);
+      AppLogger.error(
+        'Supabase register unexpected error',
+        error: e,
+        stackTrace: st,
+      );
       throw const ServerException('حدث خطأ في التسجيل، يرجى المحاولة مرة أخرى');
     }
   }
@@ -143,7 +146,9 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await _supabase.auth.refreshSession();
       final token = response.session?.accessToken;
       if (token == null || token.isEmpty) {
-        throw const ServerException('جلسة العمل منتهية، يرجى إعادة تسجيل الدخول');
+        throw const ServerException(
+          'جلسة العمل منتهية، يرجى إعادة تسجيل الدخول',
+        );
       }
       return token;
     } on AuthException catch (e) {
@@ -176,18 +181,30 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (data != null) {
         return UserModel(
           id: user.id,
-          name: data['name'] as String? ?? user.userMetadata?['name'] as String? ?? 'مستخدم',
+          name:
+              data['name'] as String? ??
+              user.userMetadata?['name'] as String? ??
+              'مستخدم',
           email: data['email'] as String? ?? user.email ?? '',
-          phone: data['phone'] as String? ?? user.phone ?? user.userMetadata?['phone'] as String? ?? '',
-          role: UserRole.fromName(data['role'] as String? ?? user.userMetadata?['role'] as String?),
+          phone:
+              data['phone'] as String? ??
+              user.phone ??
+              user.userMetadata?['phone'] as String? ??
+              '',
+          role: UserRole.fromName(
+            data['role'] as String? ?? user.userMetadata?['role'] as String?,
+          ),
           token: token,
           createdAt: data['created_at'] != null
-              ? DateTime.tryParse(data['created_at'] as String) ?? DateTime.now()
+              ? DateTime.tryParse(data['created_at'] as String) ??
+                    DateTime.now()
               : DateTime.now(),
         );
       }
     } catch (e) {
-      AppLogger.warning('Could not load profile from table, falling back to metadata: $e');
+      AppLogger.warning(
+        'Could not load profile from table, falling back to metadata: $e',
+      );
     }
 
     final meta = user.userMetadata ?? {};

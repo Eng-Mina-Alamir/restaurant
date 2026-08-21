@@ -15,6 +15,7 @@ class RegisterUseCase {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) {
     if (name.trim().isEmpty) {
@@ -43,6 +44,7 @@ class RegisterUseCase {
       email: email.trim(),
       phone: phone.trim(),
       password: password,
+      restaurantId: restaurantId,
       role: role,
     );
   }

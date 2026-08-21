@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../config/supabase_config.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
@@ -55,6 +56,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),
           password: _passwordController.text,
+          restaurantId: SupabaseConfig.defaultRestaurantId,
           role: UserRole.customer,
         );
 

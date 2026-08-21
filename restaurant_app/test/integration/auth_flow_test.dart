@@ -32,6 +32,7 @@ class _MockAuthRemoteDataSource implements AuthRemoteDataSource {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     return UserModel(

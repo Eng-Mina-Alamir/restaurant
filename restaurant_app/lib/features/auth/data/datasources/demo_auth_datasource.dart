@@ -121,6 +121,7 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     return UserModel(
@@ -129,7 +130,7 @@ class DemoAuthRemoteDataSource implements AuthRemoteDataSource {
       email: email,
       phone: phone,
       role: role,
-      restaurantId: 'demo-restaurant-1',
+      restaurantId: restaurantId,
       token: 'demo-token-reg-${DateTime.now().millisecondsSinceEpoch}',
       createdAt: DateTime.now(),
       isActive: true,

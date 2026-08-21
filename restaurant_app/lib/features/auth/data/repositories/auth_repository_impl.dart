@@ -48,6 +48,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     try {
@@ -56,6 +57,7 @@ class AuthRepositoryImpl implements AuthRepository {
         email: email,
         phone: phone,
         password: password,
+        restaurantId: restaurantId,
         role: role,
       );
       await _persistToken(model.token);

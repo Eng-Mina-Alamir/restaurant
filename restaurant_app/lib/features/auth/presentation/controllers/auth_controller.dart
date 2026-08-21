@@ -94,12 +94,13 @@ class AuthController extends StateNotifier<AuthState> {
     );
   }
 
-  /// Registers a new user with [name], [email], [phone], [password], and [role].
+  /// Registers a new user with [name], [email], [phone], [password], [restaurantId], and [role].
   Future<void> register({
     required String name,
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     state = state.copyWith(status: AuthStatus.unknown, clearFailure: true);
@@ -108,6 +109,7 @@ class AuthController extends StateNotifier<AuthState> {
           email: email,
           phone: phone,
           password: password,
+          restaurantId: restaurantId,
           role: role,
         );
     if (!mounted) return;

@@ -40,6 +40,7 @@ void main() {
           email: 'invalid-email',
           phone: '01000000000',
           password: '123',
+          restaurantId: 'test-restaurant-id',
           role: UserRole.customer,
         ),
         throwsA(isA<AppException>()),

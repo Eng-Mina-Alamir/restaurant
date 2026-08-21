@@ -27,6 +27,7 @@ abstract class AuthRemoteDataSource {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   });
 
@@ -101,6 +102,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String phone,
     required String password,
+    required String restaurantId,
     UserRole role = UserRole.customer,
   }) async {
     try {
@@ -112,6 +114,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'phone': phone,
           'password': password,
           'role': role.name,
+          'restaurant_id': restaurantId,
         },
       );
       return _parseUser(response.data);

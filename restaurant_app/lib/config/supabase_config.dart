@@ -34,4 +34,9 @@ abstract final class SupabaseConfig {
   static const String menuBucket = 'menu-images';
   static const String avatarsBucket = 'user-avatars';
   static const String deliveryProofBucket = 'delivery-proofs';
+
+  // ── Default Restaurant ────────────────────────────────────────────────────
+  /// The single restaurant UUID this app instance is tied to.
+  static const String defaultRestaurantId =
+      '1e08b47c-15be-4604-a913-431af7fbd54f';
 }

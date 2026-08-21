@@ -181,6 +181,7 @@ void main() {
         email: 'driver@test.com',
         phone: '0511111111',
         password: 'secretPassword1',
+        restaurantId: 'test-restaurant-id',
         role: UserRole.driver,
       );
 

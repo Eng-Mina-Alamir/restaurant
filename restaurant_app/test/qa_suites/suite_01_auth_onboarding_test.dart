@@ -85,6 +85,7 @@ void main() {
         email: 'new_customer@restaurant.com',
         phone: '0501234567',
         password: 'SecurePassword123!',
+        restaurantId: 'test-restaurant-id',
       );
 
       final state = container.read(authControllerProvider);
