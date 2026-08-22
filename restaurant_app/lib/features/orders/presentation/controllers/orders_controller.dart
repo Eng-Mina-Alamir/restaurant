@@ -16,6 +16,10 @@ import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
+import '../../../delivery/domain/entities/delivery_assignment.dart';
+import '../../../delivery/domain/services/delivery_fee_calculator.dart';
+import '../../../delivery/domain/services/driver_assignment_service.dart';
+import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
@@ -60,11 +64,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     OfflineQueueService? offlineQueueService,
     CartDiscountResolver? discountResolver,
     MenuItem? Function(String menuItemId)? menuLookup,
+    Future<void> Function(OrderEntity order)? onDeliveryOrderReady,
   })  : _realtimeService = realtimeService,
         _connectivityService = connectivityService,
         _offlineQueueService = offlineQueueService,
         _discountResolver = discountResolver,
         _menuLookup = menuLookup,
+        _onDeliveryOrderReady = onDeliveryOrderReady,
         super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -81,6 +87,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// Live menu lookup used at checkout time to revalidate item availability
   /// and price; null disables revalidation (offline/demo mode).
   final MenuItem? Function(String menuItemId)? _menuLookup;
+
+  /// Optional dispatch hook fired when a persisted transition lands a
+  /// delivery order on [OrderStatus.ready] (auto-assign wiring lives in
+  /// [ordersControllerProvider]). Null disables auto-dispatch.
+  final Future<void> Function(OrderEntity order)? _onDeliveryOrderReady;
 
   /// Human-readable reason the last [placeOrder]/[placeOrderForTable] call
   /// returned null (checkout-time revalidation failure). Null when the last
@@ -503,10 +514,38 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
     // Persist the updated order status through the repository.
     final result = await _repository.updateOrderStatus(orderId, status);
+
+    // Auto-dispatch: once a delivery order is PERSISTED on "ready", hand it
+    // to the dispatch hook. The hook must never break the status-update path
+    // — failures are logged and the order simply stays undispatched (manual
+    // manager reassign remains possible).
+    if (result.isRight &&
+        status == OrderStatus.ready &&
+        updated.orderType == OrderType.delivery) {
+      await _notifyDeliveryOrderReady(updated);
+    }
+
     return result.when(
       onLeft: (_) => null,
       onRight: (_) => updated,
     );
+  }
+
+  /// Invokes the optional [OrdersController] dispatch hook for a delivery
+  /// order that reached [OrderStatus.ready], swallowing any failure.
+  Future<void> _notifyDeliveryOrderReady(OrderEntity order) async {
+    final hook = _onDeliveryOrderReady;
+    if (hook == null) return;
+    try {
+      await hook(order);
+    } catch (e, st) {
+      AppLogger.error(
+        'onDeliveryOrderReady failed for order ${order.id}; '
+        'order left undispatched (manual reassign still possible)',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   /// Orders that are still active for kitchen display (not terminal).
@@ -530,6 +569,64 @@ final newOrderNotifierProvider = Provider<NewOrderNotifier>((ref) {
 
 final ordersControllerProvider =
     StateNotifierProvider<OrdersController, List<OrderEntity>>((ref) {
+      // Hybrid auto-dispatch: when a delivery order hits "ready", rank the
+      // available drivers and create exactly one assignment for the winner,
+      // then broadcast it so driver/dispatch clients stay in sync. A Waiting
+      // decision (or any failure) leaves the order undispatched — the manager
+      // can still assign manually.
+      Future<void> autoDispatchDeliveryOrder(OrderEntity order) async {
+        final deliveryRepo = ref.read(deliveryRepositoryProvider);
+        final realtime = ref.read(realtimeServiceProvider);
+
+        final driversResult = await deliveryRepo.getAvailableDrivers();
+        final drivers = driversResult.when(
+          onLeft: (failure) {
+            AppLogger.warning(
+              'Auto-dispatch: getAvailableDrivers failed (${failure.message}); '
+              'order ${order.id} left undispatched',
+            );
+            return null;
+          },
+          onRight: (list) => list,
+        );
+        if (drivers == null) return;
+
+        final decision = const DriverAssignmentService().assign(
+          candidates: drivers,
+          restaurantLat: DeliveryFeeCalculator.restaurantLat,
+          restaurantLng: DeliveryFeeCalculator.restaurantLng,
+        );
+
+        switch (decision) {
+          case Waiting(:final reason):
+            AppLogger.info(
+              'Auto-dispatch: order ${order.id} waiting for a driver — $reason',
+            );
+          case Assigned(:final driverId):
+            final now = DateTime.now();
+            final assignment = DeliveryAssignment(
+              id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
+              orderId: order.id,
+              driverId: driverId,
+              pickupTime: now,
+              deliveryLocation: order.deliveryAddress ?? '',
+              deliveryStatus: DeliveryStatus.pending,
+              assignmentMethod: 'auto',
+              assignedAt: now,
+            );
+            final createdResult =
+                await deliveryRepo.createAssignment(assignment);
+            createdResult.when(
+              onLeft: (failure) => AppLogger.warning(
+                'Auto-dispatch: createAssignment rejected for order '
+                '${order.id} (${failure.message})',
+              ),
+              onRight: (created) => realtime
+                  .broadcastDeliveryAssignmentCreated(created.toJson()),
+            );
+        }
+      }
+
       return OrdersController(
         ref.watch(orderRepositoryProvider),
         ref.watch(cartControllerProvider.notifier),
@@ -557,5 +654,6 @@ final ordersControllerProvider =
           }
           return null;
         },
+        onDeliveryOrderReady: autoDispatchDeliveryOrder,
       );
     });
