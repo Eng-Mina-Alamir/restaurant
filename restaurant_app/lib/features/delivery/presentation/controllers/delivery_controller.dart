@@ -7,6 +7,7 @@ import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/utils/logger.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/repositories/delivery_repository.dart';
 import '../../data/repositories/hive_delivery_repository.dart';
@@ -66,6 +67,24 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
             }).toList();
           }
         } catch (_) {}
+      } else if (event.type == RealtimeEventType.deliveryAssignmentCreated) {
+        try {
+          // Only accept dispatches addressed to this driver.
+          if (event.payload['driverId']?.toString() != _driverId) return;
+          final assignment = DeliveryAssignment.fromJson(event.payload);
+          if (state.any((a) => a.id == assignment.id)) return;
+          // Appending grows the state list — the driver home page watches it
+          // to raise the "new assignment" cue.
+          state = [...state, assignment];
+        } catch (e, st) {
+          // Malformed payloads must never take down the dashboard.
+          AppLogger.warning(
+            'DeliveryController: ignored malformed deliveryAssignmentCreated '
+            'event',
+            error: e,
+            stackTrace: st,
+          );
+        }
       }
     });
   }

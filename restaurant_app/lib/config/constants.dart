@@ -156,6 +156,8 @@ abstract final class AppConstants {
   static const String customerPhoneLabel = 'رقم العميل';
   static const String deliveryFeeLabel = 'رسوم التوصيل';
   static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
+  static const String driverNewAssignmentAlert = 'مهمة توصيل جديدة';
+  static const String driverNewAssignmentOrderPrefix = 'طلب';
 
   // ── Validation messages ────────────────────────────────────────────────────
   static const String requiredField = 'هذا الحقل مطلوب';

@@ -4,9 +4,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:restaurant_app/config/constants.dart';
+import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/notifications/driver_alert_service.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
+
+/// Records new-assignment alerts without touching platform channels
+/// (mirrors SpyWaiterAlertService in test/features/staff).
+class SpyDriverAlertService implements DriverAlertService {
+  int notifyCalls = 0;
+
+  @override
+  Future<void> notifyNewAssignment() async => notifyCalls++;
+
+  @override
+  void dispose() {}
+}
 
 void main() {
   setUpAll(() async {
@@ -163,5 +177,71 @@ void main() {
       findsNothing,
     );
     expect(find.text(AppConstants.actionStartDelivery), findsNWidgets(2));
+  });
+
+  testWidgets('announces a broadcast assignment exactly once', (tester) async {
+    final spy = SpyDriverAlertService();
+    final container = ProviderContainer(
+      overrides: [
+        ...offlineOverrides(),
+        driverAlertServiceProvider.overrideWithValue(spy),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Assignments already loaded when the page opened never fire the cue.
+    expect(find.byType(SnackBar), findsNothing);
+    expect(spy.notifyCalls, 0);
+
+    // Dispatch a new assignment over the shared realtime loopback.
+    container.read(realtimeServiceProvider).sendEvent(
+      'deliveryAssignmentCreated',
+      {
+        'id': 'assign-rt-9',
+        'orderId': 'ORD-0200',
+        'driverId': 'driver-demo',
+        'pickupTime': DateTime.now().toIso8601String(),
+        'deliveryLocation': 'الرياض - حي النرجس',
+        'deliveryStatus': 'pending',
+      },
+    );
+    await tester.pump(); // deliver the realtime event + rebuild
+    await tester.pump(const Duration(milliseconds: 300)); // snackbar entrance
+
+    expect(find.textContaining('#200'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(
+      find.textContaining(AppConstants.driverNewAssignmentAlert),
+      findsOneWidget,
+    );
+    expect(spy.notifyCalls, 1);
+
+    // Repeated rebuilds and duplicate events must not re-fire the cue.
+    await tester.pumpAndSettle();
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(spy.notifyCalls, 1);
+
+    container.read(realtimeServiceProvider).sendEvent(
+      'deliveryAssignmentCreated',
+      {
+        'id': 'assign-rt-9',
+        'orderId': 'ORD-0200',
+        'driverId': 'driver-demo',
+        'pickupTime': DateTime.now().toIso8601String(),
+        'deliveryLocation': 'الرياض - حي النرجس',
+        'deliveryStatus': 'pending',
+      },
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(spy.notifyCalls, 1);
   });
 }

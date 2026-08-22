@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/notifications/driver_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -24,9 +27,23 @@ class DriverHomePage extends ConsumerStatefulWidget {
 class _DriverHomePageState extends ConsumerState<DriverHomePage> {
   DeliveryStatus? _filter;
 
+  /// Assignment ids already announced through the "new assignment" cue so
+  /// repeated rebuilds / duplicate events never re-fire it.
+  final Set<String> _announcedIds = <String>{};
+
+  /// The first non-empty snapshot is adopted as a baseline so assignments
+  /// that were already loaded when the page opened don't trigger the cue.
+  bool _baselineInitialized = false;
+
   @override
   Widget build(BuildContext context) {
     final assignments = ref.watch(deliveryControllerProvider);
+
+    ref.listen<List<DeliveryAssignment>>(
+      deliveryControllerProvider,
+      (_, next) => _announceNewAssignments(next),
+    );
+
     final visible = _filter == null
         ? assignments
         : assignments.where((a) => a.deliveryStatus == _filter).toList();
@@ -65,6 +82,35 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Raises the in-app "new assignment" cue (snackbar + chime/haptic) for
+  /// assignments appended to state that haven't been announced yet.
+  void _announceNewAssignments(List<DeliveryAssignment> current) {
+    if (!_baselineInitialized) {
+      if (current.isEmpty) return;
+      _baselineInitialized = true;
+      _announcedIds.addAll(current.map((a) => a.id));
+      return;
+    }
+    final fresh =
+        current.where((a) => !_announcedIds.contains(a.id)).toList();
+    if (fresh.isEmpty) return;
+    for (final a in fresh) {
+      _announcedIds.add(a.id);
+    }
+    unawaited(ref.read(driverAlertServiceProvider).notifyNewAssignment());
+    if (!mounted) return;
+    final latest = fresh.last;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${AppConstants.driverNewAssignmentAlert} — '
+          '${AppConstants.driverNewAssignmentOrderPrefix} '
+          '${Formatters.formatOrderId(latest.orderId)}',
+        ),
       ),
     );
   }
