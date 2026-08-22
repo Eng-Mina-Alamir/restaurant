@@ -210,14 +210,15 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
             'Realtime: malformed orderCreated payload: $e\n$st',
           );
         }
-      } else if (event.type == RealtimeEventType.orderStatusChanged) {
+      } else if (event.type == RealtimeEventType.orderStatusChanged ||
+          event.type == RealtimeEventType.orderStatusReverted) {
         try {
           final orderId =
               (event.payload['orderId'] ?? event.payload['id'])?.toString();
           final statusName = event.payload['status']?.toString();
           if (orderId == null || statusName == null) {
             AppLogger.warning(
-              'Realtime: malformed orderStatusChanged payload: ${event.payload}',
+              'Realtime: malformed ${event.type} payload: ${event.payload}',
             );
             return;
           }
@@ -244,8 +245,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           final index = state.indexWhere((o) => o.id == orderId);
           if (index != -1) {
             final currentStatus = state[index].status;
+            // Forward business transitions are always applied; intentional
+            // one-step reverts (e.g. ready → preparing) are accepted through
+            // the same path, whether they arrive as a plain status change or
+            // as a dedicated orderStatusReverted event.
             if (currentStatus != newStatus &&
-                currentStatus.canTransitionTo(newStatus)) {
+                (currentStatus.canTransitionTo(newStatus) ||
+                    currentStatus.canRevertTo(newStatus))) {
               final updated = state[index].copyWith(status: newStatus);
               state = [...state]..[index] = updated;
               if (eventAt != null &&
@@ -256,7 +262,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           }
         } catch (e, st) {
           AppLogger.warning(
-            'Realtime: bad orderStatusChanged payload: $e\n$st',
+            'Realtime: bad status-change payload: $e\n$st',
           );
         }
       }
@@ -334,8 +340,14 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// Places an order with the next cart contents.
   ///
   /// Appends the created [OrderEntity] to [state] and clears the cart on
-  /// success.
-  Future<OrderEntity?> placeOrder({PaymentMethod? paymentMethod}) async {
+  /// success. [orderType] defaults to takeaway when null; [deliveryAddress]
+  /// and [deliveryNotes] are persisted for delivery orders.
+  Future<OrderEntity?> placeOrder({
+    PaymentMethod? paymentMethod,
+    OrderType? orderType,
+    String? deliveryAddress,
+    String? deliveryNotes,
+  }) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
     if (cartItems.isEmpty) return null;
@@ -360,6 +372,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         createdAt: createdAt,
         paymentMethod: paymentMethod,
         discountAmount: discountAmount,
+        orderType: orderType,
+        deliveryAddress: deliveryAddress,
+        deliveryNotes: deliveryNotes,
       );
 
       final isOffline = _connectivityService?.isOnline == false;

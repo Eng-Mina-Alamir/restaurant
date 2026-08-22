@@ -12,6 +12,7 @@ import '../utils/logger.dart';
 enum RealtimeEventType {
   orderCreated,
   orderStatusChanged,
+  orderStatusReverted,
   tableStatusChanged,
   driverLocationUpdated,
   unknown,
@@ -60,6 +61,9 @@ class RealtimeEvent {
       case 'orderStatusChanged':
       case 'order_status_changed':
         return RealtimeEventType.orderStatusChanged;
+      case 'orderStatusReverted':
+      case 'order_status_reverted':
+        return RealtimeEventType.orderStatusReverted;
       case 'tableStatusChanged':
       case 'table_status_changed':
         return RealtimeEventType.tableStatusChanged;
@@ -177,6 +181,26 @@ class RealtimeService {
       'orderId': orderId,
       'id': orderId,
       'status': statusName,
+      'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+    });
+  }
+
+  /// Broadcasts an intentional backward status move (operator correction).
+  ///
+  /// Mirrors [broadcastOrderStatusChanged]: [fromStatus] is the status being
+  /// reverted, [toStatus] is the restored (earlier) status, and [updatedAt]
+  /// stamps the event so receivers can discard stale deliveries.
+  void broadcastOrderStatusReverted(
+    String orderId,
+    String fromStatus,
+    String toStatus, {
+    DateTime? updatedAt,
+  }) {
+    sendEvent('orderStatusReverted', {
+      'orderId': orderId,
+      'id': orderId,
+      'status': toStatus,
+      'fromStatus': fromStatus,
       'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
     });
   }

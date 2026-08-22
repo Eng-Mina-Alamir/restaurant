@@ -41,6 +41,10 @@ abstract final class OrderMapper {
   ///
   /// Money figures are taken from [CartTotals] so tax and discount are always
   /// consistent with what the cart UI displayed.
+  ///
+  /// [orderType] defaults to takeaway when null, preserving the historical
+  /// behavior of this mapper. [deliveryAddress] / [deliveryNotes] only carry
+  /// meaning for [OrderType.delivery] orders but are persisted whenever given.
   static OrderEntity buildForCustomer({
     required String orderId,
     required String restaurantId,
@@ -48,6 +52,9 @@ abstract final class OrderMapper {
     required DateTime createdAt,
     PaymentMethod? paymentMethod,
     double discountAmount = 0.0,
+    OrderType? orderType,
+    String? deliveryAddress,
+    String? deliveryNotes,
   }) {
     final items = cartItems
         .map((cart) => toOrderItem(cart, timestamp: createdAt))
@@ -60,7 +67,7 @@ abstract final class OrderMapper {
     return OrderEntity(
       id: orderId,
       restaurantId: restaurantId,
-      orderType: OrderType.takeaway,
+      orderType: orderType ?? OrderType.takeaway,
       status: OrderStatus.pending,
       paymentMethod: paymentMethod,
       items: items,
@@ -68,8 +75,51 @@ abstract final class OrderMapper {
       taxAmount: totals.taxAmount,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
+      deliveryAddress: deliveryAddress,
+      deliveryNotes: deliveryNotes,
       createdAt: createdAt,
       estimatedMinutes: 25,
+    );
+  }
+
+  /// Builds a delivery [OrderEntity] destined to [deliveryAddress].
+  ///
+  /// Mirrors [buildForTable]: the order type is fixed to
+  /// [OrderType.delivery], the address is mandatory, and the estimated
+  /// preparation-plus-transit time is ~40 minutes.
+  static OrderEntity buildForDelivery({
+    required String orderId,
+    required String restaurantId,
+    required String deliveryAddress,
+    required List<CartItem> cartItems,
+    required DateTime createdAt,
+    PaymentMethod? paymentMethod,
+    double discountAmount = 0.0,
+    String? deliveryNotes,
+  }) {
+    final items = cartItems
+        .map((cart) => toOrderItem(cart, timestamp: createdAt))
+        .toList();
+    final totals = CartTotals.fromItems(
+      cartItems,
+      discountAmount: discountAmount,
+    );
+
+    return OrderEntity(
+      id: orderId,
+      restaurantId: restaurantId,
+      orderType: OrderType.delivery,
+      status: OrderStatus.pending,
+      paymentMethod: paymentMethod,
+      items: items,
+      subtotal: totals.subtotal,
+      taxAmount: totals.taxAmount,
+      discountAmount: totals.discountAmount,
+      totalAmount: totals.totalAmount,
+      deliveryAddress: deliveryAddress,
+      deliveryNotes: deliveryNotes,
+      createdAt: createdAt,
+      estimatedMinutes: 40,
     );
   }
 

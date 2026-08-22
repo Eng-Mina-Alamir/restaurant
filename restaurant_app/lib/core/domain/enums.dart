@@ -86,6 +86,23 @@ enum OrderStatus {
     }
   }
 
+  /// Whether a realtime status event may legally move this status BACK to
+  /// [previous] (operator correction — e.g. the kitchen marked an order ready
+  /// by mistake and needs to send it back to preparing).
+  ///
+  /// Business rules:
+  /// - Only single-step backward moves between active statuses are allowed:
+  ///   ready → preparing and served → ready.
+  /// - Terminal statuses ([completed], [cancelled]) never participate in a
+  ///   revert, neither as the current status nor as the target: an order that
+  ///   reached a final state is immutable.
+  bool canRevertTo(OrderStatus previous) {
+    if (isTerminal || previous.isTerminal) return false;
+    return (this == OrderStatus.ready &&
+            previous == OrderStatus.preparing) ||
+        (this == OrderStatus.served && previous == OrderStatus.ready);
+  }
+
   static OrderStatus fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'pending':

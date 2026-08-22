@@ -32,10 +32,26 @@ class _CartPageState extends ConsumerState<CartPage> {
   Future<void> _checkout(BuildContext context) async {
     if (_placing) return;
     final payment = ref.read(selectedPaymentMethodProvider);
+    final orderType = ref.read(selectedOrderTypeProvider);
+    final deliveryAddress = ref.read(selectedDeliveryAddressProvider);
+    if (orderType == OrderType.delivery &&
+        (deliveryAddress == null || deliveryAddress.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('من فضلك أدخل عنوان التوصيل أولاً'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     setState(() => _placing = true);
     final order = await ref
         .read(ordersControllerProvider.notifier)
-        .placeOrder(paymentMethod: payment);
+        .placeOrder(
+          paymentMethod: payment,
+          orderType: orderType,
+          deliveryAddress: deliveryAddress,
+        );
     if (!context.mounted) return;
     setState(() => _placing = false);
     if (order != null) {
