@@ -32,7 +32,17 @@ abstract class OrderItem with _$OrderItem {
       selectedModifiers.fold<double>(0, (sum, m) => sum + m.extraPrice);
 
   /// Computed line total for the ordered quantity.
-  double get lineTotal => (itemTotal == 0 ? unitTotal * quantity : itemTotal);
+  ///
+  /// Prefers the persisted [itemTotal] when it carries a positive value;
+  /// falls back to computing from the unit price otherwise. A zero/negative
+  /// quantity always yields zero — a "not yet computed" sentinel can never be
+  /// mistaken for a free (or negative) line.
+  double get lineTotal {
+    if (quantity <= 0) return 0;
+    final stored = itemTotal;
+    if (stored > 0) return stored;
+    return unitTotal * quantity;
+  }
 
   factory OrderItem.fromJson(Map<String, dynamic> json) =>
       _$OrderItemFromJson(json);

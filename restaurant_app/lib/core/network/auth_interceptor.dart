@@ -16,12 +16,24 @@ import 'api_endpoints.dart';
 /// against retrying requests that already carry a fresh Authorization header,
 /// which prevents infinite loops.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor({required SecureStorageService storage, Dio? dio})
-    : _storage = storage,
-      _dio = dio;
+  AuthInterceptor({
+    required SecureStorageService storage,
+    Dio? dio,
+    this.baseUrl,
+    this.onSessionExpired,
+  }) : _storage = storage,
+       _dio = dio;
 
   final SecureStorageService _storage;
   final Dio? _dio;
+
+  /// Base URL used by fallback clients created when no [dio] is injected.
+  /// Without it, retries/refreshes would hit `localhost` (Dio's default).
+  final String? baseUrl;
+
+  /// Invoked once when a refresh attempt fails so the host app can force a
+  /// clean logout instead of leaving a half-dead session behind.
+  final void Function()? onSessionExpired;
 
   /// Holds the in-flight refresh task to allow concurrent 401 requests to wait and retry.
   Completer<bool>? _refreshCompleter;
@@ -68,6 +80,12 @@ class AuthInterceptor extends Interceptor {
     }
 
     if (!refreshed) {
+      // The session is unrecoverable: wipe the dead credentials so no further
+      // request goes out authenticated, and notify the host to log the user
+      // out of app state.
+      await _storage.deleteToken();
+      await _storage.deleteRefreshToken();
+      onSessionExpired?.call();
       handler.next(err);
       return;
     }
@@ -128,7 +146,9 @@ class AuthInterceptor extends Interceptor {
         options: Options(headers: <String, dynamic>{'Authorization': ''}),
       );
     }
-    final dio = Dio();
+    // Fallback client: MUST carry the API base URL, otherwise the refresh
+    // would silently target localhost and always fail.
+    final dio = Dio(BaseOptions(baseUrl: baseUrl ?? ''));
     return dio.post<dynamic>(
       ApiEndpoints.refreshToken,
       data: <String, dynamic>{'refreshToken': refreshToken},
@@ -148,9 +168,9 @@ class AuthInterceptor extends Interceptor {
         : 'Bearer $token';
     options.extra['auth_retried'] = true;
 
-    final retryDio = Dio();
+    final retryDio = Dio(BaseOptions(baseUrl: baseUrl ?? ''));
     return retryDio.request<dynamic>(
-      options.path,
+      _resolveUrl(options.path),
       data: options.data,
       queryParameters: options.queryParameters,
       cancelToken: options.cancelToken,
@@ -166,5 +186,16 @@ class AuthInterceptor extends Interceptor {
         maxRedirects: options.maxRedirects,
       ),
     );
+  }
+
+  /// Resolves a possibly-relative request path against the configured base URL.
+  String _resolveUrl(String path) {
+    final base = baseUrl;
+    if (base == null || base.isEmpty || path.startsWith('http')) {
+      return path;
+    }
+    final trimmedBase = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final trimmedPath = path.startsWith('/') ? path : '/$path';
+    return '$trimmedBase$trimmedPath';
   }
 }

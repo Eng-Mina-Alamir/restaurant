@@ -300,3 +300,415 @@ CREATE INDEX IF NOT EXISTS idx_driver_locations_order_id ON public.driver_locati
 CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_user_id ON public.loyalty_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_order_id ON public.loyalty_transactions(order_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_restaurant_id ON public.inventory(restaurant_id);
+
+-- ==============================================================================
+-- 🔐 ROW LEVEL SECURITY (RLS) — DENY-BY-DEFAULT HARDENING
+-- ==============================================================================
+-- Every public table is locked behind explicit policies. Roles are resolved
+-- SERVER-SIDE from profiles.role (via auth.uid()) — client-supplied role
+-- metadata is NEVER trusted. Without an explicit policy below, access is denied.
+--
+-- NOTE: apply inside a transaction wrapper in production (BEGIN; ... COMMIT;)
+-- so a partial failure never leaves tables exposed.
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- 🧰 HELPER FUNCTIONS
+-- SECURITY DEFINER lets policies read profiles.role WITHOUT triggering
+-- recursive RLS evaluation on the profiles table itself.
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.app_role()
+RETURNS TEXT
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_role(roles TEXT[])
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT COALESCE(
+        (SELECT role FROM public.profiles WHERE id = auth.uid()) = ANY(roles),
+        FALSE
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin','driver']::TEXT[]);
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_kitchen()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT public.has_role(ARRAY['kitchen']::TEXT[]);
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_waiter_or_cashier()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT public.has_role(ARRAY['waiter','cashier']::TEXT[]);
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_manager_or_admin()
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT public.has_role(ARRAY['manager','admin']::TEXT[]);
+$$;
+
+-- Helpers expose no secrets but should not be callable pre-authentication.
+REVOKE EXECUTE ON FUNCTION public.app_role() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.has_role(TEXT[]) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_staff() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_kitchen() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_waiter_or_cashier() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.is_manager_or_admin() FROM anon;
+
+-- ------------------------------------------------------------------------------
+-- 🛡️ PRIVILEGE-ESCALATION GUARDS
+-- 1) profiles.role / restaurant_id cannot be self-minted: signups are forced to
+--    'customer'; only existing managers/admins may provision privileged roles.
+-- 2) Coupon redemptions (any authenticated user bumps usage_count) may never
+--    mutate any OTHER coupon column.
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.protect_profile_privileges()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NOT public.is_manager_or_admin() THEN
+            NEW.role := 'customer';  -- self-signup downgrade
+        END IF;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF NEW.role IS DISTINCT FROM OLD.role
+           AND NOT public.is_manager_or_admin() THEN
+            RAISE EXCEPTION 'Changing role requires manager or admin privileges';
+        END IF;
+        IF NEW.restaurant_id IS DISTINCT FROM OLD.restaurant_id
+           AND NOT public.is_manager_or_admin() THEN
+            RAISE EXCEPTION 'Changing restaurant_id requires manager or admin privileges';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_privileges ON public.profiles;
+CREATE TRIGGER trg_protect_profile_privileges
+    BEFORE INSERT OR UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.protect_profile_privileges();
+
+CREATE OR REPLACE FUNCTION public.restrict_coupon_updates()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF NOT public.is_manager_or_admin() THEN
+        IF (NEW.id, NEW.code, NEW.title, NEW.discount_type, NEW.discount_value,
+            NEW.discount_percent, NEW.min_order_amount, NEW.max_discount,
+            NEW.usage_limit, NEW.is_active, NEW.expires_at)
+           IS DISTINCT FROM
+           (OLD.id, OLD.code, OLD.title, OLD.discount_type, OLD.discount_value,
+            OLD.discount_percent, OLD.min_order_amount, OLD.max_discount,
+            OLD.usage_limit, OLD.is_active, OLD.expires_at) THEN
+            RAISE EXCEPTION 'Non-managers may only modify usage_count';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_restrict_coupon_updates ON public.coupons;
+CREATE TRIGGER trg_restrict_coupon_updates
+    BEFORE UPDATE ON public.coupons
+    FOR EACH ROW EXECUTE FUNCTION public.restrict_coupon_updates();
+
+-- ------------------------------------------------------------------------------
+-- 🏬 RESTAURANTS — public catalog info readable; mutations admin/manager only
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.restaurants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY restaurants_select ON public.restaurants
+    FOR SELECT USING (true);
+CREATE POLICY restaurants_manage ON public.restaurants
+    FOR ALL TO authenticated
+    USING (public.is_manager_or_admin())
+    WITH CHECK (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 👤 PROFILES — self access + staff visibility; privilege columns guarded above
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY profiles_select ON public.profiles
+    FOR SELECT TO authenticated
+    USING (id = auth.uid() OR public.is_staff());
+CREATE POLICY profiles_insert ON public.profiles
+    FOR INSERT TO authenticated
+    WITH CHECK (id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY profiles_update ON public.profiles
+    FOR UPDATE TO authenticated
+    USING (id = auth.uid() OR public.is_manager_or_admin())
+    WITH CHECK (id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY profiles_delete ON public.profiles
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 📋 CATEGORIES — public menu structure; mutations manager/admin only
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+CREATE POLICY categories_select ON public.categories
+    FOR SELECT USING (true);
+CREATE POLICY categories_manage ON public.categories
+    FOR ALL TO authenticated
+    USING (public.is_manager_or_admin())
+    WITH CHECK (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 🥘 MENU ITEMS — public catalog; kitchen may toggle availability, managers own CRUD
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.menu_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY menu_items_select ON public.menu_items
+    FOR SELECT USING (true);
+CREATE POLICY menu_items_insert ON public.menu_items
+    FOR INSERT TO authenticated
+    WITH CHECK (public.is_manager_or_admin());
+CREATE POLICY menu_items_update ON public.menu_items
+    FOR UPDATE TO authenticated
+    USING (public.is_manager_or_admin() OR public.is_kitchen())
+    WITH CHECK (public.is_manager_or_admin() OR public.is_kitchen());
+CREATE POLICY menu_items_delete ON public.menu_items
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 🍟 MODIFIER GROUPS & OPTIONS — follow menu item rules
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.menu_modifier_groups ENABLE ROW LEVEL SECURITY;
+CREATE POLICY modifier_groups_select ON public.menu_modifier_groups
+    FOR SELECT USING (true);
+CREATE POLICY modifier_groups_manage ON public.menu_modifier_groups
+    FOR ALL TO authenticated
+    USING (public.is_manager_or_admin() OR public.is_kitchen())
+    WITH CHECK (public.is_manager_or_admin() OR public.is_kitchen());
+
+ALTER TABLE public.menu_modifier_options ENABLE ROW LEVEL SECURITY;
+CREATE POLICY modifier_options_select ON public.menu_modifier_options
+    FOR SELECT USING (true);
+CREATE POLICY modifier_options_manage ON public.menu_modifier_options
+    FOR ALL TO authenticated
+    USING (public.is_manager_or_admin() OR public.is_kitchen())
+    WITH CHECK (public.is_manager_or_admin() OR public.is_kitchen());
+
+-- ------------------------------------------------------------------------------
+-- 🪑 DINING TABLES — floor state visible to signed-in users; staff mutate
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.tables ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tables_select ON public.tables
+    FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY tables_manage ON public.tables
+    FOR ALL TO authenticated
+    USING (public.is_waiter_or_cashier() OR public.is_manager_or_admin())
+    WITH CHECK (public.is_waiter_or_cashier() OR public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 🧾 ORDERS — owners & assigned waiter read; staff progress states;
+--    customers may touch only their own PENDING order (cancel/edit window);
+--    drivers need broad read/update because orders carry no driver_id column.
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY orders_select ON public.orders
+    FOR SELECT TO authenticated
+    USING (customer_id = auth.uid()
+           OR waiter_id = auth.uid()
+           OR public.is_staff());
+CREATE POLICY orders_insert ON public.orders
+    FOR INSERT TO authenticated
+    WITH CHECK (customer_id = auth.uid()
+                OR public.has_role(ARRAY['waiter','cashier','manager','admin']::TEXT[]));
+CREATE POLICY orders_update_staff ON public.orders
+    FOR UPDATE TO authenticated
+    USING (public.is_staff())
+    WITH CHECK (public.is_staff());
+CREATE POLICY orders_update_owner_pending ON public.orders
+    FOR UPDATE TO authenticated
+    USING (customer_id = auth.uid() AND status = 'pending')
+    WITH CHECK (customer_id = auth.uid());
+CREATE POLICY orders_delete ON public.orders
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 📦 ORDER ITEMS — visibility inherited from the parent order
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY order_items_select ON public.order_items
+    FOR SELECT TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM public.orders o
+        WHERE o.id = order_items.order_id
+          AND (o.customer_id = auth.uid() OR o.waiter_id = auth.uid() OR public.is_staff())
+    ));
+CREATE POLICY order_items_write ON public.order_items
+    FOR ALL TO authenticated
+    USING (EXISTS (
+        SELECT 1 FROM public.orders o
+        WHERE o.id = order_items.order_id
+          AND (o.customer_id = auth.uid() OR public.is_staff())
+    ))
+    WITH CHECK (EXISTS (
+        SELECT 1 FROM public.orders o
+        WHERE o.id = order_items.order_id
+          AND (o.customer_id = auth.uid() OR public.is_staff())
+    ));
+
+-- ------------------------------------------------------------------------------
+-- 📅 RESERVATIONS — guests manage their own; staff manage the book
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.reservations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY reservations_select ON public.reservations
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_staff());
+CREATE POLICY reservations_insert ON public.reservations
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid()
+                OR public.has_role(ARRAY['waiter','cashier','manager','admin']::TEXT[]));
+CREATE POLICY reservations_update ON public.reservations
+    FOR UPDATE TO authenticated
+    USING (user_id = auth.uid() OR public.is_staff())
+    WITH CHECK (user_id = auth.uid() OR public.is_staff());
+CREATE POLICY reservations_delete ON public.reservations
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 🎟️ COUPONS — any signed-in user validates & redeems (usage_count only,
+--    guarded by trigger); managers own the catalog
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
+CREATE POLICY coupons_select ON public.coupons
+    FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY coupons_redeem ON public.coupons
+    FOR UPDATE TO authenticated
+    USING (is_active = true)          -- redemption only touches live coupons;
+    WITH CHECK (is_active = true);    -- column scope enforced by trg_restrict_coupon_updates
+CREATE POLICY coupons_update ON public.coupons
+    FOR UPDATE TO authenticated
+    USING (public.is_manager_or_admin())
+    WITH CHECK (public.is_manager_or_admin());
+CREATE POLICY coupons_insert ON public.coupons
+    FOR INSERT TO authenticated
+    WITH CHECK (public.is_manager_or_admin());
+CREATE POLICY coupons_delete ON public.coupons
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- ⭐ RATINGS — community reviews; authors manage their own words
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.ratings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY ratings_select ON public.ratings
+    FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY ratings_insert ON public.ratings
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid());
+CREATE POLICY ratings_update ON public.ratings
+    FOR UPDATE TO authenticated
+    USING (user_id = auth.uid() OR public.is_manager_or_admin())
+    WITH CHECK (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY ratings_delete ON public.ratings
+    FOR DELETE TO authenticated
+    USING (user_id = auth.uid() OR public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 📦 INVENTORY — cost/supplier data is commercial secret: staff-only read,
+--    kitchen may adjust quantities, managers own CRUD
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+CREATE POLICY inventory_select ON public.inventory
+    FOR SELECT TO authenticated
+    USING (public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[]));
+CREATE POLICY inventory_update ON public.inventory
+    FOR UPDATE TO authenticated
+    USING (public.is_manager_or_admin() OR public.is_kitchen())
+    WITH CHECK (public.is_manager_or_admin() OR public.is_kitchen());
+CREATE POLICY inventory_insert ON public.inventory
+    FOR INSERT TO authenticated
+    WITH CHECK (public.is_manager_or_admin());
+CREATE POLICY inventory_delete ON public.inventory
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 📍 DRIVER LOCATIONS — live tracking feed shared with signed-in users;
+--    a driver writes ONLY their own beacon
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY driver_locations_select ON public.driver_locations
+    FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY driver_locations_insert ON public.driver_locations
+    FOR INSERT TO authenticated
+    WITH CHECK (driver_id = auth.uid());
+CREATE POLICY driver_locations_update ON public.driver_locations
+    FOR UPDATE TO authenticated
+    USING (driver_id = auth.uid())
+    WITH CHECK (driver_id = auth.uid());
+CREATE POLICY driver_locations_delete ON public.driver_locations
+    FOR DELETE TO authenticated
+    USING (driver_id = auth.uid() OR public.is_manager_or_admin());
+
+-- ------------------------------------------------------------------------------
+-- 🎁 LOYALTY — members see/manage their own account & ledger; managers audit all
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.loyalty_accounts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY loyalty_accounts_select ON public.loyalty_accounts
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY loyalty_accounts_insert ON public.loyalty_accounts
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY loyalty_accounts_update ON public.loyalty_accounts
+    FOR UPDATE TO authenticated
+    USING (user_id = auth.uid() OR public.is_manager_or_admin())
+    WITH CHECK (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY loyalty_accounts_delete ON public.loyalty_accounts
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+ALTER TABLE public.loyalty_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY loyalty_transactions_select ON public.loyalty_transactions
+    FOR SELECT TO authenticated
+    USING (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY loyalty_transactions_insert ON public.loyalty_transactions
+    FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid() OR public.is_manager_or_admin());
+CREATE POLICY loyalty_transactions_delete ON public.loyalty_transactions
+    FOR DELETE TO authenticated
+    USING (public.is_manager_or_admin());
+
+ALTER TABLE public.loyalty_rewards ENABLE ROW LEVEL SECURITY;
+CREATE POLICY loyalty_rewards_select ON public.loyalty_rewards
+    FOR SELECT TO authenticated
+    USING (true);
+CREATE POLICY loyalty_rewards_manage ON public.loyalty_rewards
+    FOR ALL TO authenticated
+    USING (public.is_manager_or_admin())
+    WITH CHECK (public.is_manager_or_admin());

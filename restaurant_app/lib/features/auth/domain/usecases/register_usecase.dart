@@ -1,10 +1,14 @@
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/validators.dart';
 import '../entities/user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 /// Use case that encapsulates the user registration flow.
+///
+/// Validation is delegated to [Validators] — the app's single source of truth
+/// for input rules — so form validators and domain checks can never drift.
 class RegisterUseCase {
   const RegisterUseCase(this._repository);
 
@@ -18,25 +22,21 @@ class RegisterUseCase {
     required String restaurantId,
     UserRole role = UserRole.customer,
   }) {
-    if (name.trim().isEmpty) {
-      return Future.value(
-        const Left(ValidationFailure('يرجى إدخال الاسم بالكامل')),
-      );
+    final nameError = Validators.validateName(name);
+    if (nameError != null) {
+      return Future.value(Left(ValidationFailure(nameError)));
     }
-    if (email.trim().isEmpty || !email.contains('@')) {
-      return Future.value(
-        const Left(ValidationFailure('يرجى إدخال بريد إلكتروني صحيح')),
-      );
+    final emailError = Validators.validateEmail(email);
+    if (emailError != null) {
+      return Future.value(Left(ValidationFailure(emailError)));
     }
-    if (phone.trim().isEmpty || phone.trim().length < 8) {
-      return Future.value(
-        const Left(ValidationFailure('يرجى إدخال رقم هاتف صحيح')),
-      );
+    final phoneError = Validators.validatePhone(phone);
+    if (phoneError != null) {
+      return Future.value(Left(ValidationFailure(phoneError)));
     }
-    if (password.length < 6) {
-      return Future.value(
-        const Left(ValidationFailure('يجب أن لا تقل كلمة المرور عن 6 أحرف')),
-      );
+    final passwordError = Validators.validatePassword(password);
+    if (passwordError != null) {
+      return Future.value(Left(ValidationFailure(passwordError)));
     }
 
     return _repository.register(
@@ -49,3 +49,4 @@ class RegisterUseCase {
     );
   }
 }
+

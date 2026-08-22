@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/domain/enums.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
@@ -46,6 +47,33 @@ import '../../shared/widgets/not_found_page.dart';
 ///   /kds             – Kitchen Display System
 ///   /manager         – Manager / admin dashboard
 ///   /driver          – Delivery driver
+/// Route prefixes restricted to staff roles. An authenticated user whose role
+/// is not listed for a matched prefix is redirected to their [UserRole.homeRoute].
+///
+/// The customer area (`/customer/**`) stays open to every authenticated role:
+/// it grants no privileges, and managers/waiters legitimately preview it.
+const Map<String, Set<UserRole>> _roleProtectedPrefixes = {
+  '/manager': {UserRole.manager, UserRole.admin},
+  '/waiter': {UserRole.waiter, UserRole.manager, UserRole.admin},
+  '/kds': {UserRole.kitchen, UserRole.manager, UserRole.admin},
+  '/driver': {UserRole.driver, UserRole.manager, UserRole.admin},
+};
+
+/// Returns `true` when [role] may open the route at [location].
+///
+/// Pure and exhaustive so the RBAC boundary can be unit-tested without a
+/// widget tree (see `test/integration/rbac_security_flow_test.dart`).
+bool canRoleAccess(UserRole role, String location) {
+  for (final entry in _roleProtectedPrefixes.entries) {
+    final prefix = entry.key;
+    final matches =
+        location == prefix || location.startsWith('$prefix/');
+    if (!matches) continue;
+    return entry.value.contains(role);
+  }
+  return true;
+}
+
 GoRouter createAppRouter({required WidgetRef ref}) {
   return GoRouter(
     initialLocation: '/',
@@ -71,6 +99,11 @@ GoRouter createAppRouter({required WidgetRef ref}) {
 
       // Authenticated users landing on /login (or / or /register) go to their role home.
       if (loggingIn || registering || state.matchedLocation == '/') {
+        return user.role.homeRoute;
+      }
+
+      // Role-based area guard: deep links cannot cross privilege boundaries.
+      if (!canRoleAccess(user.role, state.matchedLocation)) {
         return user.role.homeRoute;
       }
 

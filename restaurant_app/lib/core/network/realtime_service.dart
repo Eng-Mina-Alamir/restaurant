@@ -165,8 +165,20 @@ class RealtimeService {
   }
 
   /// Broadcasts an updated order status.
-  void broadcastOrderStatusChanged(String orderId, String statusName) {
-    sendEvent('orderStatusChanged', {'orderId': orderId, 'id': orderId, 'status': statusName});
+  ///
+  /// [updatedAt] stamps the event so receivers can discard stale/out-of-order
+  /// deliveries instead of regressing an order's state.
+  void broadcastOrderStatusChanged(
+    String orderId,
+    String statusName, {
+    DateTime? updatedAt,
+  }) {
+    sendEvent('orderStatusChanged', {
+      'orderId': orderId,
+      'id': orderId,
+      'status': statusName,
+      'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+    });
   }
 
   /// Broadcasts an updated table status.

@@ -5,6 +5,7 @@ import '../../../../core/errors/either.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../../core/utils/logger.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
@@ -111,9 +112,33 @@ class AuthRepositoryImpl implements AuthRepository {
       if (stored == null || stored.isEmpty) {
         return const Left<Failure, UserEntity>(UnauthorizedFailure());
       }
-      final model = UserModel.fromJson(
-        jsonDecode(stored) as Map<String, dynamic>,
-      );
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(stored);
+      } on FormatException {
+        // Tampered/corrupted session payload — never trust it.
+        await _secureStorage.delete(_sessionKey);
+        return const Left<Failure, UserEntity>(UnauthorizedFailure());
+      }
+      if (decoded is! Map<String, dynamic>) {
+        await _secureStorage.delete(_sessionKey);
+        return const Left<Failure, UserEntity>(UnauthorizedFailure());
+      }
+
+      final model = UserModel.fromJson(decoded);
+      if (model.id.isEmpty) {
+        await _secureStorage.delete(_sessionKey);
+        return const Left<Failure, UserEntity>(UnauthorizedFailure());
+      }
+
+      if (_isExpiredJwt(model.token)) {
+        AppLogger.warning('restoreSession: stored token expired; discarding');
+        await _secureStorage.delete(_sessionKey);
+        await _secureStorage.deleteToken();
+        return const Left<Failure, UserEntity>(UnauthorizedFailure());
+      }
+
       return Right<Failure, UserEntity>(model.toEntity());
     } on AppException catch (error) {
       return Left<Failure, UserEntity>(_toFailure(error));
@@ -122,25 +147,44 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// Returns true when [token] is a structurally valid JWT whose `exp` claim
+  /// is in the past. Non-JWT tokens (demo mode) are never treated as expired.
+  bool _isExpiredJwt(String? token) {
+    if (token == null || token.isEmpty) return false;
+    final parts = token.split('.');
+    if (parts.length != 3) return false; // opaque/demo token — not a JWT
+    try {
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+      if (payload is! Map<String, dynamic>) return false;
+      final exp = payload['exp'];
+      if (exp is! num) return false;
+      return DateTime.fromMillisecondsSinceEpoch(
+            (exp * 1000).toInt(),
+          ).isBefore(DateTime.now()) ==
+          true;
+    } catch (_) {
+      // Malformed JWT — treat as untrusted rather than expired.
+      return false;
+    }
+  }
+
   @override
   Future<Either<Failure, void>> logout() async {
     try {
       final token = await _secureStorage.readToken();
       await _remoteDataSource.logout(token);
-      await _secureStorage.deleteToken();
-      await _secureStorage.deleteRefreshToken();
-      await _secureStorage.delete(_sessionKey);
+      // Wipe EVERYTHING the user left behind — not just auth keys — so no
+      // session data survives an account switch.
+      await _secureStorage.deleteAll();
       return const Right<Failure, void>(null);
     } on AppException catch (error) {
       // Even if the remote call fails we still want a clean local session.
-      await _secureStorage.deleteToken();
-      await _secureStorage.deleteRefreshToken();
-      await _secureStorage.delete(_sessionKey);
+      await _secureStorage.deleteAll();
       return Left<Failure, void>(_toFailure(error));
     } catch (_) {
-      await _secureStorage.deleteToken();
-      await _secureStorage.deleteRefreshToken();
-      await _secureStorage.delete(_sessionKey);
+      await _secureStorage.deleteAll();
       return const Right<Failure, void>(null);
     }
   }

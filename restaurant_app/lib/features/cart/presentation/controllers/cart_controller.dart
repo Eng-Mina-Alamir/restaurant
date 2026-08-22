@@ -13,6 +13,10 @@ import '../../domain/entities/cart_item.dart';
 class CartController extends StateNotifier<List<CartItem>> {
   CartController() : super(const []);
 
+  /// Upper bound for a single cart line. Protects money math and the UI from
+  /// runaway quantities (fat-finger taps or hostile `copyWith` input).
+  static const int kMaxQuantityPerLine = 99;
+
   /// The table ID set by QR scanning. Null means takeaway / no table.
   String? _tableId;
 
@@ -43,19 +47,27 @@ class CartController extends StateNotifier<List<CartItem>> {
     if (!item.menuItem.isAvailable) return;
     final index = state.indexWhere((e) => e.configKey == item.configKey);
     if (index == -1) {
-      state = [...state, item];
+      final capped = item.copyWith(
+        quantity: item.quantity.clamp(1, kMaxQuantityPerLine),
+      );
+      state = [...state, capped];
     } else {
       final existing = state[index];
       final merged = existing.copyWith(
-        quantity: existing.quantity + item.quantity,
+        quantity: (existing.quantity + item.quantity)
+            .clamp(1, kMaxQuantityPerLine),
       );
       state = [...state]..[index] = merged;
     }
   }
 
-  /// Increases the quantity of the matching line item.
+  /// Increases the quantity of the matching line item, capped at
+  /// [kMaxQuantityPerLine].
   void increment(String configKey) {
-    _mutate(configKey, (item) => item.copyWith(quantity: item.quantity + 1));
+    _mutate(configKey, (item) {
+      if (item.quantity >= kMaxQuantityPerLine) return item;
+      return item.copyWith(quantity: item.quantity + 1);
+    });
   }
 
   /// Decreases the quantity of the matching line, removing it at zero.

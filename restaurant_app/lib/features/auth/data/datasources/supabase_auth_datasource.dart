@@ -191,9 +191,10 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
               user.phone ??
               user.userMetadata?['phone'] as String? ??
               '',
-          role: UserRole.fromName(
-            data['role'] as String? ?? user.userMetadata?['role'] as String?,
-          ),
+          // SECURITY: the role comes ONLY from the server-side profiles row.
+          // Signup metadata (`user_metadata`) is client-controlled and must
+          // never grant privileges. Missing role degrades to customer.
+          role: UserRole.fromName(data['role'] as String?),
           token: token,
           createdAt: data['created_at'] != null
               ? DateTime.tryParse(data['created_at'] as String) ??
@@ -207,13 +208,19 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     }
 
+    // Profile unavailable: construct a MINIMAL unprivileged identity.
+    // Name/email/phone may come from signup metadata (cosmetic fields), but the
+    // role is forced to customer — never read from client-controlled metadata.
     final meta = user.userMetadata ?? {};
+    AppLogger.warning(
+      'Profile row missing for ${user.id}; defaulting role to customer',
+    );
     return UserModel(
       id: user.id,
       name: (meta['name'] as String?) ?? 'مستخدم',
       email: user.email ?? (meta['email'] as String?) ?? '',
       phone: user.phone ?? (meta['phone'] as String?) ?? '',
-      role: UserRole.fromName(meta['role'] as String?),
+      role: UserRole.customer,
       token: token,
       createdAt: DateTime.now(),
     );

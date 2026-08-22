@@ -15,7 +15,10 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../coupons/presentation/controllers/coupon_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
+import '../../../menu/domain/entities/menu_item.dart';
+import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../../data/repositories/hive_order_repository.dart';
 import '../../data/repositories/in_memory_order_repository.dart';
 import '../../data/repositories/supabase_order_repository.dart';
@@ -38,6 +41,10 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) {
   return InMemoryOrderRepository();
 });
 
+/// Resolves the discount currently applied to [items] (e.g. from an active
+/// coupon), so persisted order totals match what checkout displayed.
+typedef CartDiscountResolver = double Function(List<CartItem> items);
+
 /// Manages session orders for the customer's order flow.
 ///
 /// Reads the current cart (via [CartController]) and produces an
@@ -51,9 +58,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     RealtimeService? realtimeService,
     ConnectivityService? connectivityService,
     OfflineQueueService? offlineQueueService,
+    CartDiscountResolver? discountResolver,
+    MenuItem? Function(String menuItemId)? menuLookup,
   })  : _realtimeService = realtimeService,
         _connectivityService = connectivityService,
         _offlineQueueService = offlineQueueService,
+        _discountResolver = discountResolver,
+        _menuLookup = menuLookup,
         super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -65,9 +76,31 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final RealtimeService? _realtimeService;
   final ConnectivityService? _connectivityService;
   final OfflineQueueService? _offlineQueueService;
+  final CartDiscountResolver? _discountResolver;
+
+  /// Live menu lookup used at checkout time to revalidate item availability
+  /// and price; null disables revalidation (offline/demo mode).
+  final MenuItem? Function(String menuItemId)? _menuLookup;
+
+  /// Human-readable reason the last [placeOrder]/[placeOrderForTable] call
+  /// returned null (checkout-time revalidation failure). Null when the last
+  /// call succeeded.
+  String? get lastPlaceOrderError => _lastPlaceOrderError;
+  String? _lastPlaceOrderError;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   StreamSubscription<ConnectivityStatus>? _connectivitySub;
+
+  /// In-memory mirror of orders awaiting sync. ONLY used for UI state and as
+  /// the replay source when no persistent [OfflineQueueService] is injected —
+  /// never both, which previously caused every offline order to be submitted
+  /// twice per reconnect.
   final List<OrderEntity> _offlineQueue = [];
+
+  /// Guards against concurrent sync runs.
+  bool _syncInFlight = false;
+
+  /// Debounce window for reconnect-triggered syncs (flapping networks).
+  DateTime? _lastSyncTriggeredAt;
 
   List<OrderEntity> get offlineQueue => List.unmodifiable(_offlineQueue);
   int get pendingSyncCount => _offlineQueue.length;
@@ -77,13 +110,73 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     if (connectivity == null) return;
     _connectivitySub = connectivity.onStatusChanged.listen((status) {
       if (status == ConnectivityStatus.online) {
-        syncOfflineOrders();
+        unawaited(_onReconnect());
       }
     });
   }
 
+  /// Reconnect handler with debounce + reentrancy guard so a flapping
+  /// network cannot trigger a retry storm.
+  Future<void> _onReconnect() async {
+    final now = DateTime.now();
+    final last = _lastSyncTriggeredAt;
+    if (_syncInFlight ||
+        (last != null &&
+            now.difference(last) < const Duration(milliseconds: 1500))) {
+      return;
+    }
+    _lastSyncTriggeredAt = now;
+    _syncInFlight = true;
+    try {
+      await syncOfflineOrders();
+    } finally {
+      _syncInFlight = false;
+    }
+  }
+
   /// Synchronizes pending offline orders when connectivity returns.
+  ///
+  /// The persistent [OfflineQueueService] is the single source of truth when
+  /// available; the in-memory list is only a fallback (and a UI mirror that is
+  /// pruned as its persistent counterparts succeed).
   Future<void> syncOfflineOrders() async {
+    final queueService = _offlineQueueService;
+
+    if (queueService != null) {
+      if (!queueService.hasPending) return;
+      await queueService.drainWith(
+        (type, payload) async {
+          if (type == 'createOrder') {
+            try {
+              final order = OrderEntity.fromJson(payload);
+              final result = await _repository.createOrder(order);
+              if (result.isRight) {
+                _realtimeService?.broadcastOrderCreated(payload);
+                // Keep the UI mirror consistent with the persistent queue.
+                _offlineQueue.removeWhere((o) => o.id == order.id);
+                return true;
+              }
+              AppLogger.warning(
+                'Offline sync: createOrder ${order.id} rejected by repository; '
+                'will retry/backoff',
+              );
+              return false;
+            } catch (e, st) {
+              AppLogger.error(
+                'Offline sync: corrupt queued order dropped',
+                error: e,
+                stackTrace: st,
+              );
+              return true; // Poison payload — let the queue dead-letter it.
+            }
+          }
+          return true;
+        },
+      );
+      return;
+    }
+
+    // Fallback path when persistence is unavailable (e.g. tests).
     if (_offlineQueue.isNotEmpty) {
       final toSync = List<OrderEntity>.of(_offlineQueue);
       for (final order in toSync) {
@@ -94,27 +187,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         }
       }
     }
-
-    final queueService = _offlineQueueService;
-    if (queueService != null && queueService.hasPending) {
-      await queueService.drainWith((type, payload) async {
-        if (type == 'createOrder') {
-          try {
-            final order = OrderEntity.fromJson(payload);
-            final result = await _repository.createOrder(order);
-            if (result.isRight) {
-              _realtimeService?.broadcastOrderCreated(payload);
-              return true;
-            }
-            return false;
-          } catch (_) {
-            return true;
-          }
-        }
-        return true;
-      });
-    }
   }
+
+  /// Last applied realtime status-event timestamp per order id, used to drop
+  /// stale/out-of-order deliveries instead of regressing order state.
+  final Map<String, DateTime> _statusEventAt = {};
 
   void _initRealtime() {
     final realtime = _realtimeService;
@@ -128,24 +205,60 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
             state = [...state, order];
             _newOrderNotifier.notifyNewOrder();
           }
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.warning(
+            'Realtime: malformed orderCreated payload: $e\n$st',
+          );
+        }
       } else if (event.type == RealtimeEventType.orderStatusChanged) {
         try {
           final orderId =
               (event.payload['orderId'] ?? event.payload['id'])?.toString();
           final statusName = event.payload['status']?.toString();
-          if (orderId != null && statusName != null) {
-            final newStatus = OrderStatus.fromName(statusName);
-            final index = state.indexWhere((o) => o.id == orderId);
-            if (index != -1) {
-              final currentStatus = state[index].status;
-              if (currentStatus != newStatus && currentStatus.canTransitionTo(newStatus)) {
-                final updated = state[index].copyWith(status: newStatus);
-                state = [...state]..[index] = updated;
+          if (orderId == null || statusName == null) {
+            AppLogger.warning(
+              'Realtime: malformed orderStatusChanged payload: ${event.payload}',
+            );
+            return;
+          }
+
+          // Staleness guard: events carry an updatedAt stamp; anything older
+          // than the last event we APPLIED for this order is dropped, so a
+          // delayed message can never move an order backwards.
+          final rawUpdatedAt = event.payload['updatedAt'];
+          final eventAt =
+              rawUpdatedAt is String ? DateTime.tryParse(rawUpdatedAt) : null;
+          final lastApplied = _statusEventAt[orderId];
+          if (eventAt != null &&
+              lastApplied != null &&
+              !eventAt.isAfter(lastApplied)) {
+            AppLogger.info(
+              'Realtime: dropping stale status event for $orderId '
+              '(event ${eventAt.toIso8601String()} <= applied '
+              '${lastApplied.toIso8601String()})',
+            );
+            return;
+          }
+
+          final newStatus = OrderStatus.fromName(statusName);
+          final index = state.indexWhere((o) => o.id == orderId);
+          if (index != -1) {
+            final currentStatus = state[index].status;
+            if (currentStatus != newStatus &&
+                currentStatus.canTransitionTo(newStatus)) {
+              final updated = state[index].copyWith(status: newStatus);
+              state = [...state]..[index] = updated;
+              if (eventAt != null &&
+                  (lastApplied == null || eventAt.isAfter(lastApplied))) {
+                _statusEventAt[orderId] = eventAt;
               }
             }
           }
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.warning(
+            'Realtime: bad orderStatusChanged payload: $e\n$st',
+          );
+        }
       }
     });
   }
@@ -153,12 +266,69 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// True once an order is being created, preventing double-taps.
   bool _placing = false;
 
+  /// Persists [order] in the durable offline queue.
+  ///
+  /// MUST be awaited BEFORE any local state mutation so that an app kill in
+  /// the middle of placing an order can never lose an order the user already
+  /// saw confirmed. Failures are logged loudly instead of swallowed.
+  Future<void> _persistOfflineOrder(OrderEntity order) async {
+    final queueService = _offlineQueueService;
+    if (queueService == null) return;
+    try {
+      final ok = await queueService.enqueue(
+        operationType: 'createOrder',
+        payload: order.toJson(),
+        idempotencyKey: order.id,
+      );
+      if (!ok) {
+        AppLogger.warning(
+          '_persistOfflineOrder: order ${order.id} was NOT persisted '
+          '(duplicate idempotency key or storage failure)',
+        );
+      }
+    } catch (e, st) {
+      AppLogger.error(
+        '_persistOfflineOrder: persisting ${order.id} failed',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
   int get _nextNumber {
     final maxNumber = state.fold<int>(0, (max, order) {
       final n = Formatters.orderNumberFromId(order.id);
       return (n ?? 0) > max ? (n ?? 0) : max;
     });
     return maxNumber + 1;
+  }
+
+  /// Checkout-time revalidation: returns a localized rejection reason when
+  /// any cart line is no longer available or its price changed since it was
+  /// added, or null when the cart is safe to submit.
+  ///
+  /// Skipped entirely when no live menu lookup is available (offline/demo).
+  String? _checkoutRejection(List<CartItem> cartItems) {
+    final lookup = _menuLookup;
+    if (lookup == null) return null;
+    final problems = <String>[];
+    for (final item in cartItems) {
+      final fresh = lookup(item.menuItem.id);
+      if (fresh == null || !fresh.isAvailable) {
+        problems.add(item.menuItem.name);
+        continue;
+      }
+      if ((fresh.price - item.menuItem.price).abs() > 0.001) {
+        problems.add(
+          '${item.menuItem.name} '
+          '(تغير السعر من ${fresh.price.toStringAsFixed(2)} '
+          'إلى ${item.menuItem.price.toStringAsFixed(2)})',
+        );
+      }
+    }
+    if (problems.isEmpty) return null;
+    return 'بعض الأصناف لم تعد متاحة أو تغير سعرها، يرجى تحديث السلة: '
+        '${problems.join('، ')}';
   }
 
   /// Places an order with the next cart contents.
@@ -170,30 +340,35 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final cartItems = List<CartItem>.of(_cart.state);
     if (cartItems.isEmpty) return null;
 
+    final rejection = _checkoutRejection(cartItems);
+    if (rejection != null) {
+      AppLogger.warning('placeOrder rejected: $rejection');
+      _lastPlaceOrderError = rejection;
+      return null;
+    }
+    _lastPlaceOrderError = null;
+
     _placing = true;
     try {
       final createdAt = DateTime.now();
+      final discountAmount =
+          _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForCustomer(
         orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
         restaurantId: MenuSeedData.restaurantId,
         cartItems: cartItems,
         createdAt: createdAt,
         paymentMethod: paymentMethod,
+        discountAmount: discountAmount,
       );
 
       final isOffline = _connectivityService?.isOnline == false;
       if (isOffline) {
+        await _persistOfflineOrder(order);
         state = [...state, order];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
         _offlineQueue.add(order);
-        try {
-          await _offlineQueueService?.enqueue(
-            operationType: 'createOrder',
-            payload: order.toJson(),
-            idempotencyKey: order.id,
-          );
-        } catch (_) {}
         return order;
       }
 
@@ -201,16 +376,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       switch (result) {
         case Left(:final value):
           AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          await _persistOfflineOrder(order);
           state = [...state, order];
           _cart.clear();
           _offlineQueue.add(order);
-          try {
-            await _offlineQueueService?.enqueue(
-              operationType: 'createOrder',
-              payload: order.toJson(),
-              idempotencyKey: order.id,
-            );
-          } catch (_) {}
           _newOrderNotifier.notifyNewOrder();
           _realtimeService?.broadcastOrderCreated(order.toJson());
           return order;
@@ -236,9 +405,19 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final cartItems = List<CartItem>.of(_cart.state);
     if (cartItems.isEmpty) return null;
 
+    final rejection = _checkoutRejection(cartItems);
+    if (rejection != null) {
+      AppLogger.warning('placeOrderForTable rejected: $rejection');
+      _lastPlaceOrderError = rejection;
+      return null;
+    }
+    _lastPlaceOrderError = null;
+
     _placing = true;
     try {
       final createdAt = DateTime.now();
+      final discountAmount =
+          _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForTable(
         orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
         restaurantId: MenuSeedData.restaurantId,
@@ -246,21 +425,16 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         cartItems: cartItems,
         createdAt: createdAt,
         paymentMethod: paymentMethod,
+        discountAmount: discountAmount,
       );
 
       final isOffline = _connectivityService?.isOnline == false;
       if (isOffline) {
+        await _persistOfflineOrder(order);
         state = [...state, order];
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
         _offlineQueue.add(order);
-        try {
-          await _offlineQueueService?.enqueue(
-            operationType: 'createOrder',
-            payload: order.toJson(),
-            idempotencyKey: order.id,
-          );
-        } catch (_) {}
         return order;
       }
 
@@ -268,16 +442,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       switch (result) {
         case Left(:final value):
           AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          await _persistOfflineOrder(order);
           state = [...state, order];
           _cart.clear();
           _offlineQueue.add(order);
-          try {
-            await _offlineQueueService?.enqueue(
-              operationType: 'createOrder',
-              payload: order.toJson(),
-              idempotencyKey: order.id,
-            );
-          } catch (_) {}
           _newOrderNotifier.notifyNewOrder();
           _realtimeService?.broadcastOrderCreated(order.toJson());
           return order;
@@ -304,7 +472,19 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final updated = state[index].copyWith(status: status);
     state = [...state]..[index] = updated;
 
-    _realtimeService?.broadcastOrderStatusChanged(orderId, status.name);
+    // Stamp locally-applied transitions so our own broadcast echo — or any
+    // delayed remote event older than this moment — can never regress state.
+    final stampedAt = DateTime.now();
+    final lastApplied = _statusEventAt[orderId];
+    if (lastApplied == null || stampedAt.isAfter(lastApplied)) {
+      _statusEventAt[orderId] = stampedAt;
+    }
+
+    _realtimeService?.broadcastOrderStatusChanged(
+      orderId,
+      status.name,
+      updatedAt: stampedAt,
+    );
 
     // Persist the updated order status through the repository.
     final result = await _repository.updateOrderStatus(orderId, status);
@@ -342,5 +522,25 @@ final ordersControllerProvider =
         realtimeService: ref.watch(realtimeServiceProvider),
         connectivityService: ref.watch(connectivityServiceProvider),
         offlineQueueService: ref.watch(offlineQueueServiceProvider),
+        // Checkout integrity: persisted totals include the applied coupon so
+        // they match what the cart UI displayed.
+        discountResolver: (items) {
+          final coupon = ref.read(appliedCouponProvider);
+          if (coupon == null) return 0.0;
+          final rawSubtotal = items.fold<double>(
+            0,
+            (sum, item) => sum + item.linePrice,
+          );
+          return coupon.calculateDiscount(rawSubtotal);
+        },
+        // Checkout-time revalidation against the live menu snapshot.
+        menuLookup: (menuItemId) {
+          final menu =
+              ref.read(menuControllerProvider).valueOrNull;
+          for (final item in menu?.items ?? const <MenuItem>[]) {
+            if (item.id == menuItemId) return item;
+          }
+          return null;
+        },
       );
     });

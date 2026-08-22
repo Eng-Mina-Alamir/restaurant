@@ -100,11 +100,22 @@ class SupabaseRealtimeService {
     ));
   }
 
-  /// Broadcasts an order status change
-  Future<void> broadcastOrderStatusChanged(String orderId, String statusName) async {
+  /// Broadcasts an order status change.
+  ///
+  /// [updatedAt] stamps the event so receivers can discard stale/out-of-order
+  /// deliveries instead of regressing an order's state.
+  Future<void> broadcastOrderStatusChanged(
+    String orderId,
+    String statusName, {
+    DateTime? updatedAt,
+  }) async {
     _controller?.add(RealtimeEvent(
       type: RealtimeEventType.orderStatusChanged,
-      payload: {'id': orderId, 'status': statusName},
+      payload: {
+        'id': orderId,
+        'status': statusName,
+        'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+      },
     ));
   }
 

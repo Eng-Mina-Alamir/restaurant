@@ -56,9 +56,14 @@ abstract final class Formatters {
 
   /// Extracts the numeric part of an order id (e.g. `ORD-1024-A` → `1024`),
   /// or `null` when the id contains no digits.
+  ///
+  /// Uses [int.tryParse] so a hostile/corrupt id with more digits than a
+  /// 64-bit int can hold returns `null` instead of throwing a FormatException
+  /// that would break every subsequent order placement.
   static int? orderNumberFromId(String orderId) {
     final digits = orderId.replaceAll(RegExp(r'[^0-9]'), '');
-    return digits.isEmpty ? null : int.parse(digits);
+    if (digits.isEmpty) return null;
+    return int.tryParse(digits);
   }
 
   /// Extracts the numeric part of an order id and formats it as a friendly

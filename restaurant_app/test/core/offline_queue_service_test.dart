@@ -98,5 +98,116 @@ void main() {
       expect(service.pendingCount, 0);
       expect(service.hasPending, isFalse);
     });
+
+    group('hardening: FIFO, poison protection, backoff', () {
+      test('drain replays entries in strict FIFO order', () async {
+        final order = <String>[];
+        for (var i = 1; i <= 5; i++) {
+          await service.enqueue(
+            operationType: 'createOrder',
+            payload: {'orderId': 'ORD-$i'},
+          );
+        }
+
+        await service.drainWith((type, payload) async {
+          order.add(payload['orderId'] as String);
+          return true;
+        });
+
+        expect(order, ['ORD-1', 'ORD-2', 'ORD-3', 'ORD-4', 'ORD-5']);
+      });
+
+      test(
+        'permanently failing entries are dead-lettered after maxAttempts',
+        () async {
+          await service.enqueue(
+            operationType: 'createOrder',
+            payload: {'orderId': 'ORD-POISON'},
+            idempotencyKey: 'poison-key',
+          );
+
+          final deadLettered = <Map<String, dynamic>>[];
+          var attempts = 0;
+
+          // Zero backoff so each drain performs exactly one attempt.
+          for (var i = 0; i < 3; i++) {
+            final replayed = await service.drain(
+              (type, payload) async {
+                attempts++;
+                return false;
+              },
+              maxAttempts: 4,
+              baseBackoff: Duration.zero,
+            );
+            expect(replayed, 0);
+            expect(service.pendingCount, 1,
+                reason: 'Entry must stay queued while under maxAttempts');
+          }
+          expect(attempts, 3);
+          expect(service.deadLetteredCount, 0);
+
+          // Fourth failure crosses maxAttempts=4 → dead-lettered and removed.
+          final replayed = await service.drain(
+            (type, payload) async => false,
+            maxAttempts: 4,
+            baseBackoff: Duration.zero,
+            onDeadLetter: (type, payload, attemptCount) =>
+                deadLettered.add(payload),
+          );
+
+          expect(replayed, 0);
+          expect(service.deadLetteredCount, 1);
+          expect(service.hasPending, isFalse,
+              reason: 'Dead-lettered entries must be removed from the queue');
+          expect(deadLettered.single['orderId'], 'ORD-POISON');
+        },
+      );
+
+      test('entries inside their backoff window are skipped, not lost',
+          () async {
+        await service.enqueue(
+          operationType: 'createOrder',
+          payload: {'orderId': 'ORD-BACKOFF'},
+        );
+
+        var calls = 0;
+        // Default 2s base backoff: first failure arms a retry delay.
+        await service.drain((type, payload) async {
+          calls++;
+          return false;
+        }, maxAttempts: 99);
+        expect(calls, 1);
+
+        // Immediate second drain: entry exists but is not yet due.
+        await service.drain((type, payload) async {
+          calls++;
+          return false;
+        }, maxAttempts: 99);
+
+        expect(calls, 1,
+            reason: 'Backed-off entries must be skipped until due');
+        expect(service.pendingCount, 1,
+            reason: 'Skipped entries must be retained');
+      });
+
+      test('corrupt JSON entries are dropped instead of blocking the queue',
+          () async {
+        await service.enqueue(
+          operationType: 'createOrder',
+          payload: {'orderId': 'ORD-GOOD'},
+        );
+        await service.debugInjectRaw('{corrupt json!!');
+
+        var processed = 0;
+        final replayed = await service.drainWith((type, payload) async {
+          processed++;
+          return true;
+        });
+
+        expect(processed, 1, reason: 'Only the healthy entry is replayed');
+        expect(replayed, 1);
+        expect(service.hasPending, isFalse);
+      });
+    });
   });
 }

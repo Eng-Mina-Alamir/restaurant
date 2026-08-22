@@ -164,15 +164,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       prefixIcon: Icon(Icons.phone_outlined),
                       hintText: '05xxxxxxxx أو 01xxxxxxxxx',
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'يرجى إدخال رقم الهاتف';
-                      }
-                      if (value.trim().length < 8) {
-                        return 'رقم هاتف غير مكتمل';
-                      }
-                      return null;
-                    },
+                    validator: Validators.validatePhone,
                   ),
                   const SizedBox(height: AppSpacing.md),
 
@@ -195,15 +187,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return AppConstants.requiredField;
-                      }
-                      if (value.length < 6) {
-                        return 'كلمة المرور يجب أن لا تقل عن 6 خانات';
-                      }
-                      return null;
-                    },
+                    validator: Validators.validatePassword,
                   ),
                   const SizedBox(height: AppSpacing.md),
 

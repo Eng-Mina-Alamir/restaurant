@@ -42,4 +42,10 @@ class LocalCacheService {
 
   /// Removes a single stored collection.
   Future<void> removeKey(String key) => _box.delete(key);
+
+  /// Removes EVERYTHING cached in this box.
+  ///
+  /// Used on logout so no prior-user data (orders, tables, assignments)
+  /// survives an account switch.
+  Future<void> clear() => _box.clear();
 }

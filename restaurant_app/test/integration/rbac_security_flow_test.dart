@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/core/routing/app_router.dart';
 import 'package:restaurant_app/features/auth/data/datasources/demo_auth_datasource.dart';
 import 'package:restaurant_app/features/auth/domain/entities/user_entity.dart';
 
@@ -48,6 +49,85 @@ void main() {
       expect(cloned.role, UserRole.manager);
       expect(cloned.name, 'Updated Manager');
       expect(user.name, 'Manager');
+    });
+
+    group('deep-link privilege escalation blocked by route guards', () {
+      const allRoles = UserRole.values;
+
+      test('customer cannot reach staff-only areas', () {
+        const staffAreas = [
+          '/manager',
+          '/manager/users',
+          '/manager/financial-reports',
+          '/manager/inventory',
+          '/manager/orders',
+          '/waiter',
+          '/waiter/table/t1',
+          '/kds',
+          '/driver',
+        ];
+        for (final area in staffAreas) {
+          expect(
+            canRoleAccess(UserRole.customer, area),
+            isFalse,
+            reason: 'Customer must NOT access $area via deep link',
+          );
+        }
+      });
+
+      test('staff roles cannot cross into each other areas', () {
+        // Waiter cannot run the kitchen display or drive deliveries.
+        expect(canRoleAccess(UserRole.waiter, '/kds'), isFalse);
+        expect(canRoleAccess(UserRole.waiter, '/driver'), isFalse);
+        // Kitchen cannot manage users or wait tables.
+        expect(canRoleAccess(UserRole.kitchen, '/manager/users'), isFalse);
+        expect(canRoleAccess(UserRole.kitchen, '/waiter'), isFalse);
+        // Driver cannot open POS or dashboard.
+        expect(canRoleAccess(UserRole.driver, '/waiter/order/t1'), isFalse);
+        expect(canRoleAccess(UserRole.driver, '/manager'), isFalse);
+      });
+
+      test('admin and manager can access every staff area', () {
+        for (final role in [UserRole.manager, UserRole.admin]) {
+          for (final area in ['/manager', '/manager/users', '/waiter', '/kds', '/driver']) {
+            expect(
+              canRoleAccess(role, area),
+              isTrue,
+              reason: '$role should access $area',
+            );
+          }
+        }
+      });
+
+      test('each role retains access to its own home area', () {
+        for (final role in allRoles) {
+          expect(
+            canRoleAccess(role, role.homeRoute),
+            isTrue,
+            reason: '${role.name} should access own home ${role.homeRoute}',
+          );
+        }
+      });
+
+      test('shared and unknown routes stay reachable for everyone', () {
+        for (final role in allRoles) {
+          for (final location in [
+            '/notifications',
+            '/privacy-policy',
+            '/terms',
+            '/customer',
+            '/customer/cart',
+            '/customer/track/ORD-1',
+            '/some-unknown-page',
+          ]) {
+            expect(
+              canRoleAccess(role, location),
+              isTrue,
+              reason: '$role should access shared route $location',
+            );
+          }
+        }
+      });
     });
   });
 }

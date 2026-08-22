@@ -91,7 +91,9 @@ class SupabaseOrderRepository implements OrderRepository {
                 .from(SupabaseConfig.orderItemsTable)
                 .delete()
                 .eq('order_id', order.id);
-          } catch (_) {}
+          } catch (e) {
+            AppLogger.warning('Could not delete old order_items for ${order.id}: $e');
+          }
 
           await _supabase.from(SupabaseConfig.orderItemsTable).upsert(itemsPayload);
         }
@@ -200,7 +202,9 @@ class SupabaseOrderRepository implements OrderRepository {
         all[index] = order;
       }
       await cache.writeList(_cacheKey, all.map((o) => o.toJson()).toList());
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.warning('_cacheOrderLocally: failed to write cache for ${order.id}: $e');
+    }
   }
 
   List<OrderEntity> _loadFromCache() {

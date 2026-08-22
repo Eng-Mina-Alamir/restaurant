@@ -2,6 +2,10 @@
 ///
 /// All functions accept `String?` so they can be used directly with form
 /// controller values without null handling at the call site.
+///
+/// This is the **single source of truth** for validation rules across the app.
+/// Both the UI layer (form validators) and the domain layer (use cases) must
+/// delegate here instead of reimplementing ad-hoc checks.
 abstract final class Validators {
   Validators._();
 
@@ -17,12 +21,28 @@ abstract final class Validators {
 
   static final RegExp _letterRegex = RegExp(r'[\p{L}]', unicode: true);
 
+  static final RegExp _digitRegex = RegExp(r'[0-9]');
+
+  /// Minimum password length enforced across all registration paths.
+  static const int kMinPasswordLength = 8;
+
   /// Returns `true` if [email] is a structurally valid email address.
   static bool isValidEmail(String? email) {
     if (email == null) return false;
     final trimmed = email.trim();
     if (trimmed.isEmpty || trimmed.length > 254) return false;
     return _emailRegex.hasMatch(trimmed);
+  }
+
+  /// Returns a localized error message if [email] is invalid, or `null` if OK.
+  static String? validateEmail(String? email) {
+    if (email == null || email.trim().isEmpty) {
+      return 'يرجى إدخال البريد الإلكتروني';
+    }
+    if (!isValidEmail(email)) {
+      return 'يرجى إدخال بريد إلكتروني صحيح';
+    }
+    return null;
   }
 
   /// Returns `true` if [phone] is a valid Saudi mobile number.
@@ -48,6 +68,17 @@ abstract final class Validators {
     return false;
   }
 
+  /// Returns a localized error message if [phone] is invalid, or `null` if OK.
+  static String? validatePhone(String? phone) {
+    if (phone == null || phone.trim().isEmpty) {
+      return 'يرجى إدخال رقم الهاتف';
+    }
+    if (!isValidPhone(phone)) {
+      return 'يرجى إدخال رقم هاتف سعودي صحيح (05xxxxxxxx)';
+    }
+    return null;
+  }
+
   /// Returns `true` if [otp] is exactly six digits.
   static bool isValidOtp(String? otp) {
     if (otp == null) return false;
@@ -61,5 +92,49 @@ abstract final class Validators {
     final trimmed = name.trim();
     if (trimmed.isEmpty || trimmed.length > 50) return false;
     return _letterRegex.hasMatch(trimmed);
+  }
+
+  /// Returns a localized error message if [name] is invalid, or `null` if OK.
+  static String? validateName(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return 'يرجى إدخال الاسم بالكامل';
+    }
+    if (!isValidName(name)) {
+      return 'الاسم يجب أن يحتوي على حرف واحد على الأقل';
+    }
+    return null;
+  }
+
+  /// Returns `true` when [password] meets the minimum strength bar:
+  /// * At least [kMinPasswordLength] characters.
+  /// * Contains at least one letter (any script).
+  /// * Contains at least one digit.
+  ///
+  /// This is intentionally kept simple — Supabase may enforce its own server-
+  /// side rules on top.
+  static bool isStrongPassword(String? password) {
+    if (password == null) return false;
+    if (password.length < kMinPasswordLength) return false;
+    if (!_letterRegex.hasMatch(password)) return false;
+    if (!_digitRegex.hasMatch(password)) return false;
+    return true;
+  }
+
+  /// Returns a localized error message describing what's wrong with [password],
+  /// or `null` when the password passes all strength checks.
+  static String? validatePassword(String? password) {
+    if (password == null || password.isEmpty) {
+      return 'يرجى إدخال كلمة المرور';
+    }
+    if (password.length < kMinPasswordLength) {
+      return 'كلمة المرور يجب أن لا تقل عن $kMinPasswordLength أحرف';
+    }
+    if (!_letterRegex.hasMatch(password)) {
+      return 'كلمة المرور يجب أن تحتوي على حرف واحد على الأقل';
+    }
+    if (!_digitRegex.hasMatch(password)) {
+      return 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل';
+    }
+    return null;
   }
 }

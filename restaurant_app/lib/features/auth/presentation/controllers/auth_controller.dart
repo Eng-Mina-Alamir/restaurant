@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/data/app_cache.dart';
+import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/utils/logger.dart';
+import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/user_entity.dart';
 
 /// Authentication lifecycle status.
@@ -137,10 +142,29 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   /// Logs out the current user.
+  ///
+  /// Besides clearing auth credentials (repository), this wipes every local
+  /// trace of the previous account: the Hive app cache, the offline operation
+  /// queue, and in-memory cart/orders state — so no cross-account data can
+  /// ever leak into the next session.
   Future<void> logout() async {
     await ref.read(logoutUseCaseProvider).call();
+
+    // Wipe durable caches (best-effort: logout must always succeed locally).
+    try {
+      await ref.read(offlineQueueServiceProvider).clear();
+      await ref.read(localCacheServiceProvider)?.clear();
+    } catch (e) {
+      AppLogger.warning('logout: local cache wipe issue: $e');
+    }
+
     if (!mounted) return;
     state = const AuthState(status: AuthStatus.unauthenticated);
+
+    // Reset session-scoped controllers AFTER the auth state flip so UI
+    // rebuilds against clean, empty state.
+    ref.invalidate(cartControllerProvider);
+    ref.invalidate(ordersControllerProvider);
   }
 
   void _onFailure(Failure failure) {

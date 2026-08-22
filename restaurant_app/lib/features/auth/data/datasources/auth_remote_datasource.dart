@@ -113,7 +113,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'email': email,
           'phone': phone,
           'password': password,
-          'role': role.name,
+          // SECURITY: never send a client-chosen role — the server assigns
+          // roles (signup defaults to customer; staff roles are provisioned
+          // by managers). Sending `role` here was a latent privilege
+          // escalation vector.
           'restaurant_id': restaurantId,
         },
       );

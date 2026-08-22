@@ -9,8 +9,11 @@ import 'auth_interceptor.dart';
 /// [AuthInterceptor] so that JWTs are injected automatically and 401s are
 /// handled via a refresh flow.
 class DioClient {
-  DioClient({required this.baseUrl, required SecureStorageService storage})
-    : _storage = storage {
+  DioClient({
+    required this.baseUrl,
+    required SecureStorageService storage,
+    this.onSessionExpired,
+  }) : _storage = storage {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -19,12 +22,23 @@ class DioClient {
         contentType: Headers.jsonContentType,
       ),
     );
-    _dio.interceptors.add(AuthInterceptor(storage: _storage, dio: _dio));
+    _dio.interceptors.add(
+      AuthInterceptor(
+        storage: _storage,
+        dio: _dio,
+        baseUrl: baseUrl,
+        onSessionExpired: onSessionExpired,
+      ),
+    );
   }
 
   late final Dio _dio;
   final String baseUrl;
   final SecureStorageService _storage;
+
+  /// Optional callback fired when the auth interceptor determines the session
+  /// is unrecoverable (refresh failed) so the app can force a logout.
+  final void Function()? onSessionExpired;
 
   /// The configured Dio instance for all outbound HTTP traffic.
   Dio get dio => _dio;
