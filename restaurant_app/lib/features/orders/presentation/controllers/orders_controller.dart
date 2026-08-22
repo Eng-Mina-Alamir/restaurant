@@ -531,6 +531,99 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     );
   }
 
+  /// Claims [orderId] for [kitchenUserId] (KDS استلام الطلب).
+  ///
+  /// Optimistically stamps the local order so the claiming chef keeps seeing
+  /// the ticket while other KDS clients filter it out; persists through
+  /// [OrderRepository.claimOrder].
+  Future<OrderEntity?> claim(
+    String orderId, {
+    String? kitchenUserId,
+  }) async {
+    final uid = kitchenUserId;
+    if (uid == null || uid.isEmpty) {
+      AppLogger.warning('claim($orderId) ignored: no authenticated chef id');
+      return null;
+    }
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return null;
+
+    final updated = state[index].copyWith(assignedKitchenId: uid);
+    state = [...state]..[index] = updated;
+
+    // Stamp locally-applied transitions so any delayed remote event older
+    // than this moment can never clobber the fresh assignment.
+    _stampStatusEvent(orderId);
+
+    final result = await _repository.claimOrder(orderId, uid);
+    return result.when(
+      onLeft: (_) => null,
+      onRight: (_) => updated,
+    );
+  }
+
+  /// Moves [orderId] BACK to [toStatus] (guarded revert, e.g.
+  /// ready → preparing) recording an audit entry attributed to [actorId].
+  ///
+  /// Mirrors [updateStatus]: optimistic state update, `_statusEventAt`
+  /// stamping (so our own realtime echo is dropped), broadcast via
+  /// [RealtimeService.broadcastOrderStatusReverted], then persistence.
+  Future<OrderEntity?> revertStatus(
+    String orderId,
+    OrderStatus toStatus, {
+    required String actorId,
+    String? reason,
+  }) async {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return null;
+
+    final current = state[index];
+    // Domain guard: terminal orders are immutable and only single-step
+    // backward moves are legal (ready→preparing, served→ready).
+    if (!current.status.canRevertTo(toStatus)) {
+      AppLogger.warning(
+        'revertStatus($orderId, ${toStatus.name}) rejected: illegal revert '
+        'from ${current.status.name}',
+      );
+      return null;
+    }
+
+    final updated = current.copyWith(status: toStatus);
+    state = [...state]..[index] = updated;
+
+    // Stamp BEFORE broadcasting so our own echo is recognized as stale.
+    final stampedAt = _stampStatusEvent(orderId);
+
+    _realtimeService?.broadcastOrderStatusReverted(
+      orderId,
+      current.status.name,
+      toStatus.name,
+      updatedAt: stampedAt,
+    );
+
+    final result = await _repository.revertStatus(
+      orderId,
+      toStatus,
+      actorId: actorId,
+      reason: reason,
+    );
+    return result.when(
+      onLeft: (_) => null,
+      onRight: (_) => updated,
+    );
+  }
+
+  /// Records a locally-applied transition timestamp for [orderId]; returns
+  /// the stamp used so broadcasts and guards stay consistent.
+  DateTime _stampStatusEvent(String orderId) {
+    final stampedAt = DateTime.now();
+    final lastApplied = _statusEventAt[orderId];
+    if (lastApplied == null || stampedAt.isAfter(lastApplied)) {
+      _statusEventAt[orderId] = stampedAt;
+    }
+    return stampedAt;
+  }
+
   /// Invokes the optional [OrdersController] dispatch hook for a delivery
   /// order that reached [OrderStatus.ready], swallowing any failure.
   Future<void> _notifyDeliveryOrderReady(OrderEntity order) async {

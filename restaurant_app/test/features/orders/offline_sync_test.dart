@@ -38,6 +38,22 @@ class _RecordingOrderRepository implements OrderRepository {
     OrderStatus status,
   ) =>
       _inner.updateOrderStatus(orderId, status);
+
+  @override
+  Future<Either<Failure, OrderEntity>> claimOrder(
+    String orderId,
+    String kitchenUserId,
+  ) =>
+      _inner.claimOrder(orderId, kitchenUserId);
+
+  @override
+  Future<Either<Failure, OrderEntity>> revertStatus(
+    String orderId,
+    OrderStatus toStatus, {
+    required String actorId,
+    String? reason,
+  }) =>
+      _inner.revertStatus(orderId, toStatus, actorId: actorId, reason: reason);
 }
 
 void main() {
@@ -216,5 +232,21 @@ class _AlwaysFailingRepository implements OrderRepository {
     OrderStatus status,
   ) async =>
       const Right<Failure, void>(null);
+
+  @override
+  Future<Either<Failure, OrderEntity>> claimOrder(
+    String orderId,
+    String kitchenUserId,
+  ) async =>
+      const Left(ServerFailure('permanent rejection'));
+
+  @override
+  Future<Either<Failure, OrderEntity>> revertStatus(
+    String orderId,
+    OrderStatus toStatus, {
+    required String actorId,
+    String? reason,
+  }) async =>
+      const Left(ServerFailure('permanent rejection'));
 }
 

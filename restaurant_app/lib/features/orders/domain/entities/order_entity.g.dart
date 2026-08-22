@@ -13,6 +13,8 @@ _$OrderEntityImpl _$$OrderEntityImplFromJson(Map<String, dynamic> json) =>
       customerId: json['customerId'] as String?,
       tableId: json['tableId'] as String?,
       waiterId: json['waiterId'] as String?,
+      assignedKitchenId: json['assignedKitchenId'] as String?,
+      driverId: json['driverId'] as String?,
       orderType: OrderType.fromName(json['orderType'] as String?),
       items:
           (json['items'] as List<dynamic>?)
@@ -39,6 +41,8 @@ Map<String, dynamic> _$$OrderEntityImplToJson(_$OrderEntityImpl instance) =>
       'customerId': instance.customerId,
       'tableId': instance.tableId,
       'waiterId': instance.waiterId,
+      'assignedKitchenId': instance.assignedKitchenId,
+      'driverId': instance.driverId,
       'orderType': _orderTypeToString(instance.orderType),
       'items': instance.items.map((e) => e.toJson()).toList(),
       'status': _statusToString(instance.status),

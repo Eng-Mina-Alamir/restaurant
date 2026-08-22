@@ -3,6 +3,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/order_entity.dart';
+import '../../domain/entities/order_status_log_entry.dart';
 import '../../domain/repositories/order_repository.dart';
 
 /// Hive-persisted [OrderRepository].
@@ -58,6 +59,73 @@ class HiveOrderRepository implements OrderRepository {
       return const Right(null);
     } catch (e) {
       return Left<Failure, void>(CacheFailure(e.toString()));
+    }
+  }
+
+  /// In-memory audit trail (session-scoped; Hive has no log box).
+  final List<OrderStatusLogEntry> _statusLog = <OrderStatusLogEntry>[];
+
+  /// Audit entries produced by [revertStatus], oldest first. Exposed for
+  /// tests and offline inspection.
+  List<OrderStatusLogEntry> get statusLog =>
+      List.unmodifiable(_statusLog);
+
+  @override
+  Future<Either<Failure, OrderEntity>> claimOrder(
+    String orderId,
+    String kitchenUserId,
+  ) async {
+    try {
+      final all = await _loadAll();
+      final index = all.indexWhere((o) => o.id == orderId);
+      if (index == -1) {
+        return const Left(NotFoundFailure('الطلب غير موجود'));
+      }
+      final claimed =
+          all[index].copyWith(assignedKitchenId: kitchenUserId);
+      all[index] = claimed;
+      await _saveAll(all);
+      return Right<Failure, OrderEntity>(claimed);
+    } catch (e) {
+      return Left<Failure, OrderEntity>(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OrderEntity>> revertStatus(
+    String orderId,
+    OrderStatus toStatus, {
+    required String actorId,
+    String? reason,
+  }) async {
+    try {
+      final all = await _loadAll();
+      final index = all.indexWhere((o) => o.id == orderId);
+      if (index == -1) {
+        return const Left(NotFoundFailure('الطلب غير موجود'));
+      }
+      final current = all[index];
+      // Guarded transition: only legal single-step backward moves.
+      if (!current.status.canRevertTo(toStatus)) {
+        return Left<Failure, OrderEntity>(
+          ValidationFailure('لا يمكن التراجع من ${current.status.labelAr}'),
+        );
+      }
+      final updated = current.copyWith(status: toStatus);
+      all[index] = updated;
+      await _saveAll(all);
+      _statusLog.add(OrderStatusLogEntry(
+        orderId: orderId,
+        fromStatus: current.status,
+        toStatus: toStatus,
+        actorId: actorId,
+        reason: reason,
+        isRevert: true,
+        createdAt: DateTime.now(),
+      ));
+      return Right<Failure, OrderEntity>(updated);
+    } catch (e) {
+      return Left<Failure, OrderEntity>(CacheFailure(e.toString()));
     }
   }
 

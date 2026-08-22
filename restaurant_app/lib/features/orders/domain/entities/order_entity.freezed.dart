@@ -26,6 +26,8 @@ mixin _$OrderEntity {
   String? get customerId => throw _privateConstructorUsedError;
   String? get tableId => throw _privateConstructorUsedError;
   String? get waiterId => throw _privateConstructorUsedError;
+  String? get assignedKitchenId => throw _privateConstructorUsedError;
+  String? get driverId => throw _privateConstructorUsedError;
   @JsonKey(
     fromJson: OrderType.fromName,
     toJson: _orderTypeToString,
@@ -76,6 +78,8 @@ abstract class $OrderEntityCopyWith<$Res> {
     String? customerId,
     String? tableId,
     String? waiterId,
+    String? assignedKitchenId,
+    String? driverId,
     @JsonKey(
       fromJson: OrderType.fromName,
       toJson: _orderTypeToString,
@@ -125,6 +129,8 @@ class _$OrderEntityCopyWithImpl<$Res, $Val extends OrderEntity>
     Object? customerId = freezed,
     Object? tableId = freezed,
     Object? waiterId = freezed,
+    Object? assignedKitchenId = freezed,
+    Object? driverId = freezed,
     Object? orderType = null,
     Object? items = null,
     Object? status = null,
@@ -160,6 +166,14 @@ class _$OrderEntityCopyWithImpl<$Res, $Val extends OrderEntity>
             waiterId: freezed == waiterId
                 ? _value.waiterId
                 : waiterId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignedKitchenId: freezed == assignedKitchenId
+                ? _value.assignedKitchenId
+                : assignedKitchenId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            driverId: freezed == driverId
+                ? _value.driverId
+                : driverId // ignore: cast_nullable_to_non_nullable
                       as String?,
             orderType: null == orderType
                 ? _value.orderType
@@ -234,6 +248,8 @@ abstract class _$$OrderEntityImplCopyWith<$Res>
     String? customerId,
     String? tableId,
     String? waiterId,
+    String? assignedKitchenId,
+    String? driverId,
     @JsonKey(
       fromJson: OrderType.fromName,
       toJson: _orderTypeToString,
@@ -282,6 +298,8 @@ class __$$OrderEntityImplCopyWithImpl<$Res>
     Object? customerId = freezed,
     Object? tableId = freezed,
     Object? waiterId = freezed,
+    Object? assignedKitchenId = freezed,
+    Object? driverId = freezed,
     Object? orderType = null,
     Object? items = null,
     Object? status = null,
@@ -317,6 +335,14 @@ class __$$OrderEntityImplCopyWithImpl<$Res>
         waiterId: freezed == waiterId
             ? _value.waiterId
             : waiterId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignedKitchenId: freezed == assignedKitchenId
+            ? _value.assignedKitchenId
+            : assignedKitchenId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        driverId: freezed == driverId
+            ? _value.driverId
+            : driverId // ignore: cast_nullable_to_non_nullable
                   as String?,
         orderType: null == orderType
             ? _value.orderType
@@ -385,6 +411,8 @@ class _$OrderEntityImpl implements _OrderEntity {
     this.customerId,
     this.tableId,
     this.waiterId,
+    this.assignedKitchenId,
+    this.driverId,
     @JsonKey(
       fromJson: OrderType.fromName,
       toJson: _orderTypeToString,
@@ -426,6 +454,10 @@ class _$OrderEntityImpl implements _OrderEntity {
   final String? tableId;
   @override
   final String? waiterId;
+  @override
+  final String? assignedKitchenId;
+  @override
+  final String? driverId;
   @override
   @JsonKey(
     fromJson: OrderType.fromName,
@@ -479,7 +511,7 @@ class _$OrderEntityImpl implements _OrderEntity {
 
   @override
   String toString() {
-    return 'OrderEntity(id: $id, restaurantId: $restaurantId, customerId: $customerId, tableId: $tableId, waiterId: $waiterId, orderType: $orderType, items: $items, status: $status, subtotal: $subtotal, taxAmount: $taxAmount, discountAmount: $discountAmount, totalAmount: $totalAmount, paymentMethod: $paymentMethod, deliveryAddress: $deliveryAddress, deliveryNotes: $deliveryNotes, createdAt: $createdAt, completedAt: $completedAt, estimatedMinutes: $estimatedMinutes)';
+    return 'OrderEntity(id: $id, restaurantId: $restaurantId, customerId: $customerId, tableId: $tableId, waiterId: $waiterId, assignedKitchenId: $assignedKitchenId, driverId: $driverId, orderType: $orderType, items: $items, status: $status, subtotal: $subtotal, taxAmount: $taxAmount, discountAmount: $discountAmount, totalAmount: $totalAmount, paymentMethod: $paymentMethod, deliveryAddress: $deliveryAddress, deliveryNotes: $deliveryNotes, createdAt: $createdAt, completedAt: $completedAt, estimatedMinutes: $estimatedMinutes)';
   }
 
   @override
@@ -495,6 +527,10 @@ class _$OrderEntityImpl implements _OrderEntity {
             (identical(other.tableId, tableId) || other.tableId == tableId) &&
             (identical(other.waiterId, waiterId) ||
                 other.waiterId == waiterId) &&
+            (identical(other.assignedKitchenId, assignedKitchenId) ||
+                other.assignedKitchenId == assignedKitchenId) &&
+            (identical(other.driverId, driverId) ||
+                other.driverId == driverId) &&
             (identical(other.orderType, orderType) ||
                 other.orderType == orderType) &&
             const DeepCollectionEquality().equals(other._items, _items) &&
@@ -523,13 +559,15 @@ class _$OrderEntityImpl implements _OrderEntity {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     restaurantId,
     customerId,
     tableId,
     waiterId,
+    assignedKitchenId,
+    driverId,
     orderType,
     const DeepCollectionEquality().hash(_items),
     status,
@@ -543,7 +581,7 @@ class _$OrderEntityImpl implements _OrderEntity {
     createdAt,
     completedAt,
     estimatedMinutes,
-  );
+  ]);
 
   /// Create a copy of OrderEntity
   /// with the given fields replaced by the non-null parameter values.
@@ -566,6 +604,8 @@ abstract class _OrderEntity implements OrderEntity {
     final String? customerId,
     final String? tableId,
     final String? waiterId,
+    final String? assignedKitchenId,
+    final String? driverId,
     @JsonKey(
       fromJson: OrderType.fromName,
       toJson: _orderTypeToString,
@@ -607,6 +647,10 @@ abstract class _OrderEntity implements OrderEntity {
   String? get tableId;
   @override
   String? get waiterId;
+  @override
+  String? get assignedKitchenId;
+  @override
+  String? get driverId;
   @override
   @JsonKey(
     fromJson: OrderType.fromName,

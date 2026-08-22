@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/kds_alert_service.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
@@ -61,7 +63,21 @@ class _KdsPageState extends ConsumerState<KdsPage> {
       for (final t in tables) t.id: t.tableNumber,
     };
 
+    // Current chef identity (auth state first, Supabase session fallback) —
+    // same convention as the loyalty/ratings features.
+    final currentUserId =
+        ref.watch(authControllerProvider).user?.id ??
+            ref.watch(supabaseCurrentUserProvider)?.id;
+
     final active = orders.where((o) => !o.status.isTerminal).toList();
+
+    // KDS multi-chef: each chef only sees unclaimed tickets plus the ones
+    // they personally claimed (استلام الطلب).
+    active.retainWhere(
+      (o) =>
+          o.assignedKitchenId == null ||
+          o.assignedKitchenId == currentUserId,
+    );
 
     // Alert when new pending orders arrive
     final pendingCount = active.where((o) => o.status == OrderStatus.pending).length;
@@ -122,6 +138,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.orange,
                       orders: pendingList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -130,6 +149,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.blue,
                       orders: preparingList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -138,6 +160,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.green,
                       orders: readyList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -150,6 +175,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.orange,
                       orders: pendingList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                     ),
                     _KdsColumn(
@@ -157,6 +185,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.blue,
                       orders: preparingList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                     ),
                     _KdsColumn(
@@ -164,6 +195,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       color: Colors.green,
                       orders: readyList,
                       onAdvance: (order) => _advance(context, ref, order),
+                      onClaim: (order) => _claim(order, currentUserId),
+                      onRevert: (order, target) =>
+                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
                       tableNumberById: tableNumberById,
                     ),
                   ],
@@ -171,6 +205,45 @@ class _KdsPageState extends ConsumerState<KdsPage> {
               ),
       ),
     );
+  }
+
+  /// Claims [order] for [currentUserId], resetting any new-order badge.
+  Future<void> _claim(OrderEntity order, String? currentUserId) async {
+    ref.read(newOrderNotifierProvider).reset();
+    await ref
+        .read(ordersControllerProvider.notifier)
+        .claim(order.id, kitchenUserId: currentUserId);
+  }
+
+  /// Shows the guarded revert confirmation for [order], then applies the
+  /// revert attributed to the current chef.
+  Future<void> _confirmAndRevert(
+    BuildContext context,
+    OrderEntity order,
+    OrderStatus target,
+    String actorId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('تراجع إلى ${target.labelAr}؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(AppConstants.ok),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(AppConstants.kdsRevertConfirmAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
+    await ref
+        .read(ordersControllerProvider.notifier)
+        .revertStatus(order.id, target, actorId: actorId);
   }
 
   Future<void> _advance(
@@ -210,6 +283,8 @@ class _KdsColumn extends StatelessWidget {
     required this.color,
     required this.orders,
     required this.onAdvance,
+    required this.onClaim,
+    required this.onRevert,
     required this.tableNumberById,
     this.isExpanded = true,
   });
@@ -218,6 +293,12 @@ class _KdsColumn extends StatelessWidget {
   final Color color;
   final List<OrderEntity> orders;
   final ValueChanged<OrderEntity> onAdvance;
+
+  /// Claims an unclaimed ticket for the current chef (استلام الطلب).
+  final ValueChanged<OrderEntity> onClaim;
+
+  /// Requests a guarded revert of [OrderEntity] to [OrderStatus].
+  final void Function(OrderEntity order, OrderStatus target) onRevert;
   final Map<String, int> tableNumberById;
   final bool isExpanded;
 
@@ -257,6 +338,8 @@ class _KdsColumn extends StatelessWidget {
                         _OrderCard(
                           order: order,
                           onAdvance: onAdvance,
+                          onClaim: onClaim,
+                          onRevert: onRevert,
                           tableNumber: order.tableId == null
                               ? null
                               : tableNumberById[order.tableId],
@@ -279,11 +362,19 @@ class _OrderCard extends StatelessWidget {
   const _OrderCard({
     required this.order,
     required this.onAdvance,
+    required this.onClaim,
+    required this.onRevert,
     this.tableNumber,
   });
 
   final OrderEntity order;
   final ValueChanged<OrderEntity> onAdvance;
+
+  /// Claims this unclaimed ticket for the current chef (استلام الطلب).
+  final ValueChanged<OrderEntity> onClaim;
+
+  /// Requests a guarded revert of [order] to the mapped target status.
+  final void Function(OrderEntity order, OrderStatus target) onRevert;
   final int? tableNumber;
 
   /// Orders younger than this threshold are considered "new".
@@ -312,6 +403,12 @@ class _OrderCard extends StatelessWidget {
       OrderStatus.ready => AppConstants.kdsCompleting,
       _ => AppConstants.ok,
     };
+
+    // Guarded undo: only legal single-step backward moves offer a revert
+    // (ready→preparing, served→ready); terminal statuses never do.
+    final revertTarget = _revertTargetOf(order.status);
+    final canUndo =
+        revertTarget != null && order.status.canRevertTo(revertTarget);
 
     final elapsed = _elapsedMinutes(order.createdAt);
     final urgencyColor = _getUrgencyColor(elapsed);
@@ -476,6 +573,20 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
+                if (order.assignedKitchenId == null) ...[
+                  Expanded(
+                    child: FilledButton.tonal(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.xs,
+                        ),
+                      ),
+                      onPressed: () => onClaim(order),
+                      child: const Text(AppConstants.kdsClaimOrder),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
                 Expanded(
                   child: FilledButton.tonal(
                     style: FilledButton.styleFrom(
@@ -487,6 +598,14 @@ class _OrderCard extends StatelessWidget {
                     child: Text(buttonLabel),
                   ),
                 ),
+                if (canUndo) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    tooltip: AppConstants.kdsRevertTooltip,
+                    icon: const Icon(Icons.undo, size: 18),
+                    onPressed: () => onRevert(order, revertTarget),
+                  ),
+                ],
               ],
             ),
 
@@ -499,5 +618,13 @@ class _OrderCard extends StatelessWidget {
 
   int _elapsedMinutes(DateTime createdAt) =>
       Formatters.elapsedMinutes(createdAt);
+
+  /// Maps a status to its revert target, or null when no backward move is
+  /// defined (pending/preparing/completed/cancelled never offer undo).
+  static OrderStatus? _revertTargetOf(OrderStatus status) => switch (status) {
+        OrderStatus.ready => OrderStatus.preparing,
+        OrderStatus.served => OrderStatus.ready,
+        _ => null,
+      };
 }
 

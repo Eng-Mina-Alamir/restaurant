@@ -42,6 +42,39 @@ class _FakeOrderRepository implements OrderRepository {
     }
     return const Right(null);
   }
+
+  @override
+  Future<Either<Failure, OrderEntity>> claimOrder(
+    String orderId,
+    String kitchenUserId,
+  ) async {
+    final index = orders.indexWhere((o) => o.id == orderId);
+    if (index == -1) {
+      return const Left(NotFoundFailure('الطلب غير موجود'));
+    }
+    orders[index] = orders[index].copyWith(assignedKitchenId: kitchenUserId);
+    return Right(orders[index]);
+  }
+
+  @override
+  Future<Either<Failure, OrderEntity>> revertStatus(
+    String orderId,
+    OrderStatus toStatus, {
+    required String actorId,
+    String? reason,
+  }) async {
+    final index = orders.indexWhere((o) => o.id == orderId);
+    if (index == -1) {
+      return const Left(NotFoundFailure('الطلب غير موجود'));
+    }
+    if (!orders[index].status.canRevertTo(toStatus)) {
+      return Left(
+        ValidationFailure('لا يمكن التراجع من ${orders[index].status.labelAr}'),
+      );
+    }
+    orders[index] = orders[index].copyWith(status: toStatus);
+    return Right(orders[index]);
+  }
 }
 
 void main() {

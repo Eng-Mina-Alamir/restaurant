@@ -20,6 +20,8 @@ abstract class OrderEntity with _$OrderEntity {
     String? customerId,
     String? tableId,
     String? waiterId,
+    String? assignedKitchenId,
+    String? driverId,
     @JsonKey(
       fromJson: OrderType.fromName,
       toJson: _orderTypeToString,

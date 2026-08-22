@@ -125,6 +125,9 @@ abstract final class AppConstants {
   static const String kdsPreparing = 'قيد التحضير';
   static const String kdsReady = 'جاهز للتسليم';
   static const String kdsCompleting = 'استكمال';
+  static const String kdsClaimOrder = 'استلام الطلب';
+  static const String kdsRevertTooltip = 'تراجع عن الحالة';
+  static const String kdsRevertConfirmAction = 'تأكيد التراجع';
 
   // ── Manager ────────────────────────────────────────────────────────────────
   static const String managerTitle = 'لوحة المدير';
