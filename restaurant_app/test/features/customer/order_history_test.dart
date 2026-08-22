@@ -9,8 +9,14 @@ import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_history_page.dart';
+import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
+import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
+import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
+import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
+import 'package:restaurant_app/features/ratings/presentation/widgets/rating_dialog.dart';
 import '../../helpers/test_container.dart';
 
 void main() {
@@ -208,5 +214,121 @@ void main() {
     expect(cart.state, hasLength(1));
     expect(cart.state.first.menuItem.id, burger.id);
     expect(find.textContaining('تم تخطي'), findsOneWidget);
+  });
+
+  group('driver info on delivery orders (Gap 4 follow-up)', () {
+    const driverId = 'driver-77';
+    const driverName = 'كريم محمود';
+
+    DeliveryAssignment buildAssignment({
+      required String orderId,
+      DeliveryStatus status = DeliveryStatus.inTransit,
+    }) {
+      return DeliveryAssignment(
+        id: 'ASG-$orderId',
+        orderId: orderId,
+        driverId: driverId,
+        pickupTime: DateTime.now(),
+        deliveryLocation: 'حي النخيل، القاهرة',
+        deliveryStatus: status,
+        driverName: driverName,
+        driverRating: 4.7,
+      );
+    }
+
+    /// Places an order of [orderType], seeds its delivery assignment into an
+    /// overridden [InMemoryDeliveryRepository] and pumps the history page.
+    Future<ProviderContainer> pumpHistoryWithAssignment(
+      WidgetTester tester, {
+      required OrderType orderType,
+      DeliveryStatus assignmentStatus = DeliveryStatus.inTransit,
+    }) async {
+      // Overriding the repository keeps the lookup local and lets the test
+      // seed the assignment the card should render.
+      final deliveryRepo = InMemoryDeliveryRepository(seed: const []);
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        additionalOverrides: [
+          deliveryRepositoryProvider.overrideWithValue(deliveryRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
+
+      container
+          .read(cartControllerProvider.notifier)
+          .addItem(const CartItem(menuItem: burger));
+      final placed = await container
+          .read(ordersControllerProvider.notifier)
+          .placeOrder(orderType: orderType);
+      // Seeded after placement: the assignment must reference the real id.
+      await deliveryRepo.createAssignment(
+        buildAssignment(orderId: placed!.id, status: assignmentStatus),
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: OrderHistoryPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('delivery card shows driver name and rating', (tester) async {
+      await pumpHistoryWithAssignment(
+        tester,
+        orderType: OrderType.delivery,
+      );
+
+      expect(find.text(driverName), findsOneWidget);
+      expect(find.text('4.7'), findsOneWidget);
+      // Still in transit → no rate-driver entry yet.
+      expect(find.text('قيّم السائق'), findsNothing);
+    });
+
+    testWidgets('delivered assignment adds rate-driver entry opening the '
+        'rating dialog', (tester) async {
+      final container = await pumpHistoryWithAssignment(
+        tester,
+        orderType: OrderType.delivery,
+        assignmentStatus: DeliveryStatus.delivered,
+      );
+
+      expect(find.text(driverName), findsOneWidget);
+      expect(find.text('قيّم السائق'), findsOneWidget);
+
+      await tester.tap(find.text('قيّم السائق'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RatingDialog), findsOneWidget);
+      expect(find.text('تقييم السائق'), findsOneWidget);
+
+      // Submitting flows through the real ratings controller/repository.
+      await tester.tap(find.text('إرسال التقييم'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RatingDialog), findsNothing);
+
+      final stored =
+          await container.read(targetRatingsProvider(driverId).future);
+      expect(stored, hasLength(1));
+      expect(stored.single.targetType, RatingTargetType.driver);
+      expect(stored.single.targetId, driverId);
+    });
+
+    testWidgets('takeaway cards never render driver data even when an '
+        'assignment exists', (tester) async {
+      await pumpHistoryWithAssignment(
+        tester,
+        orderType: OrderType.takeaway,
+      );
+
+      expect(find.text(driverName), findsNothing);
+      expect(find.text('4.7'), findsNothing);
+      expect(find.text('قيّم السائق'), findsNothing);
+      // Card itself renders unchanged.
+      expect(find.text('أعد الطلب'), findsOneWidget);
+    });
   });
 }

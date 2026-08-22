@@ -158,6 +158,10 @@ abstract final class AppConstants {
   static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
   static const String driverNewAssignmentAlert = 'مهمة توصيل جديدة';
   static const String driverNewAssignmentOrderPrefix = 'طلب';
+  static const String unknownDriverName = 'سائق غير معروف';
+  static const String rateDriverAction = 'قيّم السائق';
+  static const String rateDriverDialogTitle = 'تقييم السائق';
+  static const String rateDriverDialogSubtitle = 'ما رأيك في خدمة التوصيل؟';
 
   // ── Validation messages ────────────────────────────────────────────────────
   static const String requiredField = 'هذا الحقل مطلوب';

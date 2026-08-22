@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../../../ratings/domain/entities/rating_entity.dart';
+import '../../../ratings/presentation/widgets/rating_dialog.dart';
 
 /// Customer order history: lists past orders and lets the user re-order (add
 /// the full contents of a past order back to the cart).
@@ -73,15 +77,22 @@ class OrderHistoryPage extends ConsumerWidget {
   }
 }
 
-class _OrderHistoryCard extends StatelessWidget {
+class _OrderHistoryCard extends ConsumerWidget {
   const _OrderHistoryCard({required this.order, required this.onReorder});
 
   final OrderEntity order;
   final VoidCallback onReorder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    // Delivery cards are enriched with driver data once an assignment exists;
+    // the row stays hidden entirely while loading or not yet dispatched.
+    // Dine-in/takeaway cards never query the delivery repository.
+    final assignment = order.orderType == OrderType.delivery
+        ? ref.watch(deliveryAssignmentForOrderProvider(order.id)).valueOrNull
+        : null;
+
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Padding(
@@ -114,6 +125,40 @@ class _OrderHistoryCard extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
+              ),
+            ],
+            if (assignment != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      assignment.driverName ?? AppConstants.unknownDriverName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  if (assignment.driverRating != null) ...[
+                    const Icon(Icons.star, size: 16, color: Colors.amber),
+                    const SizedBox(width: AppSpacing.xs),
+                    Text(
+                      assignment.driverRating!.toStringAsFixed(1),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
             const SizedBox(height: AppSpacing.sm),
@@ -152,6 +197,23 @@ class _OrderHistoryCard extends StatelessWidget {
                       onPressed: () => context.push('/customer/track/${order.id}'),
                       icon: const Icon(Icons.location_on, size: 16),
                       label: const Text('تتبع'),
+                    ),
+                  ),
+                // Rate the driver once the delivery is complete.
+                if (assignment != null &&
+                    assignment.deliveryStatus == DeliveryStatus.delivered)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    child: OutlinedButton.icon(
+                      onPressed: () => RatingDialog.show(
+                        context,
+                        targetId: assignment.driverId,
+                        targetType: RatingTargetType.driver,
+                        title: AppConstants.rateDriverDialogTitle,
+                        subtitle: AppConstants.rateDriverDialogSubtitle,
+                      ),
+                      icon: const Icon(Icons.rate_review, size: 16),
+                      label: const Text(AppConstants.rateDriverAction),
                     ),
                   ),
                 OutlinedButton.icon(
