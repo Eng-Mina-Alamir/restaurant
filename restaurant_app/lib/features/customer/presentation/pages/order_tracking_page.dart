@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mhj_maps/mhj_maps.dart';
 
+import '../../../delivery/domain/entities/delivery_assignment.dart';
+import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../delivery/presentation/widgets/live_tracking_map.dart';
 
 import '../../../../core/domain/enums.dart';
@@ -12,6 +14,30 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+
+/// Whether a [RealtimeEventType.driverLocationUpdated] payload targets
+/// tracking of [orderId].
+///
+/// New broadcasts carry an explicit `orderId`; legacy payloads (sent before
+/// order scoping existed) are accepted only when their `driverId` matches the
+/// driver assigned to this order.
+bool driverLocationTargetsOrder({
+  required Map<String, dynamic> payload,
+  required String orderId,
+  String? assignedDriverId,
+}) {
+  final payloadOrderId = payload['orderId']?.toString();
+  if (payloadOrderId != null && payloadOrderId.isNotEmpty) {
+    return payloadOrderId == orderId;
+  }
+  final payloadDriverId = payload['driverId']?.toString();
+  if (payloadDriverId == null ||
+      payloadDriverId.isEmpty ||
+      assignedDriverId == null) {
+    return false;
+  }
+  return payloadDriverId == assignedDriverId;
+}
 
 /// Live order tracking page for customer with visual stage progress and live map powered by [mhj_maps].
 class OrderTrackingPage extends ConsumerStatefulWidget {
@@ -26,6 +52,10 @@ class OrderTrackingPage extends ConsumerStatefulWidget {
 class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   MhjMapsMapController? _mapController;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+
+  // Driver id of the assignment resolved for this order — used as the legacy
+  // (orderId-less) fallback key for driver location events.
+  String? _assignedDriverId;
 
   // Cairo Coordinates (Downtown, Nile, Zamalek)
   static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(lat: 30.0444, lng: 31.2357);
@@ -42,6 +72,16 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     final realtime = ref.read(realtimeServiceProvider);
     _realtimeSub = realtime.events.listen((event) {
       if (event.type == RealtimeEventType.driverLocationUpdated) {
+        // Only react to updates belonging to THIS order; events carrying an
+        // explicit orderId must match it, legacy events must come from this
+        // order's assigned driver.
+        if (!driverLocationTargetsOrder(
+          payload: event.payload,
+          orderId: widget.orderId,
+          assignedDriverId: _assignedDriverId,
+        )) {
+          return;
+        }
         try {
           final lat = (event.payload['latitude'] as num?)?.toDouble();
           final lng = (event.payload['longitude'] as num?)?.toDouble();
@@ -102,6 +142,26 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    // Live delivery assignment for this order (driver identity + position).
+    final assignmentAsync =
+        ref.watch(deliveryAssignmentForOrderProvider(widget.orderId));
+
+    ref.listen<AsyncValue<DeliveryAssignment?>>(
+      deliveryAssignmentForOrderProvider(widget.orderId),
+      (previous, next) {
+        final assignment = next.valueOrNull;
+        if (assignment == null) return;
+        _assignedDriverId = assignment.driverId;
+        if (assignment.latitude != 0 || assignment.longitude != 0) {
+          setState(() {
+            _driverLatLng =
+                MhjMapsLatLng(lat: assignment.latitude, lng: assignment.longitude);
+          });
+          _updateMapMarkers();
+        }
+      },
+    );
+
     final order = orders.firstWhere(
       (o) => o.id == widget.orderId,
       orElse: () => OrderEntity(
@@ -119,6 +179,55 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     );
 
     final currentStep = _getStepIndex(order.status);
+
+    // Driver identity comes exclusively from the fetched assignment — no
+    // fabricated drivers. While searching / unassigned we show placeholders.
+    final assignment = assignmentAsync.valueOrNull;
+    final String driverTitle;
+    final Widget driverSubtitle;
+    if (assignmentAsync.isLoading || assignment == null) {
+      driverTitle = 'جارٍ البحث عن مندوب…';
+      driverSubtitle = assignmentAsync.isLoading
+          ? SizedBox(
+              height: 14,
+              width: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
+            )
+          : Text(
+              'لم يتم تعيين مندوب لهذا الطلب بعد',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            );
+    } else {
+      driverTitle = assignment.driverName ?? 'مندوب التوصيل';
+      driverSubtitle = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (assignment.driverRating != null)
+            Row(
+              children: [
+                const Icon(Icons.star, size: 16, color: Colors.amber),
+                const SizedBox(width: 2),
+                Text(
+                  'تقييم المندوب: ${assignment.driverRating!.toStringAsFixed(1)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          if (assignment.vehicleInfo != null)
+            Text(
+              assignment.vehicleInfo!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -181,7 +290,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 children: [
-                  // Driver Info Card
+                  // Driver Info Card — live data from the order's assignment
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
@@ -199,37 +308,28 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'الكابتن طارق الدسوقي (طيار المحروسة)',
+                                  driverTitle,
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.star,
-                                        size: 16, color: Colors.amber),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      '4.95 (340 توصيلة بالقاهرة)',
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  'موتوسيكل دايون • لوحة: ٥٤٨٢ ط س ص (القاهرة)',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                driverSubtitle,
                               ],
                             ),
                           ),
                           IconButton.filledTonal(
                             icon: const Icon(Icons.phone),
+                            tooltip: 'اتصال بالمندوب',
                             onPressed: () {
+                              final phone = assignment?.driverPhone;
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('جارٍ الاتصال بالكابتن طارق 01066778899...'),
+                                SnackBar(
+                                  content: Text(
+                                    phone != null && phone.isNotEmpty
+                                        ? 'جارٍ الاتصال بالمندوب $phone...'
+                                        : 'لا يوجد رقم للمندوب حتى الآن',
+                                  ),
                                 ),
                               );
                             },
@@ -262,6 +362,24 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                       ),
                     ),
                   ),
+
+                  // Cancel — offered ONLY while the order is still pending;
+                  // once preparation starts it can no longer be undone.
+                  if (order.status == OrderStatus.pending) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.error,
+                          foregroundColor: colorScheme.onError,
+                        ),
+                        onPressed: _confirmCancellation,
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text('إلغاء الطلب'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -269,6 +387,50 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
         ],
       ),
     );
+  }
+
+  /// Asks for confirmation, then cancels the order through the orders
+  /// controller (persisted + broadcast), shows success feedback and leaves
+  /// the tracking page.
+  Future<void> _confirmCancellation() async {
+    final errorColor = Theme.of(context).colorScheme.error;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إلغاء الطلب'),
+        content: const Text(
+          'هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع بعد بدء التحضير',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('رجوع'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: errorColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('نعم، إلغاء'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    await ref.read(ordersControllerProvider.notifier).updateStatus(
+          widget.orderId,
+          OrderStatus.cancelled,
+        );
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم إلغاء الطلب بنجاح')),
+    );
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   int _getStepIndex(OrderStatus status) {

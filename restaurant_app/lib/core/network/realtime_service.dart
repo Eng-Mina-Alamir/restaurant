@@ -222,16 +222,22 @@ class RealtimeService {
   }
 
   /// Broadcasts a driver location update.
+  ///
+  /// [orderId], when provided, scopes the update to a specific delivery so
+  /// customer tracking pages can filter events belonging to their own order
+  /// instead of reacting to every driver on the road.
   void broadcastDriverLocation({
     required String driverId,
     required double latitude,
     required double longitude,
+    String? orderId,
   }) {
     sendEvent('driverLocationUpdated', {
       'driverId': driverId,
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': DateTime.now().toIso8601String(),
+      if (orderId != null) 'orderId': orderId,
     });
   }
 

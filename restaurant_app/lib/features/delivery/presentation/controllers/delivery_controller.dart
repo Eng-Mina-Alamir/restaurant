@@ -105,11 +105,22 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   }
 
   /// Broadcasts live driver GPS location.
+  ///
+  /// When the driver has an in-transit assignment its orderId is attached to
+  /// the payload so customer tracking pages can scope updates per order.
   void updateLocation({required double latitude, required double longitude}) {
+    String? activeOrderId;
+    for (final a in state) {
+      if (a.deliveryStatus == DeliveryStatus.inTransit) {
+        activeOrderId = a.orderId;
+        break;
+      }
+    }
     _realtimeService?.broadcastDriverLocation(
       driverId: _driverId,
       latitude: latitude,
       longitude: longitude,
+      orderId: activeOrderId,
     );
   }
 
@@ -150,3 +161,19 @@ final deliveryControllerProvider =
         realtimeService: ref.watch(realtimeServiceProvider),
       ),
     );
+
+/// Fetches the assignment linked to [orderId] for the customer tracking UI.
+///
+/// Auto-dispose: the query lives only while a tracking page watches it.
+/// Returns null when no driver has been assigned yet (order still pending /
+/// not dispatched) — callers render a "searching for driver" placeholder.
+final deliveryAssignmentForOrderProvider =
+    FutureProvider.autoDispose.family<DeliveryAssignment?, String>(
+  (ref, orderId) async {
+    final result =
+        await ref.watch(deliveryRepositoryProvider).getAssignmentByOrderId(
+              orderId,
+            );
+    return result.when(onLeft: (_) => null, onRight: (a) => a);
+  },
+);
