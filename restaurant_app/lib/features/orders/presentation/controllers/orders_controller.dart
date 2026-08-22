@@ -512,6 +512,17 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       updatedAt: stampedAt,
     );
 
+    // Waiter pickup alert: when a dine-in order reaches "ready", emit the
+    // dedicated event so waiter dashboards can chime + badge it (Gap 11).
+    if (status == OrderStatus.ready &&
+        updated.orderType == OrderType.dineIn) {
+      _realtimeService?.broadcastOrderReadyForPickup(
+        orderId,
+        tableId: updated.tableId,
+        updatedAt: stampedAt,
+      );
+    }
+
     // Persist the updated order status through the repository.
     final result = await _repository.updateOrderStatus(orderId, status);
 

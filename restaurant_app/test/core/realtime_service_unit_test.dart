@@ -28,6 +28,29 @@ void main() {
       expect(event.payload['status'], 'preparing');
     });
 
+    test('parses orderReadyForPickup in camelCase', () {
+      final raw = jsonEncode({
+        'type': 'orderReadyForPickup',
+        'data': {'orderId': 'ORD-300', 'tableId': '4'},
+      });
+
+      final event = RealtimeEvent.fromRaw(raw);
+      expect(event.type, RealtimeEventType.orderReadyForPickup);
+      expect(event.payload['orderId'], 'ORD-300');
+      expect(event.payload['tableId'], '4');
+    });
+
+    test('parses orderReadyForPickup in snake_case', () {
+      final raw = jsonEncode({
+        'type': 'order_ready_for_pickup',
+        'data': {'orderId': 'ORD-301'},
+      });
+
+      final event = RealtimeEvent.fromRaw(raw);
+      expect(event.type, RealtimeEventType.orderReadyForPickup);
+      expect(event.payload['orderId'], 'ORD-301');
+    });
+
     test('parses tableStatusChanged event', () {
       final raw = jsonEncode({
         'type': 'tableStatusChanged',
@@ -102,6 +125,37 @@ void main() {
       );
 
       service.broadcastOrderStatusChanged('ORD-100', 'ready');
+    });
+
+    test('broadcastOrderReadyForPickup emits correct event', () async {
+      final at = DateTime.parse('2026-01-01T10:00:00.000');
+      expectLater(
+        service.events,
+        emits(predicate<RealtimeEvent>((event) {
+          return event.type == RealtimeEventType.orderReadyForPickup &&
+              event.payload['orderId'] == 'ORD-200' &&
+              event.payload['tableId'] == '7' &&
+              event.payload['updatedAt'] == at.toIso8601String();
+        })),
+      );
+
+      service.broadcastOrderReadyForPickup(
+        'ORD-200',
+        tableId: '7',
+        updatedAt: at,
+      );
+    });
+
+    test('broadcastOrderReadyForPickup omits tableId when absent', () async {
+      expectLater(
+        service.events,
+        emits(predicate<RealtimeEvent>((event) {
+          return event.type == RealtimeEventType.orderReadyForPickup &&
+              event.payload.containsKey('tableId') == false;
+        })),
+      );
+
+      service.broadcastOrderReadyForPickup('ORD-201');
     });
 
     test('broadcastTableStatusChanged emits correct event', () async {

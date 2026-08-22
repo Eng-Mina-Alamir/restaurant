@@ -3,12 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/core/notifications/waiter_alert_service.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/waiter_dashboard_page.dart';
 import '../../helpers/test_container.dart';
+
+/// Records pickup notifications without touching platform channels.
+class SpyWaiterAlertService implements WaiterAlertService {
+  int notifyCalls = 0;
+
+  @override
+  Future<void> notifyReadyForPickup() async => notifyCalls++;
+
+  @override
+  void dispose() {}
+}
 
 void main() {
   const burger = MenuItem(
@@ -93,4 +105,127 @@ void main() {
     await pumpPage(tester);
     expect(find.text('الطلبات النشطة'), findsNothing);
   });
+
+  testWidgets(
+    'shows pickup badge and fires the alert when a dine-in order turns ready',
+    (tester) async {
+      final spy = SpyWaiterAlertService();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        additionalOverrides: [
+          waiterAlertServiceProvider.overrideWithValue(spy),
+        ],
+      );
+      addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
+
+      // Place a dine-in order for table 1 (still pending).
+      container
+          .read(cartControllerProvider.notifier)
+          .addItem(const CartItem(menuItem: burger));
+      await container
+          .read(ordersControllerProvider.notifier)
+          .placeOrderForTable('1');
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: WaiterDashboardPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // No badge and no alert while nothing is ready yet.
+      expect(find.byType(Badge), findsNothing);
+      expect(spy.notifyCalls, 0);
+
+      // Kitchen marks it ready → count goes 0 → 1.
+      final orderId = container.read(ordersControllerProvider).first.id;
+      await container
+          .read(ordersControllerProvider.notifier)
+          .updateStatus(orderId, OrderStatus.ready);
+      await tester.pumpAndSettle();
+
+      expect(spy.notifyCalls, 1);
+      expect(find.byType(Badge), findsOneWidget);
+    },
+  );
+
+  testWidgets('badge shows one entry per ready dine-in order', (tester) async {
+    final spy = SpyWaiterAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [
+        waiterAlertServiceProvider.overrideWithValue(spy),
+      ],
+    );
+    addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
+
+    final notifier = container.read(ordersControllerProvider.notifier);
+    final cart = container.read(cartControllerProvider.notifier);
+    for (final table in const ['1', '2']) {
+      cart.addItem(const CartItem(menuItem: burger));
+      await notifier.placeOrderForTable(table);
+    }
+    for (final order in container.read(ordersControllerProvider)) {
+      await notifier.updateStatus(order.id, OrderStatus.ready);
+    }
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: WaiterDashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Badge), findsOneWidget);
+    // Scope to the Badge: table cards also render bare digits.
+    expect(
+      find.descendant(of: find.byType(Badge), matching: find.text('2')),
+      findsOneWidget,
+    );
+    // Mounting with 2 ready orders counts as an increase over the initial
+    // baseline (same as the KDS new-order alert), so exactly one chime.
+    expect(spy.notifyCalls, 1);
+  });
+
+  testWidgets(
+    'ready takeaway orders do not raise the pickup badge or alert',
+    (tester) async {
+      final spy = SpyWaiterAlertService();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        additionalOverrides: [
+          waiterAlertServiceProvider.overrideWithValue(spy),
+        ],
+      );
+      addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
+
+      // Takeaway order placed through the customer flow.
+      container.read(cartControllerProvider.notifier).addItem(
+            const CartItem(menuItem: burger),
+          );
+      await container
+          .read(ordersControllerProvider.notifier)
+          .placeOrder(orderType: OrderType.takeaway);
+      final orderId = container.read(ordersControllerProvider).first.id;
+      await container
+          .read(ordersControllerProvider.notifier)
+          .updateStatus(orderId, OrderStatus.ready);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: WaiterDashboardPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Badge), findsNothing);
+      expect(spy.notifyCalls, 0);
+    },
+  );
 }

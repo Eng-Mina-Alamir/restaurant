@@ -1,12 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:restaurant_app/core/notifications/new_order_notifier.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
-import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/test_container.dart';
 
 void main() {
   const burger = MenuItem(
@@ -45,12 +44,12 @@ void main() {
   });
 
   test('placing an order notifies the shared notifier', () async {
-    final container = ProviderContainer(
-      overrides: [
-        orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
-      ],
-    );
+    // Checkout-time menu revalidation requires a primed menu snapshot,
+    // otherwise placeOrder is rejected before notifying (see
+    // primeMenuForCheckout docs).
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final notifier = container.read(newOrderNotifierProvider);
     final cart = container.read(cartControllerProvider.notifier);

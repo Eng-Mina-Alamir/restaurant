@@ -13,6 +13,7 @@ enum RealtimeEventType {
   orderCreated,
   orderStatusChanged,
   orderStatusReverted,
+  orderReadyForPickup,
   tableStatusChanged,
   driverLocationUpdated,
   deliveryAssignmentCreated,
@@ -65,6 +66,9 @@ class RealtimeEvent {
       case 'orderStatusReverted':
       case 'order_status_reverted':
         return RealtimeEventType.orderStatusReverted;
+      case 'orderReadyForPickup':
+      case 'order_ready_for_pickup':
+        return RealtimeEventType.orderReadyForPickup;
       case 'tableStatusChanged':
       case 'table_status_changed':
         return RealtimeEventType.tableStatusChanged;
@@ -219,6 +223,24 @@ class RealtimeService {
   /// Broadcasts an updated table status.
   void broadcastTableStatusChanged(Map<String, dynamic> tableJson) {
     sendEvent('tableStatusChanged', tableJson);
+  }
+
+  /// Broadcasts a "ready for pickup" alert for a dine-in [orderId].
+  ///
+  /// Mirrors [broadcastOrderStatusChanged]: waiters listen for this event to
+  /// play a pickup chime and raise the dashboard badge. [tableId], when
+  /// provided, scopes the alert to the table the waiter is serving.
+  void broadcastOrderReadyForPickup(
+    String orderId, {
+    String? tableId,
+    DateTime? updatedAt,
+  }) {
+    sendEvent('orderReadyForPickup', {
+      'orderId': orderId,
+      'id': orderId,
+      if (tableId != null) 'tableId': tableId,
+      'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+    });
   }
 
   /// Broadcasts a driver location update.

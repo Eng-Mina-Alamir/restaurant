@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/notifications/waiter_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/animated_counter.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
@@ -17,18 +20,57 @@ import 'waiter_table_card.dart';
 
 /// Waiter / captain dashboard: a grid of restaurant tables with status-aware
 /// actions (take order, release, clean, reserve) and smooth animations.
-class WaiterDashboardPage extends ConsumerWidget {
+///
+/// Also raises an audible/haptic alert and an AppBar badge whenever the
+/// kitchen marks a dine-in order ready for pickup (Gap 11).
+class WaiterDashboardPage extends ConsumerStatefulWidget {
   const WaiterDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WaiterDashboardPage> createState() =>
+      _WaiterDashboardPageState();
+}
+
+class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
+  int _lastReadyPickupCount = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final tables = ref.watch(tableControllerProvider);
     final orders = ref.watch(ordersControllerProvider);
+
+    // Ready-for-pickup: kitchen finished a dine-in ticket and the waiter must
+    // collect it. Alert on every INCREASE of this count, mirroring how the
+    // KDS page alerts when new pending tickets arrive.
+    final readyPickupCount = orders
+        .where(
+          (o) => o.status == OrderStatus.ready && o.orderType == OrderType.dineIn,
+        )
+        .length;
+    if (readyPickupCount > _lastReadyPickupCount) {
+      unawaited(ref.read(waiterAlertServiceProvider).notifyReadyForPickup());
+    }
+    _lastReadyPickupCount = readyPickupCount;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.tablesTitle),
-        actions: const [LogoutActionButton()],
+        actions: [
+          if (readyPickupCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.md),
+              child: Center(
+                child: Tooltip(
+                  message: AppConstants.waiterReadyForPickupBadge,
+                  child: Badge(
+                    label: Text('$readyPickupCount'),
+                    child: const Icon(Icons.room_service),
+                  ),
+                ),
+              ),
+            ),
+          const LogoutActionButton(),
+        ],
       ),
       body: tables.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -51,7 +93,8 @@ class WaiterDashboardPage extends ConsumerWidget {
                         minColumns: 2,
                         maxColumns: 5,
                       );
-                      final ratio = screenType == ScreenType.mobile ? 1.15 : 1.25;
+                      final ratio =
+                          screenType == ScreenType.mobile ? 1.15 : 1.25;
 
                       return GridView.builder(
                         padding: const EdgeInsets.all(AppSpacing.md),
