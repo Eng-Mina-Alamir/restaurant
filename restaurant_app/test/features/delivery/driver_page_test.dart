@@ -13,6 +13,15 @@ void main() {
     await initializeDateFormatting('ar');
   });
 
+  /// Keeps seeded-assignment widget tests offline: the shared provider routes
+  /// to Supabase when AppConfig.useSupabase is enabled (same pattern as the
+  /// orderRepositoryProvider overrides in test/helpers/test_container.dart).
+  List<Override> offlineOverrides() => [
+        deliveryRepositoryProvider.overrideWithValue(
+          InMemoryDeliveryRepository(),
+        ),
+      ];
+
   testWidgets('shows empty state when no delivery jobs', (tester) async {
     final container = ProviderContainer(
       overrides: [
@@ -36,7 +45,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DriverHomePage())),
+      ProviderScope(
+        overrides: offlineOverrides(),
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -94,7 +106,10 @@ void main() {
 
   testWidgets('filters assignments by status chip', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DriverHomePage())),
+      ProviderScope(
+        overrides: offlineOverrides(),
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -121,7 +136,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DriverHomePage())),
+      ProviderScope(
+        overrides: offlineOverrides(),
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
     );
     await tester.pumpAndSettle();
 

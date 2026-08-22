@@ -44,6 +44,18 @@ mixin _$DeliveryAssignment {
   String? get routeOptimized => throw _privateConstructorUsedError;
   double? get routeDistanceMeters => throw _privateConstructorUsedError;
 
+  /// Display-only enrichment joined from the driver's profile (nullable
+  /// because local/seeded assignments have no profile row to join).
+  String? get driverName => throw _privateConstructorUsedError;
+  String? get driverPhone => throw _privateConstructorUsedError;
+  double? get driverRating => throw _privateConstructorUsedError;
+  String? get vehicleInfo => throw _privateConstructorUsedError;
+
+  /// How the assignment was dispatched: 'auto' or 'manual'.
+  String get assignmentMethod => throw _privateConstructorUsedError;
+  @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+  DateTime? get assignedAt => throw _privateConstructorUsedError;
+
   /// Serializes this DeliveryAssignment to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -82,6 +94,13 @@ abstract class $DeliveryAssignmentCopyWith<$Res> {
     double? deliveryFee,
     String? routeOptimized,
     double? routeDistanceMeters,
+    String? driverName,
+    String? driverPhone,
+    double? driverRating,
+    String? vehicleInfo,
+    String assignmentMethod,
+    @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+    DateTime? assignedAt,
   });
 }
 
@@ -113,6 +132,12 @@ class _$DeliveryAssignmentCopyWithImpl<$Res, $Val extends DeliveryAssignment>
     Object? deliveryFee = freezed,
     Object? routeOptimized = freezed,
     Object? routeDistanceMeters = freezed,
+    Object? driverName = freezed,
+    Object? driverPhone = freezed,
+    Object? driverRating = freezed,
+    Object? vehicleInfo = freezed,
+    Object? assignmentMethod = null,
+    Object? assignedAt = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -168,6 +193,30 @@ class _$DeliveryAssignmentCopyWithImpl<$Res, $Val extends DeliveryAssignment>
                 ? _value.routeDistanceMeters
                 : routeDistanceMeters // ignore: cast_nullable_to_non_nullable
                       as double?,
+            driverName: freezed == driverName
+                ? _value.driverName
+                : driverName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            driverPhone: freezed == driverPhone
+                ? _value.driverPhone
+                : driverPhone // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            driverRating: freezed == driverRating
+                ? _value.driverRating
+                : driverRating // ignore: cast_nullable_to_non_nullable
+                      as double?,
+            vehicleInfo: freezed == vehicleInfo
+                ? _value.vehicleInfo
+                : vehicleInfo // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            assignmentMethod: null == assignmentMethod
+                ? _value.assignmentMethod
+                : assignmentMethod // ignore: cast_nullable_to_non_nullable
+                      as String,
+            assignedAt: freezed == assignedAt
+                ? _value.assignedAt
+                : assignedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
           )
           as $Val,
     );
@@ -204,6 +253,13 @@ abstract class _$$DeliveryAssignmentImplCopyWith<$Res>
     double? deliveryFee,
     String? routeOptimized,
     double? routeDistanceMeters,
+    String? driverName,
+    String? driverPhone,
+    double? driverRating,
+    String? vehicleInfo,
+    String assignmentMethod,
+    @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+    DateTime? assignedAt,
   });
 }
 
@@ -234,6 +290,12 @@ class __$$DeliveryAssignmentImplCopyWithImpl<$Res>
     Object? deliveryFee = freezed,
     Object? routeOptimized = freezed,
     Object? routeDistanceMeters = freezed,
+    Object? driverName = freezed,
+    Object? driverPhone = freezed,
+    Object? driverRating = freezed,
+    Object? vehicleInfo = freezed,
+    Object? assignmentMethod = null,
+    Object? assignedAt = freezed,
   }) {
     return _then(
       _$DeliveryAssignmentImpl(
@@ -289,6 +351,30 @@ class __$$DeliveryAssignmentImplCopyWithImpl<$Res>
             ? _value.routeDistanceMeters
             : routeDistanceMeters // ignore: cast_nullable_to_non_nullable
                   as double?,
+        driverName: freezed == driverName
+            ? _value.driverName
+            : driverName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        driverPhone: freezed == driverPhone
+            ? _value.driverPhone
+            : driverPhone // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        driverRating: freezed == driverRating
+            ? _value.driverRating
+            : driverRating // ignore: cast_nullable_to_non_nullable
+                  as double?,
+        vehicleInfo: freezed == vehicleInfo
+            ? _value.vehicleInfo
+            : vehicleInfo // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        assignmentMethod: null == assignmentMethod
+            ? _value.assignmentMethod
+            : assignmentMethod // ignore: cast_nullable_to_non_nullable
+                  as String,
+        assignedAt: freezed == assignedAt
+            ? _value.assignedAt
+            : assignedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
       ),
     );
   }
@@ -318,6 +404,13 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
     this.deliveryFee,
     this.routeOptimized,
     this.routeDistanceMeters,
+    this.driverName,
+    this.driverPhone,
+    this.driverRating,
+    this.vehicleInfo,
+    this.assignmentMethod = 'auto',
+    @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+    this.assignedAt,
   });
 
   factory _$DeliveryAssignmentImpl.fromJson(Map<String, dynamic> json) =>
@@ -361,9 +454,28 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
   @override
   final double? routeDistanceMeters;
 
+  /// Display-only enrichment joined from the driver's profile (nullable
+  /// because local/seeded assignments have no profile row to join).
+  @override
+  final String? driverName;
+  @override
+  final String? driverPhone;
+  @override
+  final double? driverRating;
+  @override
+  final String? vehicleInfo;
+
+  /// How the assignment was dispatched: 'auto' or 'manual'.
+  @override
+  @JsonKey()
+  final String assignmentMethod;
+  @override
+  @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+  final DateTime? assignedAt;
+
   @override
   String toString() {
-    return 'DeliveryAssignment(id: $id, orderId: $orderId, driverId: $driverId, pickupTime: $pickupTime, deliveredTime: $deliveredTime, deliveryLocation: $deliveryLocation, customerPhone: $customerPhone, latitude: $latitude, longitude: $longitude, deliveryStatus: $deliveryStatus, deliveryFee: $deliveryFee, routeOptimized: $routeOptimized, routeDistanceMeters: $routeDistanceMeters)';
+    return 'DeliveryAssignment(id: $id, orderId: $orderId, driverId: $driverId, pickupTime: $pickupTime, deliveredTime: $deliveredTime, deliveryLocation: $deliveryLocation, customerPhone: $customerPhone, latitude: $latitude, longitude: $longitude, deliveryStatus: $deliveryStatus, deliveryFee: $deliveryFee, routeOptimized: $routeOptimized, routeDistanceMeters: $routeDistanceMeters, driverName: $driverName, driverPhone: $driverPhone, driverRating: $driverRating, vehicleInfo: $vehicleInfo, assignmentMethod: $assignmentMethod, assignedAt: $assignedAt)';
   }
 
   @override
@@ -394,12 +506,24 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
             (identical(other.routeOptimized, routeOptimized) ||
                 other.routeOptimized == routeOptimized) &&
             (identical(other.routeDistanceMeters, routeDistanceMeters) ||
-                other.routeDistanceMeters == routeDistanceMeters));
+                other.routeDistanceMeters == routeDistanceMeters) &&
+            (identical(other.driverName, driverName) ||
+                other.driverName == driverName) &&
+            (identical(other.driverPhone, driverPhone) ||
+                other.driverPhone == driverPhone) &&
+            (identical(other.driverRating, driverRating) ||
+                other.driverRating == driverRating) &&
+            (identical(other.vehicleInfo, vehicleInfo) ||
+                other.vehicleInfo == vehicleInfo) &&
+            (identical(other.assignmentMethod, assignmentMethod) ||
+                other.assignmentMethod == assignmentMethod) &&
+            (identical(other.assignedAt, assignedAt) ||
+                other.assignedAt == assignedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     orderId,
@@ -414,7 +538,13 @@ class _$DeliveryAssignmentImpl implements _DeliveryAssignment {
     deliveryFee,
     routeOptimized,
     routeDistanceMeters,
-  );
+    driverName,
+    driverPhone,
+    driverRating,
+    vehicleInfo,
+    assignmentMethod,
+    assignedAt,
+  ]);
 
   /// Create a copy of DeliveryAssignment
   /// with the given fields replaced by the non-null parameter values.
@@ -455,6 +585,13 @@ abstract class _DeliveryAssignment implements DeliveryAssignment {
     final double? deliveryFee,
     final String? routeOptimized,
     final double? routeDistanceMeters,
+    final String? driverName,
+    final String? driverPhone,
+    final double? driverRating,
+    final String? vehicleInfo,
+    final String assignmentMethod,
+    @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+    final DateTime? assignedAt,
   }) = _$DeliveryAssignmentImpl;
 
   factory _DeliveryAssignment.fromJson(Map<String, dynamic> json) =
@@ -495,6 +632,24 @@ abstract class _DeliveryAssignment implements DeliveryAssignment {
   String? get routeOptimized;
   @override
   double? get routeDistanceMeters;
+
+  /// Display-only enrichment joined from the driver's profile (nullable
+  /// because local/seeded assignments have no profile row to join).
+  @override
+  String? get driverName;
+  @override
+  String? get driverPhone;
+  @override
+  double? get driverRating;
+  @override
+  String? get vehicleInfo;
+
+  /// How the assignment was dispatched: 'auto' or 'manual'.
+  @override
+  String get assignmentMethod;
+  @override
+  @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+  DateTime? get assignedAt;
 
   /// Create a copy of DeliveryAssignment
   /// with the given fields replaced by the non-null parameter values.

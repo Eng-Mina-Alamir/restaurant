@@ -22,6 +22,12 @@ _$DeliveryAssignmentImpl _$$DeliveryAssignmentImplFromJson(
   deliveryFee: (json['deliveryFee'] as num?)?.toDouble(),
   routeOptimized: json['routeOptimized'] as String?,
   routeDistanceMeters: (json['routeDistanceMeters'] as num?)?.toDouble(),
+  driverName: json['driverName'] as String?,
+  driverPhone: json['driverPhone'] as String?,
+  driverRating: (json['driverRating'] as num?)?.toDouble(),
+  vehicleInfo: json['vehicleInfo'] as String?,
+  assignmentMethod: json['assignmentMethod'] as String? ?? 'auto',
+  assignedAt: nullableDateTimeFromJson(json['assignedAt']),
 );
 
 Map<String, dynamic> _$$DeliveryAssignmentImplToJson(
@@ -40,4 +46,10 @@ Map<String, dynamic> _$$DeliveryAssignmentImplToJson(
   'deliveryFee': instance.deliveryFee,
   'routeOptimized': instance.routeOptimized,
   'routeDistanceMeters': instance.routeDistanceMeters,
+  'driverName': instance.driverName,
+  'driverPhone': instance.driverPhone,
+  'driverRating': instance.driverRating,
+  'vehicleInfo': instance.vehicleInfo,
+  'assignmentMethod': instance.assignmentMethod,
+  'assignedAt': nullableDateTimeToJson(instance.assignedAt),
 };

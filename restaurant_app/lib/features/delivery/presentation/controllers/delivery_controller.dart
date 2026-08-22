@@ -2,20 +2,29 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/repositories/delivery_repository.dart';
 import '../../data/repositories/hive_delivery_repository.dart';
 import '../../data/repositories/in_memory_delivery_repository.dart';
+import '../../data/repositories/supabase_delivery_repository.dart';
 
 /// Shared [DeliveryRepository].
 ///
-/// Hive-persisted when the local cache is available, in-memory otherwise
-/// (tests / unsupported platforms).
+/// Uses the live Supabase backend when enabled, otherwise Hive-persisted
+/// storage when the local cache is available, or in-memory for tests /
+/// unsupported platforms.
 final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) {
   final cache = ref.watch(localCacheServiceProvider);
+  if (AppConfig.useSupabase) {
+    return SupabaseDeliveryRepository(
+      supabase: ref.watch(supabaseClientProvider),
+    );
+  }
   if (cache != null) return HiveDeliveryRepository(cache);
   return InMemoryDeliveryRepository();
 });
@@ -64,6 +73,23 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   Future<void> _load() async {
     final result = await _repository.getAssignments(_driverId);
     state = result.when(onLeft: (_) => const [], onRight: (list) => list);
+  }
+
+  /// Persists a newly dispatched [assignment].
+  ///
+  /// On success the assignment is appended to state and broadcast over
+  /// realtime so other clients (dispatch board, driver apps) stay in sync.
+  /// Returns false when the repository rejected it.
+  Future<bool> createAssignment(DeliveryAssignment assignment) async {
+    final result = await _repository.createAssignment(assignment);
+    final created = result.when(onLeft: (_) => null, onRight: (a) => a);
+    if (created == null) return false;
+    state = [
+      ...state.where((a) => a.id != created.id),
+      created,
+    ];
+    _realtimeService?.broadcastDeliveryAssignmentCreated(created.toJson());
+    return true;
   }
 
   Future<void> _apply(

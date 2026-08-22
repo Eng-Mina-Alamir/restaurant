@@ -1,6 +1,7 @@
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/delivery_assignment.dart';
+import '../entities/driver_info.dart';
 
 /// Domain contract for delivery assignment access.
 ///
@@ -16,4 +17,18 @@ abstract class DeliveryRepository {
   Future<Either<Failure, DeliveryAssignment>> updateAssignment(
     DeliveryAssignment assignment,
   );
+
+  /// Persists a new dispatch [assignment] (upsert semantics).
+  Future<Either<Failure, DeliveryAssignment>> createAssignment(
+    DeliveryAssignment assignment,
+  );
+
+  /// Loads the assignment linked to [orderId], or null when none exists.
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
+    String orderId,
+  );
+
+  /// Lists drivers currently available for dispatch, enriched with their
+  /// active (non-terminal) assignment counts.
+  Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers();
 }

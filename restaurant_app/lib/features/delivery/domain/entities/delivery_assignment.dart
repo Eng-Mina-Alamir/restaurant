@@ -35,6 +35,18 @@ abstract class DeliveryAssignment with _$DeliveryAssignment {
     double? deliveryFee,
     String? routeOptimized,
     double? routeDistanceMeters,
+
+    /// Display-only enrichment joined from the driver's profile (nullable
+    /// because local/seeded assignments have no profile row to join).
+    String? driverName,
+    String? driverPhone,
+    double? driverRating,
+    String? vehicleInfo,
+
+    /// How the assignment was dispatched: 'auto' or 'manual'.
+    @Default('auto') String assignmentMethod,
+    @JsonKey(fromJson: nullableDateTimeFromJson, toJson: nullableDateTimeToJson)
+    DateTime? assignedAt,
   }) = _DeliveryAssignment;
 
   factory DeliveryAssignment.fromJson(Map<String, dynamic> json) =>

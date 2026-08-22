@@ -1,7 +1,9 @@
 import '../../../../core/data/local_cache_service.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/delivery_assignment.dart';
+import '../../domain/entities/driver_info.dart';
 import '../../domain/repositories/delivery_repository.dart';
 import '../delivery_seed_data.dart';
 
@@ -47,6 +49,60 @@ class HiveDeliveryRepository implements DeliveryRepository {
       return Right<Failure, DeliveryAssignment>(assignment);
     } catch (e) {
       return Left<Failure, DeliveryAssignment>(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, DeliveryAssignment>> createAssignment(
+    DeliveryAssignment assignment,
+  ) => updateAssignment(assignment);
+
+  @override
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
+    String orderId,
+  ) async {
+    try {
+      final all = await _load();
+      DeliveryAssignment? match;
+      for (final a in all) {
+        if (a.orderId == orderId) {
+          match = a;
+          break;
+        }
+      }
+      return Right<Failure, DeliveryAssignment?>(match);
+    } catch (e) {
+      return Left<Failure, DeliveryAssignment?>(CacheFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async {
+    try {
+      // Local mode has no profiles table: derive drivers from the cached /
+      // seeded assignments and count their active (non-terminal) runs.
+      const terminal = {DeliveryStatus.delivered, DeliveryStatus.failed};
+      final all = await _load();
+      final activeCounts = <String, int>{};
+      for (final a in all) {
+        if (!terminal.contains(a.deliveryStatus)) {
+          activeCounts[a.driverId] = (activeCounts[a.driverId] ?? 0) + 1;
+        }
+      }
+      final drivers = activeCounts.entries
+          .map(
+            (entry) => DriverInfo(
+              id: entry.key,
+              name: entry.key,
+              rating: 5.0,
+              activeAssignments: entry.value,
+              isAvailable: true,
+            ),
+          )
+          .toList();
+      return Right<Failure, List<DriverInfo>>(drivers);
+    } catch (e) {
+      return Left<Failure, List<DriverInfo>>(CacheFailure(e.toString()));
     }
   }
 

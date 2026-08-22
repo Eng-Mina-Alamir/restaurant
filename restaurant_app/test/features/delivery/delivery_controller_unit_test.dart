@@ -4,6 +4,7 @@ import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
 import 'package:restaurant_app/core/network/realtime_service.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
+import 'package:restaurant_app/features/delivery/domain/entities/driver_info.dart';
 import 'package:restaurant_app/features/delivery/domain/repositories/delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 
@@ -24,6 +25,34 @@ class _FakeDeliveryRepository implements DeliveryRepository {
       assignments.add(assignment);
     }
     return Right(assignment);
+  }
+
+  @override
+  Future<Either<Failure, DeliveryAssignment>> createAssignment(DeliveryAssignment assignment) async {
+    final index = assignments.indexWhere((a) => a.id == assignment.id);
+    if (index != -1) {
+      assignments[index] = assignment;
+    } else {
+      assignments.add(assignment);
+    }
+    return Right(assignment);
+  }
+
+  @override
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(String orderId) async {
+    DeliveryAssignment? match;
+    for (final a in assignments) {
+      if (a.orderId == orderId) {
+        match = a;
+        break;
+      }
+    }
+    return Right(match);
+  }
+
+  @override
+  Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async {
+    return const Right([]);
   }
 }
 

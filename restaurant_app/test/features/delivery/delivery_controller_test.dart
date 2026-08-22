@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
 
@@ -12,10 +13,19 @@ void main() {
     await initializeDateFormatting('ar');
   });
 
+  /// Keeps tests offline: the shared provider routes to Supabase when
+  /// AppConfig.useSupabase is enabled (same pattern as orderRepositoryProvider
+  /// overrides in test/helpers/test_container.dart).
+  List<Override> offlineOverrides() => [
+        deliveryRepositoryProvider.overrideWithValue(
+          InMemoryDeliveryRepository(),
+        ),
+      ];
+
   group('DeliveryController', () {
     late ProviderContainer container;
 
-    setUp(() => container = ProviderContainer());
+    setUp(() => container = ProviderContainer(overrides: offlineOverrides()));
     tearDown(() => container.dispose());
 
     test('loads seeded assignments for the demo driver', () async {
@@ -52,7 +62,10 @@ void main() {
 
   testWidgets('driver home renders assignments and actions', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: DriverHomePage())),
+      ProviderScope(
+        overrides: offlineOverrides(),
+        child: const MaterialApp(home: DriverHomePage()),
+      ),
     );
     await tester.pumpAndSettle();
 

@@ -15,6 +15,7 @@ enum RealtimeEventType {
   orderStatusReverted,
   tableStatusChanged,
   driverLocationUpdated,
+  deliveryAssignmentCreated,
   unknown,
 }
 
@@ -70,6 +71,9 @@ class RealtimeEvent {
       case 'driverLocationUpdated':
       case 'driver_location_updated':
         return RealtimeEventType.driverLocationUpdated;
+      case 'deliveryAssignmentCreated':
+      case 'delivery_assignment_created':
+        return RealtimeEventType.deliveryAssignmentCreated;
       default:
         return RealtimeEventType.unknown;
     }
@@ -166,6 +170,13 @@ class RealtimeService {
   /// Broadcasts a newly created order.
   void broadcastOrderCreated(Map<String, dynamic> orderJson) {
     sendEvent('orderCreated', orderJson);
+  }
+
+  /// Broadcasts a newly dispatched delivery assignment.
+  void broadcastDeliveryAssignmentCreated(
+    Map<String, dynamic> assignmentJson,
+  ) {
+    sendEvent('deliveryAssignmentCreated', assignmentJson);
   }
 
   /// Broadcasts an updated order status.

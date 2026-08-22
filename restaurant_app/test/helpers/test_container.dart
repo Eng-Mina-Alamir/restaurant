@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restaurant_app/features/coupons/data/repositories/in_memory_coupon_repository.dart';
 import 'package:restaurant_app/features/coupons/presentation/controllers/coupon_controller.dart';
+import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
+import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/inventory/data/repositories/in_memory_inventory_repository.dart';
 import 'package:restaurant_app/features/inventory/presentation/controllers/inventory_controller.dart';
 import 'package:restaurant_app/features/loyalty/data/repositories/in_memory_loyalty_repository.dart';
@@ -26,6 +28,9 @@ ProviderContainer createTestContainer({
     overrides: [
       menuRepositoryProvider.overrideWithValue(MenuRepositoryImpl()),
       orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
+      deliveryRepositoryProvider.overrideWithValue(
+        InMemoryDeliveryRepository(),
+      ),
       tableRepositoryProvider.overrideWithValue(InMemoryTableRepository()),
       couponRepositoryProvider.overrideWithValue(InMemoryCouponRepository()),
       reservationRepositoryProvider.overrideWithValue(InMemoryReservationRepository()),
