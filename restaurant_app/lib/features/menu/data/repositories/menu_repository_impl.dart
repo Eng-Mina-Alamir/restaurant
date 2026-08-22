@@ -7,7 +7,10 @@ import '../menu_seed_data.dart';
 
 /// In-memory and seeded [MenuRepository] supporting dynamic CRUD operations.
 class MenuRepositoryImpl implements MenuRepository {
-  MenuRepositoryImpl() : _currentMenu = MenuSeedData.buildMenu();
+  /// Creates a repository seeded with [initialMenu], falling back to the
+  /// offline [MenuSeedData] menu when null (non-breaking default).
+  MenuRepositoryImpl({Menu? initialMenu})
+      : _currentMenu = initialMenu ?? MenuSeedData.buildMenu();
 
   Menu _currentMenu;
 

@@ -23,8 +23,9 @@ void main() {
   });
 
   test('selected payment method flows into the placed order', () async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     container
         .read(cartControllerProvider.notifier)
@@ -41,8 +42,9 @@ void main() {
   });
 
   test('cash order carries cash payment method', () async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     container
         .read(cartControllerProvider.notifier)

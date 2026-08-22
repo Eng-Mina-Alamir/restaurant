@@ -20,8 +20,9 @@ void main() {
 
   late ProviderContainer container;
 
-  setUp(() {
-    container = createTestContainer();
+  setUp(() async {
+    container = createTestContainer(seedCheckoutFixtures: true);
+    await primeMenuForCheckout(container);
   });
 
   tearDown(() => container.dispose());

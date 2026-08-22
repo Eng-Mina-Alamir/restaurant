@@ -70,8 +70,9 @@ void main() {
   });
 
   testWidgets('shows a sent order and advances its status', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger));
@@ -101,8 +102,9 @@ void main() {
   testWidgets('advances an order through the full KDS workflow', (
     tester,
   ) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger));
@@ -139,8 +141,9 @@ void main() {
   testWidgets('shows modifier options and special notes on the card', (
     tester,
   ) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(
@@ -166,8 +169,9 @@ void main() {
   });
 
   testWidgets('shows new badge for freshly placed orders', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger));
@@ -185,8 +189,9 @@ void main() {
   });
 
   testWidgets('shows item count and order total on the card', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger, quantity: 2));
@@ -205,8 +210,9 @@ void main() {
   });
 
   testWidgets('shows the table number instead of the raw id', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger));

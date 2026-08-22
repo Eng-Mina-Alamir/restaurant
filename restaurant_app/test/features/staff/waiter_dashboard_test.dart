@@ -66,8 +66,9 @@ void main() {
   testWidgets('shows an active orders summary when orders exist', (
     tester,
   ) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     // Place a pending order so the summary row appears.
     final cart = container.read(cartControllerProvider.notifier);

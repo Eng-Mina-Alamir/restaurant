@@ -37,8 +37,9 @@ void main() {
   });
 
   testWidgets('shows active order items after placing one', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     // Pump first so TableController's async load completes.
     await tester.pumpWidget(

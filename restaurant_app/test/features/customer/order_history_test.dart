@@ -42,8 +42,9 @@ void main() {
   });
 
   testWidgets('lists placed orders with reorder action', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger, quantity: 2));
@@ -68,8 +69,9 @@ void main() {
   });
 
   testWidgets('reorder adds items back to the cart', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger, quantity: 2));
@@ -108,8 +110,9 @@ void main() {
   });
 
   testWidgets('reorder skips unavailable items', (tester) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     // fries becomes unavailable after the original order was placed.
     final cart = container.read(cartControllerProvider.notifier);
@@ -156,8 +159,9 @@ void main() {
   testWidgets('reorder reports skipped items when some are unavailable', (
     tester,
   ) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     cart.addItem(const CartItem(menuItem: burger));
