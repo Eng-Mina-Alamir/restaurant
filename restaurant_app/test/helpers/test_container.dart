@@ -54,6 +54,27 @@ const Menu checkoutFixtureMenu = Menu(
   items: checkoutFixtureItems,
 );
 
+/// Builds the [Menu] served when fixture seeding is active, extending the
+/// canonical [checkoutFixtureMenu] with [extras].
+///
+/// Keeps the fixture menu's restaurantId and category list; categories
+/// referenced only by extra items are appended at the end so both
+/// category-based UIs and id-based lookups succeed. Returns
+/// [checkoutFixtureMenu] itself when [extras] is empty.
+Menu buildCheckoutFixtureMenu(List<MenuItem> extras) {
+  if (extras.isEmpty) return checkoutFixtureMenu;
+  final extraCategories = <String>{
+    for (final item in extras)
+      if (!checkoutFixtureMenu.categories.contains(item.categoryId))
+        item.categoryId,
+  };
+  return Menu(
+    restaurantId: checkoutFixtureMenu.restaurantId,
+    categories: <String>[...checkoutFixtureMenu.categories, ...extraCategories],
+    items: <MenuItem>[...checkoutFixtureItems, ...extras],
+  );
+}
+
 /// Creates a [ProviderContainer] preconfigured with in-memory test doubles
 /// for isolated timeline and integration test runs without remote network calls.
 ///
@@ -61,15 +82,25 @@ const Menu checkoutFixtureMenu = Menu(
 /// default [MenuSeedData] menu — required for suites that place orders through
 /// [ordersControllerProvider], whose checkout-time revalidation looks items up
 /// against the live menu snapshot.
+///
+/// Pass [extraCheckoutItems] to serve [checkoutFixtureMenu] extended with
+/// those items (see [buildCheckoutFixtureMenu]). Passing a non-empty list
+/// implies fixture seeding even when [seedCheckoutFixtures] is false. When
+/// both parameters are omitted the default [MenuSeedData] menu is served
+/// unchanged.
 ProviderContainer createTestContainer({
   List<Override> additionalOverrides = const [],
   bool seedCheckoutFixtures = false,
+  List<MenuItem> extraCheckoutItems = const [],
 }) {
+  final serveFixtures = seedCheckoutFixtures || extraCheckoutItems.isNotEmpty;
   return ProviderContainer(
     overrides: [
       menuRepositoryProvider.overrideWithValue(
-        seedCheckoutFixtures
-            ? MenuRepositoryImpl(initialMenu: checkoutFixtureMenu)
+        serveFixtures
+            ? MenuRepositoryImpl(
+                initialMenu: buildCheckoutFixtureMenu(extraCheckoutItems),
+              )
             : MenuRepositoryImpl(),
       ),
       orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
