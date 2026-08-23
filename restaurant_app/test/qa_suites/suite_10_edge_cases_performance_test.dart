@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/network/connectivity_service.dart';
+import 'package:restaurant_app/core/notifications/kds_alert_service.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/kds/presentation/pages/kds_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/spy_kds_alert_service.dart';
 import 'helpers/qa_test_helpers.dart';
 
 void main() {
@@ -123,7 +125,10 @@ void main() {
     testWidgets('TC-EDGE-05: KDS renders cleanly on Tablet Landscape (1280x800) and Phone (390x844)', (
       tester,
     ) async {
-      final container = createQaContainer();
+      final spy = SpyKdsAlertService();
+      final container = createQaContainer(
+        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+      );
       addTearDown(container.dispose);
 
       // 1. Tablet Landscape (1280x800)

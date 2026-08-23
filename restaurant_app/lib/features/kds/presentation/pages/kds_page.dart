@@ -33,7 +33,6 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   static const _elapsedRefreshInterval = Duration(minutes: 1);
 
   Timer? _elapsedTimer;
-  final KdsAlertService _alertService = KdsAlertService();
   int _lastOrderCount = 0;
 
   @override
@@ -48,7 +47,6 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   @override
   void dispose() {
     _elapsedTimer?.cancel();
-    _alertService.dispose();
     super.dispose();
   }
 
@@ -82,7 +80,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     // Alert when new pending orders arrive
     final pendingCount = active.where((o) => o.status == OrderStatus.pending).length;
     if (pendingCount > _lastOrderCount) {
-      _alertService.alertNewOrder();
+      ref.read(kdsAlertServiceProvider).alertNewOrder();
     }
     _lastOrderCount = pendingCount;
 
@@ -254,7 +252,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     ref.read(newOrderNotifierProvider).reset();
     final next = _nextStatus(order.status);
     if (next == null) return;
-    _alertService.alertOrderReady();
+    ref.read(kdsAlertServiceProvider).alertOrderReady();
     await ref
         .read(ordersControllerProvider.notifier)
         .updateStatus(order.id, next);

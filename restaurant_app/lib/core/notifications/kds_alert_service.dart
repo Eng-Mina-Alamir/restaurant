@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Handles audio and haptic alerts for the Kitchen Display System.
 ///
@@ -74,3 +75,11 @@ enum KdsUrgency {
     }
   }
 }
+
+/// Single shared KDS alert service so pages (and tests) can observe
+/// kitchen notifications without touching platform channels directly.
+final kdsAlertServiceProvider = Provider<KdsAlertService>((ref) {
+  final service = KdsAlertService();
+  ref.onDispose(service.dispose);
+  return service;
+});

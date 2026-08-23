@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/core/notifications/kds_alert_service.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/kds/presentation/pages/kds_page.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../helpers/spy_kds_alert_service.dart';
 import '../helpers/test_container.dart';
 
 void main() {
@@ -19,9 +21,11 @@ void main() {
 
   group('KDS Flow Integration', () {
     testWidgets('Full lifecycle: Order arrives -> Preparing -> Ready -> Completed', (tester) async {
+      final spy = SpyKdsAlertService();
       final container = createTestContainer(
         seedCheckoutFixtures: true,
         extraCheckoutItems: [pizza],
+        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
       );
       addTearDown(container.dispose);
       await primeMenuForCheckout(container);
@@ -46,6 +50,8 @@ void main() {
       // 1. Initial pending state
       expect(find.textContaining('بيتزا مارجريتا'), findsOneWidget);
       expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
+      // The incoming batch fired exactly one new-order alert.
+      expect(spy.newOrderAlerts, 1);
 
       // 2. Advance to preparing
       await tester.tap(find.text('قيد التحضير').last);
@@ -65,6 +71,9 @@ void main() {
 
       // Order should now be completed and removed from active KDS columns
       expect(find.textContaining('بيتزا مارجريتا'), findsNothing);
+      // Three advance taps (pending→preparing→ready→served) fired the
+      // ready-alert once per advance.
+      expect(spy.orderReadyAlerts, 3);
     });
   });
 }

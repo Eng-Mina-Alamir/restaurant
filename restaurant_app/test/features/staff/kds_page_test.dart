@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
+import 'package:restaurant_app/core/notifications/kds_alert_service.dart';
 import 'package:restaurant_app/features/auth/domain/entities/user_entity.dart';
 import 'package:restaurant_app/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
@@ -13,6 +14,7 @@ import 'package:restaurant_app/features/orders/data/repositories/in_memory_order
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import '../../helpers/spy_kds_alert_service.dart';
 import '../../helpers/test_container.dart';
 
 /// Auth controller double that boots straight into a fixed state (no
@@ -63,14 +65,23 @@ void main() {
 
   testWidgets('shows empty state when no orders', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: KdsPage())),
+      ProviderScope(
+        overrides: [
+          kdsAlertServiceProvider.overrideWithValue(SpyKdsAlertService()),
+        ],
+        child: const MaterialApp(home: KdsPage()),
+      ),
     );
     await tester.pump();
     expect(find.text('لا توجد طلبات حالياً'), findsOneWidget);
   });
 
   testWidgets('shows a sent order and advances its status', (tester) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -92,17 +103,24 @@ void main() {
     expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
     // Empty columns show a contextual placeholder.
     expect(find.text('لا توجد طلبات'), findsWidgets);
+    // One pending batch arrived since the board opened → exactly one chime.
+    expect(spy.newOrderAlerts, 1);
 
     // Advance to preparing.
     await tester.tap(find.text('قيد التحضير').last);
     await tester.pumpAndSettle();
     expect(find.text('جاهز للتسليم'), findsOneWidget);
+    expect(spy.orderReadyAlerts, 1);
   });
 
   testWidgets('advances an order through the full KDS workflow', (
     tester,
   ) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -141,7 +159,11 @@ void main() {
   testWidgets('shows modifier options and special notes on the card', (
     tester,
   ) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -169,7 +191,11 @@ void main() {
   });
 
   testWidgets('shows new badge for freshly placed orders', (tester) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -186,10 +212,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('جديد'), findsOneWidget);
+    // Freshly placed batch fired exactly one new-order alert.
+    expect(spy.newOrderAlerts, 1);
   });
 
   testWidgets('shows item count and order total on the card', (tester) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -210,7 +242,11 @@ void main() {
   });
 
   testWidgets('shows the table number instead of the raw id', (tester) async {
-    final container = createTestContainer(seedCheckoutFixtures: true);
+    final spy = SpyKdsAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+    );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
 
@@ -266,7 +302,10 @@ void main() {
     }
 
     testWidgets('hides orders claimed by another chef', (tester) async {
-      final container = _containerWithChef('chef-1');
+      final spy = SpyKdsAlertService();
+      final container = _containerWithChef('chef-1', additionalOverrides: [
+        kdsAlertServiceProvider.overrideWithValue(spy),
+      ]);
       addTearDown(container.dispose);
 
       seedOrders(container, [
@@ -300,7 +339,10 @@ void main() {
     testWidgets('claim assigns the current user id to the order', (
       tester,
     ) async {
-      final container = _containerWithChef('chef-1');
+      final spy = SpyKdsAlertService();
+      final container = _containerWithChef('chef-1', additionalOverrides: [
+        kdsAlertServiceProvider.overrideWithValue(spy),
+      ]);
       addTearDown(container.dispose);
 
       seedOrders(container, [seedOrder('ORD-KDS-1')]);
@@ -326,9 +368,11 @@ void main() {
       tester,
     ) async {
       final repo = InMemoryOrderRepository();
+      final spy = SpyKdsAlertService();
       final container =
           _containerWithChef('chef-1', additionalOverrides: [
         orderRepositoryProvider.overrideWithValue(repo),
+        kdsAlertServiceProvider.overrideWithValue(spy),
       ]);
       addTearDown(container.dispose);
 
@@ -376,7 +420,10 @@ void main() {
     testWidgets('completed and cancelled cards never offer undo', (
       tester,
     ) async {
-      final container = _containerWithChef('chef-1');
+      final spy = SpyKdsAlertService();
+      final container = _containerWithChef('chef-1', additionalOverrides: [
+        kdsAlertServiceProvider.overrideWithValue(spy),
+      ]);
       addTearDown(container.dispose);
 
       seedOrders(container, [
