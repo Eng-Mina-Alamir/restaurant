@@ -17,6 +17,8 @@ import 'package:restaurant_app/features/coupons/domain/entities/coupon_entity.da
 
 import '../../helpers/test_container.dart';
 
+export '../../helpers/test_container.dart' show primeMenuForCheckout;
+
 /// Global QA Test initialization for GoogleFonts and Hive
 bool _qaEnvInitialized = false;
 void initQaTestEnvironment() {
@@ -208,13 +210,23 @@ class QaSeedData {
 }
 
 /// Test helper to create configured ProviderContainer
+///
+/// Pass [seedCheckoutFixtures] / [extraCheckoutItems] through to
+/// [createTestContainer] so suites that place orders via
+/// [ordersControllerProvider] get a menu snapshot containing those items —
+/// checkout-time revalidation rejects items missing from the live menu.
+/// Pair with [primeMenuForCheckout] before placing orders.
 ProviderContainer createQaContainer({
   QaMockAuthRemoteDataSource? authDataSource,
   RealtimeService? realtimeService,
   ConnectivityService? connectivityService,
   List<Override> additionalOverrides = const [],
+  bool seedCheckoutFixtures = false,
+  List<MenuItem> extraCheckoutItems = const [],
 }) {
   final container = createTestContainer(
+    seedCheckoutFixtures: seedCheckoutFixtures,
+    extraCheckoutItems: extraCheckoutItems,
     additionalOverrides: [
       if (authDataSource != null)
         authRemoteDataSourceProvider.overrideWithValue(authDataSource),

@@ -52,8 +52,11 @@ void main() {
     // TC-WAIT-02: Open New Order For Table
     // -------------------------------------------------------------
     test('TC-WAIT-02: Waiter opens order for table, sets items and marks table occupied', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [sampleItem1, sampleItem2],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: sampleItem1, quantity: 2));
@@ -78,8 +81,11 @@ void main() {
     // TC-WAIT-03: Add Items to Open Order
     // -------------------------------------------------------------
     test('TC-WAIT-03: Waiter appends extra items to existing table order', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [sampleItem1, sampleItem2],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       final ordersNotifier = container.read(ordersControllerProvider.notifier);

@@ -29,8 +29,11 @@ void main() {
     // TC-KDS-01: Instant Order Ticket Reception
     // -------------------------------------------------------------
     test('TC-KDS-01: New placed order immediately appears in KDS active orders stream', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [grillItem, drinkItem],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: grillItem, quantity: 1));
@@ -49,8 +52,11 @@ void main() {
     // TC-KDS-02: Ticket Details & Special Cooking Instructions
     // -------------------------------------------------------------
     test('TC-KDS-02: KDS order ticket preserves special dietary instructions and notes', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [grillItem, drinkItem],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       const specialNote = 'بدون شطة نهائياً / حساسية لاكتوز حادة';
@@ -95,8 +101,11 @@ void main() {
     // TC-KDS-04: Prep Status Lifecycle Progression
     // -------------------------------------------------------------
     test('TC-KDS-04: KDS moves ticket from Pending -> Preparing -> Ready -> Served', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [grillItem, drinkItem],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: grillItem));
@@ -133,8 +142,11 @@ void main() {
     // TC-KDS-05: Kitchen Station Filtering
     // -------------------------------------------------------------
     test('TC-KDS-05: Orders can be filtered by station category (Grill vs Drinks)', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(
+        extraCheckoutItems: [grillItem, drinkItem],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       final ordersNotifier = container.read(ordersControllerProvider.notifier);

@@ -153,11 +153,12 @@ void main() {
     // TC-CUST-06: Order Placement & Cart Clearance
     // -------------------------------------------------------------
     test('TC-CUST-06: Order placement clears active cart and sets order entity', () async {
-      final container = createQaContainer();
+      const testItem = MenuItem(id: 'ord-item-1', categoryId: 'c1', name: 'وجبة تجريبية', description: 'وصف', price: 75.0);
+      final container = createQaContainer(extraCheckoutItems: const [testItem]);
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
-      const testItem = MenuItem(id: 'ord-item-1', categoryId: 'c1', name: 'وجبة تجريبية', description: 'وصف', price: 75.0);
       cartNotifier.addItem(const CartItem(menuItem: testItem, quantity: 1));
       expect(container.read(cartControllerProvider), hasLength(1));
 
@@ -176,11 +177,12 @@ void main() {
     // TC-CUST-07: Realtime Order Tracking Timeline Progression
     // -------------------------------------------------------------
     test('TC-CUST-07: Order status advances through tracking states', () async {
-      final container = createQaContainer();
+      const testItem = MenuItem(id: 'track-item', categoryId: 'c1', name: 'طلب متابعة', description: 'وصف', price: 50.0);
+      final container = createQaContainer(extraCheckoutItems: const [testItem]);
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
-      const testItem = MenuItem(id: 'track-item', categoryId: 'c1', name: 'طلب متابعة', description: 'وصف', price: 50.0);
       cartNotifier.addItem(const CartItem(menuItem: testItem));
 
       final ordersNotifier = container.read(ordersControllerProvider.notifier);

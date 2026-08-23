@@ -30,8 +30,14 @@ void main() {
       // Set to offline
       connectivity.goOffline();
 
-      final container = createQaContainer(connectivityService: connectivity);
+      final container = createQaContainer(
+        connectivityService: connectivity,
+        extraCheckoutItems: [testItem],
+      );
       addTearDown(container.dispose);
+      // Prime the menu snapshot BEFORE entering the offline branch — checkout
+      // revalidation runs synchronously against the live menu.
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: testItem));
@@ -54,8 +60,9 @@ void main() {
     // TC-EDGE-02: Idempotency & Unique Identifiers
     // -------------------------------------------------------------
     test('TC-EDGE-02: Each generated order possesses a distinct unique identifier to avoid duplicate charges', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(extraCheckoutItems: [testItem]);
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       final ordersNotifier = container.read(ordersControllerProvider.notifier);
@@ -75,8 +82,9 @@ void main() {
     // TC-EDGE-03: Double-Tap Prevention
     // -------------------------------------------------------------
     test('TC-EDGE-03: Rapid concurrent placeOrder requests result in single order execution', () async {
-      final container = createQaContainer();
+      final container = createQaContainer(extraCheckoutItems: [testItem]);
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: testItem));
