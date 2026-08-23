@@ -24,7 +24,8 @@ void main() {
   );
 
   Future<ProviderContainer> seedOrder() async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
+    await primeMenuForCheckout(container);
     container
         .read(cartControllerProvider.notifier)
         .addItem(const CartItem(menuItem: burger, quantity: 1));

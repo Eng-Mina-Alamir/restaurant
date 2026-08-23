@@ -15,7 +15,7 @@ void main() {
     categoryId: 'برجر',
     name: 'برجر كلاسيك',
     description: 'وصف',
-    price: 30.0,
+    price: 28,
   );
 
   group('InvoicesPage', () {
@@ -34,7 +34,8 @@ void main() {
     });
 
     testWidgets('shows invoice card when completed orders exist and clicking export triggers snackbar', (tester) async {
-      final container = createTestContainer();
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      await primeMenuForCheckout(container);
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);

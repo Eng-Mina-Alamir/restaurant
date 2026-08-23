@@ -29,7 +29,8 @@ void main() {
     });
 
     test('aggregates order totals and item popularity', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      await primeMenuForCheckout(container);
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -46,7 +47,8 @@ void main() {
     });
 
     test('category revenue aggregates multiple orders', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      await primeMenuForCheckout(container);
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -60,7 +62,8 @@ void main() {
     });
 
     test('tracks revenue by payment method', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      await primeMenuForCheckout(container);
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -73,7 +76,8 @@ void main() {
     });
 
     test('counts completed orders in sales, pending ones do not', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      await primeMenuForCheckout(container);
       addTearDown(container.dispose);
 
       final cart = container.read(cartControllerProvider.notifier);
@@ -111,7 +115,8 @@ void main() {
   testWidgets('shows an order status breakdown when orders exist', (
     tester,
   ) async {
-    final container = createTestContainer();
+    final container = createTestContainer(seedCheckoutFixtures: true);
+    await primeMenuForCheckout(container);
     addTearDown(container.dispose);
 
     final cart = container.read(cartControllerProvider.notifier);
