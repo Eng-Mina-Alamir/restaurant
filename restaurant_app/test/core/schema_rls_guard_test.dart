@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final schema = _loadSqlFile('supabase_schema.sql');
   final migrationV3 = _loadSqlFile('supabase_migration_v3.sql');
+  final migrationV4 = _loadSqlFile('supabase_migration_v4.sql');
 
   group('Supabase schema RLS hardening guard', () {
     final createdTables = RegExp(
@@ -182,6 +183,72 @@ void main() {
         reason:
             'order_status_log_insert must be identical in both SQL files',
       );
+    });
+  });
+
+  group('migration v4 (chat) guard', () {
+    final normalizedSchema = schema.replaceAll(RegExp(r'\s+'), ' ');
+    final normalizedV4 = migrationV4.replaceAll(RegExp(r'\s+'), ' ');
+
+    test('chat_messages table exists in both files', () {
+      expect(normalizedSchema.contains('CREATE TABLE IF NOT EXISTS public.chat_messages'),
+          isTrue);
+      expect(normalizedV4.contains('CREATE TABLE IF NOT EXISTS public.chat_messages'),
+          isTrue);
+    });
+
+    test('chat RLS binds sender_id = auth.uid() on INSERT in both files', () {
+      for (final entry in <String, String>{
+        'supabase_schema.sql': normalizedSchema,
+        'supabase_migration_v4.sql': normalizedV4,
+      }.entries) {
+        final insertMatch = RegExp(
+          r'CREATE POLICY chat_messages_insert\b[^;]*;',
+          caseSensitive: false,
+        ).firstMatch(entry.value);
+        expect(insertMatch, isNotNull, reason: entry.key);
+        expect(
+          insertMatch!.group(0),
+          contains('sender_id = auth.uid()'),
+          reason: '${entry.key}: chat inserts must be authored by the caller',
+        );
+        // Participant gate must reference BOTH participant paths.
+        expect(insertMatch.group(0), contains('o.customer_id = auth.uid()'),
+            reason: entry.key);
+        expect(insertMatch.group(0), contains('da.driver_id = auth.uid()'),
+            reason: entry.key);
+      }
+    });
+
+    test('migration v4 keeps policies statement-identical to schema', () {
+      String normalize(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ');
+      String policyOf(String sql, String name) => normalize(sql)
+          .split('CREATE POLICY $name ')
+          .last
+          .split(';')
+          .first;
+
+      expect(policyOf(migrationV4, 'chat_messages_select'),
+          equals(policyOf(schema, 'chat_messages_select')));
+      expect(policyOf(migrationV4, 'chat_messages_insert'),
+          equals(policyOf(schema, 'chat_messages_insert')));
+    });
+
+    test('every v4 CREATE POLICY is preceded by DROP POLICY IF EXISTS', () {
+      final creates = RegExp(
+        r'CREATE POLICY (\w+) ON public\.(\w+)\b',
+        caseSensitive: false,
+      ).allMatches(migrationV4).toList();
+
+      expect(creates, isNotEmpty);
+      for (final create in creates) {
+        final drop = RegExp(
+          'DROP POLICY IF EXISTS ${create.group(1)!} ON public\\.${create.group(2)!}\\s*;',
+          caseSensitive: false,
+        ).firstMatch(migrationV4);
+        expect(drop, isNotNull);
+        expect(drop!.start, lessThan(create.start));
+      }
     });
   });
 }

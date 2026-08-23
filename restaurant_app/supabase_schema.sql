@@ -815,3 +815,56 @@ CREATE POLICY order_status_log_insert ON public.order_status_log
     FOR INSERT TO authenticated
     WITH CHECK (public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[])
                 AND changed_by = auth.uid());
+
+-- ------------------------------------------------------------------------------
+-- 💬 SCHEMA V4 — CUSTOMER ↔ DRIVER CHAT (order-scoped, ephemeral with the order)
+-- ==============================================================================
+-- Participants of an order's conversation: the customer who placed it, the
+-- driver assigned to deliver it, and managers/admins for support. Everyone
+-- else — including other drivers and staff roles — is denied by default.
+-- Messages live as long as the order does (ON DELETE CASCADE).
+-- Every statement is idempotent; RLS is deny-by-default on top of the
+-- server-side role helpers.
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id TEXT NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+    sender_id UUID NOT NULL REFERENCES public.profiles(id),
+    body TEXT NOT NULL CHECK (char_length(body) BETWEEN 1 AND 1000),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_order_id ON public.chat_messages(order_id);
+
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY chat_messages_select ON public.chat_messages
+    FOR SELECT TO authenticated
+    USING (sender_id = auth.uid()
+           OR public.is_manager_or_admin()
+           OR EXISTS (
+               SELECT 1 FROM public.orders o
+               WHERE o.id = chat_messages.order_id
+                 AND o.customer_id = auth.uid()
+           )
+           OR EXISTS (
+               SELECT 1 FROM public.delivery_assignments da
+               WHERE da.order_id = chat_messages.order_id
+                 AND da.driver_id = auth.uid()
+           ));
+CREATE POLICY chat_messages_insert ON public.chat_messages
+    FOR INSERT TO authenticated
+    WITH CHECK (sender_id = auth.uid()
+                AND (
+                    public.is_manager_or_admin()
+                    OR EXISTS (
+                        SELECT 1 FROM public.orders o
+                        WHERE o.id = chat_messages.order_id
+                          AND o.customer_id = auth.uid()
+                    )
+                    OR EXISTS (
+                        SELECT 1 FROM public.delivery_assignments da
+                        WHERE da.order_id = chat_messages.order_id
+                          AND da.driver_id = auth.uid()
+                    )
+                ));

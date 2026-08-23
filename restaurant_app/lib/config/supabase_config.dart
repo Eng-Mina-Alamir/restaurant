@@ -31,6 +31,7 @@ abstract final class SupabaseConfig {
   static const String loyaltyRewardsTable = 'loyalty_rewards';
   static const String deliveryAssignmentsTable = 'delivery_assignments';
   static const String orderStatusLogTable = 'order_status_log';
+  static const String chatMessagesTable = 'chat_messages';
 
   // ── Storage Buckets ───────────────────────────────────────────────────────
   static const String menuBucket = 'menu-images';
