@@ -430,6 +430,11 @@ class _CapturingDeliveryRepository implements DeliveryRepository {
   }
 
   @override
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+    return const Right<Failure, List<DeliveryAssignment>>([]);
+  }
+
+  @override
   Future<Either<Failure, List<DeliveryAssignment>>> getAssignments(
     String driverId,
   ) async {

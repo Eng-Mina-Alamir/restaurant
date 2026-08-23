@@ -28,6 +28,14 @@ abstract class DeliveryRepository {
     String orderId,
   );
 
+  /// Bulk-reads every assignment still relevant to dispatch: everything
+  /// except finalized deliveries.
+  ///
+  /// FAILED rows are deliberately included so the manager board can offer
+  /// them for re-assignment; use [getAssignmentByOrderId] for per-order
+  /// lookups around writes instead of looping over this method.
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments();
+
   /// Lists drivers currently available for dispatch, enriched with their
   /// active (non-terminal) assignment counts.
   Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers();

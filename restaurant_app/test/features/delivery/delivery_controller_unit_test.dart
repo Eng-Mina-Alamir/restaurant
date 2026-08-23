@@ -54,6 +54,11 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async {
     return const Right([]);
   }
+
+  @override
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+    return const Right([]);
+  }
 }
 
 void main() {

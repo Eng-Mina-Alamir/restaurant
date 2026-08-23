@@ -119,27 +119,36 @@ class DispatchController
     final undispatched = <OrderEntity>[];
     final failed = <FailedAssignmentEntry>[];
 
+    // ONE bulk read instead of a per-order lookup per candidate (N+1 fix):
+    // classification runs locally against an orderId→assignment map.
+    final assignmentsResult = await _repository.getActiveAssignments();
+    final assignmentByOrderId = <String, DeliveryAssignment>{};
+    assignmentsResult.when(
+      onLeft: (failure) {
+        AppLogger.warning(
+          '[Dispatch] outcome=lookup-failed '
+          'source=board-refresh reason=${failure.message}; orders skipped',
+        );
+        if (!issues.contains(failure.message)) issues.add(failure.message);
+      },
+      onRight: (assignments) {
+        for (final assignment in assignments) {
+          // First match wins, mirroring per-order lookup semantics.
+          assignmentByOrderId.putIfAbsent(assignment.orderId, () => assignment);
+        }
+      },
+    );
+
     for (final order in _dispatchCandidates()) {
-      final result = await _repository.getAssignmentByOrderId(order.id);
-      result.when(
-        onLeft: (failure) {
-          AppLogger.warning(
-            '[Dispatch] outcome=lookup-failed orderId=${order.id} '
-            'source=board-refresh reason=${failure.message}; order skipped',
-          );
-          if (!issues.contains(failure.message)) issues.add(failure.message);
-        },
-        onRight: (assignment) {
-          if (assignment == null) {
-            undispatched.add(order);
-          } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
-            failed.add(
-              FailedAssignmentEntry(order: order, assignment: assignment),
-            );
-          }
-          // Any other status means the order is already on the road — skip.
-        },
-      );
+      final assignment = assignmentByOrderId[order.id];
+      if (assignment == null) {
+        undispatched.add(order);
+      } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
+        failed.add(
+          FailedAssignmentEntry(order: order, assignment: assignment),
+        );
+      }
+      // Any other status means the order is already on the road — skip.
     }
 
     var drivers = previous.availableDrivers;

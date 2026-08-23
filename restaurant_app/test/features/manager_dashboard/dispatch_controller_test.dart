@@ -53,6 +53,28 @@ class FailingCreateAssignmentRepository extends InMemoryDeliveryRepository {
       );
 }
 
+/// Counts bulk vs per-order reads to pin down the board-refresh N+1 fix.
+class CountingBulkRepository extends InMemoryDeliveryRepository {
+  CountingBulkRepository({super.seed});
+
+  int bulkCalls = 0;
+  int perOrderLookups = 0;
+
+  @override
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() {
+    bulkCalls++;
+    return super.getActiveAssignments();
+  }
+
+  @override
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
+    String orderId,
+  ) {
+    perOrderLookups++;
+    return super.getAssignmentByOrderId(orderId);
+  }
+}
+
 OrderEntity buildOrder({
   required String id,
   OrderType orderType = OrderType.delivery,
@@ -225,6 +247,46 @@ void main() {
       // No phantom broadcast for a rejected write; order stays undispatched.
       expect(realtime.assignmentBroadcasts, isEmpty);
       expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A']);
+    });
+
+    test('refresh classifies from ONE bulk read with zero per-order lookups',
+        () async {
+      final repo = CountingBulkRepository(
+        seed: [
+          buildSeedAssignment(orderId: 'ORD-B'),
+          buildSeedAssignment(
+            orderId: 'ORD-E',
+            id: 'ASG-ORD-E-live',
+            driverId: 'driver-busy',
+            status: DeliveryStatus.inTransit,
+          ),
+        ],
+      );
+      final container = buildDispatchContainer(
+        orders: [
+          buildOrder(id: 'ORD-A'),
+          buildOrder(id: 'ORD-B'),
+          buildOrder(id: 'ORD-C'),
+        ],
+        repository: repo,
+      );
+      addTearDown(container.dispose);
+
+      // Reading the provider fires an initial refresh from the constructor;
+      // reset the counters so only the explicit pass below is measured.
+      final controller = container.read(dispatchControllerProvider.notifier);
+      repo.bulkCalls = 0;
+      repo.perOrderLookups = 0;
+
+      await controller.refresh();
+
+      expect(repo.bulkCalls, 1);
+      expect(repo.perOrderLookups, 0);
+
+      // The single bulk read still classifies every candidate correctly.
+      final state = container.read(dispatchControllerProvider).requireValue;
+      expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A', 'ORD-C']);
+      expect(state.failedAssignments.single.order.id, 'ORD-B');
     });
 
     test('reassigning a failed assignment preserves the original id '

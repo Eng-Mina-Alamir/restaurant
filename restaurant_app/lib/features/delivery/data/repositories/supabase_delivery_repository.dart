@@ -94,6 +94,32 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
   }
 
   @override
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+    try {
+      // ONE bulk read mirroring the active-counts query in
+      // [getAvailableDrivers]. Reuses the driver-enrichment select so board
+      // rows render identically to per-order lookups. Only finalized
+      // deliveries are trimmed; FAILED rows stay included because the board
+      // lists them for manual re-assignment.
+      final response = await _supabase
+          .from(SupabaseConfig.deliveryAssignmentsTable)
+          .select(_selectWithDriver)
+          .not('delivery_status', 'in', "('delivered')");
+      final assignments = (response as List)
+          .map(
+            (raw) => _assignmentFromRow(Map<String, dynamic>.from(raw as Map)),
+          )
+          .toList();
+      return Right<Failure, List<DeliveryAssignment>>(assignments);
+    } catch (e) {
+      AppLogger.error('Supabase getActiveAssignments error: $e');
+      return Left<Failure, List<DeliveryAssignment>>(
+        ServerFailure('فشل جلب مهام التوصيل النشطة: $e'),
+      );
+    }
+  }
+
+  @override
   Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async {
     try {
       // 1. Available driver profiles (profiles has no coordinates columns;
