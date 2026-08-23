@@ -26,8 +26,12 @@ void main() {
     );
 
     test('Kitchen KDS Timeline: Order Inflow -> Alert Sound -> Station Dispatch -> Prep Timer Progression -> Print Ticket -> Mark Ready', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [charcoalChicken, fattoushSalad],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.setTableId('TBL-07');

@@ -44,8 +44,12 @@ void main() {
     );
 
     test('Grand Symphony: Manager opens floor -> Customer scans & orders -> Kitchen prepares & prints -> Waiter serves -> Customer pays & rates -> Manager gets real-time analytics', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [lambChops, saffronRice],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final tableNotifier = container.read(tableControllerProvider.notifier);
       await tableNotifier.addTable(tableNumber: 1, capacity: 4);

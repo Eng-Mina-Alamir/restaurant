@@ -26,8 +26,12 @@ void main() {
     );
 
     test('Waiter Timeline: Login -> Floor Overview -> Seat Guests -> Take Table Order -> Kitchen Sync -> Serve -> Split Bill -> Clean & Free', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [mixedGrill, freshJuice],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final tableNotifier = container.read(tableControllerProvider.notifier);
       await tableNotifier.addTable(tableNumber: 1, capacity: 4);

@@ -41,8 +41,12 @@ void main() {
     );
 
     test('Customer Dine-In Timeline: QR Scan -> Browse -> Cart -> Coupon -> Order -> Live Prep -> Serve -> Loyalty & Rating', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [gourmetBurger, icedTea],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       // ── Step 1: Customer arrives at table and scans QR code ───────────────
       final cartNotifier = container.read(cartControllerProvider.notifier);

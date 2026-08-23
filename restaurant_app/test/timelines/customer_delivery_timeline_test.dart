@@ -21,8 +21,12 @@ void main() {
     );
 
     test('Customer Delivery Timeline: Set Address -> Calc Fee -> Checkout Card -> Live GPS -> Delivered -> Rate Driver', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [familyMeal],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       // ── Step 1: Customer sets delivery mode & calculates distance fee ──────
       const customerLat = 24.7500;

@@ -17,8 +17,12 @@ void main() {
     );
 
     test('Driver Timeline: View Assigned Orders -> Pickup from Kitchen -> In-Transit GPS -> Photo Proof -> Complete Delivery', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [meal],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       cartNotifier.addItem(const CartItem(menuItem: meal, quantity: 2));
