@@ -9,6 +9,7 @@ import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
 import '../../features/customer/presentation/pages/order_history_page.dart';
 import '../../features/customer/presentation/pages/order_tracking_page.dart';
+import '../../features/chat/presentation/pages/chat_page.dart';
 import '../../features/loyalty/presentation/pages/loyalty_page.dart';
 import '../../features/orders/presentation/pages/order_confirmation_page.dart';
 import '../../features/orders/domain/entities/order_entity.dart';
@@ -199,6 +200,12 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         ],
       ),
       GoRoute(path: '/kds', builder: (context, state) => const KdsPage()),
+      GoRoute(
+        path: '/chat/:orderId',
+        builder: (context, state) => ChatPage(
+          orderId: state.pathParameters['orderId'] ?? '',
+        ),
+      ),
       GoRoute(
         path: '/manager',
         builder: (context, state) => const ManagerDashboardPage(),

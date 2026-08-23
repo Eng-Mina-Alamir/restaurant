@@ -225,6 +225,29 @@ void main() {
     });
   });
 
+  group('Driver chat entry point', () {
+    testWidgets('hidden when no assignment exists yet', (tester) async {
+      await pumpPage(
+        tester,
+        orders: [buildOrder()],
+        deliveryRepo: InMemoryDeliveryRepository(seed: const []),
+      );
+
+      expect(find.text('محادثة السائق'), findsNothing);
+    });
+
+    testWidgets('visible once a driver is assigned', (tester) async {
+      await pumpPage(
+        tester,
+        orders: [buildOrder()],
+        deliveryRepo:
+            InMemoryDeliveryRepository(seed: [buildAssignment()]),
+      );
+
+      expect(find.text('محادثة السائق'), findsOneWidget);
+    });
+  });
+
   group('Driver location event filtering', () {
     const orderId = 'ORD-TRK-1';
 

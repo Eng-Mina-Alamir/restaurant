@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../../config/constants.dart';
@@ -77,6 +78,8 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                         assignment: assignment,
                         onAction: () => _handleAction(ref, assignment),
                         onOpenMap: () => _showTrackingMap(context, ref, assignment),
+                        onOpenChat: () =>
+                            context.push('/chat/${assignment.orderId}'),
                       );
                     },
                   ),
@@ -272,11 +275,13 @@ class _DeliveryCard extends StatelessWidget {
     required this.assignment,
     required this.onAction,
     required this.onOpenMap,
+    required this.onOpenChat,
   });
 
   final DeliveryAssignment assignment;
   final VoidCallback onAction;
   final VoidCallback onOpenMap;
+  final VoidCallback onOpenChat;
 
   @override
   Widget build(BuildContext context) {
@@ -392,6 +397,11 @@ class _DeliveryCard extends StatelessWidget {
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: const Text('الخريطة والتتبع'),
                   onPressed: onOpenMap,
+                ),
+                IconButton(
+                  tooltip: 'محادثة العميل',
+                  icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                  onPressed: onOpenChat,
                 ),
                 if (actionLabel != null) ...[
                   const SizedBox(width: AppSpacing.sm),

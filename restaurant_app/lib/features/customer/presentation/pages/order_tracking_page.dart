@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mhj_maps/mhj_maps.dart';
 
@@ -362,6 +363,21 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                       ),
                     ),
                   ),
+
+                  // Chat with the assigned driver — offered only once an
+                  // assignment actually exists (no driver → no thread).
+                  if (assignment != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () =>
+                            context.push('/chat/${widget.orderId}'),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text('محادثة السائق'),
+                      ),
+                    ),
+                  ],
 
                   // Cancel — offered ONLY while the order is still pending;
                   // once preparation starts it can no longer be undone.
