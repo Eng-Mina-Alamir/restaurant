@@ -170,6 +170,17 @@ class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMine;
 
+  /// Screen-reader name for the sender side of this bubble.
+  ///
+  /// The conversation is strictly two-party (customer ↔ driver), but the
+  /// `/chat/:orderId` route carries no viewer-role signal and no role
+  /// provider exists (roles live only in Supabase profiles) — the page only
+  /// knows `chatCurrentUserIdProvider`, i.e. whether a message is its own.
+  /// Asserting a fixed counterpart role ('المندوب') would mislabel threads
+  /// opened from DriverHomePage, where the counterpart is the customer, so
+  /// the always-correct neutral pair below is used.
+  String get _senderRoleLabel => isMine ? 'أنت' : 'الطرف الآخر';
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -177,45 +188,52 @@ class _MessageBubble extends StatelessWidget {
 
     return Align(
       alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.72,
-        ),
-        decoration: BoxDecoration(
-          color: isMine ? colorScheme.primary : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message.body,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: isMine ? colorScheme.onPrimary : colorScheme.onSurface,
+      // One complete announcement per bubble; excludeSemantics stops the
+      // body/timestamp Texts from being read again as separate nodes.
+      child: Semantics(
+        label: 'رسالة من $_senderRoleLabel: ${message.body}',
+        excludeSemantics: true,
+        child: Container(
+          margin: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.xs,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.72,
+          ),
+          decoration: BoxDecoration(
+            color:
+                isMine ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Column(
+            crossAxisAlignment:
+                isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                message.body,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isMine ? colorScheme.onPrimary : colorScheme.onSurface,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              message.createdAt == null
-                  ? ''
-                  : Formatters.formatTime(message.createdAt!),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: isMine
-                    ? colorScheme.onPrimary.withValues(alpha: 0.7)
-                    : colorScheme.onSurfaceVariant,
+              const SizedBox(height: 2),
+              Text(
+                message.createdAt == null
+                    ? ''
+                    : Formatters.formatTime(message.createdAt!),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: isMine
+                      ? colorScheme.onPrimary.withValues(alpha: 0.7)
+                      : colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

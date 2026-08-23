@@ -507,35 +507,49 @@ class _OrderStepper extends StatelessWidget {
       children: [
         for (int i = 0; i < _stages.length; i++) ...[
           Expanded(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: i <= currentStep
-                      ? colorScheme.primary
-                      : colorScheme.outlineVariant,
-                  foregroundColor: Colors.white,
-                  child: i < currentStep
-                      ? const Icon(Icons.check, size: 14)
-                      : Text(
-                          '${i + 1}',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _stages[i],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight:
-                        i <= currentStep ? FontWeight.bold : FontWeight.normal,
-                    color: i <= currentStep
+            // Completion state is conveyed visually by fill color and bold
+            // weight; spell the state out for screen readers.
+            child: Semantics(
+              label: i < currentStep
+                  ? '${_stages[i]} — مكتملة'
+                  : i == currentStep
+                      ? '${_stages[i]} — المرحلة الحالية'
+                      : '${_stages[i]} — لم تُكتمل بعد',
+              excludeSemantics: true,
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: i <= currentStep
                         ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
+                        : colorScheme.outlineVariant,
+                    foregroundColor: Colors.white,
+                    child: i < currentStep
+                        ? const Icon(Icons.check, size: 14)
+                        : Text(
+                            '${i + 1}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    _stages[i],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: i <= currentStep
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: i <= currentStep
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           if (i < _stages.length - 1)

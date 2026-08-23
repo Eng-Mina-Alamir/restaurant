@@ -157,6 +157,9 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
+                    // Icon-only control: named for screen readers (audit in
+                    // test/core/accessibility_semantics_test.dart).
+                    tooltip: 'إغلاق',
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
