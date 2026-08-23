@@ -4,7 +4,8 @@
 -- HOW TO APPLY:
 --   1. Open Supabase Dashboard → SQL Editor
 --   2. Paste this ENTIRE file and run it
---   3. Safe to re-run — every statement is idempotent (IF NOT EXISTS everywhere)
+--   3. Safe to re-run — every statement is idempotent (IF NOT EXISTS /
+--      DROP POLICY IF EXISTS everywhere)
 --
 -- CONTENTS (mirrors the "SCHEMA V3" section of supabase_schema.sql, commit 567b62f):
 --   • orders.assigned_kitchen_id / orders.driver_id dispatch columns
@@ -57,17 +58,21 @@ CREATE INDEX IF NOT EXISTS idx_delivery_assignments_order_id ON public.delivery_
 CREATE INDEX IF NOT EXISTS idx_delivery_assignments_driver_id ON public.delivery_assignments(driver_id);
 
 ALTER TABLE public.delivery_assignments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS delivery_assignments_select ON public.delivery_assignments;
 CREATE POLICY delivery_assignments_select ON public.delivery_assignments
     FOR SELECT TO authenticated
     USING (driver_id = auth.uid() OR public.is_manager_or_admin());
+DROP POLICY IF EXISTS delivery_assignments_update_driver ON public.delivery_assignments;
 CREATE POLICY delivery_assignments_update_driver ON public.delivery_assignments
     FOR UPDATE TO authenticated
     USING (driver_id = auth.uid())
     WITH CHECK (driver_id = auth.uid());
+DROP POLICY IF EXISTS delivery_assignments_insert ON public.delivery_assignments;
 CREATE POLICY delivery_assignments_insert ON public.delivery_assignments
     FOR INSERT TO authenticated
     WITH CHECK (driver_id = auth.uid()
                 OR public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[]));
+DROP POLICY IF EXISTS delivery_assignments_manage ON public.delivery_assignments;
 CREATE POLICY delivery_assignments_manage ON public.delivery_assignments
     FOR ALL TO authenticated
     USING (public.is_manager_or_admin())
@@ -92,6 +97,7 @@ CREATE TABLE IF NOT EXISTS public.order_status_log (
 CREATE INDEX IF NOT EXISTS idx_order_status_log_order_id ON public.order_status_log(order_id);
 
 ALTER TABLE public.order_status_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS order_status_log_select ON public.order_status_log;
 CREATE POLICY order_status_log_select ON public.order_status_log
     FOR SELECT TO authenticated
     USING (public.is_manager_or_admin()
@@ -105,6 +111,8 @@ CREATE POLICY order_status_log_select ON public.order_status_log
                WHERE da.order_id = order_status_log.order_id
                  AND da.driver_id = auth.uid()
            ));
+DROP POLICY IF EXISTS order_status_log_insert ON public.order_status_log;
 CREATE POLICY order_status_log_insert ON public.order_status_log
     FOR INSERT TO authenticated
-    WITH CHECK (public.is_staff());
+    WITH CHECK (public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[])
+                AND changed_by = auth.uid());

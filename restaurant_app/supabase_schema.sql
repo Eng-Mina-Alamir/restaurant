@@ -813,4 +813,5 @@ CREATE POLICY order_status_log_select ON public.order_status_log
            ));
 CREATE POLICY order_status_log_insert ON public.order_status_log
     FOR INSERT TO authenticated
-    WITH CHECK (public.is_staff());
+    WITH CHECK (public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[])
+                AND changed_by = auth.uid());

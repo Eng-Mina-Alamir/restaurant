@@ -3,12 +3,15 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Static security guard: fails the suite if any table in `supabase_schema.sql`
-/// is created without a matching `ENABLE ROW LEVEL SECURITY` statement, or if
-/// the server-side privilege-escalation guards go missing.
+/// or `supabase_migration_v3.sql` drifts away from its RLS hardening contract:
+/// every created table must keep a matching `ENABLE ROW LEVEL SECURITY`
+/// statement, audit-trail inserts must stay driver-proof and self-bound
+/// (`changed_by = auth.uid()`), and migration policies must stay re-runnable.
 ///
 /// This keeps the deny-by-default guarantee enforced by CI instead of trust.
 void main() {
-  final schema = _loadSchema();
+  final schema = _loadSqlFile('supabase_schema.sql');
+  final migrationV3 = _loadSqlFile('supabase_migration_v3.sql');
 
   group('Supabase schema RLS hardening guard', () {
     final createdTables = RegExp(
@@ -84,13 +87,109 @@ void main() {
       );
     });
   });
+
+  group('order_status_log audit-trail insert hardening', () {
+    const expectedGuard =
+        "WITH CHECK (public.has_role(ARRAY['waiter','kitchen','cashier','manager','admin']::TEXT[])"
+        ' AND changed_by = auth.uid())';
+
+    for (final entry in <String, String>{
+      'supabase_schema.sql': schema,
+      'supabase_migration_v3.sql': migrationV3,
+    }.entries) {
+      final normalized = entry.value.replaceAll(RegExp(r'\s+'), ' ');
+
+      test('${entry.key}: insert policy binds changed_by = auth.uid()', () {
+        expect(
+          normalized.contains(expectedGuard),
+          isTrue,
+          reason: 'order_status_log_insert must require changed_by = auth.uid() '
+              'and grant via an explicit non-driver role list',
+        );
+      });
+
+      test('${entry.key}: insert policy does NOT grant via plain is_staff()',
+          () {
+        final policyMatch = RegExp(
+          r'CREATE POLICY order_status_log_insert\b[^;]*;',
+          caseSensitive: false,
+        ).firstMatch(normalized);
+        expect(policyMatch, isNotNull);
+        expect(
+          policyMatch!.group(0),
+          isNot(contains('is_staff()')),
+          reason: 'is_staff() includes the driver role — a driver could forge '
+                  'audit rows for ANY order if it gates order_status_log inserts',
+        );
+      });
+    }
+  });
+
+  group('migration v3 idempotency guard', () {
+    test('every CREATE POLICY is preceded by DROP POLICY IF EXISTS', () {
+      final creates = RegExp(
+        r'CREATE POLICY (\w+) ON public\.(\w+)\b',
+        caseSensitive: false,
+      ).allMatches(migrationV3).toList();
+
+      expect(creates, isNotEmpty);
+
+      for (final create in creates) {
+        final policyName = create.group(1)!;
+        final table = create.group(2)!;
+        final drop = RegExp(
+          'DROP POLICY IF EXISTS $policyName ON public\\.$table\\s*;',
+          caseSensitive: false,
+        ).firstMatch(migrationV3);
+
+        expect(
+          drop,
+          isNotNull,
+          reason: 'CREATE POLICY $policyName has no re-run guard; bare CREATE '
+                  'POLICY fails on a second migration run',
+        );
+        expect(
+          drop!.start,
+          lessThan(create.start),
+          reason:
+              'DROP POLICY IF EXISTS $policyName must precede its CREATE POLICY',
+        );
+      }
+
+      final dropCount =
+          RegExp(r'DROP POLICY IF EXISTS \w+ ON public\.', caseSensitive: false)
+              .allMatches(migrationV3)
+              .length;
+      expect(
+        dropCount,
+        equals(creates.length),
+        reason: 'Every CREATE POLICY needs exactly one matching guard',
+      );
+    });
+
+    test('migration v3 keeps shared policies statement-identical to schema',
+        () {
+      String normalize(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ');
+      String extractInsertPolicy(String sql) => normalize(sql)
+          .split('CREATE POLICY order_status_log_insert ')
+          .last
+          .split(';')
+          .first;
+
+      expect(
+        extractInsertPolicy(migrationV3),
+        equals(extractInsertPolicy(schema)),
+        reason:
+            'order_status_log_insert must be identical in both SQL files',
+      );
+    });
+  });
 }
 
-String _loadSchema() {
-  const candidates = ['supabase_schema.sql', '../supabase_schema.sql'];
-  for (final path in candidates) {
-    final file = File(path);
+String _loadSqlFile(String fileName) {
+  for (final prefix in const ['', '../']) {
+    final file = File('$prefix$fileName');
     if (file.existsSync()) return file.readAsStringSync();
   }
-  fail('supabase_schema.sql not found relative to test working directory');
+  fail('$fileName not found relative to test working directory');
 }

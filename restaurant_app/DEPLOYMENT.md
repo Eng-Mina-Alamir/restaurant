@@ -44,6 +44,13 @@ The migration file lives at the repository root: [`supabase_migration_v3.sql`](s
 Indexes are created on `delivery_assignments(order_id)`,
 `delivery_assignments(driver_id)` and `order_status_log(order_id)`.
 
+> 🏢 **Single-tenant assumption:** manager/admin RLS on `delivery_assignments`
+> and `order_status_log` is **role-global** — `is_manager_or_admin()` checks
+> only the caller's role, with no restaurant scoping, and
+> `delivery_assignments` itself has no `restaurant_id` column. This is fine for
+> the current single-restaurant deployment; revisit both before any
+> multi-tenant rollout.
+
 The full baseline schema remains in [`supabase_schema.sql`](supabase_schema.sql);
 v3 mirrors its "SCHEMA V3" section.
 
