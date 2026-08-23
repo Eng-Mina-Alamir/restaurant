@@ -16,6 +16,7 @@ import '../../features/delivery/presentation/pages/driver_home_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
 import '../../features/manager_dashboard/presentation/pages/alerts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/discounts_page.dart';
+import '../../features/manager_dashboard/presentation/pages/dispatch_board_page.dart';
 import '../../features/manager_dashboard/presentation/pages/inventory_page.dart';
 import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
 import '../../features/coupons/presentation/pages/coupon_management_page.dart';
@@ -249,6 +250,10 @@ GoRouter createAppRouter({required WidgetRef ref}) {
           GoRoute(
             path: 'coupons',
             builder: (context, state) => const CouponManagementPage(),
+          ),
+          GoRoute(
+            path: 'dispatch',
+            builder: (context, state) => const DispatchBoardPage(),
           ),
           GoRoute(
             path: 'financial-reports',

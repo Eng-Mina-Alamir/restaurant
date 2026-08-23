@@ -227,6 +227,12 @@ class ManagerDashboardPage extends ConsumerWidget {
                         ),
 
                         _QuickAction(
+                          icon: Icons.local_shipping_rounded,
+                          label: 'التوصيل',
+                          color: Colors.deepPurple,
+                          onTap: () => context.push('/manager/dispatch'),
+                        ),
+                        _QuickAction(
                           icon: Icons.receipt_long_rounded,
                           label: 'الفواتير',
                           color: Colors.brown,
