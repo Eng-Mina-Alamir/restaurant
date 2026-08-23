@@ -18,8 +18,12 @@ void main() {
   );
 
   test('Order & Loyalty Earn-Redeem Integration Flow', () async {
-    final container = createTestContainer();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      extraCheckoutItems: [meal],
+    );
     addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
     final cart = container.read(cartControllerProvider.notifier);
     final ordersController = container.read(ordersControllerProvider.notifier);

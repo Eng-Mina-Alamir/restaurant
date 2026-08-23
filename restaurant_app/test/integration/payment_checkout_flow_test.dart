@@ -12,6 +12,7 @@ void main() {
     test('add items to cart, process payment through PaymentService, and place order', () async {
       final container = createTestContainer();
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartController = container.read(cartControllerProvider.notifier);
       final ordersController = container.read(ordersControllerProvider.notifier);

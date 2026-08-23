@@ -19,8 +19,12 @@ void main() {
 
   group('KDS Flow Integration', () {
     testWidgets('Full lifecycle: Order arrives -> Preparing -> Ready -> Completed', (tester) async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [pizza],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cart = container.read(cartControllerProvider.notifier);
       cart.addItem(const CartItem(menuItem: pizza));

@@ -88,7 +88,11 @@ void main() {
     });
 
     test('Rapid order placement and status transitions through ProviderContainer', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [sampleItem1],
+      );
+      await primeMenuForCheckout(container);
 
       final cart = container.read(cartControllerProvider.notifier);
       final orders = container.read(ordersControllerProvider.notifier);

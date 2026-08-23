@@ -39,8 +39,12 @@ void main() {
     });
 
     test('Concurrent order status modifications maintain atomic consistency', () async {
-      final container = createTestContainer();
+      final container = createTestContainer(
+        seedCheckoutFixtures: true,
+        extraCheckoutItems: [burger],
+      );
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final cartNotifier = container.read(cartControllerProvider.notifier);
       final ordersNotifier = container.read(ordersControllerProvider.notifier);

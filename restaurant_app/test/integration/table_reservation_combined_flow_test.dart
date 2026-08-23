@@ -14,6 +14,7 @@ void main() {
     test('full flow: reservation -> table reserved -> seat customer -> dine-in order -> release table', () async {
       final container = createTestContainer();
       addTearDown(container.dispose);
+      await primeMenuForCheckout(container);
 
       final tableController = container.read(tableControllerProvider.notifier);
       final reservationController = container.read(reservationControllerProvider.notifier);
