@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -97,11 +98,23 @@ class RealtimeService {
   WebSocketChannel? _channel;
   StreamController<RealtimeEvent>? _controller;
   bool _disposed = false;
+
+  /// Set once the current socket can no longer deliver messages (handshake
+  /// failed, socket errored or the peer closed the connection).
+  bool _socketDead = false;
   int _retryDelay = 1;
   Timer? _reconnectTimer;
 
   /// Stream of incoming real-time events. Listeners must call [connect] first.
+  ///
+  /// After [disconnect] this deliberately returns an empty stream instead of
+  /// lazily creating a fresh broadcast controller. Resurrecting a controller
+  /// post-disposal would leak an orphaned broadcast stream for every listener
+  /// attached afterwards (e.g. widgets tearing down after the provider was
+  /// disposed), so late subscribers simply receive a stream that closes
+  /// immediately – no throw, no leaked resources.
   Stream<RealtimeEvent> get events {
+    if (_disposed) return const Stream.empty();
     _controller ??= StreamController<RealtimeEvent>.broadcast();
     return _controller!.stream;
   }
@@ -118,6 +131,14 @@ class RealtimeService {
     try {
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       _retryDelay = 1; // reset on success
+      _socketDead = false;
+      // Watch the handshake so [send] can recognise a socket that can never
+      // deliver (connection refused / failed upgrade) instead of silently
+      // swallowing broadcasts into a dead sink. The error is also surfaced by
+      // the stream listener below, which owns reconnect scheduling.
+      unawaited(
+        _channel!.ready.then((_) {}, onError: (Object _) => _socketDead = true),
+      );
       _channel!.stream.listen(
         (message) {
           if (message is String) {
@@ -126,10 +147,12 @@ class RealtimeService {
           }
         },
         onError: (error) {
+          _socketDead = true;
           AppLogger.error('RealtimeService: WebSocket error: $error');
           _scheduleReconnect();
         },
         onDone: () {
+          _socketDead = true;
           AppLogger.warning('RealtimeService: WebSocket closed – reconnecting in ${_retryDelay}s');
           _scheduleReconnect();
         },
@@ -151,17 +174,63 @@ class RealtimeService {
   }
 
   /// Sends a raw [message] string to the server.
+  ///
+  /// Falls back to a loop-back onto [events] when no remote socket was ever
+  /// opened (demo / test mode). When a socket exists but is known to be dead
+  /// (handshake failed or connection closed) the message could never be
+  /// delivered, so it is dropped with a warning rather than vanishing
+  /// silently into the socket sink. Never throws.
   void send(String message) {
     try {
-      if (_channel != null) {
-        _channel?.sink.add(message);
-      } else {
+      final channel = _channel;
+      if (channel == null) {
         // In demo / test mode without an active remote socket, loop back to the stream
         final event = RealtimeEvent.fromRaw(message);
         _controller?.add(event);
+        return;
       }
+      if (_isSocketDead(channel)) {
+        _logUndeliveredBroadcast(message);
+        return;
+      }
+      channel.sink.add(message);
     } catch (e) {
       AppLogger.error('RealtimeService: Send failed: $e');
+    }
+  }
+
+  bool _isSocketDead(WebSocketChannel channel) =>
+      _socketDead || channel.closeCode != null;
+
+  /// Warns about a broadcast that can never reach the server, following the
+  /// `[Dispatch] outcome=... orderId=...` convention when the payload is
+  /// order-scoped; a generic tag otherwise.
+  ///
+  /// Parsing is best-effort telemetry only and must never throw.
+  void _logUndeliveredBroadcast(String message) {
+    final event = RealtimeEvent.fromRaw(message);
+    final orderId = _orderIdOf(event);
+    if (orderId != null) {
+      AppLogger.warning('[Dispatch] outcome=broadcast-dropped '
+          'reason=socket-dead orderId=$orderId');
+    } else {
+      AppLogger.warning('RealtimeService: Broadcast dropped – '
+          'remote socket dead (type=${event.type.name})');
+    }
+  }
+
+  String? _orderIdOf(RealtimeEvent event) {
+    switch (event.type) {
+      case RealtimeEventType.orderCreated:
+      case RealtimeEventType.orderStatusChanged:
+      case RealtimeEventType.orderStatusReverted:
+      case RealtimeEventType.orderReadyForPickup:
+      case RealtimeEventType.deliveryAssignmentCreated:
+        return (event.payload['orderId'] ?? event.payload['id'])?.toString();
+      case RealtimeEventType.tableStatusChanged:
+      case RealtimeEventType.driverLocationUpdated:
+      case RealtimeEventType.unknown:
+        return null;
     }
   }
 
@@ -262,6 +331,18 @@ class RealtimeService {
       if (orderId != null) 'orderId': orderId,
     });
   }
+
+  /// Test-only seam: injects a channel so [send]'s dead-socket handling can
+  /// be exercised without opening a real connection.
+  @visibleForTesting
+  set debugChannelForTest(WebSocketChannel? channel) => _channel = channel;
+
+  /// Test-only seam: whether a live (non-closed) broadcast controller
+  /// currently exists, used to assert that [events] does not resurrect a
+  /// controller after disposal.
+  @visibleForTesting
+  bool get debugHasLiveController =>
+      _controller != null && !_controller!.isClosed;
 
   /// Closes the connection and cleans up resources.
   void disconnect() {
