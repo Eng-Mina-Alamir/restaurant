@@ -7,6 +7,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../widgets/order_audit_trail_sheet.dart';
 
 /// A shared staff-facing view of all orders with status filtering and the
 /// ability to advance an order's state (used by the manager and KDS).
@@ -117,22 +118,35 @@ class _OrderStatusCard extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _statusColor(order.status).withValues(alpha: .15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    order.status.labelAr,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _statusColor(order.status),
-                      fontWeight: FontWeight.bold,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: AppConstants.orderAuditTrailTitle,
+                      icon: const Icon(Icons.history),
+                      onPressed: () =>
+                          OrderAuditTrailSheet.show(context, ref, order.id),
                     ),
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _statusColor(
+                          order.status,
+                        ).withValues(alpha: .15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        order.status.labelAr,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: _statusColor(order.status),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

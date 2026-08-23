@@ -131,6 +131,15 @@ abstract final class AppConstants {
   static const String kdsRevertTooltip = 'تراجع عن الحالة';
   static const String kdsRevertConfirmAction = 'تأكيد التراجع';
 
+  // ── Order audit trail ─────────────────────────────────────────────────────
+  static const String orderAuditTrailTitle = 'سجل الحالة';
+  static const String orderAuditTrailEmpty = 'لا يوجد سجل لهذا الطلب';
+  static const String orderAuditTrailReasonPrefix = 'السبب:';
+  static const String orderAuditTrailActorPrefix = 'بواسطة:';
+  static const String orderAuditTrailRevertBadge = 'تراجع';
+  static const String orderAuditTrailLoadFailed = 'تعذر تحميل سجل الحالة';
+  static const String orderAuditTrailRetryAction = 'إعادة المحاولة';
+
   // ── Manager ────────────────────────────────────────────────────────────────
   static const String managerTitle = 'لوحة المدير';
   static const String metricsSalesTitle = 'إجمالي المبيعات';
