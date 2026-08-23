@@ -124,8 +124,8 @@ class DispatchController
       result.when(
         onLeft: (failure) {
           AppLogger.warning(
-            'DispatchBoard: lookup failed for order ${order.id} '
-            '(${failure.message}); order skipped',
+            '[Dispatch] outcome=lookup-failed orderId=${order.id} '
+            'source=board-refresh reason=${failure.message}; order skipped',
           );
           if (!issues.contains(failure.message)) issues.add(failure.message);
         },
@@ -147,7 +147,8 @@ class DispatchController
     driversResult.when(
       onLeft: (failure) {
         AppLogger.warning(
-          'DispatchBoard: getAvailableDrivers failed (${failure.message})',
+          '[Dispatch] outcome=get-drivers-failed '
+          'source=board-refresh reason=${failure.message}',
         );
         if (!issues.contains(failure.message)) issues.add(failure.message);
       },
@@ -251,8 +252,8 @@ class DispatchController
     );
     if (created == null) {
       AppLogger.warning(
-        'DispatchBoard: createAssignment rejected for order $orderId '
-        '($failureMessage)',
+        '[Dispatch] outcome=create-rejected orderId=$orderId '
+        'driverId=$driverId method=manual reason=$failureMessage',
       );
       state = AsyncValue.data(
         (state.valueOrNull ?? const DispatchBoardState()).copyWith(
@@ -263,6 +264,10 @@ class DispatchController
     }
 
     _realtimeService.broadcastDeliveryAssignmentCreated(created.toJson());
+    AppLogger.info(
+      '[Dispatch] outcome=assigned orderId=$orderId '
+      'driverId=$driverId method=manual',
+    );
     await refresh();
     return true;
   }

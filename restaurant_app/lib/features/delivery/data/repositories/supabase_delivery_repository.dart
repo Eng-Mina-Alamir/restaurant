@@ -56,7 +56,10 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           .upsert(_assignmentToRow(assignment, driverId));
       return Right<Failure, DeliveryAssignment>(assignment);
     } catch (e) {
-      AppLogger.error('Supabase createAssignment error: $e');
+      AppLogger.error(
+        'Supabase createAssignment error: $e '
+        '(orderId=${assignment.orderId}, driverId=${assignment.driverId})',
+      );
       return Left<Failure, DeliveryAssignment>(
         ServerFailure('فشل إنشاء مهمة التوصيل في السيرفر: $e'),
       );
@@ -81,7 +84,9 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
         _assignmentFromRow(Map<String, dynamic>.from(rows.first as Map)),
       );
     } catch (e) {
-      AppLogger.error('Supabase getAssignmentByOrderId error: $e');
+      AppLogger.error(
+        'Supabase getAssignmentByOrderId error: $e (orderId=$orderId)',
+      );
       return Left<Failure, DeliveryAssignment?>(
         ServerFailure('فشل جلب مهمة التوصيل: $e'),
       );
@@ -162,7 +167,9 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           .toList();
       return Right<Failure, List<DeliveryAssignment>>(assignments);
     } catch (e) {
-      AppLogger.error('Supabase getAssignments error: $e');
+      AppLogger.error(
+        'Supabase getAssignments error: $e (driverId=$driverId)',
+      );
       return Left<Failure, List<DeliveryAssignment>>(
         ServerFailure('فشل جلب مهام التوصيل: $e'),
       );
@@ -193,7 +200,11 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           .eq('id', assignment.id);
       return Right<Failure, DeliveryAssignment>(assignment);
     } catch (e) {
-      AppLogger.error('Supabase updateAssignment error: $e');
+      AppLogger.error(
+        'Supabase updateAssignment error: $e '
+        '(assignmentId=${assignment.id}, orderId=${assignment.orderId}, '
+        'driverId=${assignment.driverId})',
+      );
       return Left<Failure, DeliveryAssignment>(
         ServerFailure('فشل تحديث مهمة التوصيل: $e'),
       );

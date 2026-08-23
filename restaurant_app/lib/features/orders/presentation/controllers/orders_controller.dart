@@ -644,8 +644,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       await hook(order);
     } catch (e, st) {
       AppLogger.error(
-        'onDeliveryOrderReady failed for order ${order.id}; '
-        'order left undispatched (manual reassign still possible)',
+        '[Dispatch] outcome=hook-failure orderId=${order.id} '
+        'reason=dispatch-hook-threw; order left undispatched '
+        '(manual reassign still possible)',
         error: e,
         stackTrace: st,
       );
@@ -717,6 +718,9 @@ final StateNotifierProvider<OrdersController, List<OrderEntity>>
       /// only when an assignment was persisted AND broadcast; any Waiting /
       /// failure path returns false so the caller can queue a retry.
       Future<bool> attemptAutoDispatch(OrderEntity order) async {
+        AppLogger.info(
+          '[Dispatch] outcome=attempt-start orderId=${order.id} method=auto',
+        );
         try {
           final deliveryRepo = ref.read(deliveryRepositoryProvider);
           final realtime = ref.read(realtimeServiceProvider);
@@ -725,8 +729,8 @@ final StateNotifierProvider<OrdersController, List<OrderEntity>>
           final drivers = driversResult.when(
             onLeft: (failure) {
               AppLogger.warning(
-                'Auto-dispatch: getAvailableDrivers failed '
-                '(${failure.message}); order ${order.id} left undispatched',
+                '[Dispatch] outcome=get-drivers-failed '
+                'orderId=${order.id} reason=${failure.message}',
               );
               return null;
             },
@@ -743,7 +747,8 @@ final StateNotifierProvider<OrdersController, List<OrderEntity>>
           switch (decision) {
             case Waiting(:final reason):
               AppLogger.info(
-                'Auto-dispatch: order ${order.id} waiting for a driver — $reason',
+                '[Dispatch] outcome=waiting orderId=${order.id} '
+                'reason=$reason',
               );
               return false;
             case Assigned(:final driverId):
@@ -763,19 +768,30 @@ final StateNotifierProvider<OrdersController, List<OrderEntity>>
                   await deliveryRepo.createAssignment(assignment);
               createdResult.when(
                 onLeft: (failure) => AppLogger.warning(
-                  'Auto-dispatch: createAssignment rejected for order '
-                  '${order.id} (${failure.message})',
+                  '[Dispatch] outcome=create-rejected '
+                  'orderId=${order.id} driverId=$driverId '
+                  'reason=${failure.message}',
                 ),
                 onRight: (created) {
                   realtime.broadcastDeliveryAssignmentCreated(created.toJson());
                   dispatched = true;
+                  AppLogger.info(
+                    '[Dispatch] outcome=assigned orderId=${order.id} '
+                    'driverId=$driverId method=auto',
+                  );
+                  AppLogger.info(
+                    '[Dispatch] outcome=broadcast-sent '
+                    'orderId=${order.id} driverId=$driverId '
+                    'assignmentId=${created.id}',
+                  );
                 },
               );
               return dispatched;
           }
         } catch (e, st) {
           AppLogger.error(
-            'Auto-dispatch attempt failed for order ${order.id}',
+            '[Dispatch] outcome=error orderId=${order.id} '
+            'reason=unexpected-exception',
             error: e,
             stackTrace: st,
           );
@@ -801,6 +817,9 @@ final StateNotifierProvider<OrdersController, List<OrderEntity>>
             continue;
           }
 
+          AppLogger.info(
+            '[Dispatch] outcome=retry-attempt orderId=$orderId',
+          );
           if (await attemptAutoDispatch(currentOrder)) {
             pendingDispatchOrderIds.remove(orderId);
           }

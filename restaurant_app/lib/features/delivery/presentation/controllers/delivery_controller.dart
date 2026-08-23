@@ -101,8 +101,21 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   /// Returns false when the repository rejected it.
   Future<bool> createAssignment(DeliveryAssignment assignment) async {
     final result = await _repository.createAssignment(assignment);
-    final created = result.when(onLeft: (_) => null, onRight: (a) => a);
-    if (created == null) return false;
+    String? rejectionReason;
+    final created = result.when(
+      onLeft: (failure) {
+        rejectionReason = failure.message;
+        return null;
+      },
+      onRight: (a) => a,
+    );
+    if (created == null) {
+      AppLogger.warning(
+        '[Dispatch] outcome=create-rejected orderId=${assignment.orderId} '
+        'driverId=${assignment.driverId} reason=$rejectionReason',
+      );
+      return false;
+    }
     state = [
       ...state.where((a) => a.id != created.id),
       created,
