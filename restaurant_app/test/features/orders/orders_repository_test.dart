@@ -9,6 +9,8 @@ import 'package:restaurant_app/core/errors/failures.dart';
 import 'package:restaurant_app/features/orders/data/repositories/hive_order_repository.dart';
 import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
+import 'package:restaurant_app/features/orders/domain/entities/order_status_log_entry.dart';
+import 'package:restaurant_app/features/orders/domain/repositories/order_repository.dart';
 
 void main() {
   late Directory tempDir;
@@ -188,6 +190,94 @@ void main() {
         OrderStatus.ready,
       );
       expect(reloaded.value.first.assignedKitchenId, 'chef-7');
+    });
+  });
+
+  group('Max two reverts per order (التراجع مرتان كحد أقصى)', () {
+    const orderId = 'ORD-MAX-REVERT';
+
+    OrderEntity orderWithStatus(String id, OrderStatus status) => OrderEntity(
+          id: id,
+          restaurantId: 'rest-1',
+          tableId: 't1',
+          orderType: OrderType.dineIn,
+          status: status,
+          items: const [],
+          subtotal: 50.0,
+          taxAmount: 7.5,
+          totalAmount: 57.5,
+          createdAt: DateTime.now(),
+        );
+
+    /// Two legal reverts succeed; a third legal-shape revert is rejected
+    /// with the exact Arabic ValidationFailure and leaves the order
+    /// untouched.
+    Future<void> expectMaxTwoRevertsEnforced(OrderRepository repo) async {
+      await repo.createOrder(orderWithStatus(orderId, OrderStatus.pending));
+
+      // Revert #1: ready → preparing (legal).
+      await repo.updateOrderStatus(orderId, OrderStatus.ready);
+      final first = await repo.revertStatus(
+        orderId,
+        OrderStatus.preparing,
+        actorId: 'chef-a',
+      );
+      expect(first.isRight, isTrue);
+      expect(
+        (first as Right<Failure, OrderEntity>).value.status,
+        OrderStatus.preparing,
+      );
+
+      // Revert #2: served → ready (legal).
+      await repo.updateOrderStatus(orderId, OrderStatus.served);
+      final second = await repo.revertStatus(
+        orderId,
+        OrderStatus.ready,
+        actorId: 'chef-b',
+      );
+      expect(second.isRight, isTrue);
+      expect(
+        (second as Right<Failure, OrderEntity>).value.status,
+        OrderStatus.ready,
+      );
+
+      // Revert #3: legal shape (ready → preparing) but the quota is spent.
+      final third = await repo.revertStatus(
+        orderId,
+        OrderStatus.preparing,
+        actorId: 'chef-c',
+      );
+      expect(third.isLeft, isTrue);
+      final failure = (third as Left<Failure, OrderEntity>).value;
+      expect(failure, isA<ValidationFailure>());
+      expect(
+        failure.message,
+        'تم تجاوز الحد المسموح للتراجع عن هذا الطلب (مرتان كحد أقصى)',
+      );
+
+      // Order keeps its pre-rejection status and only two audit rows exist.
+      final orders = await repo.getOrders();
+      expect(
+        (orders as Right<Failure, List<OrderEntity>>).value.first.status,
+        OrderStatus.ready,
+      );
+      final trail = await repo.getAuditTrail(orderId);
+      expect(
+        (trail as Right<Failure, List<OrderStatusLogEntry>>).value,
+        hasLength(2),
+      );
+    }
+
+    test('InMemory rejects the third revert', () async {
+      await expectMaxTwoRevertsEnforced(InMemoryOrderRepository());
+    });
+
+    test('Hive rejects the third revert (offline)', () async {
+      final box = await Hive.openBox<String>('orders_max_revert_box_test');
+      await box.clear();
+      await expectMaxTwoRevertsEnforced(
+        HiveOrderRepository(LocalCacheService(box)),
+      );
     });
   });
 }

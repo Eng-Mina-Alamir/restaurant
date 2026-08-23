@@ -619,7 +619,20 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       reason: reason,
     );
     return result.when(
-      onLeft: (_) => null,
+      onLeft: (_) {
+        // Repository rejected the revert (e.g. max-2-reverts rule): roll
+        // back the optimistic update so the KDS never shows a phantom
+        // status.
+        AppLogger.warning(
+          'revertStatus($orderId, ${toStatus.name}) rejected by repository; '
+          'restoring ${current.status.name}',
+        );
+        final rollbackIndex = state.indexWhere((o) => o.id == orderId);
+        if (rollbackIndex != -1) {
+          state = [...state]..[rollbackIndex] = current;
+        }
+        return null;
+      },
       onRight: (_) => updated,
     );
   }

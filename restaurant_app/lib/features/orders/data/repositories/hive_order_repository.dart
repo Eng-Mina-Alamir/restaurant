@@ -111,6 +111,16 @@ class HiveOrderRepository implements OrderRepository {
           ValidationFailure('لا يمكن التراجع من ${current.status.labelAr}'),
         );
       }
+      // Business rule: at most TWO reverts per order (التراجع مرتان كحد أقصى).
+      final revertCount =
+          _statusLog.where((e) => e.orderId == orderId && e.isRevert).length;
+      if (revertCount >= 2) {
+        return const Left<Failure, OrderEntity>(
+          ValidationFailure(
+            'تم تجاوز الحد المسموح للتراجع عن هذا الطلب (مرتان كحد أقصى)',
+          ),
+        );
+      }
       final updated = current.copyWith(status: toStatus);
       all[index] = updated;
       await _saveAll(all);

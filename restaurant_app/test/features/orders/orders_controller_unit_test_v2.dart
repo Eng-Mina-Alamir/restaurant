@@ -16,6 +16,10 @@ import 'package:restaurant_app/features/orders/presentation/controllers/orders_c
 class _FakeOrderRepository implements OrderRepository {
   final List<OrderEntity> orders = [];
 
+  /// When true, [revertStatus] fails (simulating a repository-side rule
+  /// rejection such as the max-2-reverts limit).
+  bool failReverts = false;
+
   @override
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
     final index = orders.indexWhere((o) => o.id == order.id);
@@ -71,6 +75,13 @@ class _FakeOrderRepository implements OrderRepository {
     if (!orders[index].status.canRevertTo(toStatus)) {
       return Left(
         ValidationFailure('لا يمكن التراجع من ${orders[index].status.labelAr}'),
+      );
+    }
+    if (failReverts) {
+      return const Left(
+        ValidationFailure(
+          'تم تجاوز الحد المسموح للتراجع عن هذا الطلب (مرتان كحد أقصى)',
+        ),
       );
     }
     orders[index] = orders[index].copyWith(status: toStatus);
@@ -172,6 +183,26 @@ void main() {
     test('updateStatus on non-existent order returns null', () async {
       final updated = await controller.updateStatus('NON-EXISTENT', OrderStatus.ready);
       expect(updated, isNull);
+    });
+
+    test('revertStatus restores prior state when repository rejects', () async {
+      cart.addItem(const CartItem(menuItem: testItem, quantity: 1));
+      final order = await controller.placeOrder();
+      await controller.updateStatus(order!.id, OrderStatus.ready);
+      expect(controller.orderById(order.id)?.status, OrderStatus.ready);
+
+      // Repository-side rule rejection (max-2-reverts quota exhausted).
+      repo.failReverts = true;
+      final result = await controller.revertStatus(
+        order.id,
+        OrderStatus.preparing,
+        actorId: 'chef-1',
+      );
+
+      // No phantom status: the optimistic ready→preparing flip is rolled
+      // back to the pre-revert state.
+      expect(result, isNull);
+      expect(controller.orderById(order.id)?.status, OrderStatus.ready);
     });
 
     test('activeOrders excludes completed and cancelled orders', () async {

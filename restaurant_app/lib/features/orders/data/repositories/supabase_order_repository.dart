@@ -241,6 +241,22 @@ class SupabaseOrderRepository implements OrderRepository {
         );
       }
 
+      // 2b. Business rule: at most TWO reverts per order (التراجع مرتان
+      //     كحد أقصى). One pre-update count on the audit log; the change is
+      //     rejected BEFORE any status mutation.
+      final revertLog = await _supabase
+          .from(SupabaseConfig.orderStatusLogTable)
+          .select('id')
+          .eq('order_id', orderId)
+          .eq('is_revert', true);
+      if ((revertLog as List).length >= 2) {
+        return const Left<Failure, OrderEntity>(
+          ValidationFailure(
+            'تم تجاوز الحد المسموح للتراجع عن هذا الطلب (مرتان كحد أقصى)',
+          ),
+        );
+      }
+
       // 3. Persist the new status.
       final response = await _supabase
           .from(SupabaseConfig.ordersTable)
