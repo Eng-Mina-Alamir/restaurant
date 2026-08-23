@@ -161,7 +161,8 @@ void main() {
         name: 'New Waiter',
         email: 'waiter@test.com',
         phone: '0501112233',
-        password: 'password',
+        // Must satisfy the current password policy: >= 8 chars incl. a digit.
+        password: 'password1',
         restaurantId: 'test-restaurant-id',
         role: UserRole.waiter,
       );

@@ -112,7 +112,7 @@ void main() {
       expect(((res as Left).value as Failure).message, contains('هاتف'));
     });
 
-    test('fails when password is less than 6 chars', () async {
+    test('fails when password is less than 8 chars', () async {
       final res = await useCase(
         name: 'Ahmed Ali',
         email: 'ahmed@example.com',
@@ -122,7 +122,7 @@ void main() {
       );
 
       expect(res.isLeft, isTrue);
-      expect(((res as Left).value as Failure).message, contains('6'));
+      expect(((res as Left).value as Failure).message, contains('8'));
     });
 
     test('trims inputs and delegates to repository on valid input', () async {
