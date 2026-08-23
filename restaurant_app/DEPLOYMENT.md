@@ -1,7 +1,7 @@
 # 🚀 Deployment Guide — Live Supabase Backend
 
 Step-by-step guide for deploying the app against the live Supabase backend,
-including the **required v3 database migration**, backend toggles, and an
+including the **required v3 + v4 database migrations**, backend toggles, and an
 architecture map of the delivery dispatch pipeline.
 
 ---
@@ -56,7 +56,50 @@ v3 mirrors its "SCHEMA V3" section.
 
 ---
 
-## 2. Backend Toggles
+## 2. Apply `supabase_migration_v4.sql` (chat) (REQUIRED)
+
+The migration file lives at the repository root: [`supabase_migration_v4.sql`](supabase_migration_v4.sql).
+
+### Steps
+
+1. Open the **Supabase Dashboard** → select your project.
+2. In the left sidebar, open **SQL Editor**.
+3. Click **New query**.
+4. Copy the **entire** contents of `supabase_migration_v4.sql` and paste it into the editor.
+5. Click **Run** and wait for "Success. No rows returned".
+6. Done — no further action needed.
+
+> ✅ **Idempotent:** the table and index use `IF NOT EXISTS`, and every policy
+> is preceded by a `DROP POLICY IF EXISTS` guard, so re-running the whole file
+> is safe (e.g. to verify or after restoring a branch).
+
+> ⚠️ **Do not skip this step.** Without the `chat_messages` table every chat
+> send fails with a **Postgres error** (*relation "public.chat_messages" does
+> not exist*). Apply it **after** `supabase_migration_v3.sql` — it references
+> the `orders`, `profiles`, and `delivery_assignments` objects v3 creates.
+
+### What v4 delivers
+
+| Object | Purpose |
+|--------|---------|
+| `chat_messages.id` | UUID primary key (`gen_random_uuid()`) |
+| `chat_messages.order_id` | FK → `orders.id` **ON DELETE CASCADE**; every conversation is scoped to one order |
+| `chat_messages.sender_id` | FK → `profiles.id`; who wrote the message |
+| `chat_messages.body` | Message text, `CHECK (char_length BETWEEN 1 AND 1000)` |
+| `chat_messages.created_at` | `TIMESTAMPTZ DEFAULT NOW()`; message ordering |
+| `idx_chat_messages_order_id` | Index on `order_id` for fast per-order history loads |
+| RLS — participant-only reads | SELECT is limited to the order's customer, the assigned driver (`delivery_assignments.driver_id`), and managers/admins |
+| RLS — authenticated sends | INSERT requires the same participant set **and binds `sender_id = auth.uid()`**, so a client can only send as itself |
+
+> 🏢 Same single-tenant assumption as v3: manager/admin access via
+> `is_manager_or_admin()` is role-global, not restaurant-scoped.
+
+The "SCHEMA V4" section of [`supabase_schema.sql`](supabase_schema.sql)
+mirrors this file.
+
+---
+
+## 3. Backend Toggles
 
 All toggles live in `lib/config/`.
 
@@ -88,14 +131,14 @@ full suite runs offline regardless of the `AppConfig.useSupabase` flag.
 
 ---
 
-## 3. Verify the Deployment
+## 4. Verify the Deployment
 
 From the repository root:
 
 ```bash
 flutter pub get
 flutter analyze     # 0 issues
-flutter test        # 939 unit + widget tests, all green
+flutter test        # the full unit + widget suite passes
 ```
 
 Then smoke-test against live Supabase:
@@ -110,7 +153,7 @@ Then smoke-test against live Supabase:
 
 ---
 
-## 4. Delivery Dispatch Architecture
+## 5. Delivery Dispatch Architecture
 
 ```
                        ┌──────────────────────────────────────────────┐
@@ -153,3 +196,8 @@ Then smoke-test against live Supabase:
 Every pipeline step logs under the `[Dispatch]` prefix
 (`attempt-start`, `waiting`, `assigned`, `create-rejected`, `retry-attempt`,
 `hook-failure`, …) so production incidents can be traced from a single grep.
+
+**Order-scoped chat (v4):** from an active order both sides can open
+`/chat/:orderId` — customer via the order-tracking page, driver via the active
+assignment card — and the chat page reads/writes `chat_messages`, streamed
+live through RealtimeService.

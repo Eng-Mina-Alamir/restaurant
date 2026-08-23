@@ -45,7 +45,8 @@ flutter test                                                # unit + widget test
 ```
 
 > 🚀 **Deploying against live Supabase?** Read [`DEPLOYMENT.md`](DEPLOYMENT.md)
-> first — it walks through the required `supabase_migration_v3.sql`, backend
+> first — it walks through the required `supabase_migration_v3.sql` and
+> `supabase_migration_v4.sql` (customer ↔ driver chat) migrations, backend
 > toggles, and a dispatch-pipeline architecture map.
 
 > No emulator/device is required: everything is verified with
@@ -119,6 +120,7 @@ lib/
 - [x] KDS multi-chef claim with guarded revert + `order_status_log` audit trail
 - [x] Alerts: waiter ready-for-pickup, driver new-assignment (realtime)
 - [x] Customer live delivery tracking (real driver data, pending-only cancel)
+- [x] Customer ↔ driver order chat (`/chat/:orderId`, realtime, schema v4)
 - [ ] Push notifications / audio alerts for new orders
 - [ ] QR ordering + self-pay
 
@@ -127,7 +129,7 @@ lib/
 ```bash
 flutter analyze     # 0 issues
 dart format --set-exit-if-changed .   # consistently formatted
-flutter test        # 939 unit + widget tests — all green
+flutter test        # the full unit + widget suite passes
 ```
 
 All feature controllers (cart, orders, tables, delivery, dispatch, metrics,
