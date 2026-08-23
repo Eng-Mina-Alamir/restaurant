@@ -13,7 +13,7 @@ Built with **Clean Architecture** (presentation / domain / data), **Riverpod**, 
 | Customer   | `/customer` | Browse menu, dietary filters, order, self-pay |
 | Waiter     | `/waiter`   | Table management (zones), take orders, statuses |
 | Kitchen    | `/kds`      | Kitchen Display System (order columns)     |
-| Manager    | `/manager`  | Sales analytics, order status breakdown, active orders |
+| Manager    | `/manager`  | Sales analytics, order status breakdown, active orders, delivery dispatch board (`/manager/dispatch`) |
 | Driver     | `/driver`   | Accept deliveries, live tracking, statuses |
 
 ## Architecture
@@ -44,8 +44,12 @@ flutter analyze                                             # static checks
 flutter test                                                # unit + widget tests
 ```
 
-> No emulator/device is required for the current milestone: everything is verified with
-> `flutter analyze`, `dart format`, and pure-Dart tests.
+> 🚀 **Deploying against live Supabase?** Read [`DEPLOYMENT.md`](DEPLOYMENT.md)
+> first — it walks through the required `supabase_migration_v3.sql`, backend
+> toggles, and a dispatch-pipeline architecture map.
+
+> No emulator/device is required: everything is verified with
+> `flutter analyze`, `dart format`, and the offline test suite.
 
 ## Demo login
 
@@ -110,20 +114,23 @@ lib/
 - [x] Demo auth with persisted sessions + one-tap role login + logout
 - [x] Menu item details: dietary/availability badges, ratings, search + filters
 - [x] Table zone locations, KDS order summaries, driver delivery details
-- [ ] Live backend integration (Dio datasources, real persistence)
+- [x] Live backend integration (Supabase datasources, realtime, persistence)
+- [x] Auto delivery dispatch pipeline (weighted driver scoring, 30 s retry) + manager dispatch board (`/manager/dispatch`)
+- [x] KDS multi-chef claim with guarded revert + `order_status_log` audit trail
+- [x] Alerts: waiter ready-for-pickup, driver new-assignment (realtime)
+- [x] Customer live delivery tracking (real driver data, pending-only cancel)
 - [ ] Push notifications / audio alerts for new orders
 - [ ] QR ordering + self-pay
-- [ ] Delivery live tracking (maps)
 
 ## Verification
-
-The project is verified entirely offline with:
 
 ```bash
 flutter analyze     # 0 issues
 dart format --set-exit-if-changed .   # consistently formatted
-flutter test        # 175 unit + widget tests
+flutter test        # 939 unit + widget tests — all green
 ```
 
-All feature controllers (cart, orders, tables, delivery, metrics, notifications)
-have pure-Dart unit tests; pages have widget smoke tests.
+All feature controllers (cart, orders, tables, delivery, dispatch, metrics,
+notifications, KDS claim/revert) have pure-Dart unit tests; pages have widget
+smoke tests. Tests run fully offline via the in-memory repository overrides in
+`test/helpers/test_container.dart`.
