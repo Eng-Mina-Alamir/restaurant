@@ -656,6 +656,15 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   List<OrderEntity> get activeOrders =>
       state.where((o) => !o.status.isTerminal).toList();
 
+  /// Current snapshot of the order with [orderId] from the notifier state,
+  /// or null when no such order is present.
+  OrderEntity? orderById(String orderId) {
+    for (final o in state) {
+      if (o.id == orderId) return o;
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();
@@ -671,67 +680,162 @@ final newOrderNotifierProvider = Provider<NewOrderNotifier>((ref) {
   return notifier;
 });
 
-final ordersControllerProvider =
-    StateNotifierProvider<OrdersController, List<OrderEntity>>((ref) {
-      // Hybrid auto-dispatch: when a delivery order hits "ready", rank the
-      // available drivers and create exactly one assignment for the winner,
-      // then broadcast it so driver/dispatch clients stay in sync. A Waiting
-      // decision (or any failure) leaves the order undispatched — the manager
-      // can still assign manually.
-      Future<void> autoDispatchDeliveryOrder(OrderEntity order) async {
-        final deliveryRepo = ref.read(deliveryRepositoryProvider);
-        final realtime = ref.read(realtimeServiceProvider);
+/// How often queued (undispatched) delivery orders get a fresh dispatch
+/// attempt while they wait for an available driver.
+const Duration _dispatchRetryInterval = Duration(seconds: 30);
 
-        final driversResult = await deliveryRepo.getAvailableDrivers();
-        final drivers = driversResult.when(
-          onLeft: (failure) {
-            AppLogger.warning(
-              'Auto-dispatch: getAvailableDrivers failed (${failure.message}); '
-              'order ${order.id} left undispatched',
-            );
-            return null;
-          },
-          onRight: (list) => list,
-        );
-        if (drivers == null) return;
+final StateNotifierProvider<OrdersController, List<OrderEntity>>
+    ordersControllerProvider = StateNotifierProvider((ref) {
+      // Hybrid auto-dispatch with periodic retry: when a delivery order hits
+      // "ready", rank the available drivers and create exactly one assignment
+      // for the winner, then broadcast it so driver/dispatch clients stay in
+      // sync. A Waiting decision (or any failure) queues the order id and a
+      // single periodic timer re-attempts dispatch every
+      // [_dispatchRetryInterval] until it succeeds or the order turns
+      // terminal/cancelled — manual manager reassign stays possible at any
+      // point.
+      final pendingDispatchOrderIds = <String>{};
+      Timer? dispatchRetryTimer;
 
-        final decision = const DriverAssignmentService().assign(
-          candidates: drivers,
-          restaurantLat: DeliveryFeeCalculator.restaurantLat,
-          restaurantLng: DeliveryFeeCalculator.restaurantLng,
-        );
+      // Set once the controller below is constructed; the retry tick reads
+      // current order state through it.
+      OrdersController? wiredController;
 
-        switch (decision) {
-          case Waiting(:final reason):
-            AppLogger.info(
-              'Auto-dispatch: order ${order.id} waiting for a driver — $reason',
-            );
-          case Assigned(:final driverId):
-            final now = DateTime.now();
-            final assignment = DeliveryAssignment(
-              id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
-              orderId: order.id,
-              driverId: driverId,
-              pickupTime: now,
-              deliveryLocation: order.deliveryAddress ?? '',
-              deliveryStatus: DeliveryStatus.pending,
-              assignmentMethod: 'auto',
-              assignedAt: now,
-            );
-            final createdResult =
-                await deliveryRepo.createAssignment(assignment);
-            createdResult.when(
-              onLeft: (failure) => AppLogger.warning(
-                'Auto-dispatch: createAssignment rejected for order '
-                '${order.id} (${failure.message})',
-              ),
-              onRight: (created) => realtime
-                  .broadcastDeliveryAssignmentCreated(created.toJson()),
-            );
+      void cancelRetryTimer() {
+        dispatchRetryTimer?.cancel();
+        dispatchRetryTimer = null;
+      }
+
+      // Never leak timers into tests/teardown.
+      ref.onDispose(() {
+        cancelRetryTimer();
+        pendingDispatchOrderIds.clear();
+      });
+
+      /// ONE idempotent dispatch attempt for [order]: ranks drivers, creates
+      /// exactly one assignment on success and broadcasts it. Returns true
+      /// only when an assignment was persisted AND broadcast; any Waiting /
+      /// failure path returns false so the caller can queue a retry.
+      Future<bool> attemptAutoDispatch(OrderEntity order) async {
+        try {
+          final deliveryRepo = ref.read(deliveryRepositoryProvider);
+          final realtime = ref.read(realtimeServiceProvider);
+
+          final driversResult = await deliveryRepo.getAvailableDrivers();
+          final drivers = driversResult.when(
+            onLeft: (failure) {
+              AppLogger.warning(
+                'Auto-dispatch: getAvailableDrivers failed '
+                '(${failure.message}); order ${order.id} left undispatched',
+              );
+              return null;
+            },
+            onRight: (list) => list,
+          );
+          if (drivers == null) return false;
+
+          final decision = const DriverAssignmentService().assign(
+            candidates: drivers,
+            restaurantLat: DeliveryFeeCalculator.restaurantLat,
+            restaurantLng: DeliveryFeeCalculator.restaurantLng,
+          );
+
+          switch (decision) {
+            case Waiting(:final reason):
+              AppLogger.info(
+                'Auto-dispatch: order ${order.id} waiting for a driver — $reason',
+              );
+              return false;
+            case Assigned(:final driverId):
+              final now = DateTime.now();
+              final assignment = DeliveryAssignment(
+                id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
+                orderId: order.id,
+                driverId: driverId,
+                pickupTime: now,
+                deliveryLocation: order.deliveryAddress ?? '',
+                deliveryStatus: DeliveryStatus.pending,
+                assignmentMethod: 'auto',
+                assignedAt: now,
+              );
+              var dispatched = false;
+              final createdResult =
+                  await deliveryRepo.createAssignment(assignment);
+              createdResult.when(
+                onLeft: (failure) => AppLogger.warning(
+                  'Auto-dispatch: createAssignment rejected for order '
+                  '${order.id} (${failure.message})',
+                ),
+                onRight: (created) {
+                  realtime.broadcastDeliveryAssignmentCreated(created.toJson());
+                  dispatched = true;
+                },
+              );
+              return dispatched;
+          }
+        } catch (e, st) {
+          AppLogger.error(
+            'Auto-dispatch attempt failed for order ${order.id}',
+            error: e,
+            stackTrace: st,
+          );
+          return false;
         }
       }
 
-      return OrdersController(
+      /// Re-invokes dispatch for every queued order id against the CURRENT
+      /// notifier state: terminal/cancelled (or vanished) orders are dropped
+      /// silently, successes leave the queue, failures stay for next tick.
+      Future<void> retryPendingDispatches() async {
+        final controller = wiredController;
+        if (controller == null || !controller.mounted) {
+          cancelRetryTimer();
+          return;
+        }
+        for (final orderId in List<String>.of(pendingDispatchOrderIds)) {
+          // Always re-read the CURRENT order from the notifier: it may have
+          // been cancelled/terminal (or removed) since it was queued.
+          final currentOrder = controller.orderById(orderId);
+          if (currentOrder == null || currentOrder.status.isTerminal) {
+            pendingDispatchOrderIds.remove(orderId);
+            continue;
+          }
+
+          if (await attemptAutoDispatch(currentOrder)) {
+            pendingDispatchOrderIds.remove(orderId);
+          }
+        }
+        // Queue drained — nothing left to wake up for.
+        if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
+      }
+
+      /// Lazily starts the single retry timer once the queue becomes
+      /// non-empty; never stacks duplicate timers.
+      void ensureRetryTimer() {
+        if (dispatchRetryTimer != null || pendingDispatchOrderIds.isEmpty) {
+          return;
+        }
+        dispatchRetryTimer = Timer.periodic(_dispatchRetryInterval, (_) {
+          unawaited(retryPendingDispatches());
+        });
+      }
+
+      /// First-attempt entry point wired into [OrdersController]: immediate
+      /// attempt when status lands on ready; a Waiting/failure queues the id
+      /// and lazily starts the retry timer.
+      Future<void> autoDispatchDeliveryOrder(OrderEntity order) async {
+        if (await attemptAutoDispatch(order)) {
+          // Success also clears any stale queue entry (e.g. the same order
+          // was reverted to preparing and hit ready again).
+          pendingDispatchOrderIds.remove(order.id);
+          if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
+          return;
+        }
+        pendingDispatchOrderIds.add(order.id);
+        ensureRetryTimer();
+      }
+
+      final controller = OrdersController(
         ref.watch(orderRepositoryProvider),
         ref.watch(cartControllerProvider.notifier),
         ref.watch(newOrderNotifierProvider),
@@ -760,4 +864,7 @@ final ordersControllerProvider =
         },
         onDeliveryOrderReady: autoDispatchDeliveryOrder,
       );
+
+      wiredController = controller;
+      return controller;
     });
