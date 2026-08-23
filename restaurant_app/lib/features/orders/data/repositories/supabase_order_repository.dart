@@ -8,6 +8,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/entities/order_item.dart';
+import '../../domain/entities/order_status_log_entry.dart';
 import '../../domain/repositories/order_repository.dart';
 
 /// Supabase-backed [OrderRepository] with offline local cache fallback and real-time support.
@@ -290,6 +291,44 @@ class SupabaseOrderRepository implements OrderRepository {
     } catch (e) {
       return Left<Failure, void>(ServerFailure('فشل تحديث حالة الطلب: $e'));
     }
+  }
+
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) async {
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.orderStatusLogTable)
+          .select()
+          .eq('order_id', orderId)
+          .order('created_at');
+      final trail = (response as List)
+          .map((raw) => _logFromRow(Map<String, dynamic>.from(raw as Map)))
+          .toList();
+      return Right<Failure, List<OrderStatusLogEntry>>(trail);
+    } catch (e) {
+      AppLogger.error('Supabase getAuditTrail error: $e');
+      return const Left<Failure, List<OrderStatusLogEntry>>(
+        ServerFailure('فشل تحميل سجل الحالة'),
+      );
+    }
+  }
+
+  /// Maps a raw `order_status_log` row (snake_case columns) into an
+  /// [OrderStatusLogEntry].
+  static OrderStatusLogEntry _logFromRow(Map<String, dynamic> map) {
+    return OrderStatusLogEntry(
+      orderId: map['order_id']?.toString() ?? '',
+      fromStatus: OrderStatus.fromName(map['from_status'] as String?),
+      toStatus: OrderStatus.fromName(map['to_status'] as String?),
+      actorId: map['changed_by']?.toString() ?? '',
+      reason: map['reason'] as String?,
+      isRevert: map['is_revert'] as bool? ?? false,
+      createdAt: map['created_at'] != null
+          ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
   }
 
   Future<void> _cacheOrderLocally(OrderEntity order) async {

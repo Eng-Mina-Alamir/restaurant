@@ -9,6 +9,7 @@ import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
+import 'package:restaurant_app/features/orders/domain/entities/order_status_log_entry.dart';
 import 'package:restaurant_app/features/orders/domain/repositories/order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 
@@ -74,6 +75,15 @@ class _FakeOrderRepository implements OrderRepository {
     }
     orders[index] = orders[index].copyWith(status: toStatus);
     return Right(orders[index]);
+  }
+
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) async {
+    return const Right<Failure, List<OrderStatusLogEntry>>(
+      <OrderStatusLogEntry>[],
+    );
   }
 }
 

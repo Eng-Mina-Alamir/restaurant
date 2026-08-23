@@ -97,4 +97,13 @@ class InMemoryOrderRepository implements OrderRepository {
     ));
     return Right<Failure, OrderEntity>(updated);
   }
+
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) async {
+    // Appends are chronological, so filtering preserves oldest-first order.
+    final trail = _statusLog.where((e) => e.orderId == orderId).toList();
+    return Right<Failure, List<OrderStatusLogEntry>>(trail);
+  }
 }

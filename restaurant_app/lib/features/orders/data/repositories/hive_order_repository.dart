@@ -129,6 +129,21 @@ class HiveOrderRepository implements OrderRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) async {
+    try {
+      // Appends are chronological, so filtering preserves oldest-first order.
+      final trail = _statusLog.where((e) => e.orderId == orderId).toList();
+      return Right<Failure, List<OrderStatusLogEntry>>(trail);
+    } catch (e) {
+      return Left<Failure, List<OrderStatusLogEntry>>(
+        CacheFailure(e.toString()),
+      );
+    }
+  }
+
   Future<List<OrderEntity>> _loadAll() async {
     return _cache.readList(cacheKey).map(OrderEntity.fromJson).toList()
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));

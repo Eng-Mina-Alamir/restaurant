@@ -42,4 +42,12 @@ abstract class OrderRepository {
     required String actorId,
     String? reason,
   });
+
+  /// Returns the full audit trail for [orderId], oldest-first by `created_at`.
+  ///
+  /// An unknown [orderId] yields an EMPTY list rather than a failure — there
+  /// is simply nothing logged yet.
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  );
 }

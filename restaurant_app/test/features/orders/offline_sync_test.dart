@@ -13,6 +13,7 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
+import 'package:restaurant_app/features/orders/domain/entities/order_status_log_entry.dart';
 import 'package:restaurant_app/features/orders/domain/repositories/order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 
@@ -54,6 +55,12 @@ class _RecordingOrderRepository implements OrderRepository {
     String? reason,
   }) =>
       _inner.revertStatus(orderId, toStatus, actorId: actorId, reason: reason);
+
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) =>
+      _inner.getAuditTrail(orderId);
 }
 
 void main() {
@@ -248,5 +255,13 @@ class _AlwaysFailingRepository implements OrderRepository {
     String? reason,
   }) async =>
       const Left(ServerFailure('permanent rejection'));
+
+  @override
+  Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
+    String orderId,
+  ) async =>
+      const Right<Failure, List<OrderStatusLogEntry>>(
+        <OrderStatusLogEntry>[],
+      );
 }
 
