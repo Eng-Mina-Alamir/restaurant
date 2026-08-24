@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
+import '../controllers/unread_chat_controller.dart';
 
 /// Order-scoped customer ↔ driver conversation.
 ///
@@ -23,11 +26,23 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _inputController = TextEditingController();
 
+  /// Badge counter for this order, resolved once so [dispose] can clear it
+  /// without touching `ref` (Riverpod forbids ref reads after unmount).
+  late final UnreadChatController _unreadBadge =
+      ref.read(unreadChatCountProvider(widget.orderId).notifier);
+
   bool get _canSend => _inputController.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    // Entering the thread clears its unread badge. Deferred post-frame: the
+    // driver cards below may be listening to the counter, and mutating a
+    // listened-to provider mid-build is rejected by Riverpod (and would give
+    // them an inconsistent rebuild).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _unreadBadge.markRead();
+    });
     ref
         .read(chatControllerProvider(widget.orderId).notifier)
         .init(widget.orderId, ref.read(chatCurrentUserIdProvider));
@@ -38,6 +53,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   void dispose() {
+    // Leaving the thread clears any messages that landed while it was open,
+    // so returning to the driver cards shows no stale badge. Deferred via
+    // microtask because unmount runs mid-frame, where mutating a listened-to
+    // provider is forbidden.
+    scheduleMicrotask(_unreadBadge.markRead);
     _inputController.dispose();
     super.dispose();
   }

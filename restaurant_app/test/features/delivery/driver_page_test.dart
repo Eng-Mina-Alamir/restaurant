@@ -6,6 +6,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/core/network/realtime_service.dart';
 import 'package:restaurant_app/core/notifications/driver_alert_service.dart';
+import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
+import 'package:restaurant_app/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
@@ -27,12 +29,17 @@ void main() {
     await initializeDateFormatting('ar');
   });
 
-  /// Keeps seeded-assignment widget tests offline: the shared provider routes
+  /// Keeps seeded-assignment widget tests offline: the shared providers route
   /// to Supabase when AppConfig.useSupabase is enabled (same pattern as the
   /// orderRepositoryProvider overrides in test/helpers/test_container.dart).
+  /// The chat override covers the unread-badge counters now watched by each
+  /// assignment card (realtime channels would leak pending timers here).
   List<Override> offlineOverrides() => [
         deliveryRepositoryProvider.overrideWithValue(
           InMemoryDeliveryRepository(),
+        ),
+        chatRepositoryProvider.overrideWithValue(
+          InMemoryChatRepository(),
         ),
       ];
 
@@ -41,6 +48,9 @@ void main() {
       overrides: [
         deliveryRepositoryProvider.overrideWithValue(
           InMemoryDeliveryRepository(seed: const []),
+        ),
+        chatRepositoryProvider.overrideWithValue(
+          InMemoryChatRepository(),
         ),
       ],
     );
@@ -88,6 +98,9 @@ void main() {
       overrides: [
         deliveryRepositoryProvider.overrideWithValue(
           InMemoryDeliveryRepository(seed: const []),
+        ),
+        chatRepositoryProvider.overrideWithValue(
+          InMemoryChatRepository(),
         ),
       ],
     );

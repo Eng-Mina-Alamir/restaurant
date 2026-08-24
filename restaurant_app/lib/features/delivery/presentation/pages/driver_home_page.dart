@@ -12,6 +12,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
+import '../../../chat/presentation/controllers/unread_chat_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../controllers/delivery_controller.dart';
 import '../widgets/live_tracking_map.dart';
@@ -273,7 +274,7 @@ class _StatusFilterBar extends StatelessWidget {
   }
 }
 
-class _DeliveryCard extends StatelessWidget {
+class _DeliveryCard extends ConsumerWidget {
   const _DeliveryCard({
     required this.assignment,
     required this.onAction,
@@ -287,9 +288,13 @@ class _DeliveryCard extends StatelessWidget {
   final VoidCallback onOpenChat;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final status = assignment.deliveryStatus;
+    // Session-scoped unread counter for this order's thread (0 until the
+    // customer replies after the badge subscription started).
+    final unreadCount = ref.watch(unreadChatCountProvider(assignment.orderId));
     final actionLabel = switch (status) {
       DeliveryStatus.pending => AppConstants.actionAccept,
       DeliveryStatus.accepted => AppConstants.actionStartDelivery,
@@ -401,10 +406,48 @@ class _DeliveryCard extends StatelessWidget {
                   label: const Text('الخريطة والتتبع'),
                   onPressed: onOpenMap,
                 ),
-                IconButton(
-                  tooltip: 'محادثة العميل',
-                  icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                  onPressed: onOpenChat,
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      tooltip: 'محادثة العميل',
+                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                      onPressed: onOpenChat,
+                    ),
+                    if (unreadCount > 0)
+                      PositionedDirectional(
+                        top: 2,
+                        end: 2,
+                        child: Semantics(
+                          label: AppConstants.unreadChatMessagesLabel,
+                          excludeSemantics: true,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: colorScheme.error,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.full),
+                            ),
+                            child: Text(
+                              '$unreadCount',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onError,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 if (actionLabel != null) ...[
                   const SizedBox(width: AppSpacing.sm),

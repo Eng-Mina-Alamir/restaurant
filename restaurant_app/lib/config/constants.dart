@@ -167,6 +167,7 @@ abstract final class AppConstants {
   static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
   static const String driverNewAssignmentAlert = 'مهمة توصيل جديدة';
   static const String driverNewAssignmentOrderPrefix = 'طلب';
+  static const String unreadChatMessagesLabel = 'رسائل غير مقروءة';
   static const String unknownDriverName = 'سائق غير معروف';
   static const String rateDriverAction = 'قيّم السائق';
   static const String rateDriverDialogTitle = 'تقييم السائق';

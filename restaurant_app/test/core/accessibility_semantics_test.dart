@@ -165,6 +165,11 @@ void main() {
             deliveryRepositoryProvider.overrideWithValue(
               InMemoryDeliveryRepository(),
             ),
+            // Assignment cards watch unread-chat counters; keep them on the
+            // in-memory repository (realtime channels leak pending timers).
+            chatRepositoryProvider.overrideWithValue(
+              InMemoryChatRepository(),
+            ),
           ],
           child: const MaterialApp(home: DriverHomePage()),
         ),
