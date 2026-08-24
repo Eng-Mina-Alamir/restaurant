@@ -9,18 +9,8 @@ import 'package:restaurant_app/features/cart/presentation/controllers/cart_contr
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/waiter_dashboard_page.dart';
+import '../../helpers/spy_waiter_alert_service.dart';
 import '../../helpers/test_container.dart';
-
-/// Records pickup notifications without touching platform channels.
-class SpyWaiterAlertService implements WaiterAlertService {
-  int notifyCalls = 0;
-
-  @override
-  Future<void> notifyReadyForPickup() async => notifyCalls++;
-
-  @override
-  void dispose() {}
-}
 
 void main() {
   const burger = MenuItem(

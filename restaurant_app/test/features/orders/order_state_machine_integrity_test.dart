@@ -10,13 +10,17 @@ import 'package:restaurant_app/features/orders/data/repositories/in_memory_order
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 
 /// Builds a minimal serializable order for realtime seeding.
-Map<String, dynamic> _orderJson(String id) => <String, dynamic>{
+Map<String, dynamic> _orderJson(
+  String id, {
+  String orderType = 'takeaway',
+  String? tableId,
+}) => <String, dynamic>{
   'id': id,
   'restaurantId': 'demo-restaurant-1',
   'customerId': null,
-  'tableId': null,
+  'tableId': tableId,
   'waiterId': null,
-  'orderType': 'takeaway',
+  'orderType': orderType,
   'items': <Map<String, dynamic>>[],
   'status': 'pending',
   'subtotal': 10.0,
@@ -409,6 +413,104 @@ void main() {
         controller.state.single.status,
         OrderStatus.ready,
         reason: 'canRevertTo(ready → confirmed) is false; nothing may change',
+      );
+    });
+  });
+
+  group('Outgoing pickup-broadcast contract (updateStatus → ready)', () {
+    late RealtimeService realtime;
+    late OrdersController controller;
+    late ConnectivityService connectivity;
+    late NewOrderNotifier notifier;
+
+    /// Every event this service emitted. With no socket open, [RealtimeService.send]
+    /// loops broadcasts back onto [events], so these are exactly the events the
+    /// controller published to other clients.
+    final List<RealtimeEvent> outgoing = [];
+
+    Future<void> pump() =>
+        Future<void>.delayed(const Duration(milliseconds: 15));
+
+    List<RealtimeEvent> pickupEvents() => outgoing
+        .where((e) => e.type == RealtimeEventType.orderReadyForPickup)
+        .toList();
+
+    setUp(() {
+      outgoing.clear();
+      realtime = RealtimeService(wsUrl: 'ws://127.0.0.1:9'); // never connects
+      realtime.events.listen(outgoing.add); // capture outgoing loopback events
+      connectivity = ConnectivityService();
+      notifier = NewOrderNotifier();
+      controller = OrdersController(
+        InMemoryOrderRepository(),
+        // Cart is unused in these tests; orders arrive via realtime.
+        CartController(),
+        notifier,
+        realtimeService: realtime,
+        connectivityService: connectivity,
+      );
+    });
+
+    tearDown(() {
+      controller.dispose();
+      notifier.dispose();
+      connectivity.dispose();
+      realtime.disconnect();
+    });
+
+    test(
+      'dine-in order advanced to ready emits exactly ONE orderReadyForPickup '
+      'carrying orderId, tableId and updatedAt',
+      () async {
+        realtime.send(
+          jsonEncode({
+            'type': 'orderCreated',
+            'data': _orderJson(
+              'ORD-9201',
+              orderType: 'dineIn',
+              tableId: 't7',
+            ),
+          }),
+        );
+        await pump();
+        expect(controller.state.single.orderType, OrderType.dineIn);
+
+        await controller.updateStatus('ORD-9201', OrderStatus.ready);
+        await pump();
+
+        final pickups = pickupEvents();
+        expect(
+          pickups,
+          hasLength(1),
+          reason:
+              'Exactly one pickup alert must reach waiter clients — no more '
+              '(duplicate chimes) and no fewer (missed handoff)',
+        );
+        expect(pickups.single.payload['orderId'], 'ORD-9201');
+        expect(pickups.single.payload['tableId'], 't7');
+        expect(
+          DateTime.tryParse(pickups.single.payload['updatedAt'] as String),
+          isNotNull,
+          reason: 'updatedAt stamps the event for staleness guards',
+        );
+      },
+    );
+
+    test('takeaway order advanced to ready emits NO pickup event', () async {
+      realtime.send(
+        jsonEncode({'type': 'orderCreated', 'data': _orderJson('ORD-9202')}),
+      );
+      await pump();
+      expect(controller.state.single.orderType, OrderType.takeaway);
+
+      await controller.updateStatus('ORD-9202', OrderStatus.ready);
+      await pump();
+
+      expect(
+        pickupEvents(),
+        isEmpty,
+        reason: 'Takeaway orders are collected at the counter — waiters must '
+            'never be paged for them',
       );
     });
   });
