@@ -8,6 +8,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/repositories/delivery_repository.dart';
 import '../../data/repositories/hive_delivery_repository.dart';
@@ -37,7 +38,9 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
     this._repository,
     this._driverId, {
     RealtimeService? realtimeService,
+    Future<void> Function(String orderId)? onDelivered,
   }) : _realtimeService = realtimeService,
+       _onDelivered = onDelivered,
        super(const []) {
     _load();
     _initRealtime();
@@ -47,6 +50,12 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   final String _driverId;
   final RealtimeService? _realtimeService;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+
+  /// Optional hook fired after an assignment lands on
+  /// [DeliveryStatus.delivered] so the PARENT order advances too (driver
+  /// devices don't load every order, so the provider wiring writes via the
+  /// repository directly). Null keeps the assignment-only behaviour.
+  final Future<void> Function(String orderId)? _onDelivered;
 
   void _initRealtime() {
     final service = _realtimeService;
@@ -162,13 +171,40 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
       _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.inTransit));
 
   /// Completes the delivery, stamping the delivered time.
-  Future<void> complete(String id) => _apply(
-    id,
-    (a) => a.copyWith(
-      deliveryStatus: DeliveryStatus.delivered,
-      deliveredTime: DateTime.now(),
-    ),
-  );
+  ///
+  /// When [_onDelivered] is wired it fires best-effort afterwards so the
+  /// parent order advances as well; failures are logged and swallowed.
+  Future<void> complete(String id) async {
+    await _apply(
+      id,
+      (a) => a.copyWith(
+        deliveryStatus: DeliveryStatus.delivered,
+        deliveredTime: DateTime.now(),
+      ),
+    );
+    final index = state.indexWhere((a) => a.id == id);
+    // Assignment unknown / unchanged — nothing was delivered, skip the hook.
+    if (index == -1) return;
+    await _notifyDelivered(state[index].orderId);
+  }
+
+  /// Invokes the optional [_onDelivered] hook for an order whose delivery
+  /// just completed, swallowing any failure so a broken parent-order write
+  /// never breaks the driver flow.
+  Future<void> _notifyDelivered(String orderId) async {
+    final hook = _onDelivered;
+    if (hook == null) return;
+    try {
+      await hook(orderId);
+    } catch (e, st) {
+      AppLogger.warning(
+        '[Delivery] outcome=on-delivered-hook-failure orderId=$orderId; '
+        'assignment stays delivered (order may need manual completion)',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
 
   /// Marks a delivery as failed.
   Future<void> fail(String id) =>
@@ -182,14 +218,51 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
 }
 
 /// Provider for [DeliveryController] scoped to the demo driver.
+///
+/// The [DeliveryController] `onDelivered` hook advances the PARENT order to
+/// completed once its delivery lands, then broadcasts the new status so
+/// customer/waiter clients stay in sync. Driver devices don't hold every
+/// order in local state ([OrdersController.updateStatus] would no-op), so
+/// the write goes through the repository directly. Best-effort: failures are
+/// logged inside [DeliveryController], never surfaced to the driver UI.
 final deliveryControllerProvider =
     StateNotifierProvider<DeliveryController, List<DeliveryAssignment>>(
       (ref) => DeliveryController(
         ref.watch(deliveryRepositoryProvider),
         'driver-demo',
         realtimeService: ref.watch(realtimeServiceProvider),
+        onDelivered: (orderId) => _completeParentOrder(ref, orderId),
       ),
     );
+
+/// Advances [orderId] to [OrderStatus.completed] after a successful delivery
+/// (ready → completed is a legal transition). Skips orders that are unknown
+/// to this backend or already terminal — re-completing must never regress a
+/// cancelled order.
+Future<void> _completeParentOrder(Ref ref, String orderId) async {
+  final orderRepo = ref.read(orderRepositoryProvider);
+  final current = await orderRepo.getOrders();
+  final order = current.when(
+    onLeft: (_) => null,
+    onRight: (orders) {
+      for (final o in orders) {
+        if (o.id == orderId) return o;
+      }
+      return null;
+    },
+  );
+  if (order == null || order.status.isTerminal) return;
+  final updated = await orderRepo.updateOrderStatus(
+    orderId,
+    OrderStatus.completed,
+  );
+  updated.when(
+    onLeft: (_) {},
+    onRight: (_) => ref
+        .read(realtimeServiceProvider)
+        .broadcastOrderStatusChanged(orderId, OrderStatus.completed.name),
+  );
+}
 
 /// Fetches the assignment linked to [orderId] for the customer tracking UI.
 ///

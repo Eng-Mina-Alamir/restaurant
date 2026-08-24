@@ -10,6 +10,8 @@ import 'package:restaurant_app/features/chat/presentation/controllers/chat_contr
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
+import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
+import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 
 /// Builds a well-formed deliveryAssignmentCreated payload.
 Map<String, dynamic> assignmentJson({
@@ -33,10 +35,14 @@ void main() {
   /// Keeps tests offline: the shared providers route to Supabase when
   /// AppConfig.useSupabase is enabled (same pattern as orderRepositoryProvider
   /// overrides in test/helpers/test_container.dart). The chat override covers
-  /// the unread-badge counters watched by DriverHomePage cards.
+  /// the unread-badge counters watched by DriverHomePage cards. The order-repo
+  /// override keeps the provider-wired onDelivered hook hermetic — with an
+  /// empty local store it skips the parent-order write instead of reaching
+  /// Supabase.
   List<Override> offlineOverrides() => [
     deliveryRepositoryProvider.overrideWithValue(InMemoryDeliveryRepository()),
     chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+    orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
   ];
 
   group('DeliveryController', () {
