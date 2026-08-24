@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/chat_message.dart';
@@ -113,7 +114,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       onPressed: () => ref
                           .read(chatControllerProvider(widget.orderId).notifier)
                           .retry(),
-                      child: const Text('إعادة المحاولة'),
+                      child: const Text(
+                        AppConstants.orderAuditTrailRetryAction,
+                      ),
                     ),
                   ],
                 ),

@@ -48,6 +48,7 @@ abstract final class AppConstants {
 
   // ── Common UI ──────────────────────────────────────────────────────────────
   static const String ok = 'حسناً';
+  static const String cancel = 'إلغاء';
   static const String delete = 'حذف';
   static const String notFoundTitle = 'الصفحة غير موجودة';
   static const String notFoundAction = 'العودة للرئيسية';
@@ -189,6 +190,10 @@ abstract final class AppConstants {
   static const String errorDemoUnavailable = 'غير متاح في وضع العرض';
   static const String errorInvalidToken = 'رمز غير صالح';
   static const String errorInvalidResponse = 'استجابة غير صالحة';
+
+  /// Renders a UI error line with the exception detail appended, e.g.
+  /// `خطأ: <err>`. Used by `.when(error: ...)` branches in pages.
+  static String errorWithDetail(Object err) => 'خطأ: $err';
 }
 
 /// Arabic labels for order statuses.

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/reservation_entity.dart';
@@ -75,7 +76,8 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
           Expanded(
             child: reservationsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('خطأ: $err')),
+              error: (err, _) =>
+                  Center(child: Text(AppConstants.errorWithDetail(err))),
               data: (list) {
                 final filtered = _filterStatus == null
                     ? list

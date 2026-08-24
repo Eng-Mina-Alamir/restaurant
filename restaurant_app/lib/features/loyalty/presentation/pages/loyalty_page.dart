@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -30,7 +31,7 @@ class LoyaltyPage extends ConsumerWidget {
       ),
       body: accountAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('خطأ: $err')),
+        error: (err, _) => Center(child: Text(AppConstants.errorWithDetail(err))),
         data: (account) {
           final nextTier = account.tier.nextTier;
           final nextTierPoints = nextTier?.minPoints ?? account.lifetimePoints;
@@ -185,7 +186,7 @@ class LoyaltyPage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () async {

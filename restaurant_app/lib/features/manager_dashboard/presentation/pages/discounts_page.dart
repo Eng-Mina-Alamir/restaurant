@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 
@@ -378,7 +379,7 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: const Text(AppConstants.cancel),
         ),
         FilledButton(onPressed: _save, child: const Text('حفظ')),
       ],

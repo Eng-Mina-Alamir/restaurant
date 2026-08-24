@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
@@ -43,7 +44,7 @@ class DispatchBoardPage extends ConsumerWidget {
               FilledButton(
                 onPressed: () =>
                     ref.read(dispatchControllerProvider.notifier).refresh(),
-                child: const Text('إعادة المحاولة'),
+                child: const Text(AppConstants.orderAuditTrailRetryAction),
               ),
             ],
           ),

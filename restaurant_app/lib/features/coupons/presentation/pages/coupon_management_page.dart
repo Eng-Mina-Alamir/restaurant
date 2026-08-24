@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -34,7 +35,7 @@ class CouponManagementPage extends ConsumerWidget {
       ),
       body: couponsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('خطأ: $err')),
+        error: (err, _) => Center(child: Text(AppConstants.errorWithDetail(err))),
         data: (coupons) {
           if (coupons.isEmpty) {
             return const EmptyState(
@@ -217,7 +218,7 @@ class CouponManagementPage extends ConsumerWidget {
                                     ),
                                     SizedBox(width: 8),
                                     Text(
-                                      'حذف',
+                                      AppConstants.delete,
                                       style: TextStyle(color: Colors.red),
                                     ),
                                   ],
@@ -511,7 +512,7 @@ class CouponManagementPage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -521,7 +522,7 @@ class CouponManagementPage extends ConsumerWidget {
                   .deleteCoupon(coupon.id);
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: const Text(AppConstants.delete),
           ),
         ],
       ),

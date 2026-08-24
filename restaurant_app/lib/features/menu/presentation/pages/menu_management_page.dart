@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -48,7 +49,8 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
       ),
       body: menuAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('خطأ: $error')),
+        error: (error, _) =>
+            Center(child: Text(AppConstants.errorWithDetail(error))),
         data: (menu) {
           final items = filterMenu(
             menu,
@@ -260,7 +262,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                             ),
                                           ),
                                           IconButton(
-                                            tooltip: 'حذف',
+                                            tooltip: AppConstants.delete,
                                             icon: const Icon(
                                               Icons.delete_outline,
                                               size: 20,
@@ -303,7 +305,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -538,7 +540,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -546,7 +548,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
               ref.read(menuControllerProvider.notifier).deleteItem(item.id);
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: const Text(AppConstants.delete),
           ),
         ],
       ),

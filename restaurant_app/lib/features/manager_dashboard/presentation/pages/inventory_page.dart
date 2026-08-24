@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../inventory/domain/entities/inventory_item_entity.dart';
@@ -83,12 +84,12 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: AppSpacing.md),
-              Text('خطأ: $err'),
+              Text(AppConstants.errorWithDetail(err)),
               const SizedBox(height: AppSpacing.sm),
               FilledButton(
                 onPressed: () =>
                     ref.read(inventoryControllerProvider.notifier).load(),
-                child: const Text('إعادة المحاولة'),
+                child: const Text(AppConstants.orderAuditTrailRetryAction),
               ),
             ],
           ),
@@ -317,7 +318,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -399,7 +400,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -472,7 +473,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -518,7 +519,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -534,7 +535,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                 ),
               );
             },
-            child: const Text('حذف'),
+            child: const Text(AppConstants.delete),
           ),
         ],
       ),
@@ -641,7 +642,8 @@ class _InventoryCard extends StatelessWidget {
                             size: 18,
                           ),
                           SizedBox(width: 8),
-                          Text('حذف', style: TextStyle(color: Colors.red)),
+                          Text(AppConstants.delete,
+                              style: TextStyle(color: Colors.red)),
                         ],
                       ),
                     ),

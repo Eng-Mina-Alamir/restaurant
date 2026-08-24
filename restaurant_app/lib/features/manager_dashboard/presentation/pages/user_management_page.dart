@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -620,7 +621,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -630,7 +631,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                   .deleteUser(user.id);
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: const Text(AppConstants.delete),
           ),
         ],
       ),

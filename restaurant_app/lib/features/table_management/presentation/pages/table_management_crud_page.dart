@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -322,7 +323,7 @@ class _TableManagementCrudPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -399,7 +400,7 @@ class _TableManagementCrudPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -435,7 +436,7 @@ class _TableManagementCrudPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: const Text(AppConstants.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -443,7 +444,7 @@ class _TableManagementCrudPageState
               ref.read(tableControllerProvider.notifier).deleteTable(table.id);
               Navigator.pop(ctx);
             },
-            child: const Text('حذف'),
+            child: const Text(AppConstants.delete),
           ),
         ],
       ),
