@@ -49,8 +49,8 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     _realtimeSub = service.events.listen((event) {
       if (event.type == RealtimeEventType.tableStatusChanged) {
         try {
-          final tableId =
-              (event.payload['id'] ?? event.payload['tableId'])?.toString();
+          final tableId = (event.payload['id'] ?? event.payload['tableId'])
+              ?.toString();
           if (tableId == null) return;
 
           final index = state.indexWhere((t) => t.id == tableId);

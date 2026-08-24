@@ -20,23 +20,28 @@ void main() {
       expect(account.transactions.isNotEmpty, isTrue);
     });
 
-    test('earns points from completed orders based on tier multiplier', () async {
-      final result = await repository.earnPoints(
-        userId: 'cust-101',
-        orderTotal: 100.0,
-        orderId: 'ORD-5555',
-      );
-      expect(result.isRight, isTrue);
-      final account = result.when(onLeft: (_) => null, onRight: (a) => a);
-      // 100 SAR * 1.25 (silver) = 125 points earned
-      expect(account!.currentPoints, 350 + 125);
-      expect(account.transactions.first.points, 125);
-      expect(account.transactions.first.type, PointsTransactionType.earn);
-    });
+    test(
+      'earns points from completed orders based on tier multiplier',
+      () async {
+        final result = await repository.earnPoints(
+          userId: 'cust-101',
+          orderTotal: 100.0,
+          orderId: 'ORD-5555',
+        );
+        expect(result.isRight, isTrue);
+        final account = result.when(onLeft: (_) => null, onRight: (a) => a);
+        // 100 SAR * 1.25 (silver) = 125 points earned
+        expect(account!.currentPoints, 350 + 125);
+        expect(account.transactions.first.points, 125);
+        expect(account.transactions.first.type, PointsTransactionType.earn);
+      },
+    );
 
     test('redeems reward when points balance is sufficient', () async {
       final rewardsResult = await repository.getAvailableRewards();
-      final reward = rewardsResult.when(onLeft: (_) => null, onRight: (r) => r)!.first; // 100 points cost
+      final reward = rewardsResult
+          .when(onLeft: (_) => null, onRight: (r) => r)!
+          .first; // 100 points cost
 
       final result = await repository.redeemReward(
         userId: 'cust-101',

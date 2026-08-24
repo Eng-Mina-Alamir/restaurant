@@ -4,8 +4,9 @@ import 'package:restaurant_app/shared/animations/animated_expandable_card.dart';
 
 void main() {
   group('AnimatedExpandableCard Tests', () {
-    testWidgets('Toggles expansion and executes onExpansionChanged callback',
-        (tester) async {
+    testWidgets('Toggles expansion and executes onExpansionChanged callback', (
+      tester,
+    ) async {
       bool? expandedState;
 
       await tester.pumpWidget(
@@ -37,8 +38,9 @@ void main() {
       expect(expandedState, isFalse);
     });
 
-    testWidgets('Starts expanded when initiallyExpanded is true',
-        (tester) async {
+    testWidgets('Starts expanded when initiallyExpanded is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

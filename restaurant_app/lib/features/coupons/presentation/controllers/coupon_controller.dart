@@ -27,8 +27,8 @@ class AppliedCouponNotifier extends StateNotifier<CouponEntity?> {
 
 final appliedCouponProvider =
     StateNotifierProvider<AppliedCouponNotifier, CouponEntity?>((ref) {
-  return AppliedCouponNotifier();
-});
+      return AppliedCouponNotifier();
+    });
 
 /// Controller for managing coupons catalog (CRUD for manager).
 class CouponManagementController
@@ -36,7 +36,7 @@ class CouponManagementController
   final CouponRepository _repository;
 
   CouponManagementController(this._repository)
-      : super(const AsyncValue.loading()) {
+    : super(const AsyncValue.loading()) {
     loadCoupons();
   }
 
@@ -78,8 +78,11 @@ class CouponManagementController
   }
 }
 
-final couponManagementControllerProvider = StateNotifierProvider<
-    CouponManagementController, AsyncValue<List<CouponEntity>>>((ref) {
-  final repo = ref.watch(couponRepositoryProvider);
-  return CouponManagementController(repo);
-});
+final couponManagementControllerProvider =
+    StateNotifierProvider<
+      CouponManagementController,
+      AsyncValue<List<CouponEntity>>
+    >((ref) {
+      final repo = ref.watch(couponRepositoryProvider);
+      return CouponManagementController(repo);
+    });

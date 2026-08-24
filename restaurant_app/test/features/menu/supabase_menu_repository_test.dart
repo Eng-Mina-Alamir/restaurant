@@ -14,19 +14,22 @@ void main() {
       repository = SupabaseMenuRepositoryImpl(client);
     });
 
-    test('getMenu gracefully falls back to menu data on network offline/seed fallback', () async {
-      final result = await repository.getMenu();
+    test(
+      'getMenu gracefully falls back to menu data on network offline/seed fallback',
+      () async {
+        final result = await repository.getMenu();
 
-      expect(result.isRight, isTrue);
-      result.when(
-        onLeft: (_) => fail('Expected right menu'),
-        onRight: (menu) {
-          expect(menu.items, isNotEmpty);
-          expect(menu.categories, isNotEmpty);
-          expect(menu.categories, contains('مشروبات'));
-        },
-      );
-    });
+        expect(result.isRight, isTrue);
+        result.when(
+          onLeft: (_) => fail('Expected right menu'),
+          onRight: (menu) {
+            expect(menu.items, isNotEmpty);
+            expect(menu.categories, isNotEmpty);
+            expect(menu.categories, contains('مشروبات'));
+          },
+        );
+      },
+    );
 
     test('toggleAvailability updates cache and returns MenuItem', () async {
       // First prime the cache

@@ -40,24 +40,27 @@ void main() {
       expect(service.pendingCount, 1);
     });
 
-    test('enqueue with duplicate idempotencyKey ignores duplicate entry', () async {
-      final first = await service.enqueue(
-        operationType: 'createOrder',
-        payload: {'orderId': 'ORD-1000', 'subtotal': 50.0},
-        idempotencyKey: 'idem-ord-1000',
-      );
-      expect(first, isTrue);
-      expect(service.pendingCount, 1);
+    test(
+      'enqueue with duplicate idempotencyKey ignores duplicate entry',
+      () async {
+        final first = await service.enqueue(
+          operationType: 'createOrder',
+          payload: {'orderId': 'ORD-1000', 'subtotal': 50.0},
+          idempotencyKey: 'idem-ord-1000',
+        );
+        expect(first, isTrue);
+        expect(service.pendingCount, 1);
 
-      // Attempt duplicate enqueue with same idempotencyKey
-      final duplicate = await service.enqueue(
-        operationType: 'createOrder',
-        payload: {'orderId': 'ORD-1000', 'subtotal': 50.0},
-        idempotencyKey: 'idem-ord-1000',
-      );
-      expect(duplicate, isFalse);
-      expect(service.pendingCount, 1); // Remains 1!
-    });
+        // Attempt duplicate enqueue with same idempotencyKey
+        final duplicate = await service.enqueue(
+          operationType: 'createOrder',
+          payload: {'orderId': 'ORD-1000', 'subtotal': 50.0},
+          idempotencyKey: 'idem-ord-1000',
+        );
+        expect(duplicate, isFalse);
+        expect(service.pendingCount, 1); // Remains 1!
+      },
+    );
 
     test('different idempotency keys are both accepted and enqueued', () async {
       final added1 = await service.enqueue(

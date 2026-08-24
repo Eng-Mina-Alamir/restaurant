@@ -5,31 +5,24 @@ import 'package:restaurant_app/features/loyalty/presentation/pages/loyalty_page.
 
 void main() {
   group('LoyaltyPage Widget Tests', () {
-    testWidgets('renders loyalty tier, points, rewards catalog and points history', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: LoyaltyPage(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders loyalty tier, points, rewards catalog and points history',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(child: MaterialApp(home: LoyaltyPage())),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('برنامج الولاء والمكافآت'), findsOneWidget);
-      expect(find.text('المكافآت المتاحة للاستبدال'), findsOneWidget);
-      expect(find.text('سجل النقاط والمعاملات'), findsOneWidget);
-      expect(find.textContaining('نقطة'), findsWidgets);
-    });
+        expect(find.text('برنامج الولاء والمكافآت'), findsOneWidget);
+        expect(find.text('المكافآت المتاحة للاستبدال'), findsOneWidget);
+        expect(find.text('سجل النقاط والمعاملات'), findsOneWidget);
+        expect(find.textContaining('نقطة'), findsWidgets);
+      },
+    );
 
     testWidgets('tapping redeem opens confirmation dialog', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: LoyaltyPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: LoyaltyPage())),
       );
       await tester.pumpAndSettle();
 

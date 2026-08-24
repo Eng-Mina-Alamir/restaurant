@@ -35,17 +35,28 @@ void main() {
       expect(result.isRight, isTrue);
 
       final all = await repository.getInventoryItems();
-      expect((all as Right<Failure, List<InventoryItemEntity>>).value.any((i) => i.id == 'inv-99'), isTrue);
+      expect(
+        (all as Right<Failure, List<InventoryItemEntity>>).value.any(
+          (i) => i.id == 'inv-99',
+        ),
+        isTrue,
+      );
     });
 
     test('updateItem updates item properties or returns failure', () async {
       final all = await repository.getInventoryItems();
-      final target = (all as Right<Failure, List<InventoryItemEntity>>).value.first;
+      final target =
+          (all as Right<Failure, List<InventoryItemEntity>>).value.first;
       final updated = target.copyWith(currentStock: 50.0);
 
       final updateResult = await repository.updateItem(updated);
       expect(updateResult.isRight, isTrue);
-      expect((updateResult as Right<Failure, InventoryItemEntity>).value.currentStock, 50.0);
+      expect(
+        (updateResult as Right<Failure, InventoryItemEntity>)
+            .value
+            .currentStock,
+        50.0,
+      );
 
       const nonExistent = InventoryItemEntity(
         id: 'inv-fake',
@@ -65,13 +76,23 @@ void main() {
       expect(deleteResult.isRight, isTrue);
 
       final all = await repository.getInventoryItems();
-      expect((all as Right<Failure, List<InventoryItemEntity>>).value.any((i) => i.id == 'inv-1'), isFalse);
+      expect(
+        (all as Right<Failure, List<InventoryItemEntity>>).value.any(
+          (i) => i.id == 'inv-1',
+        ),
+        isFalse,
+      );
     });
 
     test('restock increases stock count accurately', () async {
       final restockResult = await repository.restock('inv-2', 50.0);
       expect(restockResult.isRight, isTrue);
-      expect((restockResult as Right<Failure, InventoryItemEntity>).value.currentStock, 170.0);
+      expect(
+        (restockResult as Right<Failure, InventoryItemEntity>)
+            .value
+            .currentStock,
+        170.0,
+      );
     });
   });
 }

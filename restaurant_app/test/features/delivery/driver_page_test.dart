@@ -35,13 +35,9 @@ void main() {
   /// The chat override covers the unread-badge counters now watched by each
   /// assignment card (realtime channels would leak pending timers here).
   List<Override> offlineOverrides() => [
-        deliveryRepositoryProvider.overrideWithValue(
-          InMemoryDeliveryRepository(),
-        ),
-        chatRepositoryProvider.overrideWithValue(
-          InMemoryChatRepository(),
-        ),
-      ];
+    deliveryRepositoryProvider.overrideWithValue(InMemoryDeliveryRepository()),
+    chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+  ];
 
   testWidgets('shows empty state when no delivery jobs', (tester) async {
     final container = ProviderContainer(
@@ -49,9 +45,7 @@ void main() {
         deliveryRepositoryProvider.overrideWithValue(
           InMemoryDeliveryRepository(seed: const []),
         ),
-        chatRepositoryProvider.overrideWithValue(
-          InMemoryChatRepository(),
-        ),
+        chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
       ],
     );
     addTearDown(container.dispose);
@@ -99,9 +93,7 @@ void main() {
         deliveryRepositoryProvider.overrideWithValue(
           InMemoryDeliveryRepository(seed: const []),
         ),
-        chatRepositoryProvider.overrideWithValue(
-          InMemoryChatRepository(),
-        ),
+        chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
       ],
     );
     addTearDown(container.dispose);
@@ -215,17 +207,16 @@ void main() {
     expect(spy.notifyCalls, 0);
 
     // Dispatch a new assignment over the shared realtime loopback.
-    container.read(realtimeServiceProvider).sendEvent(
-      'deliveryAssignmentCreated',
-      {
-        'id': 'assign-rt-9',
-        'orderId': 'ORD-0200',
-        'driverId': 'driver-demo',
-        'pickupTime': DateTime.now().toIso8601String(),
-        'deliveryLocation': 'الرياض - حي النرجس',
-        'deliveryStatus': 'pending',
-      },
-    );
+    container
+        .read(realtimeServiceProvider)
+        .sendEvent('deliveryAssignmentCreated', {
+          'id': 'assign-rt-9',
+          'orderId': 'ORD-0200',
+          'driverId': 'driver-demo',
+          'pickupTime': DateTime.now().toIso8601String(),
+          'deliveryLocation': 'الرياض - حي النرجس',
+          'deliveryStatus': 'pending',
+        });
     await tester.pump(); // deliver the realtime event + rebuild
     await tester.pump(const Duration(milliseconds: 300)); // snackbar entrance
 
@@ -242,17 +233,16 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
     expect(spy.notifyCalls, 1);
 
-    container.read(realtimeServiceProvider).sendEvent(
-      'deliveryAssignmentCreated',
-      {
-        'id': 'assign-rt-9',
-        'orderId': 'ORD-0200',
-        'driverId': 'driver-demo',
-        'pickupTime': DateTime.now().toIso8601String(),
-        'deliveryLocation': 'الرياض - حي النرجس',
-        'deliveryStatus': 'pending',
-      },
-    );
+    container
+        .read(realtimeServiceProvider)
+        .sendEvent('deliveryAssignmentCreated', {
+          'id': 'assign-rt-9',
+          'orderId': 'ORD-0200',
+          'driverId': 'driver-demo',
+          'pickupTime': DateTime.now().toIso8601String(),
+          'deliveryLocation': 'الرياض - حي النرجس',
+          'deliveryStatus': 'pending',
+        });
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(spy.notifyCalls, 1);

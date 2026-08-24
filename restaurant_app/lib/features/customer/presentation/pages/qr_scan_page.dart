@@ -84,10 +84,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
       body: Stack(
         children: [
           // ── camera feed ──────────────────────────────────────────────────
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _onDetect),
 
           // ── scan frame overlay ───────────────────────────────────────────
           Center(
@@ -117,7 +114,11 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
             right: 0,
             child: Column(
               children: [
-                const Icon(Icons.qr_code_scanner, color: Colors.white70, size: 32),
+                const Icon(
+                  Icons.qr_code_scanner,
+                  color: Colors.white70,
+                  size: 32,
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'وجّه الكاميرا نحو رمز QR الموجود على الطاولة',
@@ -138,11 +139,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
 // ── Corner decoration widget ──────────────────────────────────────────────────
 
 class _Corner extends StatelessWidget {
-  const _Corner({
-    required this.top,
-    required this.left,
-    required this.color,
-  });
+  const _Corner({required this.top, required this.left, required this.color});
 
   final bool top;
   final bool left;
@@ -160,18 +157,10 @@ class _Corner extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           border: Border(
-            top: top
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            bottom: !top
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            left: left
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            right: !left
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
+            top: top ? BorderSide(color: color, width: 4) : BorderSide.none,
+            bottom: !top ? BorderSide(color: color, width: 4) : BorderSide.none,
+            left: left ? BorderSide(color: color, width: 4) : BorderSide.none,
+            right: !left ? BorderSide(color: color, width: 4) : BorderSide.none,
           ),
         ),
       ),

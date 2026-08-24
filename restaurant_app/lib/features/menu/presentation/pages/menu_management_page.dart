@@ -12,8 +12,7 @@ class MenuManagementPage extends ConsumerStatefulWidget {
   const MenuManagementPage({super.key});
 
   @override
-  ConsumerState<MenuManagementPage> createState() =>
-      _MenuManagementPageState();
+  ConsumerState<MenuManagementPage> createState() => _MenuManagementPageState();
 }
 
 class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
@@ -85,9 +84,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
               // Categories Row
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Row(
                   children: [
                     ChoiceChip(
@@ -106,9 +103,8 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                             '$category (${menu.itemsIn(category).length})',
                           ),
                           selected: _selectedCategory == category,
-                          onSelected: (_) => setState(
-                            () => _selectedCategory = category,
-                          ),
+                          onSelected: (_) =>
+                              setState(() => _selectedCategory = category),
                         ),
                       ),
                   ],
@@ -160,16 +156,17 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                                         .textTheme
                                                         .titleMedium
                                                         ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                   ),
                                                 ),
                                                 if (item.isVegetarian)
                                                   const Padding(
-                                                    padding: EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                    ),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 4,
+                                                        ),
                                                     child: Icon(
                                                       Icons.eco,
                                                       size: 16,
@@ -178,9 +175,10 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                                   ),
                                                 if (item.isSpicy)
                                                   const Padding(
-                                                    padding: EdgeInsets.symmetric(
-                                                      horizontal: 4,
-                                                    ),
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 4,
+                                                        ),
                                                     child: Icon(
                                                       Icons
                                                           .local_fire_department,
@@ -193,13 +191,11 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                             const SizedBox(height: 2),
                                             Text(
                                               item.description,
-                                              style: theme
-                                                  .textTheme
-                                                  .bodySmall
+                                              style: theme.textTheme.bodySmall
                                                   ?.copyWith(
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -209,9 +205,9 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                         Formatters.formatCurrency(item.price),
                                         style: theme.textTheme.titleMedium
                                             ?.copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                              color: colorScheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -242,11 +238,11 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                                 : 'غير متوفر',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                              color: item.isAvailable
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                                  color: item.isAvailable
+                                                      ? Colors.green
+                                                      : Colors.red,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -270,10 +266,8 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                               size: 20,
                                               color: Colors.red,
                                             ),
-                                            onPressed: () => _confirmDelete(
-                                              context,
-                                              item,
-                                            ),
+                                            onPressed: () =>
+                                                _confirmDelete(context, item),
                                           ),
                                         ],
                                       ),
@@ -315,9 +309,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
             onPressed: () {
               final name = controller.text.trim();
               if (name.isNotEmpty) {
-                ref
-                    .read(menuControllerProvider.notifier)
-                    .addCategory(name);
+                ref.read(menuControllerProvider.notifier).addCategory(name);
                 Navigator.pop(ctx);
               }
             },
@@ -333,8 +325,9 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
     final categories = menu?.categories ?? ['عام'];
 
     final nameCtrl = TextEditingController(text: existingItem?.name ?? '');
-    final descCtrl =
-        TextEditingController(text: existingItem?.description ?? '');
+    final descCtrl = TextEditingController(
+      text: existingItem?.description ?? '',
+    );
     final priceCtrl = TextEditingController(
       text: existingItem != null ? existingItem.price.toString() : '',
     );
@@ -344,7 +337,8 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
           : '15',
     );
 
-    String category = existingItem?.categoryId ??
+    String category =
+        existingItem?.categoryId ??
         (_selectedCategory != kAllCategoriesFilter
             ? _selectedCategory
             : (categories.isNotEmpty ? categories.first : 'عام'));
@@ -377,8 +371,8 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                           ? 'إضافة صنف جديد'
                           : 'تعديل صنف: ${existingItem.name}',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -400,13 +394,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                       ? category
                       : categories.first,
                   items: categories
-
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c,
-                          child: Text(c),
-                        ),
-                      )
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setSheetState(() => category = val);
@@ -457,8 +445,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                 CheckboxListTile(
                   title: const Text('وجبة نباتية (Vegetarian)'),
                   value: isVeg,
-                  onChanged: (val) =>
-                      setSheetState(() => isVeg = val ?? false),
+                  onChanged: (val) => setSheetState(() => isVeg = val ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                   dense: true,
                 ),
@@ -529,9 +516,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                     Navigator.pop(ctx);
                   },
                   child: Text(
-                    existingItem == null
-                        ? 'حفظ وإضافة الصنف'
-                        : 'حفظ التعديلات',
+                    existingItem == null ? 'حفظ وإضافة الصنف' : 'حفظ التعديلات',
                   ),
                 ),
               ],
@@ -547,7 +532,9 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('تأكيد حذف الصنف'),
-        content: Text('هل أنت متأكد من رغبتك في حذف "${item.name}" من القائمة؟'),
+        content: Text(
+          'هل أنت متأكد من رغبتك في حذف "${item.name}" من القائمة؟',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -556,9 +543,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              ref
-                  .read(menuControllerProvider.notifier)
-                  .deleteItem(item.id);
+              ref.read(menuControllerProvider.notifier).deleteItem(item.id);
               Navigator.pop(ctx);
             },
             child: const Text('حذف'),

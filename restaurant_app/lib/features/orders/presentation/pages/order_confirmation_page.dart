@@ -103,7 +103,8 @@ class OrderConfirmationPage extends StatelessWidget {
                 ),
                 _Row(
                   label: AppConstants.estimatedTimeLabel,
-                  value: '${order.estimatedMinutes ?? 0} ${AppConstants.minutes}',
+                  value:
+                      '${order.estimatedMinutes ?? 0} ${AppConstants.minutes}',
                 ),
                 if (order.paymentMethod != null)
                   _Row(
@@ -118,12 +119,16 @@ class OrderConfirmationPage extends StatelessWidget {
             delay: const Duration(milliseconds: 500),
             child: Column(
               children: [
-                _Row(label: AppConstants.statusLabel, value: order.status.labelAr),
+                _Row(
+                  label: AppConstants.statusLabel,
+                  value: order.status.labelAr,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 ScaleButton(
                   onTap: () => context.push('/customer/track/${order.id}'),
                   child: FilledButton.icon(
-                    onPressed: () => context.push('/customer/track/${order.id}'),
+                    onPressed: () =>
+                        context.push('/customer/track/${order.id}'),
                     icon: const Icon(Icons.location_on),
                     label: const Text('تتبع الطلب مباشرة'),
                   ),

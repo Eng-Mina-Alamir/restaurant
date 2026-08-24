@@ -28,7 +28,8 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
     const LoyaltyReward(
       id: 'rew-50',
       title: 'وجبة مجانية / خصم 50 ريال',
-      description: 'قسيمة خصم بقيمة 50 ريال صالحة على جميع الأصناف بدون حد أدنى',
+      description:
+          'قسيمة خصم بقيمة 50 ريال صالحة على جميع الأصناف بدون حد أدنى',
       pointsCost: 400,
       discountAmount: 50.0,
       minOrderAmount: 0.0,
@@ -37,7 +38,8 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
     const LoyaltyReward(
       id: 'rew-100',
       title: 'قسيمة النخبة 100 ريال',
-      description: 'أعلى مكافأة ولاء - خصم 100 ريال فوري لأعضاء الفئات الذهبية والبلاتينية',
+      description:
+          'أعلى مكافأة ولاء - خصم 100 ريال فوري لأعضاء الفئات الذهبية والبلاتينية',
       pointsCost: 750,
       discountAmount: 100.0,
       minOrderAmount: 0.0,

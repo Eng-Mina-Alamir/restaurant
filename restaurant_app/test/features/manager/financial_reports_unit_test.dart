@@ -23,12 +23,7 @@ void main() {
     status: OrderStatus.completed,
     paymentMethod: PaymentMethod.card,
     items: [
-      OrderItem(
-        menuItem: burger,
-        quantity: 2,
-        itemTotal: 100.0,
-        addedAt: now,
-      ),
+      OrderItem(menuItem: burger, quantity: 2, itemTotal: 100.0, addedAt: now),
     ],
     subtotal: 100.0,
     taxAmount: 15.0,
@@ -43,12 +38,7 @@ void main() {
     status: OrderStatus.cancelled,
     paymentMethod: PaymentMethod.cash,
     items: [
-      OrderItem(
-        menuItem: burger,
-        quantity: 1,
-        itemTotal: 50.0,
-        addedAt: now,
-      ),
+      OrderItem(menuItem: burger, quantity: 1, itemTotal: 50.0, addedAt: now),
     ],
     subtotal: 50.0,
     taxAmount: 7.5,

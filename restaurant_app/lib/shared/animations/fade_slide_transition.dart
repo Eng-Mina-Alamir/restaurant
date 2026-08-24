@@ -72,10 +72,7 @@ class _FadeSlideTransitionWidgetState extends State<FadeSlideTransitionWidget>
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }

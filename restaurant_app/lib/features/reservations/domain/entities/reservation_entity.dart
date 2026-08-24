@@ -74,17 +74,17 @@ class ReservationEntity {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'customerName': customerName,
-        'customerPhone': customerPhone,
-        'tableId': tableId,
-        'tableNumber': tableNumber,
-        'guestCount': guestCount,
-        'reservationTime': reservationTime.toIso8601String(),
-        'notes': notes,
-        'status': status.name,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'customerName': customerName,
+    'customerPhone': customerPhone,
+    'tableId': tableId,
+    'tableNumber': tableNumber,
+    'guestCount': guestCount,
+    'reservationTime': reservationTime.toIso8601String(),
+    'notes': notes,
+    'status': status.name,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory ReservationEntity.fromJson(Map<String, dynamic> json) =>
       ReservationEntity(

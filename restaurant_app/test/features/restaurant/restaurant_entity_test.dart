@@ -10,10 +10,7 @@ void main() {
     });
 
     test('serializes and deserializes JSON properly', () {
-      final json = <String, dynamic>{
-        'openTime': '08:30',
-        'closeTime': '01:00',
-      };
+      final json = <String, dynamic>{'openTime': '08:30', 'closeTime': '01:00'};
       final hours = BusinessHours.fromJson(json);
       expect(hours.openTime, equals('08:30'));
       expect(hours.closeTime, equals('01:00'));
@@ -52,10 +49,7 @@ void main() {
         'latitude': 21.5433,
         'longitude': 39.1728,
         'logoUrl': 'https://example.com/logo.png',
-        'hours': {
-          'openTime': '11:00',
-          'closeTime': '02:00',
-        },
+        'hours': {'openTime': '11:00', 'closeTime': '02:00'},
         'totalTables': 18,
         'categories': ['Burgers', 'Sides', 'Drinks'],
       };
@@ -71,7 +65,10 @@ void main() {
       final outJson = entity.toJson();
       expect(outJson['id'], equals('rest-002'));
       expect(outJson['logoUrl'], equals('https://example.com/logo.png'));
-      expect((outJson['hours'] as Map<String, dynamic>)['openTime'], equals('11:00'));
+      expect(
+        (outJson['hours'] as Map<String, dynamic>)['openTime'],
+        equals('11:00'),
+      );
     });
   });
 }

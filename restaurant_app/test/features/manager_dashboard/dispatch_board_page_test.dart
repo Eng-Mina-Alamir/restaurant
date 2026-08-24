@@ -23,28 +23,27 @@ class OrdersControllerMock extends StateNotifier<List<OrderEntity>>
 }
 
 OrderEntity buildOrder({required String id}) => OrderEntity(
-      id: id,
-      restaurantId: 'rest-1',
-      orderType: OrderType.delivery,
-      status: OrderStatus.ready,
-      deliveryAddress: 'القاهرة - مدينة نصر',
-      createdAt: DateTime.now(),
-    );
+  id: id,
+  restaurantId: 'rest-1',
+  orderType: OrderType.delivery,
+  status: OrderStatus.ready,
+  deliveryAddress: 'القاهرة - مدينة نصر',
+  createdAt: DateTime.now(),
+);
 
 DeliveryAssignment buildActiveDriverAssignment({
   required String orderId,
   required String driverId,
-}) =>
-    DeliveryAssignment(
-      id: 'ASG-$orderId-seed',
-      orderId: orderId,
-      driverId: driverId,
-      pickupTime: DateTime.now(),
-      deliveryLocation: 'القاهرة - مدينة نصر',
-      deliveryStatus: DeliveryStatus.inTransit,
-      assignmentMethod: 'auto',
-      assignedAt: DateTime.now(),
-    );
+}) => DeliveryAssignment(
+  id: 'ASG-$orderId-seed',
+  orderId: orderId,
+  driverId: driverId,
+  pickupTime: DateTime.now(),
+  deliveryLocation: 'القاهرة - مدينة نصر',
+  deliveryStatus: DeliveryStatus.inTransit,
+  assignmentMethod: 'auto',
+  assignedAt: DateTime.now(),
+);
 
 Future<ProviderContainer> pumpBoard(
   WidgetTester tester, {
@@ -72,15 +71,18 @@ Future<ProviderContainer> pumpBoard(
 }
 
 void main() {
-  testWidgets('renders undispatched order card with address and status',
-      (tester) async {
+  testWidgets('renders undispatched order card with address and status', (
+    tester,
+  ) async {
     await pumpBoard(
       tester,
       orders: [buildOrder(id: 'ORD-A')],
-      repository: InMemoryDeliveryRepository(seed: [
-        // An unrelated in-transit run makes its driver "available".
-        buildActiveDriverAssignment(orderId: 'ORD-OTHER', driverId: 'drv-1'),
-      ]),
+      repository: InMemoryDeliveryRepository(
+        seed: [
+          // An unrelated in-transit run makes its driver "available".
+          buildActiveDriverAssignment(orderId: 'ORD-OTHER', driverId: 'drv-1'),
+        ],
+      ),
     );
 
     expect(find.text('طلبات بانتظار سواق'), findsOneWidget);
@@ -90,11 +92,14 @@ void main() {
     expect(find.text('تعيين سواق'), findsOneWidget);
   });
 
-  testWidgets('assign flow creates a manual-method assignment in the repo',
-      (tester) async {
-    final repo = InMemoryDeliveryRepository(seed: [
-      buildActiveDriverAssignment(orderId: 'ORD-OTHER', driverId: 'drv-1'),
-    ]);
+  testWidgets('assign flow creates a manual-method assignment in the repo', (
+    tester,
+  ) async {
+    final repo = InMemoryDeliveryRepository(
+      seed: [
+        buildActiveDriverAssignment(orderId: 'ORD-OTHER', driverId: 'drv-1'),
+      ],
+    );
     await pumpBoard(
       tester,
       orders: [buildOrder(id: 'ORD-A')],
@@ -111,18 +116,18 @@ void main() {
 
     expect(find.text('تم تعيين السائق بنجاح'), findsOneWidget);
 
-    final created = (await repo.getAssignmentByOrderId('ORD-A')).when(
-      onLeft: (f) => fail('lookup should not fail'),
-      onRight: (a) => a,
-    );
+    final created = (await repo.getAssignmentByOrderId(
+      'ORD-A',
+    )).when(onLeft: (f) => fail('lookup should not fail'), onRight: (a) => a);
     expect(created, isNotNull);
     expect(created!.assignmentMethod, 'manual');
     expect(created.driverId, 'drv-1');
     expect(created.deliveryStatus, DeliveryStatus.pending);
   });
 
-  testWidgets('shows empty state when there is nothing to dispatch',
-      (tester) async {
+  testWidgets('shows empty state when there is nothing to dispatch', (
+    tester,
+  ) async {
     await pumpBoard(
       tester,
       orders: const [],

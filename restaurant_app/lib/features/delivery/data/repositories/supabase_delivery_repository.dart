@@ -25,10 +25,7 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       '(name, phone, rating, vehicle_info)';
 
   /// Delivery statuses that free a driver for new work.
-  static const List<String> _terminalStatuses = <String>[
-    'delivered',
-    'failed',
-  ];
+  static const List<String> _terminalStatuses = <String>['delivered', 'failed'];
 
   static final RegExp _uuidRegex = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
@@ -94,7 +91,8 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+  Future<Either<Failure, List<DeliveryAssignment>>>
+  getActiveAssignments() async {
     try {
       // ONE bulk read mirroring the active-counts query in
       // [getAvailableDrivers]. Reuses the driver-enrichment select so board
@@ -193,9 +191,7 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           .toList();
       return Right<Failure, List<DeliveryAssignment>>(assignments);
     } catch (e) {
-      AppLogger.error(
-        'Supabase getAssignments error: $e (driverId=$driverId)',
-      );
+      AppLogger.error('Supabase getAssignments error: $e (driverId=$driverId)');
       return Left<Failure, List<DeliveryAssignment>>(
         ServerFailure('فشل جلب مهام التوصيل: $e'),
       );
@@ -267,8 +263,7 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       orderId: map['order_id']?.toString() ?? '',
       driverId: map['driver_id']?.toString() ?? '',
       pickupTime: map['pickup_time'] != null
-          ? DateTime.tryParse(map['pickup_time'].toString()) ??
-                DateTime.now()
+          ? DateTime.tryParse(map['pickup_time'].toString()) ?? DateTime.now()
           : DateTime.now(),
       deliveredTime: map['delivered_time'] == null
           ? null
@@ -282,8 +277,7 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       ),
       deliveryFee: (map['delivery_fee'] as num?)?.toDouble(),
       routeOptimized: map['route_optimized']?.toString(),
-      routeDistanceMeters:
-          (map['route_distance_meters'] as num?)?.toDouble(),
+      routeDistanceMeters: (map['route_distance_meters'] as num?)?.toDouble(),
       driverName: driverMap['name']?.toString(),
       driverPhone: driverMap['phone']?.toString(),
       driverRating: (driverMap['rating'] as num?)?.toDouble(),

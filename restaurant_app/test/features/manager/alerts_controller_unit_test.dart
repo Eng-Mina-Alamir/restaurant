@@ -42,10 +42,18 @@ void main() {
 
     test('markAsRead and markAllAsRead update alert states', () {
       final controller = container.read(alertsControllerProvider.notifier);
-      final first = container.read(alertsControllerProvider).firstWhere((a) => !a.isRead);
+      final first = container
+          .read(alertsControllerProvider)
+          .firstWhere((a) => !a.isRead);
 
       controller.markAsRead(first.id);
-      expect(container.read(alertsControllerProvider).firstWhere((a) => a.id == first.id).isRead, isTrue);
+      expect(
+        container
+            .read(alertsControllerProvider)
+            .firstWhere((a) => a.id == first.id)
+            .isRead,
+        isTrue,
+      );
 
       controller.markAllAsRead();
       expect(container.read(unreadAlertsCountProvider), 0);
@@ -56,7 +64,10 @@ void main() {
       final first = container.read(alertsControllerProvider).first;
 
       controller.dismissAlert(first.id);
-      expect(container.read(alertsControllerProvider).any((a) => a.id == first.id), isFalse);
+      expect(
+        container.read(alertsControllerProvider).any((a) => a.id == first.id),
+        isFalse,
+      );
 
       controller.clearAll();
       expect(container.read(alertsControllerProvider), isEmpty);

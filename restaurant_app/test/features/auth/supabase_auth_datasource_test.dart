@@ -19,33 +19,42 @@ void main() {
       expect(datasource, isNotNull);
     });
 
-    test('login with invalid credentials throws ServerException or InvalidCredentialsException', () async {
-      expect(
-        () => datasource.login('invalid@example.com', 'wrongpassword'),
-        throwsA(isA<AppException>()),
-      );
-    });
+    test(
+      'login with invalid credentials throws ServerException or InvalidCredentialsException',
+      () async {
+        expect(
+          () => datasource.login('invalid@example.com', 'wrongpassword'),
+          throwsA(isA<AppException>()),
+        );
+      },
+    );
 
-    test('login with phone number routes properly and catches auth exceptions', () async {
-      expect(
-        () => datasource.login('01012345678', 'wrongpass'),
-        throwsA(isA<AppException>()),
-      );
-    });
+    test(
+      'login with phone number routes properly and catches auth exceptions',
+      () async {
+        expect(
+          () => datasource.login('01012345678', 'wrongpass'),
+          throwsA(isA<AppException>()),
+        );
+      },
+    );
 
-    test('register with invalid email/parameters throws AppException', () async {
-      expect(
-        () => datasource.register(
-          name: 'تست',
-          email: 'invalid-email',
-          phone: '01000000000',
-          password: '123',
-          restaurantId: 'test-restaurant-id',
-          role: UserRole.customer,
-        ),
-        throwsA(isA<AppException>()),
-      );
-    });
+    test(
+      'register with invalid email/parameters throws AppException',
+      () async {
+        expect(
+          () => datasource.register(
+            name: 'تست',
+            email: 'invalid-email',
+            phone: '01000000000',
+            password: '123',
+            restaurantId: 'test-restaurant-id',
+            role: UserRole.customer,
+          ),
+          throwsA(isA<AppException>()),
+        );
+      },
+    );
 
     test('verifyOtp with invalid OTP throws AppException', () async {
       expect(

@@ -12,13 +12,16 @@ void main() {
       repository = InMemoryLoyaltyRepository();
     });
 
-    test('getAccount creates or returns user account with initial balance', () async {
-      final result = await repository.getAccount('usr-loyalty-1');
-      expect(result.isRight, isTrue);
-      final account = (result as Right<Failure, LoyaltyAccount>).value;
-      expect(account.currentPoints, 350);
-      expect(account.tier, LoyaltyTier.silver);
-    });
+    test(
+      'getAccount creates or returns user account with initial balance',
+      () async {
+        final result = await repository.getAccount('usr-loyalty-1');
+        expect(result.isRight, isTrue);
+        final account = (result as Right<Failure, LoyaltyAccount>).value;
+        expect(account.currentPoints, 350);
+        expect(account.tier, LoyaltyTier.silver);
+      },
+    );
 
     test('earnPoints adds points multiplied by tier multiplier', () async {
       final earnResult = await repository.earnPoints(
@@ -73,7 +76,10 @@ void main() {
     test('getAvailableRewards returns predefined rewards catalogue', () async {
       final rewardsResult = await repository.getAvailableRewards();
       expect(rewardsResult.isRight, isTrue);
-      expect((rewardsResult as Right<Failure, List<LoyaltyReward>>).value.length, 4);
+      expect(
+        (rewardsResult as Right<Failure, List<LoyaltyReward>>).value.length,
+        4,
+      );
     });
   });
 }

@@ -17,7 +17,8 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
 });
 
 /// State for the inventory list and operations.
-class InventoryController extends StateNotifier<AsyncValue<List<InventoryItemEntity>>> {
+class InventoryController
+    extends StateNotifier<AsyncValue<List<InventoryItemEntity>>> {
   InventoryController(this._repository) : super(const AsyncValue.loading()) {
     load();
   }
@@ -69,7 +70,9 @@ class InventoryController extends StateNotifier<AsyncValue<List<InventoryItemEnt
       onRight: (updated) {
         final current = state.valueOrNull ?? <InventoryItemEntity>[];
         state = AsyncValue.data(
-          current.map<InventoryItemEntity>((i) => i.id == id ? updated : i).toList(),
+          current
+              .map<InventoryItemEntity>((i) => i.id == id ? updated : i)
+              .toList(),
         );
         return true;
       },
@@ -83,7 +86,9 @@ class InventoryController extends StateNotifier<AsyncValue<List<InventoryItemEnt
       onRight: (updated) {
         final current = state.valueOrNull ?? <InventoryItemEntity>[];
         state = AsyncValue.data(
-          current.map<InventoryItemEntity>((i) => i.id == item.id ? updated : i).toList(),
+          current
+              .map<InventoryItemEntity>((i) => i.id == item.id ? updated : i)
+              .toList(),
         );
         return true;
       },
@@ -96,9 +101,7 @@ class InventoryController extends StateNotifier<AsyncValue<List<InventoryItemEnt
       onLeft: (_) => false,
       onRight: (_) {
         final current = state.valueOrNull ?? <InventoryItemEntity>[];
-        state = AsyncValue.data(
-          current.where((i) => i.id != id).toList(),
-        );
+        state = AsyncValue.data(current.where((i) => i.id != id).toList());
         return true;
       },
     );
@@ -106,6 +109,7 @@ class InventoryController extends StateNotifier<AsyncValue<List<InventoryItemEnt
 }
 
 final inventoryControllerProvider =
-    StateNotifierProvider<InventoryController, AsyncValue<List<InventoryItemEntity>>>(
-  (ref) => InventoryController(ref.watch(inventoryRepositoryProvider)),
-);
+    StateNotifierProvider<
+      InventoryController,
+      AsyncValue<List<InventoryItemEntity>>
+    >((ref) => InventoryController(ref.watch(inventoryRepositoryProvider)));

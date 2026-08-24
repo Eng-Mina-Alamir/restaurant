@@ -28,15 +28,20 @@ void main() {
     );
 
     test('ReservationEntity copyWith and properties', () {
-      final updated = testReservation.copyWith(status: ReservationStatus.seated);
+      final updated = testReservation.copyWith(
+        status: ReservationStatus.seated,
+      );
       expect(updated.status, ReservationStatus.seated);
       expect(updated.customerName, 'أحمد محمود');
       expect(updated.guestCount, 4);
     });
 
-    test('getReservations returns Either with list or handles network failure', () async {
-      final result = await repository.getReservations();
-      expect(result, isNotNull);
-    });
+    test(
+      'getReservations returns Either with list or handles network failure',
+      () async {
+        final result = await repository.getReservations();
+        expect(result, isNotNull);
+      },
+    );
   });
 }

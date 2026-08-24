@@ -9,7 +9,7 @@ import '../../domain/repositories/coupon_repository.dart';
 
 class SupabaseCouponRepository implements CouponRepository {
   SupabaseCouponRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+    : _supabase = supabase;
 
   final SupabaseClient _supabase;
 
@@ -73,7 +73,11 @@ class SupabaseCouponRepository implements CouponRepository {
       _cachedCoupons = coupons;
       return Right(coupons);
     } catch (e, st) {
-      AppLogger.warning('Supabase getCoupons fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase getCoupons fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedCoupons ??= List.of(_initialSeedCoupons);
       return Right(List.unmodifiable(_cachedCoupons!));
     }
@@ -100,7 +104,9 @@ class SupabaseCouponRepository implements CouponRepository {
         final matched = list.where((c) => c.code.toUpperCase() == cleanCode);
         if (matched.isEmpty) {
           return const Left(
-            ValidationFailure('كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة'),
+            ValidationFailure(
+              'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
+            ),
           );
         }
         coupon = matched.first;
@@ -113,13 +119,19 @@ class SupabaseCouponRepository implements CouponRepository {
 
       return Right(coupon);
     } catch (e, st) {
-      AppLogger.warning('Supabase validateAndGetCoupon fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase validateAndGetCoupon fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       final cleanCode = code.trim().toUpperCase();
       final list = _cachedCoupons ?? _initialSeedCoupons;
       final matched = list.where((c) => c.code.toUpperCase() == cleanCode);
       if (matched.isEmpty) {
         return const Left(
-          ValidationFailure('كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة'),
+          ValidationFailure(
+            'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
+          ),
         );
       }
       final coupon = matched.first;
@@ -132,7 +144,9 @@ class SupabaseCouponRepository implements CouponRepository {
   }
 
   @override
-  Future<Either<Failure, CouponEntity>> createCoupon(CouponEntity coupon) async {
+  Future<Either<Failure, CouponEntity>> createCoupon(
+    CouponEntity coupon,
+  ) async {
     try {
       final cleanCode = coupon.code.trim().toUpperCase();
       final payload = {
@@ -161,7 +175,9 @@ class SupabaseCouponRepository implements CouponRepository {
   }
 
   @override
-  Future<Either<Failure, CouponEntity>> updateCoupon(CouponEntity coupon) async {
+  Future<Either<Failure, CouponEntity>> updateCoupon(
+    CouponEntity coupon,
+  ) async {
     try {
       final payload = {
         'code': coupon.code.trim().toUpperCase(),
@@ -194,10 +210,7 @@ class SupabaseCouponRepository implements CouponRepository {
   @override
   Future<Either<Failure, void>> deleteCoupon(String id) async {
     try {
-      await _supabase
-          .from(SupabaseConfig.couponsTable)
-          .delete()
-          .eq('id', id);
+      await _supabase.from(SupabaseConfig.couponsTable).delete().eq('id', id);
       return const Right(null);
     } catch (e, st) {
       AppLogger.error('Supabase deleteCoupon error', error: e, stackTrace: st);
@@ -224,7 +237,11 @@ class SupabaseCouponRepository implements CouponRepository {
       }
       return const Right(null);
     } catch (e, st) {
-      AppLogger.error('Supabase incrementUsage error', error: e, stackTrace: st);
+      AppLogger.error(
+        'Supabase incrementUsage error',
+        error: e,
+        stackTrace: st,
+      );
       return Left(ServerFailure('فشل تحديث عدد مرات استخدام الكوبون: $e'));
     }
   }
@@ -235,7 +252,8 @@ class SupabaseCouponRepository implements CouponRepository {
         ? CouponDiscountType.fixed
         : CouponDiscountType.percentage;
 
-    final discountVal = (map['discount_value'] as num?)?.toDouble() ??
+    final discountVal =
+        (map['discount_value'] as num?)?.toDouble() ??
         (map['discount_percent'] as num?)?.toDouble() ??
         0.0;
 

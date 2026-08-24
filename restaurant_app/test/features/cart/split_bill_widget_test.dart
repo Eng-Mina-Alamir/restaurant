@@ -16,44 +16,41 @@ void main() {
   );
 
   group('SplitBillSheet Widget Tests', () {
-    testWidgets('renders split bill sheet with person counter and calculated per-person amount', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'renders split bill sheet with person counter and calculated per-person amount',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final cartController = container.read(cartControllerProvider.notifier);
-      cartController.addItem(const CartItem(menuItem: burger, quantity: 2));
+        final cartController = container.read(cartControllerProvider.notifier);
+        cartController.addItem(const CartItem(menuItem: burger, quantity: 2));
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(
-              body: SplitBillSheet(),
-            ),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: Scaffold(body: SplitBillSheet())),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('تقسيم الفاتورة'), findsOneWidget);
-      expect(find.text('عدد الأشخاص'), findsOneWidget);
-      expect(find.text('المجموع الكلي'), findsOneWidget);
-      expect(find.byKey(const ValueKey(2)), findsOneWidget); // Counter at 2
-      expect(find.text('شخص 1'), findsOneWidget);
-      expect(find.text('شخص 2'), findsOneWidget);
+        expect(find.text('تقسيم الفاتورة'), findsOneWidget);
+        expect(find.text('عدد الأشخاص'), findsOneWidget);
+        expect(find.text('المجموع الكلي'), findsOneWidget);
+        expect(find.byKey(const ValueKey(2)), findsOneWidget); // Counter at 2
+        expect(find.text('شخص 1'), findsOneWidget);
+        expect(find.text('شخص 2'), findsOneWidget);
 
-      // Increment persons
-      await tester.tap(find.byIcon(Icons.add_rounded));
-      await tester.pumpAndSettle();
+        // Increment persons
+        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey(3)), findsOneWidget); // Counter at 3
-      expect(find.text('شخص 3'), findsOneWidget);
-    });
+        expect(find.byKey(const ValueKey(3)), findsOneWidget); // Counter at 3
+        expect(find.text('شخص 3'), findsOneWidget);
+      },
+    );
   });
 }

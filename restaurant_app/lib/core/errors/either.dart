@@ -26,7 +26,6 @@ sealed class Either<L, R> {
   }
 }
 
-
 /// Failure side of an [Either]; carries the reason an operation failed.
 final class Left<L, R> extends Either<L, R> {
   final L value;

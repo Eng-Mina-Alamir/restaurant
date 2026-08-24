@@ -48,9 +48,10 @@ class _AnimatedExpandableCardState extends State<AnimatedExpandableCard>
       value: _isExpanded ? 1.0 : 0.0,
     );
 
-    _chevronAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
-      CurvedAnimation(parent: _controller, curve: widget.curve),
-    );
+    _chevronAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.5,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     _expandAnimation = CurvedAnimation(
       parent: _controller,
@@ -84,7 +85,8 @@ class _AnimatedExpandableCardState extends State<AnimatedExpandableCard>
       decoration: BoxDecoration(
         color: widget.color ?? theme.cardTheme.color,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        border: widget.border ??
+        border:
+            widget.border ??
             Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),

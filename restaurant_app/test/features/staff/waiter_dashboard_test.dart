@@ -155,9 +155,7 @@ void main() {
     final spy = SpyWaiterAlertService();
     final container = createTestContainer(
       seedCheckoutFixtures: true,
-      additionalOverrides: [
-        waiterAlertServiceProvider.overrideWithValue(spy),
-      ],
+      additionalOverrides: [waiterAlertServiceProvider.overrideWithValue(spy)],
     );
     addTearDown(container.dispose);
     await primeMenuForCheckout(container);
@@ -191,41 +189,38 @@ void main() {
     expect(spy.notifyCalls, 1);
   });
 
-  testWidgets(
-    'ready takeaway orders do not raise the pickup badge or alert',
-    (tester) async {
-      final spy = SpyWaiterAlertService();
-      final container = createTestContainer(
-        seedCheckoutFixtures: true,
-        additionalOverrides: [
-          waiterAlertServiceProvider.overrideWithValue(spy),
-        ],
-      );
-      addTearDown(container.dispose);
-      await primeMenuForCheckout(container);
+  testWidgets('ready takeaway orders do not raise the pickup badge or alert', (
+    tester,
+  ) async {
+    final spy = SpyWaiterAlertService();
+    final container = createTestContainer(
+      seedCheckoutFixtures: true,
+      additionalOverrides: [waiterAlertServiceProvider.overrideWithValue(spy)],
+    );
+    addTearDown(container.dispose);
+    await primeMenuForCheckout(container);
 
-      // Takeaway order placed through the customer flow.
-      container.read(cartControllerProvider.notifier).addItem(
-            const CartItem(menuItem: burger),
-          );
-      await container
-          .read(ordersControllerProvider.notifier)
-          .placeOrder(orderType: OrderType.takeaway);
-      final orderId = container.read(ordersControllerProvider).first.id;
-      await container
-          .read(ordersControllerProvider.notifier)
-          .updateStatus(orderId, OrderStatus.ready);
+    // Takeaway order placed through the customer flow.
+    container
+        .read(cartControllerProvider.notifier)
+        .addItem(const CartItem(menuItem: burger));
+    await container
+        .read(ordersControllerProvider.notifier)
+        .placeOrder(orderType: OrderType.takeaway);
+    final orderId = container.read(ordersControllerProvider).first.id;
+    await container
+        .read(ordersControllerProvider.notifier)
+        .updateStatus(orderId, OrderStatus.ready);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(home: WaiterDashboardPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: WaiterDashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.byType(Badge), findsNothing);
-      expect(spy.notifyCalls, 0);
-    },
-  );
+    expect(find.byType(Badge), findsNothing);
+    expect(spy.notifyCalls, 0);
+  });
 }

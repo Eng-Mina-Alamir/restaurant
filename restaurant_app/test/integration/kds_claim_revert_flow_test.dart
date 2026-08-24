@@ -20,10 +20,7 @@ const String _chefB = 'chef-bob';
 /// Extracts the Right payload or returns [onLeftResult] on a Left.
 ///
 /// Small local shim so assertions stay readable without repeating casts.
-T _unwrap<T>(
-  Either<Failure, T> result,
-  T onLeftResult,
-) =>
+T _unwrap<T>(Either<Failure, T> result, T onLeftResult) =>
     result.when(onLeft: (_) => onLeftResult, onRight: (value) => value);
 
 void main() {
@@ -35,10 +32,8 @@ void main() {
     AppLogger.enabled = true;
   });
 
-  test(
-      'KDS claim scopes visibility per chef and guarded reverts are capped at '
-      'two with an oldest-first isRevert audit trail',
-      () async {
+  test('KDS claim scopes visibility per chef and guarded reverts are capped at '
+      'two with an oldest-first isRevert audit trail', () async {
     // The repository instance is created HERE (instead of inside
     // createTestContainer) so the audit-trail assertions read the exact same
     // store the controller persists through — no network, no wall-clock waits.
@@ -66,9 +61,9 @@ void main() {
     //       (fixture menu primed for checkout-time revalidation), then walk
     //       pending → preparing → ready exactly as the KDS advance button does.
     await primeMenuForCheckout(container);
-    container.read(cartControllerProvider.notifier).addItem(
-          CartItem(menuItem: checkoutFixtureItems.first),
-        );
+    container
+        .read(cartControllerProvider.notifier)
+        .addItem(CartItem(menuItem: checkoutFixtureItems.first));
 
     final orders = container.read(ordersControllerProvider.notifier);
     final order = await orders.placeOrderForTable('T-12');
@@ -80,17 +75,13 @@ void main() {
     expect(container.read(cartControllerProvider), isEmpty);
 
     // Unclaimed tickets are visible to EVERY chef before a claim lands.
-    expect(
-      visibleTo(_chefA).map((o) => o.id),
-      contains(order.id),
-    );
-    expect(
-      visibleTo(_chefB).map((o) => o.id),
-      contains(order.id),
-    );
+    expect(visibleTo(_chefA).map((o) => o.id), contains(order.id));
+    expect(visibleTo(_chefB).map((o) => o.id), contains(order.id));
 
-    final preparing =
-        await orders.updateStatus(order.id, OrderStatus.preparing);
+    final preparing = await orders.updateStatus(
+      order.id,
+      OrderStatus.preparing,
+    );
     expect(preparing?.status, OrderStatus.preparing);
 
     final ready = await orders.updateStatus(order.id, OrderStatus.ready);
@@ -102,8 +93,10 @@ void main() {
     expect(claimed?.assignedKitchenId, _chefA);
     expect(orders.orderById(order.id)?.assignedKitchenId, _chefA);
 
-    final storedAfterClaim =
-        _unwrap(await orderRepo.getOrders(), <OrderEntity>[]);
+    final storedAfterClaim = _unwrap(
+      await orderRepo.getOrders(),
+      <OrderEntity>[],
+    );
     expect(
       storedAfterClaim.singleWhere((o) => o.id == order.id).assignedKitchenId,
       _chefA,
@@ -111,14 +104,8 @@ void main() {
 
     // ── 3) Filtered-view simulation: once claimed, the order is EXCLUDED from
     //       chefB's view but still visible to the claiming chef.
-    expect(
-      visibleTo(_chefB).map((o) => o.id),
-      isNot(contains(order.id)),
-    );
-    expect(
-      visibleTo(_chefA).map((o) => o.id),
-      contains(order.id),
-    );
+    expect(visibleTo(_chefB).map((o) => o.id), isNot(contains(order.id)));
+    expect(visibleTo(_chefA).map((o) => o.id), contains(order.id));
 
     // ── 4) FIRST guarded revert ready → preparing (legal): succeeds and the
     //       repository audit trail gains one isRevert entry attributed to the
@@ -133,8 +120,10 @@ void main() {
     );
     expect(revert1?.status, OrderStatus.preparing);
 
-    var trail =
-        _unwrap(await orderRepo.getAuditTrail(order.id), <OrderStatusLogEntry>[]);
+    var trail = _unwrap(
+      await orderRepo.getAuditTrail(order.id),
+      <OrderStatusLogEntry>[],
+    );
     expect(trail, hasLength(1));
     expect(trail.single.isRevert, isTrue);
     expect(trail.single.actorId, _chefA);
@@ -190,7 +179,10 @@ void main() {
 
     // ── 6) Audit trail: exactly TWO entries, BOTH flagged isRevert, returned
     //       OLDEST-FIRST (revert #1 by chefA precedes revert #2 by chefB).
-    trail = _unwrap(await orderRepo.getAuditTrail(order.id), <OrderStatusLogEntry>[]);
+    trail = _unwrap(
+      await orderRepo.getAuditTrail(order.id),
+      <OrderStatusLogEntry>[],
+    );
     expect(trail, hasLength(2));
     expect(trail.every((e) => e.isRevert), isTrue);
     expect(trail[0].actorId, _chefA);
@@ -208,8 +200,10 @@ void main() {
     }
 
     // Rejected third attempt logged nothing extra anywhere in the store.
-    expect(orderRepo.statusLog.where((e) => e.orderId == order.id),
-        hasLength(2));
+    expect(
+      orderRepo.statusLog.where((e) => e.orderId == order.id),
+      hasLength(2),
+    );
 
     // Claimed ownership survives the whole revert saga.
     final storedAtEnd = _unwrap(await orderRepo.getOrders(), <OrderEntity>[]);
@@ -217,7 +211,9 @@ void main() {
       storedAtEnd.singleWhere((o) => o.id == order.id).assignedKitchenId,
       _chefA,
     );
-    expect(storedAtEnd.singleWhere((o) => o.id == order.id).status,
-        OrderStatus.ready);
+    expect(
+      storedAtEnd.singleWhere((o) => o.id == order.id).status,
+      OrderStatus.ready,
+    );
   });
 }

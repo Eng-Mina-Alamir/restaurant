@@ -62,33 +62,30 @@ void main() {
       expect((result as Assigned).driverId, 'drv-near');
     });
 
-    test(
-      'load-balancing beats raw distance when distances are equal-ish',
-      () {
-        // Thresholds (default weights 0.5/0.3/0.2, equal ratings):
-        // One extra active assignment costs wLoad/maxConcurrent = 0.1 score,
-        // which offsets up to 0.1/wDistance*maxDistance = 1000 m. So an idle
-        // driver may sit up to ~1000 m FARTHER per extra assignment the
-        // nearer rival carries and still win. Here the rival carries 2
-        // assignments (break-even ≈ 2000 m); the actual gap is ≈ 1002 m —
-        // a wide margin inside "equal-ish".
-        final nearButLoaded = driverAt(
-          'drv-near-loaded',
-          degLat: 0.004, // ≈ 445 m
-          activeAssignments: 2,
-        );
-        final fartherButFree = driverAt('drv-far-free', degLat: 0.013);
+    test('load-balancing beats raw distance when distances are equal-ish', () {
+      // Thresholds (default weights 0.5/0.3/0.2, equal ratings):
+      // One extra active assignment costs wLoad/maxConcurrent = 0.1 score,
+      // which offsets up to 0.1/wDistance*maxDistance = 1000 m. So an idle
+      // driver may sit up to ~1000 m FARTHER per extra assignment the
+      // nearer rival carries and still win. Here the rival carries 2
+      // assignments (break-even ≈ 2000 m); the actual gap is ≈ 1002 m —
+      // a wide margin inside "equal-ish".
+      final nearButLoaded = driverAt(
+        'drv-near-loaded',
+        degLat: 0.004, // ≈ 445 m
+        activeAssignments: 2,
+      );
+      final fartherButFree = driverAt('drv-far-free', degLat: 0.013);
 
-        final result = service.assign(
-          candidates: [nearButLoaded, fartherButFree],
-          restaurantLat: restaurantLat,
-          restaurantLng: restaurantLng,
-        );
+      final result = service.assign(
+        candidates: [nearButLoaded, fartherButFree],
+        restaurantLat: restaurantLat,
+        restaurantLng: restaurantLng,
+      );
 
-        expect(result, isA<Assigned>());
-        expect((result as Assigned).driverId, 'drv-far-free');
-      },
-    );
+      expect(result, isA<Assigned>());
+      expect((result as Assigned).driverId, 'drv-far-free');
+    });
 
     test('excludes drivers already holding the concurrency cap', () {
       final capped = driverAt(
@@ -185,10 +182,16 @@ void main() {
     test('rating-dominant weights make quality beat proximity', () {
       // weights(distance: 0.2, rating: 0.8): near-but-mediocre scores
       // 0.2*0.111 + 0.8*0.5 = 0.42 vs far-and-excellent 0.2*0.445 = 0.09.
-      final nearMediocre =
-          driverAt('drv-near-mediocre', degLat: 0.005, rating: 3.0);
-      final farExcellent =
-          driverAt('drv-far-excellent', degLat: 0.02, rating: 5.0);
+      final nearMediocre = driverAt(
+        'drv-near-mediocre',
+        degLat: 0.005,
+        rating: 3.0,
+      );
+      final farExcellent = driverAt(
+        'drv-far-excellent',
+        degLat: 0.02,
+        rating: 5.0,
+      );
 
       final result = service.assign(
         candidates: [nearMediocre, farExcellent],
@@ -222,7 +225,10 @@ void main() {
       );
 
       expect(result, isA<Waiting>());
-      expect((result as Waiting).reason, DriverAssignmentService.noDriversReason);
+      expect(
+        (result as Waiting).reason,
+        DriverAssignmentService.noDriversReason,
+      );
     });
 
     test('deterministic: identical inputs always elect the same winner', () {
@@ -326,36 +332,38 @@ void main() {
       AppLogger.enabled = true;
     });
 
-    test('exactly one createAssignment fires when a delivery order hits ready',
-        () async {
-      cart.addItem(const CartItem(menuItem: burger, quantity: 1));
-      final order = await controller.placeOrder(
-        orderType: OrderType.delivery,
-        deliveryAddress: 'حي النرجس، الرياض',
-      );
-      expect(order, isNotNull);
+    test(
+      'exactly one createAssignment fires when a delivery order hits ready',
+      () async {
+        cart.addItem(const CartItem(menuItem: burger, quantity: 1));
+        final order = await controller.placeOrder(
+          orderType: OrderType.delivery,
+          deliveryAddress: 'حي النرجس، الرياض',
+        );
+        expect(order, isNotNull);
 
-      // Preparing: no dispatch yet.
-      await controller.updateStatus(order!.id, OrderStatus.preparing);
-      expect(hookInvocations, 0);
-      expect(deliveryRepo.createdAssignments, isEmpty);
+        // Preparing: no dispatch yet.
+        await controller.updateStatus(order!.id, OrderStatus.preparing);
+        expect(hookInvocations, 0);
+        expect(deliveryRepo.createdAssignments, isEmpty);
 
-      // Ready: exactly one assignment, for the winning driver.
-      await controller.updateStatus(order.id, OrderStatus.ready);
-      expect(hookInvocations, 1);
-      expect(deliveryRepo.createCallCount, 1);
+        // Ready: exactly one assignment, for the winning driver.
+        await controller.updateStatus(order.id, OrderStatus.ready);
+        expect(hookInvocations, 1);
+        expect(deliveryRepo.createCallCount, 1);
 
-      final assignment = deliveryRepo.createdAssignments.single;
-      expect(assignment.orderId, order.id);
-      expect(assignment.driverId, 'drv-auto');
-      expect(assignment.assignmentMethod, 'auto');
-      expect(assignment.deliveryStatus, DeliveryStatus.pending);
+        final assignment = deliveryRepo.createdAssignments.single;
+        expect(assignment.orderId, order.id);
+        expect(assignment.driverId, 'drv-auto');
+        expect(assignment.assignmentMethod, 'auto');
+        expect(assignment.deliveryStatus, DeliveryStatus.pending);
 
-      // Later transitions do not re-dispatch the same order.
-      await controller.updateStatus(order.id, OrderStatus.served);
-      expect(hookInvocations, 1);
-      expect(deliveryRepo.createCallCount, 1);
-    });
+        // Later transitions do not re-dispatch the same order.
+        await controller.updateStatus(order.id, OrderStatus.served);
+        expect(hookInvocations, 1);
+        expect(deliveryRepo.createCallCount, 1);
+      },
+    );
 
     test('non-delivery orders reaching ready never dispatch', () async {
       cart.addItem(const CartItem(menuItem: burger, quantity: 1));
@@ -367,38 +375,42 @@ void main() {
       expect(deliveryRepo.createCallCount, 0);
     });
 
-    test('a failing dispatch hook never breaks the status-update path',
-        () async {
-      var brokenHookCalls = 0;
-      final brokenCart = CartController();
-      final breakingController = OrdersController(
-        InMemoryOrderRepository(),
-        brokenCart,
-        NewOrderNotifier(),
-        onDeliveryOrderReady: (o) async {
-          brokenHookCalls++;
-          throw StateError('dispatch backend exploded');
-        },
-      );
+    test(
+      'a failing dispatch hook never breaks the status-update path',
+      () async {
+        var brokenHookCalls = 0;
+        final brokenCart = CartController();
+        final breakingController = OrdersController(
+          InMemoryOrderRepository(),
+          brokenCart,
+          NewOrderNotifier(),
+          onDeliveryOrderReady: (o) async {
+            brokenHookCalls++;
+            throw StateError('dispatch backend exploded');
+          },
+        );
 
-      try {
-        brokenCart.addItem(const CartItem(menuItem: burger, quantity: 1));
-        await breakingController.placeOrder(orderType: OrderType.delivery);
-        final updated =
-            await breakingController.updateStatus('ORD-0001', OrderStatus.ready);
+        try {
+          brokenCart.addItem(const CartItem(menuItem: burger, quantity: 1));
+          await breakingController.placeOrder(orderType: OrderType.delivery);
+          final updated = await breakingController.updateStatus(
+            'ORD-0001',
+            OrderStatus.ready,
+          );
 
-        // Status transition completed despite the hook blowing up…
-        expect(updated, isNotNull);
-        expect(updated!.status, OrderStatus.ready);
-        // …and the hook really was invoked before failing.
-        expect(brokenHookCalls, 1);
-      } finally {
-        breakingController.dispose();
-      }
+          // Status transition completed despite the hook blowing up…
+          expect(updated, isNotNull);
+          expect(updated!.status, OrderStatus.ready);
+          // …and the hook really was invoked before failing.
+          expect(brokenHookCalls, 1);
+        } finally {
+          breakingController.dispose();
+        }
 
-      // Sanity: the well-behaved controller was untouched by this scenario.
-      expect(deliveryRepo.createCallCount, 0);
-    });
+        // Sanity: the well-behaved controller was untouched by this scenario.
+        expect(deliveryRepo.createCallCount, 0);
+      },
+    );
   });
 }
 
@@ -430,7 +442,8 @@ class _CapturingDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+  Future<Either<Failure, List<DeliveryAssignment>>>
+  getActiveAssignments() async {
     return const Right<Failure, List<DeliveryAssignment>>([]);
   }
 

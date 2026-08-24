@@ -193,7 +193,9 @@ class _OrderHistoryCard extends ConsumerWidget {
                 // Chat with the assigned driver (delivery orders only).
                 if (assignment != null)
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
                     child: Semantics(
                       label: 'محادثة السائق',
                       button: true,
@@ -207,9 +209,12 @@ class _OrderHistoryCard extends ConsumerWidget {
                   ),
                 if (!order.status.isTerminal)
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
                     child: FilledButton.tonalIcon(
-                      onPressed: () => context.push('/customer/track/${order.id}'),
+                      onPressed: () =>
+                          context.push('/customer/track/${order.id}'),
                       icon: const Icon(Icons.location_on, size: 16),
                       label: const Text('تتبع'),
                     ),
@@ -218,7 +223,9 @@ class _OrderHistoryCard extends ConsumerWidget {
                 if (assignment != null &&
                     assignment.deliveryStatus == DeliveryStatus.delivered)
                   Padding(
-                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
                     child: OutlinedButton.icon(
                       onPressed: () => RatingDialog.show(
                         context,
@@ -244,4 +251,3 @@ class _OrderHistoryCard extends ConsumerWidget {
     );
   }
 }
-

@@ -9,11 +9,7 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: Center(
-              child: SkeletonBox(
-                width: 150,
-                height: 40,
-                borderRadius: 12,
-              ),
+              child: SkeletonBox(width: 150, height: 40, borderRadius: 12),
             ),
           ),
         ),
@@ -23,15 +19,13 @@ void main() {
       expect(find.byType(ShimmerLoading), findsOneWidget);
     });
 
-    testWidgets('ShimmerLoading animates over duration without errors', (tester) async {
+    testWidgets('ShimmerLoading animates over duration without errors', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: Center(
-              child: ShimmerLoading(
-                child: Text('جاري التحميل...'),
-              ),
-            ),
+            body: Center(child: ShimmerLoading(child: Text('جاري التحميل...'))),
           ),
         ),
       );

@@ -41,8 +41,10 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, UserEntity>> login(String identifier, String password) =>
-      throw UnimplementedError();
+  Future<Either<Failure, UserEntity>> login(
+    String identifier,
+    String password,
+  ) => throw UnimplementedError();
 
   @override
   Future<Either<Failure, void>> logout() => throw UnimplementedError();
@@ -58,8 +60,7 @@ class _FakeAuthRepository implements AuthRepository {
   Future<Either<Failure, UserEntity>> verifyOtp({
     required String otp,
     required String phone,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 }
 
 void main() {

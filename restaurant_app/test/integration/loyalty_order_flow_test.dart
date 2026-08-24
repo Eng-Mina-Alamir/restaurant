@@ -27,15 +27,24 @@ void main() {
 
     final cart = container.read(cartControllerProvider.notifier);
     final ordersController = container.read(ordersControllerProvider.notifier);
-    final loyaltyController = container.read(loyaltyControllerProvider.notifier);
+    final loyaltyController = container.read(
+      loyaltyControllerProvider.notifier,
+    );
 
     await Future<void>.delayed(const Duration(milliseconds: 20));
 
-    final initialPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+    final initialPoints = container
+        .read(loyaltyControllerProvider)
+        .value!
+        .currentPoints;
 
     // Step 1: Customer adds items to cart & places order
-    cart.addItem(const CartItem(menuItem: meal, quantity: 2)); // 200 + 30 tax = 230
-    final order = await ordersController.placeOrder(paymentMethod: PaymentMethod.card);
+    cart.addItem(
+      const CartItem(menuItem: meal, quantity: 2),
+    ); // 200 + 30 tax = 230
+    final order = await ordersController.placeOrder(
+      paymentMethod: PaymentMethod.card,
+    );
     expect(order, isNotNull);
     expect(cart.state, isEmpty);
 
@@ -45,7 +54,10 @@ void main() {
       orderId: order.id,
     );
 
-    final updatedPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+    final updatedPoints = container
+        .read(loyaltyControllerProvider)
+        .value!
+        .currentPoints;
     expect(updatedPoints, greaterThan(initialPoints));
 
     // Step 3: Redeem loyalty reward
@@ -65,7 +77,10 @@ void main() {
     final redeemed = await loyaltyController.redeemReward(affordableReward);
     expect(redeemed, isTrue);
 
-    final finalPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+    final finalPoints = container
+        .read(loyaltyControllerProvider)
+        .value!
+        .currentPoints;
     expect(finalPoints, updatedPoints - affordableReward.pointsCost);
   });
 }

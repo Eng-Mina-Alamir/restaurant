@@ -54,7 +54,9 @@ class SalesLineChart extends StatelessWidget {
       color: colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -82,7 +84,11 @@ class SalesLineChart extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.trending_up, size: 16, color: Colors.green),
+                      const Icon(
+                        Icons.trending_up,
+                        size: 16,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'مباشر',
@@ -112,8 +118,12 @@ class SalesLineChart extends StatelessWidget {
                     ),
                   ),
                   titlesData: FlTitlesData(
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -166,11 +176,14 @@ class SalesLineChart extends StatelessWidget {
                   maxY: maxY,
                   lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
-                      getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
+                      getTooltipColor: (_) =>
+                          colorScheme.surfaceContainerHighest,
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {
                           final idx = spot.x.toInt();
-                          final label = idx < entries.length ? entries[idx].key : '';
+                          final label = idx < entries.length
+                              ? entries[idx].key
+                              : '';
                           return LineTooltipItem(
                             '$label\n${Formatters.formatCurrency(spot.y)}',
                             TextStyle(
@@ -195,11 +208,11 @@ class SalesLineChart extends StatelessWidget {
                         show: true,
                         getDotPainter: (spot, percent, barData, index) =>
                             FlDotCirclePainter(
-                          radius: 4,
-                          color: colorScheme.surface,
-                          strokeWidth: 2.5,
-                          strokeColor: colorScheme.primary,
-                        ),
+                              radius: 4,
+                              color: colorScheme.surface,
+                              strokeWidth: 2.5,
+                              strokeColor: colorScheme.primary,
+                            ),
                       ),
                       belowBarData: BarAreaData(
                         show: true,

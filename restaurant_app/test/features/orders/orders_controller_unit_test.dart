@@ -51,7 +51,9 @@ void main() {
       cart.addItem(const CartItem(menuItem: burger, quantity: 2));
       expect(cart.state.length, 1);
 
-      final order = await controller.placeOrder(paymentMethod: PaymentMethod.card);
+      final order = await controller.placeOrder(
+        paymentMethod: PaymentMethod.card,
+      );
       expect(order, isNotNull);
       expect(order!.items.length, 1);
       expect(order.orderType, OrderType.takeaway);
@@ -77,7 +79,10 @@ void main() {
       final order = await controller.placeOrder();
       expect(order!.status, OrderStatus.pending);
 
-      final updated = await controller.updateStatus(order.id, OrderStatus.preparing);
+      final updated = await controller.updateStatus(
+        order.id,
+        OrderStatus.preparing,
+      );
       expect(updated, isNotNull);
       expect(updated!.status, OrderStatus.preparing);
       expect(controller.state.first.status, OrderStatus.preparing);
@@ -88,7 +93,10 @@ void main() {
     });
 
     test('updateStatus on non-existent order returns null', () async {
-      final res = await controller.updateStatus('invalid-id', OrderStatus.ready);
+      final res = await controller.updateStatus(
+        'invalid-id',
+        OrderStatus.ready,
+      );
       expect(res, isNull);
     });
 

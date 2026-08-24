@@ -83,7 +83,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                    ),
                     child: FadeSlideTransitionWidget(
                       key: ValueKey(index),
                       child: Column(
@@ -93,7 +95,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             width: 140,
                             height: 140,
                             decoration: BoxDecoration(
-                              color: slide.color.withValues(alpha: isDark ? 0.25 : 0.12),
+                              color: slide.color.withValues(
+                                alpha: isDark ? 0.25 : 0.12,
+                              ),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: slide.color.withValues(alpha: 0.4),

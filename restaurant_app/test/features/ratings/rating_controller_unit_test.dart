@@ -16,16 +16,25 @@ void main() {
   });
 
   group('Rating Controller & Providers Unit Tests', () {
-    test('targetRatingsProvider and targetAverageScoreProvider return initial data', () async {
-      final ratings = await container.read(targetRatingsProvider('item-1').future);
-      expect(ratings, isA<List<RatingEntity>>());
+    test(
+      'targetRatingsProvider and targetAverageScoreProvider return initial data',
+      () async {
+        final ratings = await container.read(
+          targetRatingsProvider('item-1').future,
+        );
+        expect(ratings, isA<List<RatingEntity>>());
 
-      final avg = await container.read(targetAverageScoreProvider('item-1').future);
-      expect(avg, isA<double>());
-    });
+        final avg = await container.read(
+          targetAverageScoreProvider('item-1').future,
+        );
+        expect(avg, isA<double>());
+      },
+    );
 
     test('submitRating adds a new rating successfully', () async {
-      final controller = container.read(ratingSubmissionControllerProvider.notifier);
+      final controller = container.read(
+        ratingSubmissionControllerProvider.notifier,
+      );
 
       final success = await controller.submitRating(
         targetId: 'item-1',
@@ -37,8 +46,15 @@ void main() {
       );
 
       expect(success, isTrue);
-      final ratings = await container.read(targetRatingsProvider('item-1').future);
-      expect(ratings.any((r) => r.userName == 'أحمد' && r.comment == 'أكل رائع جداً'), isTrue);
+      final ratings = await container.read(
+        targetRatingsProvider('item-1').future,
+      );
+      expect(
+        ratings.any(
+          (r) => r.userName == 'أحمد' && r.comment == 'أكل رائع جداً',
+        ),
+        isTrue,
+      );
     });
   });
 }

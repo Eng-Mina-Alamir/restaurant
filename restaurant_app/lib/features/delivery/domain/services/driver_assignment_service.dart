@@ -114,17 +114,21 @@ class DriverAssignmentService {
       );
       if (distanceMeters > maxDistanceMeters) continue;
 
-      final normalizedDistance =
-          (distanceMeters / maxDistanceMeters).clamp(0.0, 1.0);
-      final loadRatio =
-          (driver.activeAssignments / maxConcurrentPerDriver)
-              .clamp(0.0, 1.0);
+      final normalizedDistance = (distanceMeters / maxDistanceMeters).clamp(
+        0.0,
+        1.0,
+      );
+      final loadRatio = (driver.activeAssignments / maxConcurrentPerDriver)
+          .clamp(0.0, 1.0);
       final normalizedRating =
-          ((driver.rating - _minRating) / (_maxRating - _minRating))
-              .clamp(0.0, 1.0);
+          ((driver.rating - _minRating) / (_maxRating - _minRating)).clamp(
+            0.0,
+            1.0,
+          );
 
       // Lower is better: each term measures "badness" of picking this driver.
-      final score = weights.distance * normalizedDistance +
+      final score =
+          weights.distance * normalizedDistance +
           weights.load * loadRatio +
           weights.rating * (1.0 - normalizedRating);
 

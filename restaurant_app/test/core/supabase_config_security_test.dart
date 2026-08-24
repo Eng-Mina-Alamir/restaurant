@@ -123,7 +123,9 @@ void main() {
       );
       expect(
         schemaSql,
-        contains('REVOKE EXECUTE ON FUNCTION public.has_role(TEXT[]) FROM anon'),
+        contains(
+          'REVOKE EXECUTE ON FUNCTION public.has_role(TEXT[]) FROM anon',
+        ),
         reason: 'has_role() must be revoked from anon role',
       );
     });

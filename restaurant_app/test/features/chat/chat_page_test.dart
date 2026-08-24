@@ -14,22 +14,19 @@ ChatMessage msg({
   required String senderId,
   required String body,
   DateTime? createdAt,
-}) =>
-    ChatMessage(
-      id: id,
-      orderId: orderId,
-      senderId: senderId,
-      body: body,
-      createdAt: createdAt,
-    );
+}) => ChatMessage(
+  id: id,
+  orderId: orderId,
+  senderId: senderId,
+  body: body,
+  createdAt: createdAt,
+);
 
 /// Repository whose sends always fail — drives the SnackBar error path.
 class FailingChatRepository extends InMemoryChatRepository {
   @override
   Future<Either<Failure, ChatMessage>> send(ChatMessage message) async =>
-      const Left<Failure, ChatMessage>(
-        ServerFailure('فشل إرسال الرسالة'),
-      );
+      const Left<Failure, ChatMessage>(ServerFailure('فشل إرسال الرسالة'));
 }
 
 Future<void> pumpChatPage(
@@ -116,8 +113,9 @@ void main() {
   });
 
   group('ChatPage sending', () {
-    testWidgets('typing + send appends bubble and persists to repository',
-        (tester) async {
+    testWidgets('typing + send appends bubble and persists to repository', (
+      tester,
+    ) async {
       final repo = InMemoryChatRepository();
 
       await pumpChatPage(tester, repo);
@@ -130,13 +128,9 @@ void main() {
       await tester.pump();
 
       expect(find.text('مرحباً'), findsOneWidget);
-      expect(
-        repo.messagesFor('ORD-1').any((m) => m.body == 'مرحباً'),
-        isTrue,
-      );
+      expect(repo.messagesFor('ORD-1').any((m) => m.body == 'مرحباً'), isTrue);
       // Input cleared after sending.
-      final field =
-          tester.widget<TextField>(find.byType(TextField));
+      final field = tester.widget<TextField>(find.byType(TextField));
       expect(field.controller!.text, isEmpty);
     });
 
@@ -146,11 +140,11 @@ void main() {
       await pumpChatPage(tester, repo);
 
       IconButton sendButton() => tester.widget<IconButton>(
-            find.ancestor(
-              of: find.byIcon(Icons.send),
-              matching: find.byType(IconButton),
-            ),
-          );
+        find.ancestor(
+          of: find.byIcon(Icons.send),
+          matching: find.byType(IconButton),
+        ),
+      );
 
       expect(sendButton().onPressed, isNull);
 
@@ -159,8 +153,9 @@ void main() {
       expect(sendButton().onPressed, isNotNull);
     });
 
-    testWidgets('shows a snack bar when the repository rejects the send',
-        (tester) async {
+    testWidgets('shows a snack bar when the repository rejects the send', (
+      tester,
+    ) async {
       await pumpChatPage(tester, FailingChatRepository());
 
       await tester.enterText(find.byType(TextField), 'مرحباً');

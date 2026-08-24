@@ -7,11 +7,7 @@ void main() {
   group('QrGeneratorPage', () {
     testWidgets('renders QR codes for restaurant tables', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: QrGeneratorPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: QrGeneratorPage())),
       );
       await tester.pumpAndSettle();
 

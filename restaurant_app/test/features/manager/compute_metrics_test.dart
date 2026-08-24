@@ -35,70 +35,73 @@ void main() {
       expect(metrics.paymentMethodRevenue, isEmpty);
     });
 
-    test('computes total sales only from completed orders while aggregating items from all orders', () {
-      final orderCompleted = OrderEntity(
-        id: 'ORD-1',
-        restaurantId: 'rest-1',
-        orderType: OrderType.dineIn,
-        status: OrderStatus.completed,
-        paymentMethod: PaymentMethod.card,
-        items: [
-          OrderItem(
-            menuItem: burger,
-            quantity: 2,
-            itemTotal: 60.0,
-            addedAt: now,
-          ),
-          OrderItem(
-            menuItem: drink,
-            quantity: 1,
-            itemTotal: 15.0,
-            addedAt: now,
-          ),
-        ],
-        subtotal: 75.0,
-        taxAmount: 11.25,
-        totalAmount: 86.25,
-        createdAt: now,
-      );
+    test(
+      'computes total sales only from completed orders while aggregating items from all orders',
+      () {
+        final orderCompleted = OrderEntity(
+          id: 'ORD-1',
+          restaurantId: 'rest-1',
+          orderType: OrderType.dineIn,
+          status: OrderStatus.completed,
+          paymentMethod: PaymentMethod.card,
+          items: [
+            OrderItem(
+              menuItem: burger,
+              quantity: 2,
+              itemTotal: 60.0,
+              addedAt: now,
+            ),
+            OrderItem(
+              menuItem: drink,
+              quantity: 1,
+              itemTotal: 15.0,
+              addedAt: now,
+            ),
+          ],
+          subtotal: 75.0,
+          taxAmount: 11.25,
+          totalAmount: 86.25,
+          createdAt: now,
+        );
 
-      final orderPending = OrderEntity(
-        id: 'ORD-2',
-        restaurantId: 'rest-1',
-        orderType: OrderType.takeaway,
-        status: OrderStatus.pending,
-        paymentMethod: PaymentMethod.cash,
-        items: [
-          OrderItem(
-            menuItem: burger,
-            quantity: 1,
-            itemTotal: 30.0,
-            addedAt: now,
-          ),
-        ],
-        subtotal: 30.0,
-        taxAmount: 4.5,
-        totalAmount: 34.5,
-        createdAt: now,
-      );
+        final orderPending = OrderEntity(
+          id: 'ORD-2',
+          restaurantId: 'rest-1',
+          orderType: OrderType.takeaway,
+          status: OrderStatus.pending,
+          paymentMethod: PaymentMethod.cash,
+          items: [
+            OrderItem(
+              menuItem: burger,
+              quantity: 1,
+              itemTotal: 30.0,
+              addedAt: now,
+            ),
+          ],
+          subtotal: 30.0,
+          taxAmount: 4.5,
+          totalAmount: 34.5,
+          createdAt: now,
+        );
 
-      final metrics = computeMetrics([orderCompleted, orderPending]);
+        final metrics = computeMetrics([orderCompleted, orderPending]);
 
-      expect(metrics.totalOrders, 2);
-      expect(metrics.totalSales, 86.25);
-      expect(metrics.averageOrderValue, closeTo(86.25 / 2, 0.001));
+        expect(metrics.totalOrders, 2);
+        expect(metrics.totalSales, 86.25);
+        expect(metrics.averageOrderValue, closeTo(86.25 / 2, 0.001));
 
-      // Items sold across all orders
-      expect(metrics.itemsSold['برجر'], 3); // 2 + 1
-      expect(metrics.itemsSold['عصير برتقال'], 1);
+        // Items sold across all orders
+        expect(metrics.itemsSold['برجر'], 3); // 2 + 1
+        expect(metrics.itemsSold['عصير برتقال'], 1);
 
-      // Category revenue
-      expect(metrics.categoryRevenue['fast_food'], 90.0); // 60 + 30
-      expect(metrics.categoryRevenue['drinks'], 15.0);
+        // Category revenue
+        expect(metrics.categoryRevenue['fast_food'], 90.0); // 60 + 30
+        expect(metrics.categoryRevenue['drinks'], 15.0);
 
-      // Payment method revenue
-      expect(metrics.paymentMethodRevenue[PaymentMethod.card.labelAr], 86.25);
-      expect(metrics.paymentMethodRevenue[PaymentMethod.cash.labelAr], 34.5);
-    });
+        // Payment method revenue
+        expect(metrics.paymentMethodRevenue[PaymentMethod.card.labelAr], 86.25);
+        expect(metrics.paymentMethodRevenue[PaymentMethod.cash.labelAr], 34.5);
+      },
+    );
   });
 }

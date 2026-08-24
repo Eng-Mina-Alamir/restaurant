@@ -43,10 +43,7 @@ void main() {
         ProviderScope(
           child: MaterialApp(
             home: Scaffold(
-              body: TicketPrintDialog(
-                order: order,
-                tableDisplay: '12',
-              ),
+              body: TicketPrintDialog(order: order, tableDisplay: '12'),
             ),
           ),
         ),

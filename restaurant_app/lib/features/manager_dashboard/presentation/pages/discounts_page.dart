@@ -6,9 +6,9 @@ import '../../../../core/utils/formatters.dart';
 
 /// Types of discount that can be configured.
 enum DiscountType {
-  percentage,  // نسبة مئوية مثل 10%
+  percentage, // نسبة مئوية مثل 10%
   fixedAmount, // مبلغ ثابت مثل 20 ر.س
-  coupon,      // كوبون بكود مخصص
+  coupon, // كوبون بكود مخصص
 }
 
 /// Represents a discount rule in the system.
@@ -106,8 +106,9 @@ final _mockDiscounts = [
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final discountsProvider =
-    StateProvider<List<DiscountEntity>>((ref) => _mockDiscounts);
+final discountsProvider = StateProvider<List<DiscountEntity>>(
+  (ref) => _mockDiscounts,
+);
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -125,9 +126,7 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
     final discounts = ref.watch(discountsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الخصومات والعروض'),
-      ),
+      appBar: AppBar(title: const Text('الخصومات والعروض')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddDiscount(context),
         icon: const Icon(Icons.add),
@@ -138,7 +137,11 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.local_offer_outlined, size: 64, color: Colors.grey),
+                  Icon(
+                    Icons.local_offer_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: AppSpacing.md),
                   Text('لا توجد خصومات بعد'),
                 ],
@@ -152,8 +155,7 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
                 100,
               ),
               itemCount: discounts.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) =>
                   _DiscountCard(discount: discounts[i], index: i),
             ),
@@ -245,8 +247,9 @@ class _DiscountCard extends ConsumerWidget {
               discount.displayValue,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color:
-                    isActive ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                color: isActive
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -308,8 +311,7 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
       type: _type,
       value: double.tryParse(_valueCtrl.text.trim()) ?? 0,
       isActive: true,
-      couponCode:
-          _type == DiscountType.coupon ? _codeCtrl.text.trim() : null,
+      couponCode: _type == DiscountType.coupon ? _codeCtrl.text.trim() : null,
     );
     final current = List<DiscountEntity>.from(ref.read(discountsProvider));
     current.add(newDiscount);
@@ -329,8 +331,7 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
             TextFormField(
               controller: _nameCtrl,
               decoration: const InputDecoration(labelText: 'اسم الخصم'),
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'الاسم مطلوب' : null,
+              validator: (v) => v == null || v.isEmpty ? 'الاسم مطلوب' : null,
             ),
             const SizedBox(height: AppSpacing.md),
             DropdownButtonFormField<DiscountType>(
@@ -361,17 +362,14 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
                     : 'المبلغ (ر.س)',
               ),
               keyboardType: TextInputType.number,
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'القيمة مطلوبة' : null,
+              validator: (v) => v == null || v.isEmpty ? 'القيمة مطلوبة' : null,
             ),
             if (_type == DiscountType.coupon) ...[
               const SizedBox(height: AppSpacing.md),
               TextFormField(
                 controller: _codeCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'كود الكوبون'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'الكود مطلوب' : null,
+                decoration: const InputDecoration(labelText: 'كود الكوبون'),
+                validator: (v) => v == null || v.isEmpty ? 'الكود مطلوب' : null,
               ),
             ],
           ],
@@ -382,10 +380,7 @@ class _AddDiscountDialogState extends ConsumerState<_AddDiscountDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('إلغاء'),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('حفظ'),
-        ),
+        FilledButton(onPressed: _save, child: const Text('حفظ')),
       ],
     );
   }

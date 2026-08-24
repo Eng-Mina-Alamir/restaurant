@@ -52,7 +52,9 @@ class TicketPrinterService {
     buffer.writeln(line);
     final totalUnits = order.items.fold<int>(0, (s, i) => s + i.quantity);
     buffer.writeln('إجمالي الأصناف: $totalUnits عنصر');
-    buffer.writeln('المبلغ الإجمالي: ${Formatters.formatCurrency(order.totalAmount)}');
+    buffer.writeln(
+      'المبلغ الإجمالي: ${Formatters.formatCurrency(order.totalAmount)}',
+    );
     buffer.writeln(doubleLine);
     buffer.writeln('        يرجى التحضير فوراً       ');
     buffer.writeln(doubleLine);
@@ -79,8 +81,12 @@ class TicketPrinterService {
     // Left alignment: ESC a 0 (0x1B, 0x61, 0x00)
     bytes.addAll([0x1B, 0x61, 0x00]);
     bytes.addAll(utf8.encode('--------------------------------\n'));
-    bytes.addAll(utf8.encode('رقم الطلب: ${Formatters.formatOrderId(order.id)}\n'));
-    bytes.addAll(utf8.encode('الوقت: ${Formatters.formatDateTime(order.createdAt)}\n'));
+    bytes.addAll(
+      utf8.encode('رقم الطلب: ${Formatters.formatOrderId(order.id)}\n'),
+    );
+    bytes.addAll(
+      utf8.encode('الوقت: ${Formatters.formatDateTime(order.createdAt)}\n'),
+    );
     if (tableDisplay != null) {
       bytes.addAll(utf8.encode('الموقع: طاولة $tableDisplay\n'));
     }
@@ -105,7 +111,11 @@ class TicketPrinterService {
 
     // Center alignment for barcode & footer
     bytes.addAll([0x1B, 0x61, 0x01]);
-    bytes.addAll(utf8.encode('الإجمالي: ${Formatters.formatCurrency(order.totalAmount)}\n'));
+    bytes.addAll(
+      utf8.encode(
+        'الإجمالي: ${Formatters.formatCurrency(order.totalAmount)}\n',
+      ),
+    );
     bytes.addAll(utf8.encode('شكراً لكم\n\n\n'));
 
     // Cut paper command: GS V 66 0 (0x1D, 0x56, 0x42, 0x00)
@@ -115,7 +125,10 @@ class TicketPrinterService {
   }
 
   /// Dispatches the print job to connected thermal printer (simulated network/USB printer).
-  Future<bool> printKitchenTicket(OrderEntity order, {String? tableDisplay}) async {
+  Future<bool> printKitchenTicket(
+    OrderEntity order, {
+    String? tableDisplay,
+  }) async {
     // Simulate printer hardware handshake
     await Future.delayed(const Duration(milliseconds: 600));
     return true;

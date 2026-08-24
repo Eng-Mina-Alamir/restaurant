@@ -16,7 +16,10 @@ class FakeAuthRepository implements AuthRepository {
   bool shouldFail = false;
 
   @override
-  Future<Either<Failure, UserEntity>> login(String identifier, String password) async {
+  Future<Either<Failure, UserEntity>> login(
+    String identifier,
+    String password,
+  ) async {
     if (shouldFail) {
       return const Left(UnauthorizedFailure('Invalid credentials'));
     }
@@ -112,7 +115,10 @@ void main() {
       final result = await useCase('0501234567', 'password123');
 
       expect(result.isRight, isTrue);
-      expect((result as Right<Failure, UserEntity>).value.role, UserRole.manager);
+      expect(
+        (result as Right<Failure, UserEntity>).value.role,
+        UserRole.manager,
+      );
     });
 
     test('LoginUseCase fails and returns UnauthorizedFailure', () async {
@@ -121,7 +127,10 @@ void main() {
       final result = await useCase('0501234567', 'wrong-pass');
 
       expect(result.isLeft, isTrue);
-      expect((result as Left<Failure, UserEntity>).value.message, 'Invalid credentials');
+      expect(
+        (result as Left<Failure, UserEntity>).value.message,
+        'Invalid credentials',
+      );
     });
 
     test('RegisterUseCase registers new user with valid inputs', () async {
@@ -167,7 +176,10 @@ void main() {
       final result = await useCase(phone: '0501234567', otp: '123456');
 
       expect(result.isRight, isTrue);
-      expect((result as Right<Failure, UserEntity>).value.role, UserRole.customer);
+      expect(
+        (result as Right<Failure, UserEntity>).value.role,
+        UserRole.customer,
+      );
     });
 
     test('VerifyOtpUseCase rejects wrong OTP', () async {
@@ -175,7 +187,10 @@ void main() {
       final result = await useCase(phone: '0501234567', otp: '000000');
 
       expect(result.isLeft, isTrue);
-      expect((result as Left<Failure, UserEntity>).value.message, 'Invalid OTP');
+      expect(
+        (result as Left<Failure, UserEntity>).value.message,
+        'Invalid OTP',
+      );
     });
 
     test('RefreshTokenUseCase generates new token', () async {
@@ -183,7 +198,10 @@ void main() {
       final result = await useCase();
 
       expect(result.isRight, isTrue);
-      expect((result as Right<Failure, String>).value, 'new-refreshed-jwt-token');
+      expect(
+        (result as Right<Failure, String>).value,
+        'new-refreshed-jwt-token',
+      );
     });
 
     test('RestoreSessionUseCase restores logged in user', () async {
@@ -199,7 +217,10 @@ void main() {
       final result = await useCase();
 
       expect(result.isRight, isTrue);
-      expect((result as Right<Failure, UserEntity>).value.role, UserRole.driver);
+      expect(
+        (result as Right<Failure, UserEntity>).value.role,
+        UserRole.driver,
+      );
     });
 
     test('LogoutUseCase clears user session', () async {

@@ -86,7 +86,8 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               Text('خطأ: $err'),
               const SizedBox(height: AppSpacing.sm),
               FilledButton(
-                onPressed: () => ref.read(inventoryControllerProvider.notifier).load(),
+                onPressed: () =>
+                    ref.read(inventoryControllerProvider.notifier).load(),
                 child: const Text('إعادة المحاولة'),
               ),
             ],
@@ -94,15 +95,24 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         ),
         data: (allItems) {
           final filtered = allItems.where((item) {
-            final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                item.category.toLowerCase().contains(_searchQuery.toLowerCase());
-            final matchesStatus = _filterStatus == null || item.status == _filterStatus;
+            final matchesSearch =
+                item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                item.category.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                );
+            final matchesStatus =
+                _filterStatus == null || item.status == _filterStatus;
             return matchesSearch && matchesStatus;
           }).toList();
 
-          final outOfStock = allItems.where((i) => i.status == StockStatus.outOfStock).length;
+          final outOfStock = allItems
+              .where((i) => i.status == StockStatus.outOfStock)
+              .length;
           final low = allItems.where((i) => i.status == StockStatus.low).length;
-          final totalValue = allItems.fold<double>(0, (sum, i) => sum + i.totalValue);
+          final totalValue = allItems.fold<double>(
+            0,
+            (sum, i) => sum + i.totalValue,
+          );
 
           return Column(
             children: [
@@ -116,7 +126,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       count: '$outOfStock',
                       color: colorScheme.error,
                       onTap: () => setState(
-                        () => _filterStatus = outOfStock > 0 ? StockStatus.outOfStock : null,
+                        () => _filterStatus = outOfStock > 0
+                            ? StockStatus.outOfStock
+                            : null,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -165,12 +177,17 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inventory_2_outlined,
-                                size: 56, color: colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.inventory_2_outlined,
+                              size: 56,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(height: AppSpacing.sm),
                             Text(
                               'لا توجد أصناف مطابقة للبحث أو التصفية',
-                              style: TextStyle(color: colorScheme.onSurfaceVariant),
+                              style: TextStyle(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ],
                         ),
@@ -187,9 +204,11 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                             const SizedBox(height: AppSpacing.sm),
                         itemBuilder: (context, i) => _InventoryCard(
                           item: filtered[i],
-                          onRestock: () => _showRestockDialog(context, filtered[i]),
+                          onRestock: () =>
+                              _showRestockDialog(context, filtered[i]),
                           onEdit: () => _showEditDialog(context, filtered[i]),
-                          onDelete: () => _showDeleteDialog(context, filtered[i]),
+                          onDelete: () =>
+                              _showDeleteDialog(context, filtered[i]),
                         ),
                       ),
               ),
@@ -235,7 +254,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               const SizedBox(height: 8),
               TextField(
                 controller: catCtrl,
-                decoration: const InputDecoration(labelText: 'الفئة (لحوم، خضروات، ...) *'),
+                decoration: const InputDecoration(
+                  labelText: 'الفئة (لحوم، خضروات، ...) *',
+                ),
               ),
               const SizedBox(height: 8),
               Row(
@@ -243,15 +264,21 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                   Expanded(
                     child: TextField(
                       controller: stockCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'الكمية الحالية *'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'الكمية الحالية *',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: unitCtrl,
-                      decoration: const InputDecoration(labelText: 'الوحدة (كغ، لتر، كرتون)'),
+                      decoration: const InputDecoration(
+                        labelText: 'الوحدة (كغ، لتر، كرتون)',
+                      ),
                     ),
                   ),
                 ],
@@ -262,16 +289,24 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                   Expanded(
                     child: TextField(
                       controller: thresholdCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'حد التنبيه الأدنى *'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'حد التنبيه الأدنى *',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: TextField(
                       controller: costCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'التكلفة للوحدة (ر.س) *'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'التكلفة للوحدة (ر.س) *',
+                      ),
                     ),
                   ),
                 ],
@@ -289,19 +324,26 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               final name = nameCtrl.text.trim();
               final cat = catCtrl.text.trim();
               final stock = double.tryParse(stockCtrl.text.trim()) ?? 0.0;
-              final unit = unitCtrl.text.trim().isEmpty ? 'كغ' : unitCtrl.text.trim();
-              final threshold = double.tryParse(thresholdCtrl.text.trim()) ?? 0.0;
+              final unit = unitCtrl.text.trim().isEmpty
+                  ? 'كغ'
+                  : unitCtrl.text.trim();
+              final threshold =
+                  double.tryParse(thresholdCtrl.text.trim()) ?? 0.0;
               final cost = double.tryParse(costCtrl.text.trim()) ?? 0.0;
 
               if (name.isEmpty || cat.isEmpty) {
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('يرجى ملء جميع الحقول المطلوبة')),
+                  const SnackBar(
+                    content: Text('يرجى ملء جميع الحقول المطلوبة'),
+                  ),
                 );
                 return;
               }
 
               Navigator.pop(ctx);
-              final ok = await ref.read(inventoryControllerProvider.notifier).addItem(
+              final ok = await ref
+                  .read(inventoryControllerProvider.notifier)
+                  .addItem(
                     name: name,
                     category: cat,
                     currentStock: stock,
@@ -312,7 +354,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
 
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text(ok ? 'تمت إضافة الصنف "$name" بنجاح' : 'تعذر إضافة الصنف'),
+                  content: Text(
+                    ok ? 'تمت إضافة الصنف "$name" بنجاح' : 'تعذر إضافة الصنف',
+                  ),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -340,7 +384,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             const SizedBox(height: 12),
             TextField(
               controller: amountCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               autofocus: true,
               decoration: InputDecoration(
                 labelText: 'الكمية المضافة (${item.unit})',
@@ -360,10 +406,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               final amount = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
               if (amount <= 0) return;
               Navigator.pop(ctx);
-              await ref.read(inventoryControllerProvider.notifier).restock(item.id, amount);
+              await ref
+                  .read(inventoryControllerProvider.notifier)
+                  .restock(item.id, amount);
               messenger.showSnackBar(
                 SnackBar(
-                  content: Text('تمت إضافة $amount ${item.unit} إلى ${item.name}'),
+                  content: Text(
+                    'تمت إضافة $amount ${item.unit} إلى ${item.name}',
+                  ),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -390,20 +440,32 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           children: [
             TextField(
               controller: stockCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'الكمية الحالية (${item.unit})'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: 'الكمية الحالية (${item.unit})',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: thresholdCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'حد التنبيه الأدنى (${item.unit})'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: 'حد التنبيه الأدنى (${item.unit})',
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: costCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'تكلفة الوحدة (ر.س)'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'تكلفة الوحدة (ر.س)',
+              ),
             ),
           ],
         ),
@@ -414,12 +476,18 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ),
           FilledButton(
             onPressed: () async {
-              final stock = double.tryParse(stockCtrl.text.trim()) ?? item.currentStock;
-              final threshold = double.tryParse(thresholdCtrl.text.trim()) ?? item.minThreshold;
-              final cost = double.tryParse(costCtrl.text.trim()) ?? item.costPerUnit;
+              final stock =
+                  double.tryParse(stockCtrl.text.trim()) ?? item.currentStock;
+              final threshold =
+                  double.tryParse(thresholdCtrl.text.trim()) ??
+                  item.minThreshold;
+              final cost =
+                  double.tryParse(costCtrl.text.trim()) ?? item.costPerUnit;
 
               Navigator.pop(ctx);
-              await ref.read(inventoryControllerProvider.notifier).updateItem(
+              await ref
+                  .read(inventoryControllerProvider.notifier)
+                  .updateItem(
                     item.copyWith(
                       currentStock: stock,
                       minThreshold: threshold,
@@ -456,7 +524,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(inventoryControllerProvider.notifier).deleteItem(item.id);
+              await ref
+                  .read(inventoryControllerProvider.notifier)
+                  .deleteItem(item.id);
               messenger.showSnackBar(
                 SnackBar(
                   content: Text('تم حذف "${item.name}"'),
@@ -531,7 +601,9 @@ class _InventoryCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Text(
                     item.statusLabel,
@@ -563,7 +635,11 @@ class _InventoryCard extends StatelessWidget {
                       value: 'delete',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                            size: 18,
+                          ),
                           SizedBox(width: 8),
                           Text('حذف', style: TextStyle(color: Colors.red)),
                         ],
@@ -608,7 +684,9 @@ class _InventoryCard extends StatelessWidget {
               children: [
                 Text(
                   'القيمة: ${Formatters.formatCurrency(item.totalValue)}',
-                  style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.add_circle_outline, size: 16),
@@ -663,10 +741,7 @@ class _SummaryChip extends StatelessWidget {
             Container(
               width: 8,
               height: 8,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             Text(

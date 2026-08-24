@@ -1,9 +1,5 @@
 /// Severity level for operational restaurant alerts.
-enum AlertSeverity {
-  critical,
-  warning,
-  info,
-}
+enum AlertSeverity { critical, warning, info }
 
 /// Operational area generating the alert.
 enum AlertCategory {

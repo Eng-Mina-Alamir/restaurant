@@ -5,13 +5,11 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/pages/sta
 
 void main() {
   group('StaffPerformancePage', () {
-    testWidgets('renders staff KPI metrics cards and staff leaderboard list', (tester) async {
+    testWidgets('renders staff KPI metrics cards and staff leaderboard list', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: StaffPerformancePage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: StaffPerformancePage())),
       );
       await tester.pumpAndSettle();
 

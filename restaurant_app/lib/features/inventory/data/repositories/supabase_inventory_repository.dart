@@ -9,7 +9,7 @@ import '../../domain/repositories/inventory_repository.dart';
 
 class SupabaseInventoryRepository implements InventoryRepository {
   SupabaseInventoryRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+    : _supabase = supabase;
 
   final SupabaseClient _supabase;
 
@@ -74,7 +74,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       _cachedItems = items;
       return Right(items);
     } catch (e, st) {
-      AppLogger.warning('Supabase getInventoryItems fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase getInventoryItems fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedItems ??= List.of(_initialSeedItems);
       return Right(List.unmodifiable(_cachedItems!));
     }
@@ -100,7 +104,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       _cachedItems?.add(item);
       return Right(item);
     } catch (e, st) {
-      AppLogger.warning('Supabase addItem fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase addItem fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedItems ??= List.of(_initialSeedItems);
       _cachedItems!.add(item);
       return Right(item);
@@ -133,7 +141,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       }
       return Right(item);
     } catch (e, st) {
-      AppLogger.warning('Supabase updateItem fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase updateItem fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       if (_cachedItems != null) {
         final idx = _cachedItems!.indexWhere((i) => i.id == item.id);
         if (idx != -1) _cachedItems![idx] = item;
@@ -145,14 +157,15 @@ class SupabaseInventoryRepository implements InventoryRepository {
   @override
   Future<Either<Failure, void>> deleteItem(String id) async {
     try {
-      await _supabase
-          .from(SupabaseConfig.inventoryTable)
-          .delete()
-          .eq('id', id);
+      await _supabase.from(SupabaseConfig.inventoryTable).delete().eq('id', id);
       _cachedItems?.removeWhere((i) => i.id == id);
       return const Right(null);
     } catch (e, st) {
-      AppLogger.warning('Supabase deleteItem fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase deleteItem fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedItems?.removeWhere((i) => i.id == id);
       return const Right(null);
     }
@@ -173,7 +186,8 @@ class SupabaseInventoryRepository implements InventoryRepository {
       if (existingRaw == null) {
         final local = (_cachedItems ?? _initialSeedItems).firstWhere(
           (i) => i.id == id,
-          orElse: () => throw const NotFoundFailure('الصنف غير موجود في المخزون'),
+          orElse: () =>
+              throw const NotFoundFailure('الصنف غير موجود في المخزون'),
         );
         final newQuantity = (local.currentStock + amount).clamp(0.0, 999999.0);
         final updated = local.copyWith(currentStock: newQuantity);
@@ -184,7 +198,9 @@ class SupabaseInventoryRepository implements InventoryRepository {
         return Right(updated);
       }
 
-      final existing = _mapToInventoryItemEntity(Map<String, dynamic>.from(existingRaw));
+      final existing = _mapToInventoryItemEntity(
+        Map<String, dynamic>.from(existingRaw),
+      );
       final newQuantity = (existing.currentStock + amount).clamp(0.0, 999999.0);
 
       await _supabase
@@ -202,11 +218,16 @@ class SupabaseInventoryRepository implements InventoryRepository {
       }
       return Right(updated);
     } catch (e, st) {
-      AppLogger.warning('Supabase restock fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase restock fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       try {
         final local = (_cachedItems ?? _initialSeedItems).firstWhere(
           (i) => i.id == id,
-          orElse: () => throw const NotFoundFailure('الصنف غير موجود في المخزون'),
+          orElse: () =>
+              throw const NotFoundFailure('الصنف غير موجود في المخزون'),
         );
         final newQuantity = (local.currentStock + amount).clamp(0.0, 999999.0);
         final updated = local.copyWith(currentStock: newQuantity);

@@ -23,10 +23,7 @@ enum RealtimeEventType {
 
 /// A single real-time event deserialized from the WebSocket channel.
 class RealtimeEvent {
-  const RealtimeEvent({
-    required this.type,
-    required this.payload,
-  });
+  const RealtimeEvent({required this.type, required this.payload});
 
   final RealtimeEventType type;
   final Map<String, dynamic> payload;
@@ -35,13 +32,14 @@ class RealtimeEvent {
     try {
       final dynamic decoded = jsonDecode(raw);
       if (decoded is Map<String, dynamic>) {
-        final typeName = (decoded['type'] ?? decoded['event'])?.toString() ?? '';
+        final typeName =
+            (decoded['type'] ?? decoded['event'])?.toString() ?? '';
         final eventType = _typeFromString(typeName);
         final payloadData = decoded['data'] is Map<String, dynamic>
             ? decoded['data'] as Map<String, dynamic>
             : (decoded['payload'] is Map<String, dynamic>
-                ? decoded['payload'] as Map<String, dynamic>
-                : decoded);
+                  ? decoded['payload'] as Map<String, dynamic>
+                  : decoded);
         return RealtimeEvent(type: eventType, payload: payloadData);
       }
       return RealtimeEvent(
@@ -90,8 +88,7 @@ class RealtimeEvent {
 /// Consumers listen to [events] stream to receive live updates.
 /// The service auto-reconnects on disconnect with exponential back-off.
 class RealtimeService {
-  RealtimeService({String? wsUrl})
-      : _wsUrl = wsUrl ?? EnvironmentConfig.wsUrl;
+  RealtimeService({String? wsUrl}) : _wsUrl = wsUrl ?? EnvironmentConfig.wsUrl;
 
   final String _wsUrl;
 
@@ -153,7 +150,9 @@ class RealtimeService {
         },
         onDone: () {
           _socketDead = true;
-          AppLogger.warning('RealtimeService: WebSocket closed – reconnecting in ${_retryDelay}s');
+          AppLogger.warning(
+            'RealtimeService: WebSocket closed – reconnecting in ${_retryDelay}s',
+          );
           _scheduleReconnect();
         },
         cancelOnError: true,
@@ -211,11 +210,15 @@ class RealtimeService {
     final event = RealtimeEvent.fromRaw(message);
     final orderId = _orderIdOf(event);
     if (orderId != null) {
-      AppLogger.warning('[Dispatch] outcome=broadcast-dropped '
-          'reason=socket-dead orderId=$orderId');
+      AppLogger.warning(
+        '[Dispatch] outcome=broadcast-dropped '
+        'reason=socket-dead orderId=$orderId',
+      );
     } else {
-      AppLogger.warning('RealtimeService: Broadcast dropped – '
-          'remote socket dead (type=${event.type.name})');
+      AppLogger.warning(
+        'RealtimeService: Broadcast dropped – '
+        'remote socket dead (type=${event.type.name})',
+      );
     }
   }
 
@@ -246,9 +249,7 @@ class RealtimeService {
   }
 
   /// Broadcasts a newly dispatched delivery assignment.
-  void broadcastDeliveryAssignmentCreated(
-    Map<String, dynamic> assignmentJson,
-  ) {
+  void broadcastDeliveryAssignmentCreated(Map<String, dynamic> assignmentJson) {
     sendEvent('deliveryAssignmentCreated', assignmentJson);
   }
 

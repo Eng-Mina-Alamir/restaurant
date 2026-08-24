@@ -12,9 +12,7 @@ class PrivacyPolicyPage extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('سياسة الخصوصية'),
-      ),
+      appBar: AppBar(title: const Text('سياسة الخصوصية')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -26,7 +24,11 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.shield_outlined, color: colorScheme.primary, size: 28),
+                Icon(
+                  Icons.shield_outlined,
+                  color: colorScheme.primary,
+                  size: 28,
+                ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
@@ -102,7 +104,9 @@ class _PolicySection extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),

@@ -7,8 +7,8 @@ import '../data/local_cache_service.dart';
 /// Manages application-wide [ThemeMode] with persistent local storage.
 class ThemeModeController extends StateNotifier<ThemeMode> {
   ThemeModeController([LocalCacheService? cache])
-      : _cache = cache,
-        super(ThemeMode.system) {
+    : _cache = cache,
+      super(ThemeMode.system) {
     _load();
   }
 
@@ -52,6 +52,6 @@ class ThemeModeController extends StateNotifier<ThemeMode> {
 /// Provider for managing and watching the active [ThemeMode].
 final themeModeControllerProvider =
     StateNotifierProvider<ThemeModeController, ThemeMode>((ref) {
-  final cache = ref.watch(localCacheServiceProvider);
-  return ThemeModeController(cache);
-});
+      final cache = ref.watch(localCacheServiceProvider);
+      return ThemeModeController(cache);
+    });

@@ -32,10 +32,7 @@ class _AnimatedSuccessCheckmarkState extends State<AnimatedSuccessCheckmark>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     // 0.0 -> 0.4: Circle outline draws
     _circleAnimation = CurvedAnimation(
@@ -50,21 +47,25 @@ class _AnimatedSuccessCheckmarkState extends State<AnimatedSuccessCheckmark>
     );
 
     // 0.0 -> 0.5: Scale bounce
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.15)
-            .chain(CurveTween(curve: Curves.easeOutQuad)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.15, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInQuad)),
-        weight: 40,
-      ),
-    ]).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.6),
-    ));
+    _scaleAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(
+            tween: Tween<double>(
+              begin: 0.0,
+              end: 1.15,
+            ).chain(CurveTween(curve: Curves.easeOutQuad)),
+            weight: 60,
+          ),
+          TweenSequenceItem(
+            tween: Tween<double>(
+              begin: 1.15,
+              end: 1.0,
+            ).chain(CurveTween(curve: Curves.easeInQuad)),
+            weight: 40,
+          ),
+        ]).animate(
+          CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.6)),
+        );
 
     // 0.3 -> 0.9: Ripple expansion
     _rippleAnimation = CurvedAnimation(
@@ -85,7 +86,8 @@ class _AnimatedSuccessCheckmarkState extends State<AnimatedSuccessCheckmark>
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = widget.color ?? Theme.of(context).colorScheme.primary;
+    final effectiveColor =
+        widget.color ?? Theme.of(context).colorScheme.primary;
 
     if (MediaQuery.disableAnimationsOf(context)) {
       return Icon(
@@ -196,17 +198,11 @@ class _CheckmarkPainter extends CustomPainter {
 
       if (checkProgress <= 0.45) {
         final t = checkProgress / 0.45;
-        path.lineTo(
-          p1.dx + (p2.dx - p1.dx) * t,
-          p1.dy + (p2.dy - p1.dy) * t,
-        );
+        path.lineTo(p1.dx + (p2.dx - p1.dx) * t, p1.dy + (p2.dy - p1.dy) * t);
       } else {
         path.lineTo(p2.dx, p2.dy);
         final t = (checkProgress - 0.45) / 0.55;
-        path.lineTo(
-          p2.dx + (p3.dx - p2.dx) * t,
-          p2.dy + (p3.dy - p2.dy) * t,
-        );
+        path.lineTo(p2.dx + (p3.dx - p2.dx) * t, p2.dy + (p3.dy - p2.dy) * t);
       }
 
       canvas.drawPath(path, checkPaint);

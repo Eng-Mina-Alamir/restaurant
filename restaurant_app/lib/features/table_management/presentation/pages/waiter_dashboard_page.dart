@@ -44,7 +44,8 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
     // KDS page alerts when new pending tickets arrive.
     final readyPickupCount = orders
         .where(
-          (o) => o.status == OrderStatus.ready && o.orderType == OrderType.dineIn,
+          (o) =>
+              o.status == OrderStatus.ready && o.orderType == OrderType.dineIn,
         )
         .length;
     if (readyPickupCount > _lastReadyPickupCount) {
@@ -93,18 +94,18 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
                         minColumns: 2,
                         maxColumns: 5,
                       );
-                      final ratio =
-                          screenType == ScreenType.mobile ? 1.15 : 1.25;
+                      final ratio = screenType == ScreenType.mobile
+                          ? 1.15
+                          : 1.25;
 
                       return GridView.builder(
                         padding: const EdgeInsets.all(AppSpacing.md),
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: cols,
-                              childAspectRatio: ratio,
-                              crossAxisSpacing: AppSpacing.md,
-                              mainAxisSpacing: AppSpacing.md,
-                            ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: cols,
+                          childAspectRatio: ratio,
+                          crossAxisSpacing: AppSpacing.md,
+                          mainAxisSpacing: AppSpacing.md,
+                        ),
                         itemCount: tables.length,
                         itemBuilder: (context, index) {
                           final table = tables[index];

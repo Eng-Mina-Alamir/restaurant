@@ -97,7 +97,11 @@ class _DeliveryPhotoCaptureState extends State<DeliveryPhotoCapture> {
                       shape: BoxShape.circle,
                     ),
                     padding: const EdgeInsets.all(6),
-                    child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -122,7 +126,9 @@ class _DeliveryPhotoCaptureState extends State<DeliveryPhotoCapture> {
                   style: BorderStyle.solid,
                 ),
                 borderRadius: BorderRadius.circular(AppSpacing.md),
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

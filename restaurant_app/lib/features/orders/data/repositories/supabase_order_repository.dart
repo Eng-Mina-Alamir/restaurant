@@ -16,8 +16,8 @@ class SupabaseOrderRepository implements OrderRepository {
   SupabaseOrderRepository({
     required SupabaseClient supabase,
     LocalCacheService? cache,
-  })  : _supabase = supabase,
-        _cache = cache;
+  }) : _supabase = supabase,
+       _cache = cache;
 
   final SupabaseClient _supabase;
   final LocalCacheService? _cache;
@@ -64,7 +64,8 @@ class SupabaseOrderRepository implements OrderRepository {
       try {
         await _supabase.from(SupabaseConfig.ordersTable).upsert(orderRow);
       } catch (e) {
-        if (e.toString().contains('items_json') || e.toString().contains('restaurant_id')) {
+        if (e.toString().contains('items_json') ||
+            e.toString().contains('restaurant_id')) {
           final rowCleaned = Map<String, dynamic>.from(orderRow)
             ..remove('items_json')
             ..remove('restaurant_id');
@@ -76,17 +77,23 @@ class SupabaseOrderRepository implements OrderRepository {
 
       // 2. Also insert line items into `order_items` table (delete-then-insert to prevent duplicates)
       try {
-        final itemsPayload = order.items.map((item) => {
-          'order_id': order.id,
-          'menu_item_id': item.menuItem.id,
-          'item_name': item.menuItem.name,
-          'price': item.menuItem.price,
-          'quantity': item.quantity,
-          'total_price': item.lineTotal,
-          'special_notes': item.specialNotes,
-          'modifiers_json': item.selectedModifiers.map((m) => m.toJson()).toList(),
-          'created_at': item.addedAt.toIso8601String(),
-        }).toList();
+        final itemsPayload = order.items
+            .map(
+              (item) => {
+                'order_id': order.id,
+                'menu_item_id': item.menuItem.id,
+                'item_name': item.menuItem.name,
+                'price': item.menuItem.price,
+                'quantity': item.quantity,
+                'total_price': item.lineTotal,
+                'special_notes': item.specialNotes,
+                'modifiers_json': item.selectedModifiers
+                    .map((m) => m.toJson())
+                    .toList(),
+                'created_at': item.addedAt.toIso8601String(),
+              },
+            )
+            .toList();
 
         if (itemsPayload.isNotEmpty) {
           try {
@@ -95,10 +102,14 @@ class SupabaseOrderRepository implements OrderRepository {
                 .delete()
                 .eq('order_id', order.id);
           } catch (e) {
-            AppLogger.warning('Could not delete old order_items for ${order.id}: $e');
+            AppLogger.warning(
+              'Could not delete old order_items for ${order.id}: $e',
+            );
           }
 
-          await _supabase.from(SupabaseConfig.orderItemsTable).upsert(itemsPayload);
+          await _supabase
+              .from(SupabaseConfig.orderItemsTable)
+              .upsert(itemsPayload);
         }
       } catch (e) {
         AppLogger.warning('Could not insert items into order_items table: $e');
@@ -134,12 +145,17 @@ class SupabaseOrderRepository implements OrderRepository {
 
       final cache = _cache;
       if (orders.isNotEmpty && cache != null) {
-        await cache.writeList(_cacheKey, orders.map((o) => o.toJson()).toList());
+        await cache.writeList(
+          _cacheKey,
+          orders.map((o) => o.toJson()).toList(),
+        );
       }
 
       return Right<Failure, List<OrderEntity>>(orders);
     } catch (e) {
-      AppLogger.warning('Supabase getOrders failed: $e, loading from local cache');
+      AppLogger.warning(
+        'Supabase getOrders failed: $e, loading from local cache',
+      );
       final local = _loadFromCache();
       return Right<Failure, List<OrderEntity>>(local);
     }
@@ -163,8 +179,7 @@ class SupabaseOrderRepository implements OrderRepository {
       customerId: map['customer_id'] as String?,
       tableId: map['table_id'] as String?,
       waiterId: map['waiter_id'] as String?,
-      assignedKitchenId:
-          map['assigned_kitchen_id']?.toString(),
+      assignedKitchenId: map['assigned_kitchen_id']?.toString(),
       driverId: map['driver_id']?.toString(),
       orderType: OrderType.fromName(map['order_type'] as String?),
       items: items,
@@ -232,7 +247,9 @@ class SupabaseOrderRepository implements OrderRepository {
           NotFoundFailure('الطلب غير موجود'),
         );
       }
-      final current = _orderFromRow(Map<String, dynamic>.from(rows.first as Map));
+      final current = _orderFromRow(
+        Map<String, dynamic>.from(rows.first as Map),
+      );
 
       // 2. Guarded transition: only legal single-step backward moves.
       if (!current.status.canRevertTo(toStatus)) {
@@ -264,8 +281,7 @@ class SupabaseOrderRepository implements OrderRepository {
           .eq('id', orderId)
           .select()
           .single();
-      final updated =
-          _orderFromRow(Map<String, dynamic>.from(response as Map));
+      final updated = _orderFromRow(Map<String, dynamic>.from(response as Map));
 
       // 4. Audit trail. Best-effort: a log failure must not undo a committed
       //    status change, but it is surfaced in logs for observability.
@@ -296,13 +312,19 @@ class SupabaseOrderRepository implements OrderRepository {
 
   /// Updates status of an order in Supabase.
   @override
-  Future<Either<Failure, void>> updateOrderStatus(String orderId, OrderStatus status) async {
+  Future<Either<Failure, void>> updateOrderStatus(
+    String orderId,
+    OrderStatus status,
+  ) async {
     try {
-      await _supabase.from(SupabaseConfig.ordersTable).update({
-        'status': status.name,
-        if (status == OrderStatus.completed || status == OrderStatus.served)
-          'completed_at': DateTime.now().toIso8601String(),
-      }).eq('id', orderId);
+      await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .update({
+            'status': status.name,
+            if (status == OrderStatus.completed || status == OrderStatus.served)
+              'completed_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', orderId);
       return const Right<Failure, void>(null);
     } catch (e) {
       return Left<Failure, void>(ServerFailure('فشل تحديث حالة الطلب: $e'));
@@ -360,7 +382,9 @@ class SupabaseOrderRepository implements OrderRepository {
       }
       await cache.writeList(_cacheKey, all.map((o) => o.toJson()).toList());
     } catch (e) {
-      AppLogger.warning('_cacheOrderLocally: failed to write cache for ${order.id}: $e');
+      AppLogger.warning(
+        '_cacheOrderLocally: failed to write cache for ${order.id}: $e',
+      );
     }
   }
 

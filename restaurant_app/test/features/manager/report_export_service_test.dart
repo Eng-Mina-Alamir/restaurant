@@ -95,23 +95,29 @@ void main() {
 
       final csv = service.generateFinancialReportCsv(metrics, 'هذا الشهر');
       expect(csv.startsWith('\uFEFF'), isTrue);
-      expect(csv, contains('بيان الأرباح والخسائر والتحليل المالي - هذا الشهر'));
+      expect(
+        csv,
+        contains('بيان الأرباح والخسائر والتحليل المالي - هذا الشهر'),
+      );
       expect(csv, contains('إجمالي الإيرادات والمبيعات,10000.00'));
       expect(csv, contains('صافي الربح التشغيلي (Net Income),4500.00'));
       expect(csv, contains('برجر ترفل'));
     });
 
-    test('generateZatcaReceiptText includes required ZATCA tax invoice headers', () {
-      final receipt = service.generateZatcaReceiptText(testOrder);
+    test(
+      'generateZatcaReceiptText includes required ZATCA tax invoice headers',
+      () {
+        final receipt = service.generateZatcaReceiptText(testOrder);
 
-      expect(receipt, contains('فاتورة ضريبية مبسطة'));
-      expect(receipt, contains('SIMPLIFIED TAX INVOICE'));
-      expect(receipt, contains('الرقم الضريبي'));
-      expect(receipt, contains('ORD-789'));
-      expect(receipt, contains('برجر كلاسيك'));
-      expect(receipt, contains('2x'));
-      expect(receipt, contains('ضريبة القيمة المضافة 15%'));
-      expect(receipt, contains('شكراً لزيارتكم'));
-    });
+        expect(receipt, contains('فاتورة ضريبية مبسطة'));
+        expect(receipt, contains('SIMPLIFIED TAX INVOICE'));
+        expect(receipt, contains('الرقم الضريبي'));
+        expect(receipt, contains('ORD-789'));
+        expect(receipt, contains('برجر كلاسيك'));
+        expect(receipt, contains('2x'));
+        expect(receipt, contains('ضريبة القيمة المضافة 15%'));
+        expect(receipt, contains('شكراً لزيارتكم'));
+      },
+    );
   });
 }

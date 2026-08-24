@@ -109,9 +109,13 @@ ProviderContainer createTestContainer({
       ),
       tableRepositoryProvider.overrideWithValue(InMemoryTableRepository()),
       couponRepositoryProvider.overrideWithValue(InMemoryCouponRepository()),
-      reservationRepositoryProvider.overrideWithValue(InMemoryReservationRepository()),
+      reservationRepositoryProvider.overrideWithValue(
+        InMemoryReservationRepository(),
+      ),
       ratingRepositoryProvider.overrideWithValue(InMemoryRatingRepository()),
-      inventoryRepositoryProvider.overrideWithValue(InMemoryInventoryRepository()),
+      inventoryRepositoryProvider.overrideWithValue(
+        InMemoryInventoryRepository(),
+      ),
       loyaltyRepositoryProvider.overrideWithValue(InMemoryLoyaltyRepository()),
       ...additionalOverrides,
     ],

@@ -17,10 +17,9 @@ class InvoicesPage extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final orders = ref.watch(ordersControllerProvider);
-    final completedOrders = orders
-        .where((o) => o.status == OrderStatus.completed)
-        .toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final completedOrders =
+        orders.where((o) => o.status == OrderStatus.completed).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +42,9 @@ class InvoicesPage extends ConsumerWidget {
               final _ = exportService.generateInvoicesCsv(completedOrders);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('تم تصدير ${completedOrders.length} فاتورة بتنسيق CSV بنجاح!'),
+                  content: Text(
+                    'تم تصدير ${completedOrders.length} فاتورة بتنسيق CSV بنجاح!',
+                  ),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -74,12 +75,10 @@ class InvoicesPage extends ConsumerWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: completedOrders.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) => _InvoiceCard(
                 order: completedOrders[i],
-                onTap: () =>
-                    _showInvoiceDetail(context, completedOrders[i]),
+                onTap: () => _showInvoiceDetail(context, completedOrders[i]),
               ),
             ),
     );
@@ -345,9 +344,9 @@ class _TotalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = bold
         ? Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color ?? Theme.of(context).colorScheme.primary,
-            )
+            fontWeight: FontWeight.bold,
+            color: color ?? Theme.of(context).colorScheme.primary,
+          )
         : Theme.of(context).textTheme.bodyMedium?.copyWith(color: color);
 
     return Padding(

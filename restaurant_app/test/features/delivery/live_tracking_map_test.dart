@@ -11,7 +11,9 @@ void main() {
   });
 
   group('LiveTrackingMap Comprehensive Widget Tests', () {
-    testWidgets('renders map widget with custom labels and initial theme', (tester) async {
+    testWidgets('renders map widget with custom labels and initial theme', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -35,7 +37,9 @@ void main() {
       expect(find.text('فيلا العميل'), findsOneWidget);
     });
 
-    testWidgets('renders floating controls and allows interaction', (tester) async {
+    testWidgets('renders floating controls and allows interaction', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(

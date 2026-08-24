@@ -95,4 +95,3 @@ class SecureStorageService implements SecureStorage {
   static const String _tokenKey = 'jwt_token';
   static const String _refreshTokenKey = 'refresh_token';
 }
-

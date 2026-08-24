@@ -194,7 +194,9 @@ class AuthInterceptor extends Interceptor {
     if (base == null || base.isEmpty || path.startsWith('http')) {
       return path;
     }
-    final trimmedBase = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+    final trimmedBase = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
     final trimmedPath = path.startsWith('/') ? path : '/$path';
     return '$trimmedBase$trimmedPath';
   }

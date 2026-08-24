@@ -42,27 +42,36 @@ void main() {
       createdAt: DateTime.now(),
     );
 
-    test('createOrder handles storage and returns Either result cleanly', () async {
-      final result = await repository.createOrder(testOrder);
+    test(
+      'createOrder handles storage and returns Either result cleanly',
+      () async {
+        final result = await repository.createOrder(testOrder);
 
-      expect(result, isNotNull);
-      expect(result.isRight || result.isLeft, isTrue);
-    });
+        expect(result, isNotNull);
+        expect(result.isRight || result.isLeft, isTrue);
+      },
+    );
 
-    test('getOrders returns Right with list of orders (or empty fallback)', () async {
-      final result = await repository.getOrders();
+    test(
+      'getOrders returns Right with list of orders (or empty fallback)',
+      () async {
+        final result = await repository.getOrders();
 
-      expect(result.isRight, isTrue);
-      result.when(
-        onLeft: (_) => fail('Expected right order list'),
-        onRight: (orders) {
-          expect(orders, isA<List<OrderEntity>>());
-        },
-      );
-    });
+        expect(result.isRight, isTrue);
+        result.when(
+          onLeft: (_) => fail('Expected right order list'),
+          onRight: (orders) {
+            expect(orders, isA<List<OrderEntity>>());
+          },
+        );
+      },
+    );
 
     test('updateOrderStatus handles update cleanly', () async {
-      final result = await repository.updateOrderStatus('ORD-TEST-001', OrderStatus.preparing);
+      final result = await repository.updateOrderStatus(
+        'ORD-TEST-001',
+        OrderStatus.preparing,
+      );
       expect(result, isNotNull);
     });
   });

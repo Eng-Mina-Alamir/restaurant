@@ -48,9 +48,7 @@ class FailingCreateAssignmentRepository extends InMemoryDeliveryRepository {
   Future<Either<Failure, DeliveryAssignment>> createAssignment(
     DeliveryAssignment assignment,
   ) async =>
-      const Left<Failure, DeliveryAssignment>(
-        ServerFailure(rejectionMessage),
-      );
+      const Left<Failure, DeliveryAssignment>(ServerFailure(rejectionMessage));
 }
 
 /// Counts bulk vs per-order reads to pin down the board-refresh N+1 fix.
@@ -130,8 +128,7 @@ ProviderContainer buildDispatchContainer({
 
 void main() {
   group('DispatchController', () {
-    test('classification: undispatched vs failed vs excluded orders',
-        () async {
+    test('classification: undispatched vs failed vs excluded orders', () async {
       final container = buildDispatchContainer(
         orders: [
           buildOrder(id: 'ORD-A'), // ready delivery, no assignment yet.
@@ -158,10 +155,7 @@ void main() {
       await controller.refresh();
       final state = container.read(dispatchControllerProvider).requireValue;
 
-      expect(
-        state.undispatchedOrders.map((o) => o.id),
-        ['ORD-A'],
-      );
+      expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A']);
       expect(state.failedAssignments, hasLength(1));
       expect(state.failedAssignments.single.order.id, 'ORD-B');
       expect(
@@ -176,10 +170,7 @@ void main() {
       // Drivers are derived from ACTIVE (non-terminal) assignments only:
       // driver-busy is in transit, but driver-original's failed run no
       // longer counts as an active one.
-      expect(
-        state.availableDrivers.map((d) => d.id),
-        ['driver-busy'],
-      );
+      expect(state.availableDrivers.map((d) => d.id), ['driver-busy']);
     });
 
     test('manual assign on undispatched order creates pending manual '
@@ -199,8 +190,7 @@ void main() {
       final ok = await controller.assignDriver('ORD-A', 'driver-9');
       expect(ok, isTrue);
 
-      final created =
-          (await repo.getAssignmentByOrderId('ORD-A')).when(
+      final created = (await repo.getAssignmentByOrderId('ORD-A')).when(
         onLeft: (f) => fail('lookup should not fail'),
         onRight: (a) => a!,
       );
@@ -223,80 +213,82 @@ void main() {
       expect(state.errorMessage, isNull);
     });
 
-    test('repository rejection surfaces error state without throwing',
-        () async {
-      final realtime = SpyRealtimeService();
-      final container = buildDispatchContainer(
-        orders: [buildOrder(id: 'ORD-A')],
-        repository: FailingCreateAssignmentRepository(seed: const []),
-        realtimeService: realtime,
-      );
-      addTearDown(container.dispose);
+    test(
+      'repository rejection surfaces error state without throwing',
+      () async {
+        final realtime = SpyRealtimeService();
+        final container = buildDispatchContainer(
+          orders: [buildOrder(id: 'ORD-A')],
+          repository: FailingCreateAssignmentRepository(seed: const []),
+          realtimeService: realtime,
+        );
+        addTearDown(container.dispose);
 
-      final controller = container.read(dispatchControllerProvider.notifier);
-      await controller.refresh();
+        final controller = container.read(dispatchControllerProvider.notifier);
+        await controller.refresh();
 
-      final ok = await controller.assignDriver('ORD-A', 'driver-9');
-      expect(ok, isFalse);
+        final ok = await controller.assignDriver('ORD-A', 'driver-9');
+        expect(ok, isFalse);
 
-      final state = container.read(dispatchControllerProvider).requireValue;
-      expect(
-        state.errorMessage,
-        FailingCreateAssignmentRepository.rejectionMessage,
-      );
-      // No phantom broadcast for a rejected write; order stays undispatched.
-      expect(realtime.assignmentBroadcasts, isEmpty);
-      expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A']);
-    });
+        final state = container.read(dispatchControllerProvider).requireValue;
+        expect(
+          state.errorMessage,
+          FailingCreateAssignmentRepository.rejectionMessage,
+        );
+        // No phantom broadcast for a rejected write; order stays undispatched.
+        expect(realtime.assignmentBroadcasts, isEmpty);
+        expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A']);
+      },
+    );
 
-    test('refresh classifies from ONE bulk read with zero per-order lookups',
-        () async {
-      final repo = CountingBulkRepository(
-        seed: [
-          buildSeedAssignment(orderId: 'ORD-B'),
-          buildSeedAssignment(
-            orderId: 'ORD-E',
-            id: 'ASG-ORD-E-live',
-            driverId: 'driver-busy',
-            status: DeliveryStatus.inTransit,
-          ),
-        ],
-      );
-      final container = buildDispatchContainer(
-        orders: [
-          buildOrder(id: 'ORD-A'),
-          buildOrder(id: 'ORD-B'),
-          buildOrder(id: 'ORD-C'),
-        ],
-        repository: repo,
-      );
-      addTearDown(container.dispose);
+    test(
+      'refresh classifies from ONE bulk read with zero per-order lookups',
+      () async {
+        final repo = CountingBulkRepository(
+          seed: [
+            buildSeedAssignment(orderId: 'ORD-B'),
+            buildSeedAssignment(
+              orderId: 'ORD-E',
+              id: 'ASG-ORD-E-live',
+              driverId: 'driver-busy',
+              status: DeliveryStatus.inTransit,
+            ),
+          ],
+        );
+        final container = buildDispatchContainer(
+          orders: [
+            buildOrder(id: 'ORD-A'),
+            buildOrder(id: 'ORD-B'),
+            buildOrder(id: 'ORD-C'),
+          ],
+          repository: repo,
+        );
+        addTearDown(container.dispose);
 
-      // Reading the provider fires an initial refresh from the constructor;
-      // reset the counters so only the explicit pass below is measured.
-      final controller = container.read(dispatchControllerProvider.notifier);
-      repo.bulkCalls = 0;
-      repo.perOrderLookups = 0;
+        // Reading the provider fires an initial refresh from the constructor;
+        // reset the counters so only the explicit pass below is measured.
+        final controller = container.read(dispatchControllerProvider.notifier);
+        repo.bulkCalls = 0;
+        repo.perOrderLookups = 0;
 
-      await controller.refresh();
+        await controller.refresh();
 
-      expect(repo.bulkCalls, 1);
-      expect(repo.perOrderLookups, 0);
+        expect(repo.bulkCalls, 1);
+        expect(repo.perOrderLookups, 0);
 
-      // The single bulk read still classifies every candidate correctly.
-      final state = container.read(dispatchControllerProvider).requireValue;
-      expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A', 'ORD-C']);
-      expect(state.failedAssignments.single.order.id, 'ORD-B');
-    });
+        // The single bulk read still classifies every candidate correctly.
+        final state = container.read(dispatchControllerProvider).requireValue;
+        expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A', 'ORD-C']);
+        expect(state.failedAssignments.single.order.id, 'ORD-B');
+      },
+    );
 
     test('reassigning a failed assignment preserves the original id '
         '(upsert, no fork)', () async {
       final realtime = SpyRealtimeService();
       const originalId = 'ASG-fail-1';
       final repo = InMemoryDeliveryRepository(
-        seed: [
-          buildSeedAssignment(orderId: 'ORD-B', id: originalId),
-        ],
+        seed: [buildSeedAssignment(orderId: 'ORD-B', id: originalId)],
       );
       final container = buildDispatchContainer(
         orders: [buildOrder(id: 'ORD-B')],
@@ -308,15 +300,15 @@ void main() {
       final controller = container.read(dispatchControllerProvider.notifier);
       await controller.refresh();
 
-      final boardState =
-          container.read(dispatchControllerProvider).requireValue;
+      final boardState = container
+          .read(dispatchControllerProvider)
+          .requireValue;
       expect(boardState.failedAssignments.single.assignment.id, originalId);
 
       final ok = await controller.assignDriver('ORD-B', 'driver-new');
       expect(ok, isTrue);
 
-      final reassigned =
-          (await repo.getAssignmentByOrderId('ORD-B')).when(
+      final reassigned = (await repo.getAssignmentByOrderId('ORD-B')).when(
         onLeft: (f) => fail('lookup should not fail'),
         onRight: (a) => a!,
       );

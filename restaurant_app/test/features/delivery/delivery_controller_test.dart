@@ -16,15 +16,14 @@ Map<String, dynamic> assignmentJson({
   String id = 'assign-rt-1',
   String orderId = 'ORD-0200',
   String driverId = 'driver-demo',
-}) =>
-    {
-      'id': id,
-      'orderId': orderId,
-      'driverId': driverId,
-      'pickupTime': DateTime.now().toIso8601String(),
-      'deliveryLocation': 'الرياض - حي الملقا',
-      'deliveryStatus': 'pending',
-    };
+}) => {
+  'id': id,
+  'orderId': orderId,
+  'driverId': driverId,
+  'pickupTime': DateTime.now().toIso8601String(),
+  'deliveryLocation': 'الرياض - حي الملقا',
+  'deliveryStatus': 'pending',
+};
 
 void main() {
   setUpAll(() async {
@@ -36,13 +35,9 @@ void main() {
   /// overrides in test/helpers/test_container.dart). The chat override covers
   /// the unread-badge counters watched by DriverHomePage cards.
   List<Override> offlineOverrides() => [
-        deliveryRepositoryProvider.overrideWithValue(
-          InMemoryDeliveryRepository(),
-        ),
-        chatRepositoryProvider.overrideWithValue(
-          InMemoryChatRepository(),
-        ),
-      ];
+    deliveryRepositoryProvider.overrideWithValue(InMemoryDeliveryRepository()),
+    chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+  ];
 
   group('DeliveryController', () {
     late ProviderContainer container;
@@ -92,10 +87,9 @@ void main() {
     /// the container; with no socket connected sendEvent loops back into the
     /// events stream, driving the exact path a live dispatch would take.
     Future<void> broadcastAssignment(Map<String, dynamic> json) async {
-      container.read(realtimeServiceProvider).sendEvent(
-            'deliveryAssignmentCreated',
-            json,
-          );
+      container
+          .read(realtimeServiceProvider)
+          .sendEvent('deliveryAssignmentCreated', json);
       await Future<void>.delayed(Duration.zero);
     }
 
@@ -134,9 +128,7 @@ void main() {
       container.read(deliveryControllerProvider.notifier);
       await Future<void>.delayed(Duration.zero);
 
-      await broadcastAssignment(
-        assignmentJson(driverId: 'driver-other'),
-      );
+      await broadcastAssignment(assignmentJson(driverId: 'driver-other'));
 
       final state = container.read(deliveryControllerProvider);
       expect(state, hasLength(2));
@@ -152,9 +144,7 @@ void main() {
       final state = container.read(deliveryControllerProvider);
       expect(state, hasLength(2));
 
-      await broadcastAssignment(
-        assignmentJson(id: 'assign-rt-after-error'),
-      );
+      await broadcastAssignment(assignmentJson(id: 'assign-rt-after-error'));
       expect(
         container.read(deliveryControllerProvider).last.id,
         'assign-rt-after-error',

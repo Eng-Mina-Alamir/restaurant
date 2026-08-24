@@ -89,14 +89,17 @@ void main() {
       expect(deserialized.items, hasLength(1));
     });
 
-    test('OrderStatus isTerminal helper returns true only for completed and cancelled', () {
-      expect(OrderStatus.pending.isTerminal, isFalse);
-      expect(OrderStatus.confirmed.isTerminal, isFalse);
-      expect(OrderStatus.preparing.isTerminal, isFalse);
-      expect(OrderStatus.ready.isTerminal, isFalse);
-      expect(OrderStatus.served.isTerminal, isFalse);
-      expect(OrderStatus.completed.isTerminal, isTrue);
-      expect(OrderStatus.cancelled.isTerminal, isTrue);
-    });
+    test(
+      'OrderStatus isTerminal helper returns true only for completed and cancelled',
+      () {
+        expect(OrderStatus.pending.isTerminal, isFalse);
+        expect(OrderStatus.confirmed.isTerminal, isFalse);
+        expect(OrderStatus.preparing.isTerminal, isFalse);
+        expect(OrderStatus.ready.isTerminal, isFalse);
+        expect(OrderStatus.served.isTerminal, isFalse);
+        expect(OrderStatus.completed.isTerminal, isTrue);
+        expect(OrderStatus.cancelled.isTerminal, isTrue);
+      },
+    );
   });
 }

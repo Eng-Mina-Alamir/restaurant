@@ -38,22 +38,29 @@ void main() {
         taxAmount: 10.5,
         totalAmount: 80.5,
       );
-
     });
 
-    test('generates formatted text ticket with order details, items and notes', () {
-      final ticket = printerService.generateTicketText(testOrder, tableDisplay: '2');
-      expect(ticket.contains('مطعم الأصالة والنكهة'), isTrue);
-      expect(ticket.contains('#9988'), isTrue);
-      expect(ticket.contains('طاولة 2'), isTrue);
-      expect(ticket.contains('برجر لحم فاخر'), isTrue);
-      expect(ticket.contains('بدون بصل'), isTrue);
-      expect(ticket.contains('80.50'), isTrue);
-    });
-
+    test(
+      'generates formatted text ticket with order details, items and notes',
+      () {
+        final ticket = printerService.generateTicketText(
+          testOrder,
+          tableDisplay: '2',
+        );
+        expect(ticket.contains('مطعم الأصالة والنكهة'), isTrue);
+        expect(ticket.contains('#9988'), isTrue);
+        expect(ticket.contains('طاولة 2'), isTrue);
+        expect(ticket.contains('برجر لحم فاخر'), isTrue);
+        expect(ticket.contains('بدون بصل'), isTrue);
+        expect(ticket.contains('80.50'), isTrue);
+      },
+    );
 
     test('generates ESC/POS binary byte stream with init and cut commands', () {
-      final bytes = printerService.generateEscPosBytes(testOrder, tableDisplay: '2');
+      final bytes = printerService.generateEscPosBytes(
+        testOrder,
+        tableDisplay: '2',
+      );
       expect(bytes.isNotEmpty, isTrue);
       // ESC @ init command
       expect(bytes[0], 0x1B);
@@ -64,7 +71,10 @@ void main() {
     });
 
     test('dispatches simulated print job successfully', () async {
-      final ok = await printerService.printKitchenTicket(testOrder, tableDisplay: '2');
+      final ok = await printerService.printKitchenTicket(
+        testOrder,
+        tableDisplay: '2',
+      );
       expect(ok, isTrue);
     });
   });

@@ -77,8 +77,7 @@ class DispatchBoardState {
 /// orders (never dispatched vs. failed-and-reassignable) and lets the manager
 /// assign/reassign a driver by hand, broadcasting each created assignment so
 /// driver clients stay in sync.
-class DispatchController
-    extends StateNotifier<AsyncValue<DispatchBoardState>> {
+class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   DispatchController(
     this._repository,
     this._realtimeService, {
@@ -144,9 +143,7 @@ class DispatchController
       if (assignment == null) {
         undispatched.add(order);
       } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
-        failed.add(
-          FailedAssignmentEntry(order: order, assignment: assignment),
-        );
+        failed.add(FailedAssignmentEntry(order: order, assignment: assignment));
       }
       // Any other status means the order is already on the road — skip.
     }
@@ -216,8 +213,7 @@ class DispatchController
       );
       return false;
     }
-    if (existing != null &&
-        existing!.deliveryStatus != DeliveryStatus.failed) {
+    if (existing != null && existing!.deliveryStatus != DeliveryStatus.failed) {
       state = AsyncValue.data(
         (state.valueOrNull ?? const DispatchBoardState()).copyWith(
           errorMessage: 'الطلب $orderId مكلف بالفعل بسائق آخر',
@@ -283,12 +279,12 @@ class DispatchController
 }
 
 final dispatchControllerProvider =
-    StateNotifierProvider<DispatchController, AsyncValue<DispatchBoardState>>(
-  (ref) {
-    return DispatchController(
-      ref.watch(deliveryRepositoryProvider),
-      ref.watch(realtimeServiceProvider),
-      ordersSource: () => ref.read(ordersControllerProvider),
-    );
-  },
-);
+    StateNotifierProvider<DispatchController, AsyncValue<DispatchBoardState>>((
+      ref,
+    ) {
+      return DispatchController(
+        ref.watch(deliveryRepositoryProvider),
+        ref.watch(realtimeServiceProvider),
+        ordersSource: () => ref.read(ordersControllerProvider),
+      );
+    });

@@ -9,25 +9,24 @@ void main() {
     testWidgets('renders empty placeholder when no sales data', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SalesLineChart(salesData: {}),
-          ),
+          home: Scaffold(body: SalesLineChart(salesData: {})),
         ),
       );
 
-      expect(find.text('لا توجد بيانات مبيعات كافية للرسم البياني'), findsOneWidget);
+      expect(
+        find.text('لا توجد بيانات مبيعات كافية للرسم البياني'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('renders line chart with title when data is provided', (tester) async {
+    testWidgets('renders line chart with title when data is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: SalesLineChart(
-              salesData: {
-                'السبت': 1200,
-                'الأحد': 1500,
-                'الإثنين': 1800,
-              },
+              salesData: {'السبت': 1200, 'الأحد': 1500, 'الإثنين': 1800},
             ),
           ),
         ),
@@ -43,9 +42,7 @@ void main() {
     testWidgets('renders empty placeholder when no items', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: TopItemsBarChart(itemsSold: {}),
-          ),
+          home: Scaffold(body: TopItemsBarChart(itemsSold: {})),
         ),
       );
 
@@ -72,23 +69,24 @@ void main() {
   });
 
   group('PeakHoursChart', () {
-    testWidgets('renders peak hours chart with highlighted peak badge', (tester) async {
+    testWidgets('renders peak hours chart with highlighted peak badge', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: PeakHoursChart(
-              hourlyDistribution: {
-                14: 15,
-                20: 50,
-                21: 40,
-              },
+              hourlyDistribution: {14: 15, 20: 50, 21: 40},
               peakHour: 20,
             ),
           ),
         ),
       );
 
-      expect(find.text('توزيع الطلبات بالساعات (أوقات الذروة)'), findsOneWidget);
+      expect(
+        find.text('توزيع الطلبات بالساعات (أوقات الذروة)'),
+        findsOneWidget,
+      );
       expect(find.text('الذروة: 20:00'), findsOneWidget);
     });
   });

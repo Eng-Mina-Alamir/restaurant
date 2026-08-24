@@ -49,10 +49,7 @@ class AppImageUtils {
     );
 
     if (borderRadius != null) {
-      return ClipRRect(
-        borderRadius: borderRadius,
-        child: imageWidget,
-      );
+      return ClipRRect(borderRadius: borderRadius, child: imageWidget);
     }
 
     return imageWidget;
@@ -73,17 +70,17 @@ class AppImageUtils {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.md),
         gradient: LinearGradient(
-          colors: gradientColors ??
-              [
-                Colors.deepOrange.shade600,
-                Colors.amber.shade700,
-              ],
+          colors:
+              gradientColors ??
+              [Colors.deepOrange.shade600, Colors.amber.shade700],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: (gradientColors?.first ?? Colors.deepOrange).withValues(alpha: 0.3),
+            color: (gradientColors?.first ?? Colors.deepOrange).withValues(
+              alpha: 0.3,
+            ),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

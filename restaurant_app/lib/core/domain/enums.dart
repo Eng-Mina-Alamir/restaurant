@@ -69,11 +69,9 @@ enum OrderStatus {
             next == OrderStatus.preparing ||
             next == OrderStatus.cancelled;
       case OrderStatus.confirmed:
-        return next == OrderStatus.preparing ||
-            next == OrderStatus.cancelled;
+        return next == OrderStatus.preparing || next == OrderStatus.cancelled;
       case OrderStatus.preparing:
-        return next == OrderStatus.ready ||
-            next == OrderStatus.cancelled;
+        return next == OrderStatus.ready || next == OrderStatus.cancelled;
       case OrderStatus.ready:
         return next == OrderStatus.served ||
             next == OrderStatus.completed ||
@@ -98,8 +96,7 @@ enum OrderStatus {
   ///   reached a final state is immutable.
   bool canRevertTo(OrderStatus previous) {
     if (isTerminal || previous.isTerminal) return false;
-    return (this == OrderStatus.ready &&
-            previous == OrderStatus.preparing) ||
+    return (this == OrderStatus.ready && previous == OrderStatus.preparing) ||
         (this == OrderStatus.served && previous == OrderStatus.ready);
   }
 

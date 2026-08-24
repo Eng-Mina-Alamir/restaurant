@@ -19,4 +19,3 @@ abstract class TableRepository {
   /// Deletes a table by its ID.
   Future<Either<Failure, void>> deleteTable(String id);
 }
-

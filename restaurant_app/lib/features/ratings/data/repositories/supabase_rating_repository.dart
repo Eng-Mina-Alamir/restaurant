@@ -9,7 +9,7 @@ import '../../domain/repositories/rating_repository.dart';
 
 class SupabaseRatingRepository implements RatingRepository {
   SupabaseRatingRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+    : _supabase = supabase;
 
   final SupabaseClient _supabase;
 
@@ -33,14 +33,22 @@ class SupabaseRatingRepository implements RatingRepository {
       }
       return Right(ratings);
     } catch (e, st) {
-      AppLogger.warning('Supabase getRatingsForTarget fallback: $e', error: e, stackTrace: st);
-      final local = _cachedRatings.where((r) => r.targetId == targetId).toList();
+      AppLogger.warning(
+        'Supabase getRatingsForTarget fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+      final local = _cachedRatings
+          .where((r) => r.targetId == targetId)
+          .toList();
       return Right(local);
     }
   }
 
   @override
-  Future<Either<Failure, RatingEntity>> submitRating(RatingEntity rating) async {
+  Future<Either<Failure, RatingEntity>> submitRating(
+    RatingEntity rating,
+  ) async {
     try {
       final currentUid = _supabase.auth.currentUser?.id ?? rating.userId;
       final payload = {
@@ -58,7 +66,11 @@ class SupabaseRatingRepository implements RatingRepository {
       _cachedRatings.insert(0, rating);
       return Right(rating);
     } catch (e, st) {
-      AppLogger.warning('Supabase submitRating fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase submitRating fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedRatings.insert(0, rating);
       return Right(rating);
     }
@@ -81,7 +93,11 @@ class SupabaseRatingRepository implements RatingRepository {
       }
       return Right(sum / list.length);
     } catch (e, st) {
-      AppLogger.error('Supabase getAverageScore error', error: e, stackTrace: st);
+      AppLogger.error(
+        'Supabase getAverageScore error',
+        error: e,
+        stackTrace: st,
+      );
       return const Right(5.0);
     }
   }

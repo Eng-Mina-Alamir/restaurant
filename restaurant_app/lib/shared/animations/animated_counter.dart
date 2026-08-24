@@ -31,11 +31,13 @@ class _AnimatedCounterState extends AnimatedWidgetBaseState<AnimatedCounter> {
 
   @override
   void forEachTween(TweenVisitor<dynamic> visitor) {
-    _counterTween = visitor(
-      _counterTween,
-      widget.value,
-      (dynamic value) => Tween<num>(begin: value as num),
-    ) as Tween<num>?;
+    _counterTween =
+        visitor(
+              _counterTween,
+              widget.value,
+              (dynamic value) => Tween<num>(begin: value as num),
+            )
+            as Tween<num>?;
   }
 
   @override
@@ -45,8 +47,8 @@ class _AnimatedCounterState extends AnimatedWidgetBaseState<AnimatedCounter> {
     final formattedText = widget.formatter != null
         ? widget.formatter!(animatedValue)
         : widget.decimalPlaces > 0
-            ? animatedValue.toStringAsFixed(widget.decimalPlaces)
-            : animatedValue.toInt().toString();
+        ? animatedValue.toStringAsFixed(widget.decimalPlaces)
+        : animatedValue.toInt().toString();
 
     return Text(
       '${widget.prefix}$formattedText${widget.suffix}',

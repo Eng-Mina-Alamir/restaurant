@@ -18,9 +18,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: ReservationsPage(),
-          ),
+          child: const MaterialApp(home: ReservationsPage()),
         ),
       );
       await tester.pumpAndSettle();
@@ -38,9 +36,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: ReservationsPage(),
-          ),
+          child: const MaterialApp(home: ReservationsPage()),
         ),
       );
       await tester.pumpAndSettle();

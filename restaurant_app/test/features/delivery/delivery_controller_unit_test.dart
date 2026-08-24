@@ -12,12 +12,16 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   final List<DeliveryAssignment> assignments = [];
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>> getAssignments(String driverId) async {
+  Future<Either<Failure, List<DeliveryAssignment>>> getAssignments(
+    String driverId,
+  ) async {
     return Right(assignments.where((a) => a.driverId == driverId).toList());
   }
 
   @override
-  Future<Either<Failure, DeliveryAssignment>> updateAssignment(DeliveryAssignment assignment) async {
+  Future<Either<Failure, DeliveryAssignment>> updateAssignment(
+    DeliveryAssignment assignment,
+  ) async {
     final index = assignments.indexWhere((a) => a.id == assignment.id);
     if (index != -1) {
       assignments[index] = assignment;
@@ -28,7 +32,9 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, DeliveryAssignment>> createAssignment(DeliveryAssignment assignment) async {
+  Future<Either<Failure, DeliveryAssignment>> createAssignment(
+    DeliveryAssignment assignment,
+  ) async {
     final index = assignments.indexWhere((a) => a.id == assignment.id);
     if (index != -1) {
       assignments[index] = assignment;
@@ -39,7 +45,9 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(String orderId) async {
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
+    String orderId,
+  ) async {
     DeliveryAssignment? match;
     for (final a in assignments) {
       if (a.orderId == orderId) {
@@ -56,7 +64,8 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+  Future<Either<Failure, List<DeliveryAssignment>>>
+  getActiveAssignments() async {
     return const Right([]);
   }
 }
@@ -81,7 +90,11 @@ void main() {
       );
 
       realtime = RealtimeService();
-      controller = DeliveryController(repo, 'drv-demo', realtimeService: realtime);
+      controller = DeliveryController(
+        repo,
+        'drv-demo',
+        realtimeService: realtime,
+      );
       // Wait for initial load
       await Future<void>.delayed(Duration.zero);
     });
@@ -110,12 +123,15 @@ void main() {
       expect(controller.state.first.deliveryStatus, DeliveryStatus.inTransit);
     });
 
-    test('complete transitions status to delivered and stamps deliveredTime', () async {
-      await controller.complete('del-1');
+    test(
+      'complete transitions status to delivered and stamps deliveredTime',
+      () async {
+        await controller.complete('del-1');
 
-      expect(controller.state.first.deliveryStatus, DeliveryStatus.delivered);
-      expect(controller.state.first.deliveredTime, isNotNull);
-    });
+        expect(controller.state.first.deliveryStatus, DeliveryStatus.delivered);
+        expect(controller.state.first.deliveredTime, isNotNull);
+      },
+    );
 
     test('fail transitions status to failed', () async {
       await controller.fail('del-1');
@@ -126,11 +142,13 @@ void main() {
     test('updateLocation broadcasts GPS coords', () {
       expectLater(
         realtime.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.driverLocationUpdated &&
-              event.payload['driverId'] == 'drv-demo' &&
-              event.payload['latitude'] == 30.05;
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.driverLocationUpdated &&
+                event.payload['driverId'] == 'drv-demo' &&
+                event.payload['latitude'] == 30.05;
+          }),
+        ),
       );
 
       controller.updateLocation(latitude: 30.05, longitude: 31.35);

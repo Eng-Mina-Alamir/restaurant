@@ -9,7 +9,7 @@ import '../../domain/repositories/loyalty_repository.dart';
 
 class SupabaseLoyaltyRepository implements LoyaltyRepository {
   SupabaseLoyaltyRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+    : _supabase = supabase;
 
   final SupabaseClient _supabase;
 
@@ -86,15 +86,18 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
           orElse: () => PointsTransactionType.earn,
         );
 
-        transactions.add(PointsTransaction(
-          id: map['id']?.toString() ?? '',
-          points: (map['points'] as num?)?.toInt() ?? 0,
-          description: map['description'] as String? ?? '',
-          createdAt: map['created_at'] != null
-              ? DateTime.tryParse(map['created_at'] as String) ?? DateTime.now()
-              : DateTime.now(),
-          type: type,
-        ));
+        transactions.add(
+          PointsTransaction(
+            id: map['id']?.toString() ?? '',
+            points: (map['points'] as num?)?.toInt() ?? 0,
+            description: map['description'] as String? ?? '',
+            createdAt: map['created_at'] != null
+                ? DateTime.tryParse(map['created_at'] as String) ??
+                      DateTime.now()
+                : DateTime.now(),
+            type: type,
+          ),
+        );
       }
 
       final account = LoyaltyAccount(
@@ -107,8 +110,13 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
       _cachedAccounts[userId] = account;
       return Right(account);
     } catch (e, st) {
-      AppLogger.warning('Supabase getAccount fallback: $e', error: e, stackTrace: st);
-      final account = _cachedAccounts[userId] ??
+      AppLogger.warning(
+        'Supabase getAccount fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+      final account =
+          _cachedAccounts[userId] ??
           LoyaltyAccount(
             userId: userId,
             currentPoints: 150,
@@ -139,8 +147,13 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
 
       return await getAccount(userId);
     } catch (e, st) {
-      AppLogger.warning('Supabase earnPoints fallback: $e', error: e, stackTrace: st);
-      final prev = _cachedAccounts[userId] ??
+      AppLogger.warning(
+        'Supabase earnPoints fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+      final prev =
+          _cachedAccounts[userId] ??
           LoyaltyAccount(
             userId: userId,
             currentPoints: 150,
@@ -171,8 +184,13 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
 
       return await getAccount(userId);
     } catch (e, st) {
-      AppLogger.warning('Supabase redeemReward fallback: $e', error: e, stackTrace: st);
-      final prev = _cachedAccounts[userId] ??
+      AppLogger.warning(
+        'Supabase redeemReward fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+      final prev =
+          _cachedAccounts[userId] ??
           LoyaltyAccount(
             userId: userId,
             currentPoints: 150,
@@ -181,7 +199,10 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
             transactions: const [],
           );
       final updated = prev.copyWith(
-        currentPoints: (prev.currentPoints - reward.pointsCost).clamp(0, 999999),
+        currentPoints: (prev.currentPoints - reward.pointsCost).clamp(
+          0,
+          999999,
+        ),
       );
       _cachedAccounts[userId] = updated;
       return Right(updated);
@@ -200,20 +221,27 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
       final List<LoyaltyReward> rewards = [];
       for (final raw in (response as List)) {
         final map = Map<String, dynamic>.from(raw as Map);
-        rewards.add(LoyaltyReward(
-          id: map['id']?.toString() ?? '',
-          title: map['title'] as String? ?? '',
-          description: map['description'] as String? ?? '',
-          pointsCost: (map['points_cost'] as num?)?.toInt() ?? 0,
-          discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0.0,
-          minOrderAmount: (map['min_order_amount'] as num?)?.toDouble() ?? 0.0,
-          iconName: map['icon_name'] as String? ?? 'card_giftcard',
-        ));
+        rewards.add(
+          LoyaltyReward(
+            id: map['id']?.toString() ?? '',
+            title: map['title'] as String? ?? '',
+            description: map['description'] as String? ?? '',
+            pointsCost: (map['points_cost'] as num?)?.toInt() ?? 0,
+            discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0.0,
+            minOrderAmount:
+                (map['min_order_amount'] as num?)?.toDouble() ?? 0.0,
+            iconName: map['icon_name'] as String? ?? 'card_giftcard',
+          ),
+        );
       }
       if (rewards.isEmpty) return Right(_defaultRewards);
       return Right(rewards);
     } catch (e, st) {
-      AppLogger.warning('Supabase getAvailableRewards fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase getAvailableRewards fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       return Right(_defaultRewards);
     }
   }

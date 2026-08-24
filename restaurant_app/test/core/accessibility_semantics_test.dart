@@ -26,34 +26,39 @@ void main() {
   });
 
   group('Accessibility & Semantics Quality Tests', () {
-    testWidgets('EmptyState widget has semantic headers and accessible button', (tester) async {
-      var actionTriggered = false;
+    testWidgets(
+      'EmptyState widget has semantic headers and accessible button',
+      (tester) async {
+        var actionTriggered = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: EmptyState(
-              icon: Icons.inbox,
-              message: 'لا توجد بيانات متاحة حالياً',
-              actionLabel: 'إعادة المحاولة',
-              onAction: () => actionTriggered = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EmptyState(
+                icon: Icons.inbox,
+                message: 'لا توجد بيانات متاحة حالياً',
+                actionLabel: 'إعادة المحاولة',
+                onAction: () => actionTriggered = true,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify text semantics
-      expect(find.text('لا توجد بيانات متاحة حالياً'), findsOneWidget);
-      expect(find.text('إعادة المحاولة'), findsOneWidget);
+        // Verify text semantics
+        expect(find.text('لا توجد بيانات متاحة حالياً'), findsOneWidget);
+        expect(find.text('إعادة المحاولة'), findsOneWidget);
 
-      // Tap action
-      await tester.tap(find.text('إعادة المحاولة'));
-      await tester.pump();
+        // Tap action
+        await tester.tap(find.text('إعادة المحاولة'));
+        await tester.pump();
 
-      expect(actionTriggered, isTrue);
-    });
+        expect(actionTriggered, isTrue);
+      },
+    );
 
-    testWidgets('ThemeModeSwitchButton meets minimum touch target guidelines', (tester) async {
+    testWidgets('ThemeModeSwitchButton meets minimum touch target guidelines', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -76,22 +81,23 @@ void main() {
       expect(renderBox.size.height, greaterThanOrEqualTo(40.0));
     });
 
-    testWidgets('LanguageSwitcherButton renders outlined button in non-compact mode', (tester) async {
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: LanguageSwitcherButton(compact: false),
+    testWidgets(
+      'LanguageSwitcherButton renders outlined button in non-compact mode',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: Center(child: LanguageSwitcherButton(compact: false)),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byType(LanguageSwitcherButton), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsOneWidget);
-    });
+        expect(find.byType(LanguageSwitcherButton), findsOneWidget);
+        expect(find.byType(OutlinedButton), findsOneWidget);
+      },
+    );
   });
 
   // ── Cycle 7 additions ────────────────────────────────────────────────────
@@ -104,8 +110,9 @@ void main() {
   //   • OrderTrackingPage call driver → IconButton.filledTonal (tooltip 'اتصال بالمندوب')
   //   • DispatchBoardPage refresh     → IconButton          (tooltip 'تحديث')
   group('Cycle 7 semantics fixes', () {
-    testWidgets('chat bubbles announce sender + body through Semantics',
-        (tester) async {
+    testWidgets('chat bubbles announce sender + body through Semantics', (
+      tester,
+    ) async {
       // ensureSemantics must be disposed synchronously before the test body
       // returns (end-of-test verification rejects undisposed handles).
       final semantics = tester.ensureSemantics();
@@ -167,9 +174,7 @@ void main() {
             ),
             // Assignment cards watch unread-chat counters; keep them on the
             // in-memory repository (realtime channels leak pending timers).
-            chatRepositoryProvider.overrideWithValue(
-              InMemoryChatRepository(),
-            ),
+            chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
           ],
           child: const MaterialApp(home: DriverHomePage()),
         ),
@@ -177,8 +182,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Open the tracking/navigation bottom sheet of the first assignment.
-      final mapButton =
-          find.widgetWithText(OutlinedButton, 'الخريطة والتتبع').first;
+      final mapButton = find
+          .widgetWithText(OutlinedButton, 'الخريطة والتتبع')
+          .first;
       await tester.ensureVisible(mapButton);
       await tester.pumpAndSettle();
       await tester.tap(mapButton);

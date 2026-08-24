@@ -47,7 +47,9 @@ class OfflineQueueService {
     if (_box != null && _box!.isOpen) return;
     try {
       _box = await Hive.openBox<String>(_boxName);
-      AppLogger.info('OfflineQueueService: Opened box – ${_box!.length} pending ops');
+      AppLogger.info(
+        'OfflineQueueService: Opened box – ${_box!.length} pending ops',
+      );
     } catch (e) {
       // Falling back to memory means queued ops die with the process — this
       // must never happen silently.
@@ -83,7 +85,9 @@ class OfflineQueueService {
         await init();
       }
 
-      final values = _box != null && _box!.isOpen ? _box!.values : _memoryQueue.values;
+      final values = _box != null && _box!.isOpen
+          ? _box!.values
+          : _memoryQueue.values;
       if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
         for (final raw in values) {
           try {
@@ -99,7 +103,8 @@ class OfflineQueueService {
       }
 
       final seq = ++_seq;
-      final key = '${DateTime.now().microsecondsSinceEpoch}_${seq}_$operationType';
+      final key =
+          '${DateTime.now().microsecondsSinceEpoch}_${seq}_$operationType';
       final value = jsonEncode({
         'type': operationType,
         'payload': payload,
@@ -122,9 +127,9 @@ class OfflineQueueService {
 
   /// Alias for [drain] for backward compatibility.
   Future<int> drainWith(
-    Future<bool> Function(String operationType, Map<String, dynamic> payload) handler,
-  ) =>
-      drain(handler);
+    Future<bool> Function(String operationType, Map<String, dynamic> payload)
+    handler,
+  ) => drain(handler);
 
   /// Replays all due pending operations by calling [handler] for each entry,
   /// strictly in FIFO order.
@@ -142,7 +147,7 @@ class OfflineQueueService {
     int? maxAttempts,
     Duration? baseBackoff,
     void Function(String type, Map<String, dynamic> payload, int attempts)?
-        onDeadLetter,
+    onDeadLetter,
   }) async {
     final effectiveMaxAttempts = maxAttempts ?? this.maxAttempts;
     final effectiveBaseBackoff = baseBackoff ?? this.baseBackoff;
@@ -152,18 +157,16 @@ class OfflineQueueService {
     final useBox = _box != null && _box!.isOpen;
 
     // FIFO: keys are "<micros>_<seq>_<type>" — sort numerically by timestamp.
-    final keys = <String>[
-      ...(useBox ? _box!.keys : _memoryQueue.keys),
-    ]..sort(_compareQueueKeys);
+    final keys = <String>[...(useBox ? _box!.keys : _memoryQueue.keys)]
+      ..sort(_compareQueueKeys);
     var replayed = 0;
     var skippedForBackoff = 0;
     final now = DateTime.now().millisecondsSinceEpoch;
 
     Future<void> deleteKey(String key) async =>
         useBox ? _box!.delete(key) : _memoryQueue.remove(key);
-    Future<void> putEntry(String key, String value) async => useBox
-        ? _box!.put(key, value)
-        : _memoryQueue[key] = value;
+    Future<void> putEntry(String key, String value) async =>
+        useBox ? _box!.put(key, value) : _memoryQueue[key] = value;
 
     for (final key in keys) {
       final raw = useBox ? _box!.get(key) : _memoryQueue[key];
@@ -174,9 +177,7 @@ class OfflineQueueService {
         decoded = jsonDecode(raw) as Map<String, dynamic>;
       } on FormatException catch (e) {
         // Unparseable entry can never succeed — drop it instead of blocking.
-        AppLogger.error(
-          'OfflineQueueService: Dropping corrupt entry $key: $e',
-        );
+        AppLogger.error('OfflineQueueService: Dropping corrupt entry $key: $e');
         await deleteKey(key);
         continue;
       }
@@ -257,8 +258,7 @@ class OfflineQueueService {
   @visibleForTesting
   Future<void> debugInjectRaw(String rawValue) async {
     if (_box == null || !_box!.isOpen) await init();
-    final key =
-        '${DateTime.now().microsecondsSinceEpoch}_${++_seq}_corrupt';
+    final key = '${DateTime.now().microsecondsSinceEpoch}_${++_seq}_corrupt';
     if (_box != null && _box!.isOpen) {
       await _box!.put(key, rawValue);
     } else {
@@ -295,4 +295,3 @@ class OfflineQueueService {
 final offlineQueueServiceProvider = Provider<OfflineQueueService>((ref) {
   return OfflineQueueService();
 });
-

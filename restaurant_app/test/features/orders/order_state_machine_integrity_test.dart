@@ -11,25 +11,25 @@ import 'package:restaurant_app/features/orders/presentation/controllers/orders_c
 
 /// Builds a minimal serializable order for realtime seeding.
 Map<String, dynamic> _orderJson(String id) => <String, dynamic>{
-      'id': id,
-      'restaurantId': 'demo-restaurant-1',
-      'customerId': null,
-      'tableId': null,
-      'waiterId': null,
-      'orderType': 'takeaway',
-      'items': <Map<String, dynamic>>[],
-      'status': 'pending',
-      'subtotal': 10.0,
-      'taxAmount': 1.5,
-      'discountAmount': 0.0,
-      'totalAmount': 11.5,
-      'paymentMethod': null,
-      'deliveryAddress': null,
-      'deliveryNotes': null,
-      'createdAt': DateTime.now().toIso8601String(),
-      'completedAt': null,
-      'estimatedMinutes': 20,
-    };
+  'id': id,
+  'restaurantId': 'demo-restaurant-1',
+  'customerId': null,
+  'tableId': null,
+  'waiterId': null,
+  'orderType': 'takeaway',
+  'items': <Map<String, dynamic>>[],
+  'status': 'pending',
+  'subtotal': 10.0,
+  'taxAmount': 1.5,
+  'discountAmount': 0.0,
+  'totalAmount': 11.5,
+  'paymentMethod': null,
+  'deliveryAddress': null,
+  'deliveryNotes': null,
+  'createdAt': DateTime.now().toIso8601String(),
+  'completedAt': null,
+  'estimatedMinutes': 20,
+};
 
 void main() {
   group('Order State Machine Integrity & Transition Guards', () {
@@ -78,44 +78,56 @@ void main() {
       expect(status.canTransitionTo(OrderStatus.preparing), isFalse);
     });
 
-    test('served status requires completed transition and blocks direct cancel', () {
-      const status = OrderStatus.served;
-      expect(status.canTransitionTo(OrderStatus.completed), isTrue);
+    test(
+      'served status requires completed transition and blocks direct cancel',
+      () {
+        const status = OrderStatus.served;
+        expect(status.canTransitionTo(OrderStatus.completed), isTrue);
 
-      // Once served to a customer at the table, waiter cannot arbitrarily cancel it
-      expect(status.canTransitionTo(OrderStatus.cancelled), isFalse);
-      expect(status.canTransitionTo(OrderStatus.pending), isFalse);
-      expect(status.canTransitionTo(OrderStatus.preparing), isFalse);
-    });
+        // Once served to a customer at the table, waiter cannot arbitrarily cancel it
+        expect(status.canTransitionTo(OrderStatus.cancelled), isFalse);
+        expect(status.canTransitionTo(OrderStatus.pending), isFalse);
+        expect(status.canTransitionTo(OrderStatus.preparing), isFalse);
+      },
+    );
 
-    test('terminal states (completed, cancelled) block all further transitions', () {
-      expect(OrderStatus.completed.isTerminal, isTrue);
-      expect(OrderStatus.cancelled.isTerminal, isTrue);
+    test(
+      'terminal states (completed, cancelled) block all further transitions',
+      () {
+        expect(OrderStatus.completed.isTerminal, isTrue);
+        expect(OrderStatus.cancelled.isTerminal, isTrue);
 
-      for (final next in OrderStatus.values) {
-        if (next == OrderStatus.completed) continue;
-        expect(OrderStatus.completed.canTransitionTo(next), isFalse);
-      }
+        for (final next in OrderStatus.values) {
+          if (next == OrderStatus.completed) continue;
+          expect(OrderStatus.completed.canTransitionTo(next), isFalse);
+        }
 
-      for (final next in OrderStatus.values) {
-        if (next == OrderStatus.cancelled) continue;
-        expect(OrderStatus.cancelled.canTransitionTo(next), isFalse);
-      }
-    });
+        for (final next in OrderStatus.values) {
+          if (next == OrderStatus.cancelled) continue;
+          expect(OrderStatus.cancelled.canTransitionTo(next), isFalse);
+        }
+      },
+    );
 
-    test('OrderStatus.fromName gracefully handles case insensitivity, variants and unknown strings', () {
-      expect(OrderStatus.fromName('pending'), OrderStatus.pending);
-      expect(OrderStatus.fromName('CONFIRMED'), OrderStatus.confirmed);
-      expect(OrderStatus.fromName('Preparing'), OrderStatus.preparing);
-      expect(OrderStatus.fromName('ready'), OrderStatus.ready);
-      expect(OrderStatus.fromName('Served'), OrderStatus.served);
-      expect(OrderStatus.fromName('completed'), OrderStatus.completed);
-      expect(OrderStatus.fromName('cancelled'), OrderStatus.cancelled);
-      expect(OrderStatus.fromName('canceled'), OrderStatus.cancelled); // US English single 'l' variant
+    test(
+      'OrderStatus.fromName gracefully handles case insensitivity, variants and unknown strings',
+      () {
+        expect(OrderStatus.fromName('pending'), OrderStatus.pending);
+        expect(OrderStatus.fromName('CONFIRMED'), OrderStatus.confirmed);
+        expect(OrderStatus.fromName('Preparing'), OrderStatus.preparing);
+        expect(OrderStatus.fromName('ready'), OrderStatus.ready);
+        expect(OrderStatus.fromName('Served'), OrderStatus.served);
+        expect(OrderStatus.fromName('completed'), OrderStatus.completed);
+        expect(OrderStatus.fromName('cancelled'), OrderStatus.cancelled);
+        expect(
+          OrderStatus.fromName('canceled'),
+          OrderStatus.cancelled,
+        ); // US English single 'l' variant
 
-      expect(OrderStatus.fromName(null), OrderStatus.pending);
-      expect(OrderStatus.fromName('UNKNOWN_XYZ'), OrderStatus.pending);
-    });
+        expect(OrderStatus.fromName(null), OrderStatus.pending);
+        expect(OrderStatus.fromName('UNKNOWN_XYZ'), OrderStatus.pending);
+      },
+    );
   });
 
   group('Realtime out-of-order status guard', () {
@@ -125,19 +137,17 @@ void main() {
     late NewOrderNotifier notifier;
 
     /// Sends an orderStatusChanged event through the loopback socket.
-    void emitStatus(
-      String orderId,
-      String status, [
-      DateTime? updatedAt,
-    ]) {
-      realtime.send(jsonEncode({
-        'type': 'orderStatusChanged',
-        'data': {
-          'orderId': orderId,
-          'status': status,
-          if (updatedAt != null) 'updatedAt': updatedAt.toIso8601String(),
-        },
-      }));
+    void emitStatus(String orderId, String status, [DateTime? updatedAt]) {
+      realtime.send(
+        jsonEncode({
+          'type': 'orderStatusChanged',
+          'data': {
+            'orderId': orderId,
+            'status': status,
+            if (updatedAt != null) 'updatedAt': updatedAt.toIso8601String(),
+          },
+        }),
+      );
     }
 
     Future<void> pump() =>
@@ -165,38 +175,41 @@ void main() {
       realtime.disconnect();
     });
 
-    test('a delayed stale event cannot regress an applied transition',
-        () async {
-      // Seed the order via realtime (arrives as pending).
-      realtime.send(jsonEncode({
-        'type': 'orderCreated',
-        'data': _orderJson('ORD-9001'),
-      }));
-      await pump();
-      expect(controller.state.single.id, 'ORD-9001');
-      expect(controller.state.single.status, OrderStatus.pending);
+    test(
+      'a delayed stale event cannot regress an applied transition',
+      () async {
+        // Seed the order via realtime (arrives as pending).
+        realtime.send(
+          jsonEncode({'type': 'orderCreated', 'data': _orderJson('ORD-9001')}),
+        );
+        await pump();
+        expect(controller.state.single.id, 'ORD-9001');
+        expect(controller.state.single.status, OrderStatus.pending);
 
-      // Locally apply a transition — stamps the last-applied clock.
-      final staleMoment = DateTime.now().subtract(const Duration(seconds: 5));
-      await controller.updateStatus('ORD-9001', OrderStatus.preparing);
-      await pump();
-      expect(controller.state.single.status, OrderStatus.preparing);
+        // Locally apply a transition — stamps the last-applied clock.
+        final staleMoment = DateTime.now().subtract(const Duration(seconds: 5));
+        await controller.updateStatus('ORD-9001', OrderStatus.preparing);
+        await pump();
+        expect(controller.state.single.status, OrderStatus.preparing);
 
-      // A DELAYED event (stamped before the applied transition) arrives
-      // claiming cancellation. ready→cancelled would be legal, so only the
-      // timestamp guard prevents regression here.
-      emitStatus('ORD-9001', 'cancelled', staleMoment);
-      await pump();
+        // A DELAYED event (stamped before the applied transition) arrives
+        // claiming cancellation. ready→cancelled would be legal, so only the
+        // timestamp guard prevents regression here.
+        emitStatus('ORD-9001', 'cancelled', staleMoment);
+        await pump();
 
-      expect(controller.state.single.status, OrderStatus.preparing,
-          reason: 'Stale event must NOT regress preparing → cancelled');
-    });
+        expect(
+          controller.state.single.status,
+          OrderStatus.preparing,
+          reason: 'Stale event must NOT regress preparing → cancelled',
+        );
+      },
+    );
 
     test('fresh events still progress the order normally', () async {
-      realtime.send(jsonEncode({
-        'type': 'orderCreated',
-        'data': _orderJson('ORD-9002'),
-      }));
+      realtime.send(
+        jsonEncode({'type': 'orderCreated', 'data': _orderJson('ORD-9002')}),
+      );
       await pump();
 
       final t1 = DateTime.now().add(const Duration(milliseconds: 1));
@@ -211,27 +224,33 @@ void main() {
     });
 
     test('malformed status payloads are ignored without crashing', () async {
-      realtime.send(jsonEncode({
-        'type': 'orderCreated',
-        'data': _orderJson('ORD-9003'),
-      }));
+      realtime.send(
+        jsonEncode({'type': 'orderCreated', 'data': _orderJson('ORD-9003')}),
+      );
       await pump();
 
       // Missing status / missing id / garbage shapes — none may throw.
       realtime.send(jsonEncode({'type': 'orderStatusChanged', 'data': {}}));
-      realtime.send(jsonEncode({
-        'type': 'orderStatusChanged',
-        'data': {'status': 'ready'},
-      }));
-      realtime.send(jsonEncode({
-        'type': 'orderStatusChanged',
-        'data': {'orderId': 'ORD-9003'},
-      }));
+      realtime.send(
+        jsonEncode({
+          'type': 'orderStatusChanged',
+          'data': {'status': 'ready'},
+        }),
+      );
+      realtime.send(
+        jsonEncode({
+          'type': 'orderStatusChanged',
+          'data': {'orderId': 'ORD-9003'},
+        }),
+      );
       realtime.send('this is not json at all');
       await pump();
 
-      expect(controller.state.single.status, OrderStatus.pending,
-          reason: 'Nothing should be applied from malformed payloads');
+      expect(
+        controller.state.single.status,
+        OrderStatus.pending,
+        reason: 'Nothing should be applied from malformed payloads',
+      );
       expect(controller.state.length, 1);
     });
   });

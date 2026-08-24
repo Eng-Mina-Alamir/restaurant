@@ -71,7 +71,6 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-
   @override
   Future<Either<Failure, UserEntity>> verifyOtp({
     required String otp,

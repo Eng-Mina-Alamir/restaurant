@@ -46,18 +46,21 @@ void main() {
       expect(breakdown.finalFee, 17.5);
     });
 
-    test('qualifies for free delivery when order exceeds 150 SAR threshold', () {
-      final breakdown = calculator.calculate(
-        distanceKm: 8.0,
-        orderSubtotal: 180.0,
-        timestamp: DateTime(2026, 8, 19, 20, 0),
-      );
+    test(
+      'qualifies for free delivery when order exceeds 150 SAR threshold',
+      () {
+        final breakdown = calculator.calculate(
+          distanceKm: 8.0,
+          orderSubtotal: 180.0,
+          timestamp: DateTime(2026, 8, 19, 20, 0),
+        );
 
-      expect(breakdown.isFreeDelivery, isTrue);
-      expect(breakdown.finalFee, 0.0);
-      expect(breakdown.discountAmount > 0, isTrue);
-      expect(breakdown.promoReason, isNotNull);
-    });
+        expect(breakdown.isFreeDelivery, isTrue);
+        expect(breakdown.finalFee, 0.0);
+        expect(breakdown.discountAmount > 0, isTrue);
+        expect(breakdown.promoReason, isNotNull);
+      },
+    );
 
     test('computes geographic distance between coordinates accurately', () {
       // Distance between two points in Riyadh (~5.5 km)

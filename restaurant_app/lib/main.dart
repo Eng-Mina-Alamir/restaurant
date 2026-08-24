@@ -33,7 +33,11 @@ Future<void> main() async {
 
   // 3. Global Platform Dispatcher error handling
   PlatformDispatcher.instance.onError = (error, stack) {
-    AppLogger.error('PlatformDispatcher error: $error', error: error, stackTrace: stack);
+    AppLogger.error(
+      'PlatformDispatcher error: $error',
+      error: error,
+      stackTrace: stack,
+    );
     if (_sentryDsn.isNotEmpty) {
       Sentry.captureException(error, stackTrace: stack);
     }
@@ -41,47 +45,55 @@ Future<void> main() async {
   };
 
   Future<void> appRunner() async {
-    await runZonedGuarded(() async {
+    await runZonedGuarded(
+      () async {
+        // Initialize Supabase backend
+        try {
+          await Supabase.initialize(
+            url: SupabaseConfig.url,
+            publishableKey: SupabaseConfig.anonKey,
+          );
+          AppLogger.info('Supabase initialized successfully');
+        } catch (e, st) {
+          AppLogger.error(
+            'Failed to initialize Supabase: $e',
+            error: e,
+            stackTrace: st,
+          );
+        }
 
-      // Initialize Supabase backend
-      try {
-        await Supabase.initialize(
-          url: SupabaseConfig.url,
-          publishableKey: SupabaseConfig.anonKey,
+        final cache = await initAppCache();
+
+        runApp(
+          ProviderScope(
+            overrides: [
+              if (cache != null)
+                localCacheServiceProvider.overrideWithValue(cache),
+            ],
+            child: const RestaurantApp(),
+          ),
         );
-        AppLogger.info('Supabase initialized successfully');
-      } catch (e, st) {
-        AppLogger.error('Failed to initialize Supabase: $e', error: e, stackTrace: st);
-      }
-
-      final cache = await initAppCache();
-
-      runApp(
-        ProviderScope(
-          overrides: [
-            if (cache != null) localCacheServiceProvider.overrideWithValue(cache),
-          ],
-          child: const RestaurantApp(),
-        ),
-      );
-    }, (error, stack) {
-      AppLogger.error('Unhandled zone error: $error', error: error, stackTrace: stack);
-      if (_sentryDsn.isNotEmpty) {
-        Sentry.captureException(error, stackTrace: stack);
-      }
-    });
+      },
+      (error, stack) {
+        AppLogger.error(
+          'Unhandled zone error: $error',
+          error: error,
+          stackTrace: stack,
+        );
+        if (_sentryDsn.isNotEmpty) {
+          Sentry.captureException(error, stackTrace: stack);
+        }
+      },
+    );
   }
 
   // 4. Initialize Sentry if DSN is configured
   if (_sentryDsn.isNotEmpty) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = _sentryDsn;
-        options.tracesSampleRate = 1.0;
-        options.environment = kReleaseMode ? 'production' : 'development';
-      },
-      appRunner: appRunner,
-    );
+    await SentryFlutter.init((options) {
+      options.dsn = _sentryDsn;
+      options.tracesSampleRate = 1.0;
+      options.environment = kReleaseMode ? 'production' : 'development';
+    }, appRunner: appRunner);
   } else {
     await appRunner();
   }

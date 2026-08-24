@@ -31,13 +31,11 @@ void main() {
       expect(controller.state, isEmpty);
     });
 
-    testWidgets('AlertsPage renders alerts list and filters by category', (tester) async {
+    testWidgets('AlertsPage renders alerts list and filters by category', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: AlertsPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: AlertsPage())),
       );
       await tester.pumpAndSettle();
 

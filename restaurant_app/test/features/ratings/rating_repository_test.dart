@@ -12,13 +12,16 @@ void main() {
       repository = InMemoryRatingRepository();
     });
 
-    test('getRatingsForTarget returns seeded reviews sorted descending', () async {
-      final result = await repository.getRatingsForTarget('item-1');
-      expect(result.isRight, isTrue);
-      final ratings = (result as Right<Failure, List<RatingEntity>>).value;
-      expect(ratings.length, 2);
-      expect(ratings.first.score, isNotNull);
-    });
+    test(
+      'getRatingsForTarget returns seeded reviews sorted descending',
+      () async {
+        final result = await repository.getRatingsForTarget('item-1');
+        expect(result.isRight, isTrue);
+        final ratings = (result as Right<Failure, List<RatingEntity>>).value;
+        expect(ratings.length, 2);
+        expect(ratings.first.score, isNotNull);
+      },
+    );
 
     test('submitRating adds new review and affects average score', () async {
       final newRating = RatingEntity(

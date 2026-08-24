@@ -68,8 +68,7 @@ const Map<String, Set<UserRole>> _roleProtectedPrefixes = {
 bool canRoleAccess(UserRole role, String location) {
   for (final entry in _roleProtectedPrefixes.entries) {
     final prefix = entry.key;
-    final matches =
-        location == prefix || location.startsWith('$prefix/');
+    final matches = location == prefix || location.startsWith('$prefix/');
     if (!matches) continue;
     return entry.value.contains(role);
   }
@@ -202,9 +201,8 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       GoRoute(path: '/kds', builder: (context, state) => const KdsPage()),
       GoRoute(
         path: '/chat/:orderId',
-        builder: (context, state) => ChatPage(
-          orderId: state.pathParameters['orderId'] ?? '',
-        ),
+        builder: (context, state) =>
+            ChatPage(orderId: state.pathParameters['orderId'] ?? ''),
       ),
       GoRoute(
         path: '/manager',
@@ -269,10 +267,6 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         ],
       ),
 
-
-
-
-
       GoRoute(
         path: '/driver',
         builder: (context, state) => const DriverHomePage(),
@@ -281,10 +275,7 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         path: '/privacy-policy',
         builder: (context, state) => const PrivacyPolicyPage(),
       ),
-      GoRoute(
-        path: '/terms',
-        builder: (context, state) => const TermsPage(),
-      ),
+      GoRoute(path: '/terms', builder: (context, state) => const TermsPage()),
       GoRoute(
         path: '/:page',
         builder: (context, state) => const NotFoundPage(),

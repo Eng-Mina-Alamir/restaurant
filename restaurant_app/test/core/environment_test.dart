@@ -12,11 +12,14 @@ void main() {
     });
 
     test('Environment enum has all targets', () {
-      expect(Environment.values, containsAll([
-        Environment.dev,
-        Environment.staging,
-        Environment.production,
-      ]));
+      expect(
+        Environment.values,
+        containsAll([
+          Environment.dev,
+          Environment.staging,
+          Environment.production,
+        ]),
+      );
     });
   });
 }

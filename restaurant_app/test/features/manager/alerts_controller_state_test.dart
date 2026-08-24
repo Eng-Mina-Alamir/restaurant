@@ -12,7 +12,10 @@ void main() {
 
     test('initial state has seed alerts', () {
       expect(controller.state, isNotEmpty);
-      expect(controller.state.any((a) => a.severity == AlertSeverity.critical), isTrue);
+      expect(
+        controller.state.any((a) => a.severity == AlertSeverity.critical),
+        isTrue,
+      );
     });
 
     test('addSmartAlert inserts alert at top of list', () {
@@ -34,7 +37,10 @@ void main() {
       final firstId = controller.state.first.id;
       controller.markAsRead(firstId);
 
-      expect(controller.state.firstWhere((a) => a.id == firstId).isRead, isTrue);
+      expect(
+        controller.state.firstWhere((a) => a.id == firstId).isRead,
+        isTrue,
+      );
 
       controller.markAllAsRead();
       expect(controller.state.every((a) => a.isRead), isTrue);

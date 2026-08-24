@@ -282,10 +282,7 @@ void main() {
     }
 
     testWidgets('delivery card shows driver name and rating', (tester) async {
-      await pumpHistoryWithAssignment(
-        tester,
-        orderType: OrderType.delivery,
-      );
+      await pumpHistoryWithAssignment(tester, orderType: OrderType.delivery);
 
       expect(find.text(driverName), findsOneWidget);
       expect(find.text('4.7'), findsOneWidget);
@@ -315,8 +312,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(RatingDialog), findsNothing);
 
-      final stored =
-          await container.read(targetRatingsProvider(driverId).future);
+      final stored = await container.read(
+        targetRatingsProvider(driverId).future,
+      );
       expect(stored, hasLength(1));
       expect(stored.single.targetType, RatingTargetType.driver);
       expect(stored.single.targetId, driverId);
@@ -324,10 +322,7 @@ void main() {
 
     testWidgets('takeaway cards never render driver data even when an '
         'assignment exists', (tester) async {
-      await pumpHistoryWithAssignment(
-        tester,
-        orderType: OrderType.takeaway,
-      );
+      await pumpHistoryWithAssignment(tester, orderType: OrderType.takeaway);
 
       expect(find.text(driverName), findsNothing);
       expect(find.text('4.7'), findsNothing);
@@ -336,12 +331,10 @@ void main() {
       expect(find.text('أعد الطلب'), findsOneWidget);
     });
 
-    testWidgets('delivery card with assignment offers a driver-chat entry',
-        (tester) async {
-      await pumpHistoryWithAssignment(
-        tester,
-        orderType: OrderType.delivery,
-      );
+    testWidgets('delivery card with assignment offers a driver-chat entry', (
+      tester,
+    ) async {
+      await pumpHistoryWithAssignment(tester, orderType: OrderType.delivery);
 
       expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
       expect(find.byTooltip('محادثة السائق'), findsOneWidget);
@@ -357,8 +350,9 @@ void main() {
       }
     });
 
-    testWidgets('tapping driver-chat navigates to /chat/:orderId',
-        (tester) async {
+    testWidgets('tapping driver-chat navigates to /chat/:orderId', (
+      tester,
+    ) async {
       Object? navigatedTo;
       final router = GoRouter(
         initialLocation: '/',
@@ -373,8 +367,7 @@ void main() {
               navigatedTo = state.uri.path;
               return Scaffold(
                 body: Center(
-                  child:
-                      Text('chat-stub-${state.pathParameters['orderId']}'),
+                  child: Text('chat-stub-${state.pathParameters['orderId']}'),
                 ),
               );
             },

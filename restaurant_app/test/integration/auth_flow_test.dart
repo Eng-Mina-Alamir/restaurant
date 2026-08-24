@@ -24,7 +24,8 @@ class _MockAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<void> logout(String? token) async {}
 
   @override
-  Future<String> refreshToken(String refreshToken) async => 'jwt-token-refreshed';
+  Future<String> refreshToken(String refreshToken) async =>
+      'jwt-token-refreshed';
 
   @override
   Future<UserModel> register({
@@ -47,7 +48,10 @@ class _MockAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> verifyOtp({required String otp, required String phone}) async {
+  Future<UserModel> verifyOtp({
+    required String otp,
+    required String phone,
+  }) async {
     return UserModel(
       id: 'usr-otp-1',
       name: 'مستخدم محقق',
@@ -62,33 +66,38 @@ class _MockAuthRemoteDataSource implements AuthRemoteDataSource {
 
 void main() {
   group('Auth Flow Integration Test', () {
-    test('complete authentication cycle: login -> role check -> logout', () async {
-      final container = ProviderContainer(
-        overrides: [
-          authRemoteDataSourceProvider.overrideWithValue(_MockAuthRemoteDataSource()),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'complete authentication cycle: login -> role check -> logout',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            authRemoteDataSourceProvider.overrideWithValue(
+              _MockAuthRemoteDataSource(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final authNotifier = container.read(authControllerProvider.notifier);
+        final authNotifier = container.read(authControllerProvider.notifier);
 
-      // Initially unknown / unauthenticated
-      expect(container.read(authControllerProvider).isAuthenticated, isFalse);
+        // Initially unknown / unauthenticated
+        expect(container.read(authControllerProvider).isAuthenticated, isFalse);
 
-      // Login as manager
-      await authNotifier.login('manager@restaurant.com', 'strongpassword123');
+        // Login as manager
+        await authNotifier.login('manager@restaurant.com', 'strongpassword123');
 
-      final authState = container.read(authControllerProvider);
-      expect(authState.isAuthenticated, isTrue);
-      expect(authState.user?.role, UserRole.manager);
-      expect(authState.user?.role.homeRoute, '/manager');
+        final authState = container.read(authControllerProvider);
+        expect(authState.isAuthenticated, isTrue);
+        expect(authState.user?.role, UserRole.manager);
+        expect(authState.user?.role.homeRoute, '/manager');
 
-      // Logout
-      await authNotifier.logout();
+        // Logout
+        await authNotifier.logout();
 
-      final loggedOutState = container.read(authControllerProvider);
-      expect(loggedOutState.isAuthenticated, isFalse);
-      expect(loggedOutState.user, isNull);
-    });
+        final loggedOutState = container.read(authControllerProvider);
+        expect(loggedOutState.isAuthenticated, isFalse);
+        expect(loggedOutState.user, isNull);
+      },
+    );
   });
 }

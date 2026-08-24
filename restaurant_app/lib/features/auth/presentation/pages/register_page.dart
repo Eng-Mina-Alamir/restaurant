@@ -51,7 +51,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     setState(() => _submitting = true);
-    await ref.read(authControllerProvider.notifier).register(
+    await ref
+        .read(authControllerProvider.notifier)
+        .register(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           phone: _phoneController.text.trim(),

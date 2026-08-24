@@ -46,8 +46,12 @@ void main() {
     ProviderContainer createContainer() {
       return ProviderContainer(
         overrides: [
-          authRemoteDataSourceProvider.overrideWithValue(DemoAuthRemoteDataSource()),
-          secureStorageServiceProvider.overrideWithValue(InMemorySecureStorageService()),
+          authRemoteDataSourceProvider.overrideWithValue(
+            DemoAuthRemoteDataSource(),
+          ),
+          secureStorageServiceProvider.overrideWithValue(
+            InMemorySecureStorageService(),
+          ),
         ],
       );
     }

@@ -8,11 +8,7 @@ void main() {
   group('NotificationsPage Widget Tests', () {
     testWidgets('renders empty state when no notifications', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: NotificationsPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: NotificationsPage())),
       );
       await tester.pumpAndSettle();
 
@@ -20,7 +16,9 @@ void main() {
       expect(find.text('لا توجد إشعارات حالياً'), findsOneWidget);
     });
 
-    testWidgets('renders notifications list when push notification arrives', (tester) async {
+    testWidgets('renders notifications list when push notification arrives', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -34,9 +32,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: NotificationsPage(),
-          ),
+          child: const MaterialApp(home: NotificationsPage()),
         ),
       );
       await tester.pumpAndSettle();

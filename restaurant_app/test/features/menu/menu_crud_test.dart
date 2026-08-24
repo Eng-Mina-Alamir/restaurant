@@ -39,38 +39,59 @@ void main() {
 
     test('updates existing item correctly', () async {
       final initialRes = await repository.getMenu();
-      final firstItem = initialRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.first;
+      final firstItem = initialRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .first;
 
-      final updatedItem = firstItem.copyWith(price: 99.0, name: 'برجر ملكي معدل');
+      final updatedItem = firstItem.copyWith(
+        price: 99.0,
+        name: 'برجر ملكي معدل',
+      );
       final result = await repository.updateMenuItem(updatedItem);
       expect(result.isRight, isTrue);
 
       final menuRes = await repository.getMenu();
-      final item = menuRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.firstWhere((i) => i.id == firstItem.id);
+      final item = menuRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .firstWhere((i) => i.id == firstItem.id);
       expect(item.price, 99.0);
       expect(item.name, 'برجر ملكي معدل');
     });
 
     test('toggles availability status', () async {
       final initialRes = await repository.getMenu();
-      final firstItem = initialRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.first;
+      final firstItem = initialRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .first;
 
       final result = await repository.toggleAvailability(firstItem.id, false);
       expect(result.isRight, isTrue);
 
       final menuRes = await repository.getMenu();
-      final item = menuRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.firstWhere((i) => i.id == firstItem.id);
+      final item = menuRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .firstWhere((i) => i.id == firstItem.id);
       expect(item.isAvailable, isFalse);
     });
 
     test('deletes menu item', () async {
       final initialRes = await repository.getMenu();
-      final firstItem = initialRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.first;
+      final firstItem = initialRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .first;
 
       await repository.deleteMenuItem(firstItem.id);
 
       final menuRes = await repository.getMenu();
-      final exists = menuRes.when(onLeft: (_) => null, onRight: (m) => m)!.items.any((i) => i.id == firstItem.id);
+      final exists = menuRes
+          .when(onLeft: (_) => null, onRight: (m) => m)!
+          .items
+          .any((i) => i.id == firstItem.id);
       expect(exists, isFalse);
     });
   });

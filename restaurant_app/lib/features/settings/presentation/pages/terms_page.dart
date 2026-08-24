@@ -12,9 +12,7 @@ class TermsPage extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الشروط والأحكام'),
-      ),
+      appBar: AppBar(title: const Text('الشروط والأحكام')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -26,7 +24,11 @@ class TermsPage extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.gavel_outlined, color: colorScheme.secondary, size: 28),
+                Icon(
+                  Icons.gavel_outlined,
+                  color: colorScheme.secondary,
+                  size: 28,
+                ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Text(
@@ -76,10 +78,7 @@ class TermsPage extends StatelessWidget {
 }
 
 class _TermsSection extends StatelessWidget {
-  const _TermsSection({
-    required this.title,
-    required this.content,
-  });
+  const _TermsSection({required this.title, required this.content});
 
   final String title;
   final String content;
@@ -96,7 +95,9 @@ class _TermsSection extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),

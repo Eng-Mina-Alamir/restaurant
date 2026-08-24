@@ -13,7 +13,8 @@ abstract class Failure {
   const Failure(this.message);
 
   const factory Failure.validation([String message]) = ValidationFailure;
-  const factory Failure.server([String message, int? statusCode]) = ServerFailure;
+  const factory Failure.server([String message, int? statusCode]) =
+      ServerFailure;
   const factory Failure.network([String message]) = NetworkFailure;
   const factory Failure.cache([String message]) = CacheFailure;
   const factory Failure.unauthorized([String message]) = UnauthorizedFailure;
@@ -58,4 +59,3 @@ class CacheFailure extends Failure {
 class UnauthorizedFailure extends Failure {
   const UnauthorizedFailure([super.message = AppConstants.errorSessionExpired]);
 }
-

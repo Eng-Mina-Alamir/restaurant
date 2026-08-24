@@ -28,35 +28,40 @@ void main() {
   });
 
   group('Order Offline Sync Flow Integration Test', () {
-    test('places order offline, queues it, and syncs upon going online', () async {
-      final connectivity = ConnectivityService(ConnectivityStatus.offline);
+    test(
+      'places order offline, queues it, and syncs upon going online',
+      () async {
+        final connectivity = ConnectivityService(ConnectivityStatus.offline);
 
-      // In-memory repos + seed menu via createTestContainer so checkout
-      // revalidation never depends on the live Supabase backend; only the
-      // connectivity service is overridden to start offline.
-      final container = createTestContainer(
-        additionalOverrides: [
-          connectivityServiceProvider.overrideWithValue(connectivity),
-        ],
-      );
-      addTearDown(container.dispose);
-      await primeMenuForCheckout(container);
+        // In-memory repos + seed menu via createTestContainer so checkout
+        // revalidation never depends on the live Supabase backend; only the
+        // connectivity service is overridden to start offline.
+        final container = createTestContainer(
+          additionalOverrides: [
+            connectivityServiceProvider.overrideWithValue(connectivity),
+          ],
+        );
+        addTearDown(container.dispose);
+        await primeMenuForCheckout(container);
 
-      final cartController = container.read(cartControllerProvider.notifier);
-      final ordersController = container.read(ordersControllerProvider.notifier);
+        final cartController = container.read(cartControllerProvider.notifier);
+        final ordersController = container.read(
+          ordersControllerProvider.notifier,
+        );
 
-      final item = MenuSeedData.items.first;
-      cartController.addItem(CartItem(menuItem: item, quantity: 2));
+        final item = MenuSeedData.items.first;
+        cartController.addItem(CartItem(menuItem: item, quantity: 2));
 
-      final placed = await ordersController.placeOrder();
-      expect(placed, isNotNull);
+        final placed = await ordersController.placeOrder();
+        expect(placed, isNotNull);
 
-      // Now bring connectivity online and simulate automatic sync
-      connectivity.goOnline();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Now bring connectivity online and simulate automatic sync
+        connectivity.goOnline();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final updatedOrders = container.read(ordersControllerProvider);
-      expect(updatedOrders.any((o) => o.id == placed!.id), isTrue);
-    });
+        final updatedOrders = container.read(ordersControllerProvider);
+        expect(updatedOrders.any((o) => o.id == placed!.id), isTrue);
+      },
+    );
   });
 }

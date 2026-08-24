@@ -135,10 +135,12 @@ void main() {
   });
 
   group('Cancellation flow', () {
-    testWidgets('dialog confirms then cancels via controller and pops',
-        (tester) async {
-      final fakeController =
-          FakeOrdersController([buildOrder(status: OrderStatus.pending)]);
+    testWidgets('dialog confirms then cancels via controller and pops', (
+      tester,
+    ) async {
+      final fakeController = FakeOrdersController([
+        buildOrder(status: OrderStatus.pending),
+      ]);
       await pumpPage(tester, orders: [], controller: fakeController);
 
       // The cancel button sits below the fold in the scrollable summary.
@@ -150,7 +152,9 @@ void main() {
       // Confirmation dialog copy.
       expect(find.text('إلغاء الطلب'), findsNWidgets(2)); // button + title
       expect(
-        find.text('هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع بعد بدء التحضير'),
+        find.text(
+          'هل أنت متأكد من إلغاء الطلب؟ لا يمكن التراجع بعد بدء التحضير',
+        ),
         findsOneWidget,
       );
       expect(find.text('نعم، إلغاء'), findsOneWidget);
@@ -177,10 +181,14 @@ void main() {
   });
 
   group('Driver section', () {
-    testWidgets('shows search placeholder when no assignment exists',
-        (tester) async {
-      await pumpPage(tester, orders: [buildOrder()],
-          deliveryRepo: InMemoryDeliveryRepository(seed: const []));
+    testWidgets('shows search placeholder when no assignment exists', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        orders: [buildOrder()],
+        deliveryRepo: InMemoryDeliveryRepository(seed: const []),
+      );
 
       expect(find.textContaining('جارٍ البحث عن مندوب'), findsOneWidget);
       // No fabricated driver personalities.
@@ -188,19 +196,22 @@ void main() {
       expect(find.textContaining('01066778899'), findsNothing);
     });
 
-    testWidgets('renders live driver data from the fetched assignment',
-        (tester) async {
+    testWidgets('renders live driver data from the fetched assignment', (
+      tester,
+    ) async {
       await pumpPage(
         tester,
         orders: [buildOrder()],
-        deliveryRepo: InMemoryDeliveryRepository(seed: [
-          buildAssignment(
-            driverName: 'منى السيد',
-            driverPhone: '01122334455',
-            driverRating: 4.7,
-            vehicleInfo: 'تويوتا هايس • لوحة ٤٥٢١',
-          ),
-        ]),
+        deliveryRepo: InMemoryDeliveryRepository(
+          seed: [
+            buildAssignment(
+              driverName: 'منى السيد',
+              driverPhone: '01122334455',
+              driverRating: 4.7,
+              vehicleInfo: 'تويوتا هايس • لوحة ٤٥٢١',
+            ),
+          ],
+        ),
       );
 
       expect(find.text('منى السيد'), findsOneWidget);
@@ -240,8 +251,7 @@ void main() {
       await pumpPage(
         tester,
         orders: [buildOrder()],
-        deliveryRepo:
-            InMemoryDeliveryRepository(seed: [buildAssignment()]),
+        deliveryRepo: InMemoryDeliveryRepository(seed: [buildAssignment()]),
       );
 
       expect(find.text('محادثة السائق'), findsOneWidget);
@@ -272,25 +282,27 @@ void main() {
       );
     });
 
-    test('legacy payload (no orderId) accepted only for the assigned driver',
-        () {
-      expect(
-        driverLocationTargetsOrder(
-          payload: {'driverId': 'driver-x'},
-          orderId: orderId,
-          assignedDriverId: 'driver-x',
-        ),
-        isTrue,
-      );
-      expect(
-        driverLocationTargetsOrder(
-          payload: {'driverId': 'driver-other'},
-          orderId: orderId,
-          assignedDriverId: 'driver-x',
-        ),
-        isFalse,
-      );
-    });
+    test(
+      'legacy payload (no orderId) accepted only for the assigned driver',
+      () {
+        expect(
+          driverLocationTargetsOrder(
+            payload: {'driverId': 'driver-x'},
+            orderId: orderId,
+            assignedDriverId: 'driver-x',
+          ),
+          isTrue,
+        );
+        expect(
+          driverLocationTargetsOrder(
+            payload: {'driverId': 'driver-other'},
+            orderId: orderId,
+            assignedDriverId: 'driver-x',
+          ),
+          isFalse,
+        );
+      },
+    );
 
     test('legacy payload rejected before any assignment is known', () {
       expect(
@@ -302,8 +314,9 @@ void main() {
       );
     });
 
-    testWidgets('page ignores realtime location events for other orders',
-        (tester) async {
+    testWidgets('page ignores realtime location events for other orders', (
+      tester,
+    ) async {
       await pumpPage(
         tester,
         orders: [buildOrder()],

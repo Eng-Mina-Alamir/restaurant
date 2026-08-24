@@ -5,13 +5,11 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/pages/use
 
 void main() {
   group('UserManagementPage Widget Tests', () {
-    testWidgets('renders user list, role filters and search bar', (tester) async {
+    testWidgets('renders user list, role filters and search bar', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: UserManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: UserManagementPage())),
       );
       await tester.pumpAndSettle();
 
@@ -22,11 +20,7 @@ void main() {
 
     testWidgets('tapping add employee opens bottom sheet', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: UserManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: UserManagementPage())),
       );
       await tester.pumpAndSettle();
 

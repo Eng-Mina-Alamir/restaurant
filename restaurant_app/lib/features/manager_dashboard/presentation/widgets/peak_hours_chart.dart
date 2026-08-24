@@ -28,7 +28,8 @@ class PeakHoursChart extends StatelessWidget {
     int maxOrders = 0;
 
     for (final h in hours) {
-      final count = hourlyDistribution[h] ?? (h == peakInt ? 24 : (h % 5 * 4 + 2));
+      final count =
+          hourlyDistribution[h] ?? (h == peakInt ? 24 : (h % 5 * 4 + 2));
       if (count > maxOrders) maxOrders = count;
     }
     final maxY = (maxOrders * 1.25).ceilToDouble();
@@ -38,7 +39,9 @@ class PeakHoursChart extends StatelessWidget {
       color: colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -69,7 +72,11 @@ class PeakHoursChart extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.access_time_filled, size: 14, color: Colors.deepOrange),
+                      const Icon(
+                        Icons.access_time_filled,
+                        size: 14,
+                        color: Colors.deepOrange,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'الذروة: $peakInt:00',
@@ -92,13 +99,16 @@ class PeakHoursChart extends StatelessWidget {
                   maxY: maxY,
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
+                      getTooltipColor: (_) =>
+                          colorScheme.surfaceContainerHighest,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final hour = hours[group.x.toInt()];
                         return BarTooltipItem(
                           'الساعة $hour:00\n${rod.toY.toInt()} طلب',
                           TextStyle(
-                            color: hour == peakInt ? Colors.deepOrange : colorScheme.primary,
+                            color: hour == peakInt
+                                ? Colors.deepOrange
+                                : colorScheme.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -108,8 +118,12 @@ class PeakHoursChart extends StatelessWidget {
                   ),
                   titlesData: FlTitlesData(
                     show: true,
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -147,7 +161,9 @@ class PeakHoursChart extends StatelessWidget {
                                     color: h == peakInt
                                         ? Colors.deepOrange
                                         : colorScheme.onSurfaceVariant,
-                                    fontWeight: h == peakInt ? FontWeight.bold : FontWeight.normal,
+                                    fontWeight: h == peakInt
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                     fontSize: 10,
                                   ),
                                 ),
@@ -175,7 +191,9 @@ class PeakHoursChart extends StatelessWidget {
                       () {
                         final h = hours[i];
                         final isPeak = h == peakInt;
-                        final count = hourlyDistribution[h] ?? (isPeak ? 24 : (h % 5 * 4 + 2));
+                        final count =
+                            hourlyDistribution[h] ??
+                            (isPeak ? 24 : (h % 5 * 4 + 2));
                         return BarChartGroupData(
                           x: i,
                           barRods: [
@@ -187,8 +205,12 @@ class PeakHoursChart extends StatelessWidget {
                                 colors: isPeak
                                     ? [Colors.deepOrange, Colors.orangeAccent]
                                     : [
-                                        colorScheme.primary.withValues(alpha: 0.7),
-                                        colorScheme.primary.withValues(alpha: 0.4),
+                                        colorScheme.primary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                        colorScheme.primary.withValues(
+                                          alpha: 0.4,
+                                        ),
                                       ],
                               ),
                               width: 14,

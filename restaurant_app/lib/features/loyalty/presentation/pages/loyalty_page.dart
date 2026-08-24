@@ -38,8 +38,8 @@ class LoyaltyPage extends ConsumerWidget {
           final progress = nextTier == null
               ? 1.0
               : ((account.lifetimePoints - currentTierPoints) /
-                      (nextTierPoints - currentTierPoints))
-                  .clamp(0.0, 1.0);
+                        (nextTierPoints - currentTierPoints))
+                    .clamp(0.0, 1.0);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -67,8 +67,11 @@ class LoyaltyPage extends ConsumerWidget {
                     ),
                     Row(
                       children: [
-                        Icon(Icons.stars_rounded,
-                            color: Colors.amber.shade700, size: 20),
+                        Icon(
+                          Icons.stars_rounded,
+                          color: Colors.amber.shade700,
+                          size: 20,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${account.currentPoints} نقطة',
@@ -90,8 +93,7 @@ class LoyaltyPage extends ConsumerWidget {
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  error: (_, _) =>
-                      const Text('تعذر تحميل المكافآت حالياً'),
+                  error: (_, _) => const Text('تعذر تحميل المكافآت حالياً'),
                   data: (rewards) => Column(
                     children: [
                       for (final reward in rewards)
@@ -271,8 +273,11 @@ class _TierBanner extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.workspace_premium,
-                            color: Colors.white, size: 16),
+                        const Icon(
+                          Icons.workspace_premium,
+                          color: Colors.white,
+                          size: 16,
+                        ),
 
                         const SizedBox(width: 4),
                         Text(

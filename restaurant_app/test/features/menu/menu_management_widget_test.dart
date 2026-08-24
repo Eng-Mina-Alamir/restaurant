@@ -5,13 +5,11 @@ import 'package:restaurant_app/features/menu/presentation/pages/menu_management_
 
 void main() {
   group('MenuManagementPage Widget Tests', () {
-    testWidgets('renders menu list, categories chips and action buttons', (tester) async {
+    testWidgets('renders menu list, categories chips and action buttons', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MenuManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: MenuManagementPage())),
       );
       await tester.pumpAndSettle();
 
@@ -23,11 +21,7 @@ void main() {
 
     testWidgets('tapping add category opens dialog', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MenuManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: MenuManagementPage())),
       );
       await tester.pumpAndSettle();
 
@@ -41,11 +35,7 @@ void main() {
 
     testWidgets('tapping add item opens bottom sheet', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: MenuManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: MenuManagementPage())),
       );
       await tester.pumpAndSettle();
 

@@ -73,7 +73,9 @@ class InMemoryCouponRepository implements CouponRepository {
 
     if (matches.isEmpty) {
       return left(
-        const Failure.validation('كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة'),
+        const Failure.validation(
+          'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
+        ),
       );
     }
 
@@ -87,7 +89,9 @@ class InMemoryCouponRepository implements CouponRepository {
   }
 
   @override
-  Future<Either<Failure, CouponEntity>> createCoupon(CouponEntity coupon) async {
+  Future<Either<Failure, CouponEntity>> createCoupon(
+    CouponEntity coupon,
+  ) async {
     final cleanCode = coupon.code.trim().toUpperCase();
     if (_coupons.any((c) => c.code.toUpperCase() == cleanCode)) {
       return left(const Failure.validation('كود الخصم هذا مستخدم مسبقاً'));
@@ -98,7 +102,9 @@ class InMemoryCouponRepository implements CouponRepository {
   }
 
   @override
-  Future<Either<Failure, CouponEntity>> updateCoupon(CouponEntity coupon) async {
+  Future<Either<Failure, CouponEntity>> updateCoupon(
+    CouponEntity coupon,
+  ) async {
     final index = _coupons.indexWhere((c) => c.id == coupon.id);
     if (index == -1) {
       return left(const Failure.notFound('الكوبون غير موجود'));

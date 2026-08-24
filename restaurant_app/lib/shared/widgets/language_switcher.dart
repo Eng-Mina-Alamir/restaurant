@@ -6,10 +6,7 @@ import '../../core/l10n/app_localizations.dart';
 class LanguageSwitcherButton extends ConsumerWidget {
   final bool compact;
 
-  const LanguageSwitcherButton({
-    super.key,
-    this.compact = false,
-  });
+  const LanguageSwitcherButton({super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +15,9 @@ class LanguageSwitcherButton extends ConsumerWidget {
     if (compact) {
       return IconButton(
         icon: const Icon(Icons.language_rounded),
-        tooltip: lang == AppLanguage.arabic ? 'Switch to English' : 'التحويل للعربية',
+        tooltip: lang == AppLanguage.arabic
+            ? 'Switch to English'
+            : 'التحويل للعربية',
         onPressed: () {
           ref.read(localeControllerProvider.notifier).toggleLanguage();
         },

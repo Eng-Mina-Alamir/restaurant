@@ -4,28 +4,31 @@ import 'package:restaurant_app/shared/animations/floating_illustration.dart';
 
 void main() {
   group('FloatingIllustration & BreathingWidget Tests', () {
-    testWidgets('FloatingIllustration renders child and completes translation',
-        (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: FloatingIllustration(
-              distance: 12.0,
-              duration: Duration(milliseconds: 400),
-              child: Icon(Icons.inbox, size: 48),
+    testWidgets(
+      'FloatingIllustration renders child and completes translation',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: FloatingIllustration(
+                distance: 12.0,
+                duration: Duration(milliseconds: 400),
+                child: Icon(Icons.inbox, size: 48),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byIcon(Icons.inbox), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.inbox), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.inbox), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
+        expect(find.byIcon(Icons.inbox), findsOneWidget);
+      },
+    );
 
-    testWidgets('BreathingWidget scales child smoothly and completes',
-        (tester) async {
+    testWidgets('BreathingWidget scales child smoothly and completes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -45,16 +48,15 @@ void main() {
       expect(find.text('Breathing Text'), findsOneWidget);
     });
 
-    testWidgets('Respects disableAnimations in accessibility settings',
-        (tester) async {
+    testWidgets('Respects disableAnimations in accessibility settings', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: MediaQuery(
             data: MediaQueryData(disableAnimations: true),
             child: Scaffold(
-              body: FloatingIllustration(
-                child: Text('Static Text'),
-              ),
+              body: FloatingIllustration(child: Text('Static Text')),
             ),
           ),
         ),

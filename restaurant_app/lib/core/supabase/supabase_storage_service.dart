@@ -18,19 +18,20 @@ class SupabaseStorageService {
     String contentType = 'image/jpeg',
   }) async {
     try {
-      await _supabase.storage.from(bucketName).uploadBinary(
+      await _supabase.storage
+          .from(bucketName)
+          .uploadBinary(
             path,
             bytes,
-            fileOptions: FileOptions(
-              contentType: contentType,
-              upsert: true,
-            ),
+            fileOptions: FileOptions(contentType: contentType, upsert: true),
           );
 
       final publicUrl = _supabase.storage.from(bucketName).getPublicUrl(path);
       return publicUrl;
     } catch (e) {
-      AppLogger.error('Failed to upload image to Supabase storage ($bucketName): $e');
+      AppLogger.error(
+        'Failed to upload image to Supabase storage ($bucketName): $e',
+      );
       return null;
     }
   }
@@ -40,7 +41,8 @@ class SupabaseStorageService {
     required String orderId,
     required Uint8List bytes,
   }) async {
-    final fileName = 'proof_${orderId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName =
+        'proof_${orderId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     return uploadImageBytes(
       bucketName: SupabaseConfig.deliveryProofBucket,
       path: fileName,
@@ -53,7 +55,8 @@ class SupabaseStorageService {
     required String itemId,
     required Uint8List bytes,
   }) async {
-    final fileName = 'item_${itemId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName =
+        'item_${itemId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     return uploadImageBytes(
       bucketName: SupabaseConfig.menuBucket,
       path: fileName,

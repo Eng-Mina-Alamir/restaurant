@@ -42,7 +42,10 @@ void main() {
       final service = PushNotificationService();
       addTearDown(service.dispose);
 
-      service.notifyDeliveryJob(deliveryId: 'DEL-55', destination: 'حي العليا - الرياض');
+      service.notifyDeliveryJob(
+        deliveryId: 'DEL-55',
+        destination: 'حي العليا - الرياض',
+      );
 
       expect(service.history.length, 1);
       expect(service.history.first.title, contains('طلب توصيل جديد'));

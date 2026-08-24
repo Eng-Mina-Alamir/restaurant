@@ -55,13 +55,17 @@ class _FakeTableRepo implements TableRepository {
       Right(List.unmodifiable(tables));
 
   @override
-  Future<Either<Failure, RestaurantTable>> addTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> addTable(
+    RestaurantTable table,
+  ) async {
     tables.add(table);
     return Right(table);
   }
 
   @override
-  Future<Either<Failure, RestaurantTable>> updateTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> updateTable(
+    RestaurantTable table,
+  ) async {
     final i = tables.indexWhere((t) => t.id == table.id);
     if (i != -1) tables[i] = table;
     return Right(table);
@@ -106,69 +110,84 @@ void main() {
       container.dispose();
     });
 
-    test('createReservation saves reservation and updates table to reserved', () async {
-      final controller = container.read(reservationControllerProvider.notifier);
+    test(
+      'createReservation saves reservation and updates table to reserved',
+      () async {
+        final controller = container.read(
+          reservationControllerProvider.notifier,
+        );
 
-      final success = await controller.createReservation(
-        customerName: 'طارق',
-        customerPhone: '01122334455',
-        tableId: 'tbl-3',
-        tableNumber: 3,
-        guestCount: 2,
-        reservationTime: DateTime.now().add(const Duration(hours: 1)),
-      );
+        final success = await controller.createReservation(
+          customerName: 'طارق',
+          customerPhone: '01122334455',
+          tableId: 'tbl-3',
+          tableNumber: 3,
+          guestCount: 2,
+          reservationTime: DateTime.now().add(const Duration(hours: 1)),
+        );
 
-      expect(success, isTrue);
-      expect(resRepo.reservations, hasLength(1));
+        expect(success, isTrue);
+        expect(resRepo.reservations, hasLength(1));
 
-      final tables = container.read(tableControllerProvider);
-      final table = tables.firstWhere((t) => t.id == 'tbl-3');
-      expect(table.status, TableStatus.reserved);
-    });
+        final tables = container.read(tableControllerProvider);
+        final table = tables.firstWhere((t) => t.id == 'tbl-3');
+        expect(table.status, TableStatus.reserved);
+      },
+    );
 
-    test('seatCustomer updates reservation to seated and table to occupied', () async {
-      final controller = container.read(reservationControllerProvider.notifier);
+    test(
+      'seatCustomer updates reservation to seated and table to occupied',
+      () async {
+        final controller = container.read(
+          reservationControllerProvider.notifier,
+        );
 
-      await controller.createReservation(
-        customerName: 'طارق',
-        customerPhone: '01122334455',
-        tableId: 'tbl-3',
-        tableNumber: 3,
-        guestCount: 2,
-        reservationTime: DateTime.now(),
-      );
+        await controller.createReservation(
+          customerName: 'طارق',
+          customerPhone: '01122334455',
+          tableId: 'tbl-3',
+          tableNumber: 3,
+          guestCount: 2,
+          reservationTime: DateTime.now(),
+        );
 
-      final reservation = resRepo.reservations.first;
-      await controller.seatCustomer(reservation);
+        final reservation = resRepo.reservations.first;
+        await controller.seatCustomer(reservation);
 
-      expect(resRepo.reservations.first.status, ReservationStatus.seated);
+        expect(resRepo.reservations.first.status, ReservationStatus.seated);
 
-      final tables = container.read(tableControllerProvider);
-      final table = tables.firstWhere((t) => t.id == 'tbl-3');
-      expect(table.status, TableStatus.occupied);
-      expect(table.currentOrderId, 'RES-SEATED');
-    });
+        final tables = container.read(tableControllerProvider);
+        final table = tables.firstWhere((t) => t.id == 'tbl-3');
+        expect(table.status, TableStatus.occupied);
+        expect(table.currentOrderId, 'RES-SEATED');
+      },
+    );
 
-    test('cancelReservation sets status cancelled and releases table reservation', () async {
-      final controller = container.read(reservationControllerProvider.notifier);
+    test(
+      'cancelReservation sets status cancelled and releases table reservation',
+      () async {
+        final controller = container.read(
+          reservationControllerProvider.notifier,
+        );
 
-      await controller.createReservation(
-        customerName: 'طارق',
-        customerPhone: '01122334455',
-        tableId: 'tbl-3',
-        tableNumber: 3,
-        guestCount: 2,
-        reservationTime: DateTime.now(),
-      );
+        await controller.createReservation(
+          customerName: 'طارق',
+          customerPhone: '01122334455',
+          tableId: 'tbl-3',
+          tableNumber: 3,
+          guestCount: 2,
+          reservationTime: DateTime.now(),
+        );
 
-      final reservation = resRepo.reservations.first;
-      await controller.cancelReservation(reservation);
+        final reservation = resRepo.reservations.first;
+        await controller.cancelReservation(reservation);
 
-      expect(resRepo.reservations.first.status, ReservationStatus.cancelled);
+        expect(resRepo.reservations.first.status, ReservationStatus.cancelled);
 
-      final tables = container.read(tableControllerProvider);
-      final table = tables.firstWhere((t) => t.id == 'tbl-3');
-      expect(table.status, TableStatus.available);
-    });
+        final tables = container.read(tableControllerProvider);
+        final table = tables.firstWhere((t) => t.id == 'tbl-3');
+        expect(table.status, TableStatus.available);
+      },
+    );
   });
 }

@@ -32,53 +32,69 @@ void main() {
       expect(emittedEvents.first.payload['id'], 'ORD-1001');
     });
 
-    test('broadcastOrderStatusChanged emits orderStatusChanged event on stream', () async {
-      final emittedEvents = <RealtimeEvent>[];
-      final sub = service.events.listen(emittedEvents.add);
-      addTearDown(sub.cancel);
+    test(
+      'broadcastOrderStatusChanged emits orderStatusChanged event on stream',
+      () async {
+        final emittedEvents = <RealtimeEvent>[];
+        final sub = service.events.listen(emittedEvents.add);
+        addTearDown(sub.cancel);
 
-      await service.broadcastOrderStatusChanged('ORD-1002', 'preparing');
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        await service.broadcastOrderStatusChanged('ORD-1002', 'preparing');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(emittedEvents.length, 1);
-      expect(emittedEvents.first.type, RealtimeEventType.orderStatusChanged);
-      expect(emittedEvents.first.payload['id'], 'ORD-1002');
-      expect(emittedEvents.first.payload['status'], 'preparing');
-    });
+        expect(emittedEvents.length, 1);
+        expect(emittedEvents.first.type, RealtimeEventType.orderStatusChanged);
+        expect(emittedEvents.first.payload['id'], 'ORD-1002');
+        expect(emittedEvents.first.payload['status'], 'preparing');
+      },
+    );
 
-    test('broadcastTableStatusChanged emits tableStatusChanged event on stream', () async {
-      final emittedEvents = <RealtimeEvent>[];
-      final sub = service.events.listen(emittedEvents.add);
-      addTearDown(sub.cancel);
+    test(
+      'broadcastTableStatusChanged emits tableStatusChanged event on stream',
+      () async {
+        final emittedEvents = <RealtimeEvent>[];
+        final sub = service.events.listen(emittedEvents.add);
+        addTearDown(sub.cancel);
 
-      final tablePayload = {'id': 't1', 'status': 'occupied', 'tableNumber': 1};
-      await service.broadcastTableStatusChanged(tablePayload);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        final tablePayload = {
+          'id': 't1',
+          'status': 'occupied',
+          'tableNumber': 1,
+        };
+        await service.broadcastTableStatusChanged(tablePayload);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(emittedEvents.length, 1);
-      expect(emittedEvents.first.type, RealtimeEventType.tableStatusChanged);
-      expect(emittedEvents.first.payload['id'], 't1');
-      expect(emittedEvents.first.payload['status'], 'occupied');
-    });
+        expect(emittedEvents.length, 1);
+        expect(emittedEvents.first.type, RealtimeEventType.tableStatusChanged);
+        expect(emittedEvents.first.payload['id'], 't1');
+        expect(emittedEvents.first.payload['status'], 'occupied');
+      },
+    );
 
-    test('broadcastDriverLocation emits driverLocationUpdated event on stream', () async {
-      final emittedEvents = <RealtimeEvent>[];
-      final sub = service.events.listen(emittedEvents.add);
-      addTearDown(sub.cancel);
+    test(
+      'broadcastDriverLocation emits driverLocationUpdated event on stream',
+      () async {
+        final emittedEvents = <RealtimeEvent>[];
+        final sub = service.events.listen(emittedEvents.add);
+        addTearDown(sub.cancel);
 
-      await service.broadcastDriverLocation(
-        driverId: 'drv-1',
-        latitude: 30.0444,
-        longitude: 31.2357,
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        await service.broadcastDriverLocation(
+          driverId: 'drv-1',
+          latitude: 30.0444,
+          longitude: 31.2357,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(emittedEvents.length, 1);
-      expect(emittedEvents.first.type, RealtimeEventType.driverLocationUpdated);
-      expect(emittedEvents.first.payload['driverId'], 'drv-1');
-      expect(emittedEvents.first.payload['latitude'], 30.0444);
-      expect(emittedEvents.first.payload['longitude'], 31.2357);
-    });
+        expect(emittedEvents.length, 1);
+        expect(
+          emittedEvents.first.type,
+          RealtimeEventType.driverLocationUpdated,
+        );
+        expect(emittedEvents.first.payload['driverId'], 'drv-1');
+        expect(emittedEvents.first.payload['latitude'], 30.0444);
+        expect(emittedEvents.first.payload['longitude'], 31.2357);
+      },
+    );
 
     test('subscribe can be called safely without crashing', () {
       expect(() => service.subscribe(), returnsNormally);

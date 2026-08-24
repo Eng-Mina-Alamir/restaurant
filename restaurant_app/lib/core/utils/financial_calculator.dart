@@ -20,7 +20,10 @@ abstract final class FinancialCalculator {
   }
 
   /// Calculates VAT for [taxableAmount] at [rate] (default 15%), rounded to 2 decimals.
-  static double calculateVat(double taxableAmount, {double rate = defaultVatRate}) {
+  static double calculateVat(
+    double taxableAmount, {
+    double rate = defaultVatRate,
+  }) {
     if (taxableAmount <= 0) return 0.0;
     final rawVat = taxableAmount * rate;
     return roundCurrency(rawVat);

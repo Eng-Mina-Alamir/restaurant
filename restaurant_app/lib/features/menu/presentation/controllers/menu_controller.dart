@@ -113,7 +113,6 @@ class MenuController extends AsyncNotifier<Menu> {
   }
 }
 
-
 final menuControllerProvider = AsyncNotifierProvider<MenuController, Menu>(
   MenuController.new,
 );

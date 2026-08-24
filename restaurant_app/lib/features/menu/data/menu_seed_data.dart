@@ -37,9 +37,21 @@ abstract final class MenuSeedData {
           isRequired: false,
           maxSelection: 3,
           options: [
-            MenuModifierOption(id: 'opt-cheese', name: 'جبنة إضافية', extraPrice: 15.0),
-            MenuModifierOption(id: 'opt-bacon', name: 'لحم مقدد', extraPrice: 20.0),
-            MenuModifierOption(id: 'opt-fries', name: 'بطاطس مقلية فارم فريتس', extraPrice: 20.0),
+            MenuModifierOption(
+              id: 'opt-cheese',
+              name: 'جبنة إضافية',
+              extraPrice: 15.0,
+            ),
+            MenuModifierOption(
+              id: 'opt-bacon',
+              name: 'لحم مقدد',
+              extraPrice: 20.0,
+            ),
+            MenuModifierOption(
+              id: 'opt-fries',
+              name: 'بطاطس مقلية فارم فريتس',
+              extraPrice: 20.0,
+            ),
           ],
         ),
       ],
@@ -52,7 +64,8 @@ abstract final class MenuSeedData {
       id: 'item-koshary-royal',
       categoryId: 'طواجن وأطباق مصرية',
       name: 'كشري مصري ملكي بالدقة والتقلية',
-      description: 'أرز بالعدس الأصفر والبني، شعرية، مكرونة، حمص الشام، بصل مقرمش ذهبي، مع دقة الثوم والصلصة الحارة',
+      description:
+          'أرز بالعدس الأصفر والبني، شعرية، مكرونة، حمص الشام، بصل مقرمش ذهبي، مع دقة الثوم والصلصة الحارة',
       price: 45.0,
       isAvailable: true,
       isVegetarian: true,
@@ -68,7 +81,8 @@ abstract final class MenuSeedData {
       id: 'item-grill-mix',
       categoryId: 'مشويات ومأكولات شرقية',
       name: 'مشكل مشويات المحروسة (كباب وكفتة وطرب)',
-      description: 'كباب ضاني بلدي، كفتة مشوية على الفحم، وطرب متبل مع سلطة وطحينة وعيش بلدي سخن',
+      description:
+          'كباب ضاني بلدي، كفتة مشوية على الفحم، وطرب متبل مع سلطة وطحينة وعيش بلدي سخن',
       price: 240.0,
       isAvailable: true,
       isVegetarian: false,
@@ -82,9 +96,21 @@ abstract final class MenuSeedData {
           isRequired: false,
           maxSelection: 3,
           options: [
-            MenuModifierOption(id: 'opt-tahina', name: 'طحينة إضافية بالثوم', extraPrice: 15.0),
-            MenuModifierOption(id: 'opt-rice-basmati', name: 'أرز بسمتي بالمكسرات', extraPrice: 35.0),
-            MenuModifierOption(id: 'opt-mombaar', name: 'ممبار بلدي محمر (3 قطع)', extraPrice: 45.0),
+            MenuModifierOption(
+              id: 'opt-tahina',
+              name: 'طحينة إضافية بالثوم',
+              extraPrice: 15.0,
+            ),
+            MenuModifierOption(
+              id: 'opt-rice-basmati',
+              name: 'أرز بسمتي بالمكسرات',
+              extraPrice: 35.0,
+            ),
+            MenuModifierOption(
+              id: 'opt-mombaar',
+              name: 'ممبار بلدي محمر (3 قطع)',
+              extraPrice: 45.0,
+            ),
           ],
         ),
       ],
@@ -95,7 +121,8 @@ abstract final class MenuSeedData {
       id: 'item-hawawshi-baladi',
       categoryId: 'مشويات ومأكولات شرقية',
       name: 'حواوشي إسكندراني مخصوص بالجبنة',
-      description: 'عجين إسكندراني بلدي طازج محشي لحم مفروم بالخلطة السرية وفلفل وجبنة موزاريلا سايحة',
+      description:
+          'عجين إسكندراني بلدي طازج محشي لحم مفروم بالخلطة السرية وفلفل وجبنة موزاريلا سايحة',
       price: 65.0,
       isAvailable: true,
       isVegetarian: false,
@@ -109,8 +136,16 @@ abstract final class MenuSeedData {
           isRequired: true,
           maxSelection: 1,
           options: [
-            MenuModifierOption(id: 'opt-regular', name: 'عادي (بدون فلفل حار)', extraPrice: 0),
-            MenuModifierOption(id: 'opt-spicy', name: 'حراق ومولع 🔥', extraPrice: 0),
+            MenuModifierOption(
+              id: 'opt-regular',
+              name: 'عادي (بدون فلفل حار)',
+              extraPrice: 0,
+            ),
+            MenuModifierOption(
+              id: 'opt-spicy',
+              name: 'حراق ومولع 🔥',
+              extraPrice: 0,
+            ),
           ],
         ),
       ],
@@ -123,7 +158,8 @@ abstract final class MenuSeedData {
       id: 'item-tagine-bamia',
       categoryId: 'طواجن وأطباق مصرية',
       name: 'طاجن بامية باللحمة الضاني البلدي',
-      description: 'طاجن فخار بامية فلاحي طازجة مسبكة في الفرن مع قطع لحم ضاني ذايبة وليمون معصفر',
+      description:
+          'طاجن فخار بامية فلاحي طازجة مسبكة في الفرن مع قطع لحم ضاني ذايبة وليمون معصفر',
       price: 165.0,
       isAvailable: true,
       isVegetarian: false,
@@ -137,7 +173,8 @@ abstract final class MenuSeedData {
       id: 'item-molokhia-chicken',
       categoryId: 'طواجن وأطباق مصرية',
       name: 'ملوخية خضراء بالطشة مع نص دجاجة محمرة وأرز',
-      description: 'ملوخية طازجة مخروطة يدوي بطشة الثوم والكزبرة مع نصف دجاجة بلدي محمرة بالسمن البلدي وأرز بالشعرية',
+      description:
+          'ملوخية طازجة مخروطة يدوي بطشة الثوم والكزبرة مع نصف دجاجة بلدي محمرة بالسمن البلدي وأرز بالشعرية',
       price: 135.0,
       isAvailable: true,
       isVegetarian: false,
@@ -153,7 +190,8 @@ abstract final class MenuSeedData {
       id: 'item-kebda-alex',
       categoryId: 'شاورما وساندوتشات',
       name: 'ساندوتش كبدة إسكندراني أصلية بالفينو',
-      description: 'كبدة بلدي طازجة مشوحة بالثوم والفلفل الحار والليمون والكمون في عيش فينو طازج مع طحينة',
+      description:
+          'كبدة بلدي طازجة مشوحة بالثوم والفلفل الحار والليمون والكمون في عيش فينو طازج مع طحينة',
       price: 35.0,
       isAvailable: true,
       isVegetarian: false,
@@ -167,7 +205,8 @@ abstract final class MenuSeedData {
       id: 'item-shawarma-beef',
       categoryId: 'شاورما وساندوتشات',
       name: 'شاورما لحمة مصري على السيخ في عيش كيزر',
-      description: 'شرائح لحم بقري متبل بالخل والبهارات المصرية، بقدونس، طماطم، بصل سماق وصوص طحينة سميك',
+      description:
+          'شرائح لحم بقري متبل بالخل والبهارات المصرية، بقدونس، طماطم، بصل سماق وصوص طحينة سميك',
       price: 48.0,
       isAvailable: true,
       isVegetarian: false,
@@ -199,7 +238,11 @@ abstract final class MenuSeedData {
           options: [
             MenuModifierOption(id: 'opt-mild', name: 'خفيف', extraPrice: 0),
             MenuModifierOption(id: 'opt-hot', name: 'حار', extraPrice: 5.0),
-            MenuModifierOption(id: 'opt-extra-hot', name: 'حار جداً', extraPrice: 10.0),
+            MenuModifierOption(
+              id: 'opt-extra-hot',
+              name: 'حار جداً',
+              extraPrice: 10.0,
+            ),
           ],
         ),
       ],
@@ -242,7 +285,11 @@ abstract final class MenuSeedData {
           options: [
             MenuModifierOption(id: 'opt-medium', name: 'وسط', extraPrice: 0),
             MenuModifierOption(id: 'opt-large', name: 'كبير', extraPrice: 35.0),
-            MenuModifierOption(id: 'opt-family', name: 'عائلي سوبر', extraPrice: 65.0),
+            MenuModifierOption(
+              id: 'opt-family',
+              name: 'عائلي سوبر',
+              extraPrice: 65.0,
+            ),
           ],
         ),
       ],
@@ -281,7 +328,11 @@ abstract final class MenuSeedData {
           maxSelection: 1,
           options: [
             MenuModifierOption(id: 'opt-size-med', name: 'وسط', extraPrice: 0),
-            MenuModifierOption(id: 'opt-size-large', name: 'كبير', extraPrice: 30.0),
+            MenuModifierOption(
+              id: 'opt-size-large',
+              name: 'كبير',
+              extraPrice: 30.0,
+            ),
           ],
         ),
       ],
@@ -352,7 +403,8 @@ abstract final class MenuSeedData {
       id: 'item-dessert-om-ali',
       categoryId: 'حلويات',
       name: 'طاجن أم علي بالمكسرات والقشطة البلدي',
-      description: 'رقاق بالحليب الساخن والمكسرات الفاخرة والقشطة البلدي المحمرة في الفرن',
+      description:
+          'رقاق بالحليب الساخن والمكسرات الفاخرة والقشطة البلدي المحمرة في الفرن',
       price: 55.0,
       isAvailable: true,
       isVegetarian: true,

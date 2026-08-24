@@ -68,7 +68,11 @@ void main() {
     test('parses driverLocationUpdated event', () {
       final raw = jsonEncode({
         'type': 'driver_location_updated',
-        'data': {'driverId': 'drv-1', 'latitude': 24.7136, 'longitude': 46.6753},
+        'data': {
+          'driverId': 'drv-1',
+          'latitude': 24.7136,
+          'longitude': 46.6753,
+        },
       });
 
       final event = RealtimeEvent.fromRaw(raw);
@@ -105,26 +109,33 @@ void main() {
       service.disconnect();
     });
 
-    test('send loops back event to events stream in offline/demo mode', () async {
-      expectLater(
-        service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.orderCreated &&
-              event.payload['id'] == 'ORD-999';
-        })),
-      );
+    test(
+      'send loops back event to events stream in offline/demo mode',
+      () async {
+        expectLater(
+          service.events,
+          emits(
+            predicate<RealtimeEvent>((event) {
+              return event.type == RealtimeEventType.orderCreated &&
+                  event.payload['id'] == 'ORD-999';
+            }),
+          ),
+        );
 
-      service.broadcastOrderCreated({'id': 'ORD-999', 'subtotal': 50.0});
-    });
+        service.broadcastOrderCreated({'id': 'ORD-999', 'subtotal': 50.0});
+      },
+    );
 
     test('broadcastOrderStatusChanged emits correct event', () async {
       expectLater(
         service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.orderStatusChanged &&
-              event.payload['orderId'] == 'ORD-100' &&
-              event.payload['status'] == 'ready';
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.orderStatusChanged &&
+                event.payload['orderId'] == 'ORD-100' &&
+                event.payload['status'] == 'ready';
+          }),
+        ),
       );
 
       service.broadcastOrderStatusChanged('ORD-100', 'ready');
@@ -134,12 +145,14 @@ void main() {
       final at = DateTime.parse('2026-01-01T10:00:00.000');
       expectLater(
         service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.orderReadyForPickup &&
-              event.payload['orderId'] == 'ORD-200' &&
-              event.payload['tableId'] == '7' &&
-              event.payload['updatedAt'] == at.toIso8601String();
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.orderReadyForPickup &&
+                event.payload['orderId'] == 'ORD-200' &&
+                event.payload['tableId'] == '7' &&
+                event.payload['updatedAt'] == at.toIso8601String();
+          }),
+        ),
       );
 
       service.broadcastOrderReadyForPickup(
@@ -152,10 +165,12 @@ void main() {
     test('broadcastOrderReadyForPickup omits tableId when absent', () async {
       expectLater(
         service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.orderReadyForPickup &&
-              event.payload.containsKey('tableId') == false;
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.orderReadyForPickup &&
+                event.payload.containsKey('tableId') == false;
+          }),
+        ),
       );
 
       service.broadcastOrderReadyForPickup('ORD-201');
@@ -164,23 +179,30 @@ void main() {
     test('broadcastTableStatusChanged emits correct event', () async {
       expectLater(
         service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.tableStatusChanged &&
-              event.payload['id'] == 'tbl-5';
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.tableStatusChanged &&
+                event.payload['id'] == 'tbl-5';
+          }),
+        ),
       );
 
-      service.broadcastTableStatusChanged({'id': 'tbl-5', 'status': 'available'});
+      service.broadcastTableStatusChanged({
+        'id': 'tbl-5',
+        'status': 'available',
+      });
     });
 
     test('broadcastDriverLocation emits correct event', () async {
       expectLater(
         service.events,
-        emits(predicate<RealtimeEvent>((event) {
-          return event.type == RealtimeEventType.driverLocationUpdated &&
-              event.payload['driverId'] == 'drv-42' &&
-              event.payload['latitude'] == 24.7;
-        })),
+        emits(
+          predicate<RealtimeEvent>((event) {
+            return event.type == RealtimeEventType.driverLocationUpdated &&
+                event.payload['driverId'] == 'drv-42' &&
+                event.payload['latitude'] == 24.7;
+          }),
+        ),
       );
 
       service.broadcastDriverLocation(
@@ -192,25 +214,27 @@ void main() {
   });
 
   group('RealtimeService Disposal Tests', () {
-    test('events after disconnect emits done and never resurrects controller',
-        () async {
-      final service = RealtimeService(wsUrl: 'ws://localhost:9999/ws');
-      expect(service.debugHasLiveController, isFalse);
+    test(
+      'events after disconnect emits done and never resurrects controller',
+      () async {
+        final service = RealtimeService(wsUrl: 'ws://localhost:9999/ws');
+        expect(service.debugHasLiveController, isFalse);
 
-      service.disconnect();
+        service.disconnect();
 
-      // Late subscription must not throw and must simply close immediately.
-      await expectLater(service.events, emitsDone);
-      await expectLater(service.events, emitsDone);
+        // Late subscription must not throw and must simply close immediately.
+        await expectLater(service.events, emitsDone);
+        await expectLater(service.events, emitsDone);
 
-      // Accessing .events post-dispose must not lazily create a fresh
-      // (leaked) broadcast controller.
-      expect(
-        service.debugHasLiveController,
-        isFalse,
-        reason: '.events resurrected a broadcast controller after disposal',
-      );
-    });
+        // Accessing .events post-dispose must not lazily create a fresh
+        // (leaked) broadcast controller.
+        expect(
+          service.debugHasLiveController,
+          isFalse,
+          reason: '.events resurrected a broadcast controller after disposal',
+        );
+      },
+    );
 
     test('events after disconnecting a previously-active service also stays '
         'dead', () async {
@@ -235,8 +259,10 @@ void main() {
 
       // Loop-back target (controller) is closed; send must swallow the
       // StateError via its catch block instead of throwing into teardown.
-      expect(() => service.broadcastOrderStatusChanged('ORD-1', 'ready'),
-          returnsNormally);
+      expect(
+        () => service.broadcastOrderStatusChanged('ORD-1', 'ready'),
+        returnsNormally,
+      );
     });
   });
 
@@ -256,27 +282,30 @@ void main() {
       service.disconnect();
     });
 
-    test('order broadcast on dead socket warns with orderId and drops message',
-        () {
-      final warnings =
-          captureWarnings(() => service.broadcastOrderStatusChanged(
-                'ORD-777',
-                'ready',
-              ));
+    test(
+      'order broadcast on dead socket warns with orderId and drops message',
+      () {
+        final warnings = captureWarnings(
+          () => service.broadcastOrderStatusChanged('ORD-777', 'ready'),
+        );
 
-      expect(warnings, hasLength(1));
-      expect(warnings.single,
-          contains('[Dispatch] outcome=broadcast-dropped reason=socket-dead'));
-      expect(warnings.single, contains('orderId=ORD-777'));
+        expect(warnings, hasLength(1));
+        expect(
+          warnings.single,
+          contains('[Dispatch] outcome=broadcast-dropped reason=socket-dead'),
+        );
+        expect(warnings.single, contains('orderId=ORD-777'));
 
-      // The dead sink never receives the message – it was dropped, not
-      // silently buffered into a closed socket.
-      expect(channel.testSink.added, isEmpty);
-    });
+        // The dead sink never receives the message – it was dropped, not
+        // silently buffered into a closed socket.
+        expect(channel.testSink.added, isEmpty);
+      },
+    );
 
     test('orderCreated payload falls back to id for orderId tag', () {
       final warnings = captureWarnings(
-          () => service.broadcastOrderCreated({'id': 'ORD-888'}));
+        () => service.broadcastOrderCreated({'id': 'ORD-888'}),
+      );
 
       expect(warnings, hasLength(1));
       expect(warnings.single, contains('orderId=ORD-888'));
@@ -284,8 +313,12 @@ void main() {
     });
 
     test('non-order broadcast on dead socket uses generic tag', () {
-      final warnings = captureWarnings(() => service.broadcastTableStatusChanged(
-          {'id': 'tbl-5', 'status': 'occupied'}));
+      final warnings = captureWarnings(
+        () => service.broadcastTableStatusChanged({
+          'id': 'tbl-5',
+          'status': 'occupied',
+        }),
+      );
 
       expect(warnings, hasLength(1));
       expect(warnings.single, contains('RealtimeService: Broadcast dropped'));
@@ -295,8 +328,9 @@ void main() {
     });
 
     test('unparseable payload still drops with warning and never throws', () {
-      final warnings =
-          captureWarnings(() => service.send('this is not json { ['));
+      final warnings = captureWarnings(
+        () => service.send('this is not json { ['),
+      );
       expect(warnings, hasLength(1));
       expect(warnings.single, contains('Broadcast dropped'));
       expect(channel.testSink.added, isEmpty);
@@ -306,11 +340,9 @@ void main() {
       final liveChannel = _FakeChannel(closeCode: null);
       service.debugChannelForTest = liveChannel;
 
-      final warnings =
-          captureWarnings(() => service.broadcastOrderStatusChanged(
-                'ORD-100',
-                'ready',
-              ));
+      final warnings = captureWarnings(
+        () => service.broadcastOrderStatusChanged('ORD-100', 'ready'),
+      );
 
       expect(warnings, isEmpty);
       expect(liveChannel.testSink.added, hasLength(1));

@@ -5,14 +5,11 @@ import 'package:restaurant_app/features/onboarding/presentation/pages/onboarding
 
 void main() {
   group('OnboardingPage Tests', () {
-    testWidgets('renders first onboarding slide and advances to next slide',
-        (tester) async {
+    testWidgets('renders first onboarding slide and advances to next slide', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: OnboardingPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: OnboardingPage())),
       );
 
       // Verify first slide title

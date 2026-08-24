@@ -33,7 +33,11 @@ void main() {
             menuItem: burger,
             quantity: 2,
             selectedModifiers: const [
-              MenuModifierOption(id: 'mod-1', name: 'Extra Cheese', extraPrice: 5.0),
+              MenuModifierOption(
+                id: 'mod-1',
+                name: 'Extra Cheese',
+                extraPrice: 5.0,
+              ),
             ],
             specialNotes: 'No onions please',
             addedAt: DateTime(2026, 8, 19, 14, 30),
@@ -47,7 +51,10 @@ void main() {
     });
 
     test('generateTicketText formats order details, modifiers, and notes', () {
-      final text = printerService.generateTicketText(dummyOrder, tableDisplay: '5');
+      final text = printerService.generateTicketText(
+        dummyOrder,
+        tableDisplay: '5',
+      );
 
       expect(text, contains('مطعم الأصالة والنكهة'));
       expect(text, contains('Kitchen Ticket'));
@@ -71,7 +78,10 @@ void main() {
     });
 
     test('generateEscPosBytes creates valid ESC/POS byte sequence', () {
-      final bytes = printerService.generateEscPosBytes(dummyOrder, tableDisplay: '5');
+      final bytes = printerService.generateEscPosBytes(
+        dummyOrder,
+        tableDisplay: '5',
+      );
 
       expect(bytes, isNotEmpty);
       expect(bytes[0], 0x1B);
@@ -80,7 +90,10 @@ void main() {
     });
 
     test('printKitchenTicket completes simulated hardware handshake', () async {
-      final result = await printerService.printKitchenTicket(dummyOrder, tableDisplay: '5');
+      final result = await printerService.printKitchenTicket(
+        dummyOrder,
+        tableDisplay: '5',
+      );
       expect(result, isTrue);
     });
   });

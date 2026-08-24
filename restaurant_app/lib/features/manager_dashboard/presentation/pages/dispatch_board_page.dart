@@ -49,8 +49,7 @@ class DispatchBoardPage extends ConsumerWidget {
           ),
         ),
         data: (board) => RefreshIndicator(
-          onRefresh:
-              ref.read(dispatchControllerProvider.notifier).refresh,
+          onRefresh: ref.read(dispatchControllerProvider.notifier).refresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -98,7 +97,6 @@ class DispatchBoardPage extends ConsumerWidget {
                       board.failedAssignments.isNotEmpty)) ...[
                 const SizedBox(height: AppSpacing.lg),
                 const _ErrorBanner(message: 'لا يوجد سائقون متاحون حالياً'),
-
               ],
             ],
           ),
@@ -142,8 +140,10 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            Icon(Icons.inbox_outlined,
-                color: Theme.of(context).colorScheme.outline),
+            Icon(
+              Icons.inbox_outlined,
+              color: Theme.of(context).colorScheme.outline,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(child: Text(text)),
           ],
@@ -174,8 +174,10 @@ class _ErrorBanner extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Row(
             children: [
-              Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.onErrorContainer),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -220,8 +222,7 @@ class _OrderDispatchCard extends ConsumerWidget {
                 shrinkWrap: true,
                 children: [
                   Padding(
-                    padding:
-                        const EdgeInsets.all(AppSpacing.sm),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     child: Text(
                       'اختر سائقاً',
                       style: Theme.of(sheetContext).textTheme.titleMedium,
@@ -233,8 +234,11 @@ class _OrderDispatchCard extends ConsumerWidget {
                       title: Text(driver.name),
                       subtitle: Row(
                         children: [
-                          const Icon(Icons.star_rounded,
-                              size: 16, color: Colors.amber),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
                           const SizedBox(width: AppSpacing.xs),
                           Text(driver.rating.toStringAsFixed(1)),
                         ],
@@ -262,8 +266,9 @@ class _OrderDispatchCard extends ConsumerWidget {
         content: Text(
           ok ? 'تم تعيين السائق بنجاح' : 'فشل تعيين السائق، حاول مرة أخرى',
         ),
-        backgroundColor:
-            ok ? Colors.green.shade700 : Theme.of(context).colorScheme.error,
+        backgroundColor: ok
+            ? Colors.green.shade700
+            : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -297,8 +302,11 @@ class _OrderDispatchCard extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xs),
             Row(
               children: [
-                Icon(Icons.place_outlined,
-                    size: 16, color: Theme.of(context).colorScheme.outline),
+                Icon(
+                  Icons.place_outlined,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
@@ -315,8 +323,11 @@ class _OrderDispatchCard extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded,
-                      size: 16, color: Colors.orange.shade800),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: Colors.orange.shade800,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(

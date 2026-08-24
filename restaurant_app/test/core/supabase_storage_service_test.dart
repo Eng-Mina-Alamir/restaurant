@@ -18,16 +18,19 @@ void main() {
       expect(storageService, isNotNull);
     });
 
-    test('handles upload delivery proof image failure gracefully without throwing uncaught error', () async {
-      final fakeBytes = Uint8List.fromList([0, 1, 2, 3]);
-      final result = await storageService.uploadDeliveryProof(
-        orderId: 'ORD-999',
-        bytes: fakeBytes,
-      );
+    test(
+      'handles upload delivery proof image failure gracefully without throwing uncaught error',
+      () async {
+        final fakeBytes = Uint8List.fromList([0, 1, 2, 3]);
+        final result = await storageService.uploadDeliveryProof(
+          orderId: 'ORD-999',
+          bytes: fakeBytes,
+        );
 
-      // In offline/mocked unit test environment, network upload fails gracefully and returns null
-      expect(result, isNull);
-    });
+        // In offline/mocked unit test environment, network upload fails gracefully and returns null
+        expect(result, isNull);
+      },
+    );
 
     test('handles upload menu item image failure gracefully', () async {
       final fakeBytes = Uint8List.fromList([4, 5, 6, 7]);

@@ -19,7 +19,9 @@ void main() {
       expect(client.dio.options.receiveTimeout, const Duration(seconds: 30));
       expect(client.dio.options.contentType, Headers.jsonContentType);
 
-      final hasAuthInterceptor = client.dio.interceptors.any((i) => i is AuthInterceptor);
+      final hasAuthInterceptor = client.dio.interceptors.any(
+        (i) => i is AuthInterceptor,
+      );
       expect(hasAuthInterceptor, isTrue);
     });
   });

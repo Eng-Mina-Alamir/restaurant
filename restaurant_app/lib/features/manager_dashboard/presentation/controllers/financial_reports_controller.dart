@@ -39,12 +39,12 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
   final List<OrderEntity> _orders;
 
   FinancialReportsController(this._orders)
-      : super(
-          FinancialReportsState(
-            selectedPeriod: FinancialPeriod.allTime,
-            metrics: _computeMetrics(_orders, FinancialPeriod.allTime),
-          ),
-        );
+    : super(
+        FinancialReportsState(
+          selectedPeriod: FinancialPeriod.allTime,
+          metrics: _computeMetrics(_orders, FinancialPeriod.allTime),
+        ),
+      );
 
   void setPeriod(FinancialPeriod period) {
     state = state.copyWith(
@@ -71,10 +71,12 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
       return true;
     }).toList();
 
-    final completed =
-        filtered.where((o) => o.status == OrderStatus.completed).toList();
-    final cancelled =
-        filtered.where((o) => o.status == OrderStatus.cancelled).toList();
+    final completed = filtered
+        .where((o) => o.status == OrderStatus.completed)
+        .toList();
+    final cancelled = filtered
+        .where((o) => o.status == OrderStatus.cancelled)
+        .toList();
 
     final grossRevenue = completed.fold<double>(
       0.0,
@@ -90,12 +92,13 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
     final grossMargin = grossRevenue - cogs;
     final netProfit = grossMargin - operatingCosts;
 
-    final grossMarginPct =
-        grossRevenue > 0 ? (grossMargin / grossRevenue) * 100 : 0.0;
-    final netMarginPct =
-        grossRevenue > 0 ? (netProfit / grossRevenue) * 100 : 0.0;
-    final aov =
-        completed.isNotEmpty ? grossRevenue / completed.length : 0.0;
+    final grossMarginPct = grossRevenue > 0
+        ? (grossMargin / grossRevenue) * 100
+        : 0.0;
+    final netMarginPct = grossRevenue > 0
+        ? (netProfit / grossRevenue) * 100
+        : 0.0;
+    final aov = completed.isNotEmpty ? grossRevenue / completed.length : 0.0;
 
     // Payment methods breakdown
     final payments = <String, double>{
@@ -108,13 +111,17 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
     for (final order in completed) {
       final method = order.paymentMethod?.name ?? 'cash';
       if (method.contains('cash')) {
-        payments['نقدي (Cash)'] = (payments['نقدي (Cash)'] ?? 0) + order.totalAmount;
+        payments['نقدي (Cash)'] =
+            (payments['نقدي (Cash)'] ?? 0) + order.totalAmount;
       } else if (method.contains('card') || method.contains('mada')) {
-        payments['بطاقة / مدى (Card)'] = (payments['بطاقة / مدى (Card)'] ?? 0) + order.totalAmount;
+        payments['بطاقة / مدى (Card)'] =
+            (payments['بطاقة / مدى (Card)'] ?? 0) + order.totalAmount;
       } else if (method.contains('apple')) {
-        payments['أبل باي (Apple Pay)'] = (payments['أبل باي (Apple Pay)'] ?? 0) + order.totalAmount;
+        payments['أبل باي (Apple Pay)'] =
+            (payments['أبل باي (Apple Pay)'] ?? 0) + order.totalAmount;
       } else {
-        payments['أخرى / نقاط'] = (payments['أخرى / نقاط'] ?? 0) + order.totalAmount;
+        payments['أخرى / نقاط'] =
+            (payments['أخرى / نقاط'] ?? 0) + order.totalAmount;
       }
     }
 
@@ -124,7 +131,10 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
       for (final line in order.items) {
         final name = line.menuItem.name;
         final price = line.lineTotal;
-        final acc = itemSales.putIfAbsent(name, () => _ItemSaleAccumulator(name));
+        final acc = itemSales.putIfAbsent(
+          name,
+          () => _ItemSaleAccumulator(name),
+        );
         acc.units += line.quantity;
         acc.totalRevenue += price;
       }
@@ -133,7 +143,9 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
     final topItems = itemSales.values.map((acc) {
       final cost = acc.totalRevenue * 0.28; // Estimated cost per item
       final profit = acc.totalRevenue - cost;
-      final margin = acc.totalRevenue > 0 ? (profit / acc.totalRevenue) * 100 : 0.0;
+      final margin = acc.totalRevenue > 0
+          ? (profit / acc.totalRevenue) * 100
+          : 0.0;
       return ItemProfitability(
         itemName: acc.name,
         unitsSold: acc.units,
@@ -142,8 +154,7 @@ class FinancialReportsController extends StateNotifier<FinancialReportsState> {
         profit: profit,
         marginPercent: margin,
       );
-    }).toList()
-      ..sort((a, b) => b.revenue.compareTo(a.revenue));
+    }).toList()..sort((a, b) => b.revenue.compareTo(a.revenue));
 
     return FinancialReportMetrics(
       grossRevenue: grossRevenue,
@@ -170,7 +181,9 @@ class _ItemSaleAccumulator {
 }
 
 final financialReportsControllerProvider =
-    StateNotifierProvider<FinancialReportsController, FinancialReportsState>((ref) {
-  final orders = ref.watch(ordersControllerProvider);
-  return FinancialReportsController(orders);
-});
+    StateNotifierProvider<FinancialReportsController, FinancialReportsState>((
+      ref,
+    ) {
+      final orders = ref.watch(ordersControllerProvider);
+      return FinancialReportsController(orders);
+    });

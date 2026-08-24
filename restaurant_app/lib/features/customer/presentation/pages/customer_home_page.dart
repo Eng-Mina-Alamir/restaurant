@@ -54,9 +54,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const QrScanPage(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const QrScanPage()),
                   );
                 },
               );

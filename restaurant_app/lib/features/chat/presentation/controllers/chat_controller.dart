@@ -18,9 +18,7 @@ import '../../domain/repositories/chat_repository.dart';
 /// for demo mode / tests (same gate pattern as `deliveryRepositoryProvider`).
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   if (AppConfig.useSupabase) {
-    return SupabaseChatRepository(
-      supabase: ref.watch(supabaseClientProvider),
-    );
+    return SupabaseChatRepository(supabase: ref.watch(supabaseClientProvider));
   }
   return InMemoryChatRepository();
 });
@@ -64,7 +62,9 @@ class ChatController extends StateNotifier<AsyncValue<List<ChatMessage>>> {
     final orderId = _orderId;
     if (orderId == null) return;
     unawaited(_subscription?.cancel());
-    _subscription = _repository.watch(orderId).listen(
+    _subscription = _repository
+        .watch(orderId)
+        .listen(
           (messages) => state = AsyncData(_sortedOldestFirst(messages)),
           onError: (Object error, StackTrace stackTrace) {
             state = AsyncError(error, stackTrace);
@@ -135,7 +135,7 @@ class ChatController extends StateNotifier<AsyncValue<List<ChatMessage>>> {
 
 /// Provider for the conversation of one order (auto-dispose: lives only while
 /// a chat page watches it).
-final chatControllerProvider = StateNotifierProvider.autoDispose.family<
-    ChatController, AsyncValue<List<ChatMessage>>, String>(
-  (ref, orderId) => ChatController(ref.watch(chatRepositoryProvider)),
-);
+final chatControllerProvider = StateNotifierProvider.autoDispose
+    .family<ChatController, AsyncValue<List<ChatMessage>>, String>(
+      (ref, orderId) => ChatController(ref.watch(chatRepositoryProvider)),
+    );

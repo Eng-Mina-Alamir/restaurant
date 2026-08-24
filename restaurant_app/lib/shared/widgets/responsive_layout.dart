@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Screen type categorization for responsive UI.
-enum ScreenType {
-  mobile,
-  tablet,
-  desktop,
-}
+enum ScreenType { mobile, tablet, desktop }
 
 /// Breakpoints standard used across the restaurant application.
 abstract final class AppBreakpoints {
@@ -34,7 +30,11 @@ abstract final class AppBreakpoints {
       of(context) != ScreenType.mobile;
 
   /// Optimal column count for grid views based on screen width.
-  static int gridColumnsForWidth(double width, {int minColumns = 2, int maxColumns = 6}) {
+  static int gridColumnsForWidth(
+    double width, {
+    int minColumns = 2,
+    int maxColumns = 6,
+  }) {
     if (width < 600) return minColumns;
     if (width < 900) return (minColumns + 1).clamp(minColumns, maxColumns);
     if (width < 1200) return (minColumns + 2).clamp(minColumns, maxColumns);
@@ -74,16 +74,14 @@ class ResponsiveLayout extends StatelessWidget {
 
 /// A builder providing the current [ScreenType] and [BoxConstraints].
 class ResponsiveBuilder extends StatelessWidget {
-  const ResponsiveBuilder({
-    super.key,
-    required this.builder,
-  });
+  const ResponsiveBuilder({super.key, required this.builder});
 
   final Widget Function(
     BuildContext context,
     ScreenType screenType,
     BoxConstraints constraints,
-  ) builder;
+  )
+  builder;
 
   @override
   Widget build(BuildContext context) {
@@ -92,8 +90,8 @@ class ResponsiveBuilder extends StatelessWidget {
         final screenType = constraints.maxWidth > AppBreakpoints.tabletMax
             ? ScreenType.desktop
             : constraints.maxWidth >= AppBreakpoints.mobileMax
-                ? ScreenType.tablet
-                : ScreenType.mobile;
+            ? ScreenType.tablet
+            : ScreenType.mobile;
         return builder(context, screenType, constraints);
       },
     );

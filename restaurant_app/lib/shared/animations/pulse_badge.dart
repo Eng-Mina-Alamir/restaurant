@@ -30,18 +30,18 @@ class _PulseBadgeState extends State<PulseBadge>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: widget.maxScale).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: widget.maxScale,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
 
-    _opacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad),
-    );
+    _opacityAnimation = Tween<double>(
+      begin: 0.6,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad));
   }
 
   @override
@@ -56,10 +56,7 @@ class _PulseBadgeState extends State<PulseBadge>
       return Container(
         width: widget.size,
         height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: widget.color,
-        ),
+        decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
         child: widget.child,
       );
     }
@@ -77,7 +74,9 @@ class _PulseBadgeState extends State<PulseBadge>
                 height: widget.size,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: widget.color.withValues(alpha: _opacityAnimation.value),
+                  color: widget.color.withValues(
+                    alpha: _opacityAnimation.value,
+                  ),
                 ),
               ),
             );

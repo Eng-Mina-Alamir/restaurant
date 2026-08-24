@@ -44,9 +44,11 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
 
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final base = widget.baseColor ??
+    final base =
+        widget.baseColor ??
         (isDark ? Colors.grey.shade800 : Colors.grey.shade300);
-    final highlight = widget.highlightColor ??
+    final highlight =
+        widget.highlightColor ??
         (isDark ? Colors.grey.shade700 : Colors.grey.shade100);
 
     return AnimatedBuilder(
@@ -60,8 +62,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
               stops: const [0.1, 0.5, 0.9],
               begin: const Alignment(-1.0, -0.3),
               end: const Alignment(1.0, 0.3),
-              transform:
-                  _SlidingGradientTransform(slidePercent: _controller.value),
+              transform: _SlidingGradientTransform(
+                slidePercent: _controller.value,
+              ),
             ).createShader(bounds);
           },
           child: child,
@@ -117,10 +120,7 @@ class SkeletonBox extends StatelessWidget {
 
 /// Circular Skeleton placeholder with shimmer.
 class SkeletonCircle extends StatelessWidget {
-  const SkeletonCircle({
-    super.key,
-    required this.size,
-  });
+  const SkeletonCircle({super.key, required this.size});
 
   final double size;
 

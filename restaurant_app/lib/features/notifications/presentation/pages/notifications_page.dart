@@ -93,12 +93,15 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                         color: isUnread
-                            ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+                            ? colorScheme.primaryContainer.withValues(
+                                alpha: 0.35,
+                              )
                             : null,
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _categoryColor(item.category)
-                                .withValues(alpha: 0.15),
+                            backgroundColor: _categoryColor(
+                              item.category,
+                            ).withValues(alpha: 0.15),
                             child: Icon(
                               _categoryIcon(item.category),
                               color: _categoryColor(item.category),
@@ -107,7 +110,9 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                           title: Text(
                             item.title,
                             style: TextStyle(
-                              fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                              fontWeight: isUnread
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                             ),
                           ),
                           subtitle: Column(

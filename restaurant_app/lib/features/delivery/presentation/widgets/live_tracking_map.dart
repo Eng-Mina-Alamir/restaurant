@@ -192,18 +192,19 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
       _updateMapOverlays();
       _calculateAndDrawRoute();
 
-      _locationSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 10,
-        ),
-      ).listen((p) {
-        if (!mounted) return;
-        final latlng = LatLng(p.latitude, p.longitude);
-        setState(() => _driverPosition = latlng);
-        widget.onLocationUpdate?.call(latlng);
-        _updateMapOverlays();
-      });
+      _locationSub =
+          Geolocator.getPositionStream(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              distanceFilter: 10,
+            ),
+          ).listen((p) {
+            if (!mounted) return;
+            final latlng = LatLng(p.latitude, p.longitude);
+            setState(() => _driverPosition = latlng);
+            widget.onLocationUpdate?.call(latlng);
+            _updateMapOverlays();
+          });
     } catch (_) {
       if (!mounted) return;
       setState(() => _locationPermitted = true);
@@ -215,16 +216,15 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
     if (!mounted) return;
     setState(() => _isCalculatingRoute = true);
 
-    final startPoint =
-        _driverPosition != null
-            ? MhjMapsLatLng(
-              lat: _driverPosition!.latitude,
-              lng: _driverPosition!.longitude,
-            )
-            : MhjMapsLatLng(
-              lat: widget.pickupLatLng.latitude,
-              lng: widget.pickupLatLng.longitude,
-            );
+    final startPoint = _driverPosition != null
+        ? MhjMapsLatLng(
+            lat: _driverPosition!.latitude,
+            lng: _driverPosition!.longitude,
+          )
+        : MhjMapsLatLng(
+            lat: widget.pickupLatLng.latitude,
+            lng: widget.pickupLatLng.longitude,
+          );
 
     final endPoint = MhjMapsLatLng(
       lat: widget.deliveryLatLng.latitude,
@@ -274,9 +274,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
           lng: widget.pickupLatLng.longitude,
         ),
         radiusMeters: widget.deliveryRadiusMeters,
-        color: Theme.of(
-          context,
-        ).colorScheme.primary.withValues(alpha: 0.15),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
         borderColor: Theme.of(context).colorScheme.primary,
         borderWidth: 2,
       );
@@ -284,10 +282,9 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
 
     // 2. Calculated Route Polyline
     if (_currentPolyline.isNotEmpty) {
-      final routeColor =
-          _currentTheme.theme.isDark
-              ? const Color(0xFF00FF94)
-              : Theme.of(context).colorScheme.primary;
+      final routeColor = _currentTheme.theme.isDark
+          ? const Color(0xFF00FF94)
+          : Theme.of(context).colorScheme.primary;
 
       ctrl.drawRoute(
         _currentPolyline,
@@ -374,58 +371,55 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => Container(
-            decoration: BoxDecoration(
-              color: Theme.of(ctx).scaffoldBackgroundColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-            ),
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'اختر مظهر ونوع الخريطة',
-                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
+                Text(
+                  'اختر مظهر ونوع الخريطة',
+                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final opt in AppMapThemeOption.values)
-                      ChoiceChip(
-                        avatar: Icon(opt.icon, size: 16),
-                        label: Text(opt.labelAr),
-                        selected: _currentTheme == opt,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() => _currentTheme = opt);
-                            Navigator.pop(ctx);
-                            _updateMapOverlays();
-                          }
-                        },
-                      ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
                 ),
-                const SizedBox(height: AppSpacing.md),
               ],
             ),
-          ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final opt in AppMapThemeOption.values)
+                  ChoiceChip(
+                    avatar: Icon(opt.icon, size: 16),
+                    label: Text(opt.labelAr),
+                    selected: _currentTheme == opt,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _currentTheme = opt);
+                        Navigator.pop(ctx);
+                        _updateMapOverlays();
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
     );
   }
 
@@ -538,15 +532,13 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
                   // Delivery Zone Radius Toggle
                   _MapToolButton(
                     heroTag: 'mhj_radius_toggle_${widget.hashCode}',
-                    icon:
-                        _showRadiusCircle
-                            ? Icons.radar
-                            : Icons.radar_outlined,
+                    icon: _showRadiusCircle
+                        ? Icons.radar
+                        : Icons.radar_outlined,
                     tooltip: 'نطاق التوصيل الجغرافي',
-                    color:
-                        _showRadiusCircle
-                            ? colorScheme.primaryContainer
-                            : null,
+                    color: _showRadiusCircle
+                        ? colorScheme.primaryContainer
+                        : null,
                     onPressed: () {
                       setState(() => _showRadiusCircle = !_showRadiusCircle);
                       _updateMapOverlays();
@@ -686,96 +678,89 @@ class _NavigationHudCard extends StatelessWidget {
                     ),
                   ),
                   onSelected: onModeChanged,
-                  itemBuilder:
-                      (ctx) => [
-                        for (final mode in RoutingMode.values)
-                          PopupMenuItem(
-                            value: mode,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  mode.icon,
-                                  size: 18,
-                                  color:
-                                      mode == routingMode
-                                          ? colorScheme.primary
-                                          : null,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  mode.labelAr,
-                                  style: TextStyle(
-                                    fontWeight:
-                                        mode == routingMode
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                  ),
-                                ),
-                              ],
+                  itemBuilder: (ctx) => [
+                    for (final mode in RoutingMode.values)
+                      PopupMenuItem(
+                        value: mode,
+                        child: Row(
+                          children: [
+                            Icon(
+                              mode.icon,
+                              size: 18,
+                              color: mode == routingMode
+                                  ? colorScheme.primary
+                                  : null,
                             ),
-                          ),
-                      ],
+                            const SizedBox(width: 8),
+                            Text(
+                              mode.labelAr,
+                              style: TextStyle(
+                                fontWeight: mode == routingMode
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 4),
 
                 // ETA & Distance Information
                 Expanded(
-                  child:
-                      isCalculating
-                          ? Row(
-                            children: [
-                              const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                  child: isCalculating
+                      ? Row(
+                          children: [
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'جارٍ حساب أدق مسار...',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  routeResult?.durationText.isNotEmpty == true
+                                      ? routeResult!.durationText
+                                      : 'مسار مباشر',
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'جارٍ حساب أدق مسار...',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ],
-                          )
-                          : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
+                                if (routeResult?.distanceText != null) ...[
+                                  const Text(' • '),
                                   Text(
-                                    routeResult?.durationText.isNotEmpty == true
-                                        ? routeResult!.durationText
-                                        : 'مسار مباشر',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.primary,
+                                    routeResult!.distanceText,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  if (routeResult?.distanceText != null) ...[
-                                    const Text(' • '),
-                                    Text(
-                                      routeResult!.distanceText,
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
                                 ],
+                              ],
+                            ),
+                            Text(
+                              hasManeuvers
+                                  ? routeResult!.maneuvers!.first.instruction
+                                  : 'ملاحة حية مع حزمة mhj_maps',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
-                              Text(
-                                hasManeuvers
-                                    ? routeResult!.maneuvers!.first.instruction
-                                    : 'ملاحة حية مع حزمة mhj_maps',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        ),
                 ),
 
                 // Turn-by-Turn Maneuvers List Toggle Button
@@ -797,10 +782,7 @@ class _NavigationHudCard extends StatelessWidget {
 // ── Turn-by-Turn Maneuvers Sheet ──────────────────────────────────────────────
 
 class _TurnByTurnSheet extends StatelessWidget {
-  const _TurnByTurnSheet({
-    required this.maneuvers,
-    required this.onClose,
-  });
+  const _TurnByTurnSheet({required this.maneuvers, required this.onClose});
 
   final List<Maneuver> maneuvers;
   final VoidCallback onClose;
@@ -859,20 +841,21 @@ class _TurnByTurnSheet extends StatelessWidget {
                   dense: true,
                   leading: CircleAvatar(
                     radius: 14,
-                    backgroundColor:
-                        index == 0
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerLow,
-                    foregroundColor:
-                        index == 0 ? Colors.white : colorScheme.onSurface,
+                    backgroundColor: index == 0
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerLow,
+                    foregroundColor: index == 0
+                        ? Colors.white
+                        : colorScheme.onSurface,
                     child: Icon(_getManeuverIcon(m.instruction), size: 14),
                   ),
                   title: Text(
                     m.instruction,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight:
-                          index == 0 ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: index == 0
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   trailing: Text(
@@ -1017,9 +1000,7 @@ class _MapMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(4),
-            boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 4),
-            ],
+            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
           child: Text(
             label,
@@ -1071,23 +1052,22 @@ class _DriverDotState extends State<_DriverDot>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _anim,
-      builder:
-          (_, _) => Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.color.withValues(alpha: _anim.value),
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.color.withValues(alpha: 0.6 * _anim.value),
-                  blurRadius: 18,
-                  spreadRadius: 4,
-                ),
-              ],
+      builder: (_, _) => Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: widget.color.withValues(alpha: _anim.value),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withValues(alpha: 0.6 * _anim.value),
+              blurRadius: 18,
+              spreadRadius: 4,
             ),
-            padding: const EdgeInsets.all(6),
-            child: Icon(widget.vehicleIcon, color: Colors.white, size: 20),
-          ),
+          ],
+        ),
+        padding: const EdgeInsets.all(6),
+        child: Icon(widget.vehicleIcon, color: Colors.white, size: 20),
+      ),
     );
   }
 }

@@ -17,13 +17,7 @@ ChatMessage msg({
   String orderId = 'ORD-1',
   required String senderId,
   required String body,
-}) =>
-    ChatMessage(
-      id: id,
-      orderId: orderId,
-      senderId: senderId,
-      body: body,
-    );
+}) => ChatMessage(id: id, orderId: orderId, senderId: senderId, body: body);
 
 /// Minimal controllable [ChatRepository]: seeded history plus a [receive]
 /// seam that pushes a message onto the order's live feed — no send
@@ -76,11 +70,9 @@ class FakeChatRepository implements ChatRepository {
     out = StreamController<List<ChatMessage>>(
       onListen: () {
         out.add(_snapshot(orderId));
-        busSub = _busFor(orderId).stream.listen(
-              out.add,
-              onError: out.addError,
-              onDone: out.close,
-            );
+        busSub = _busFor(
+          orderId,
+        ).stream.listen(out.add, onError: out.addError, onDone: out.close);
       },
       onPause: () => busSub.pause(),
       onResume: () => busSub.resume(),
@@ -144,24 +136,26 @@ void main() {
   });
 
   group('UnreadChatController counting', () {
-    test('ignores baseline history and counts foreign messages after it',
-        () async {
-      final repo = FakeChatRepository(
-        seed: [msg(id: 'm0', senderId: _customerId, body: 'رسالة قديمة')],
-      );
-      final container = _container(repo);
-      addTearDown(container.dispose);
+    test(
+      'ignores baseline history and counts foreign messages after it',
+      () async {
+        final repo = FakeChatRepository(
+          seed: [msg(id: 'm0', senderId: _customerId, body: 'رسالة قديمة')],
+        );
+        final container = _container(repo);
+        addTearDown(container.dispose);
 
-      final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, _) {});
-      // Flush the initial (history-baseline) snapshot delivered on listen.
-      await pumpEventQueue();
-      expect(container.read(badge), 0);
+        final badge = unreadChatCountProvider('ORD-1');
+        container.listen(badge, (_, _) {});
+        // Flush the initial (history-baseline) snapshot delivered on listen.
+        await pumpEventQueue();
+        expect(container.read(badge), 0);
 
-      repo.receive(msg(id: 'm1', senderId: _customerId, body: 'أهلاً'));
-      await pumpEventQueue();
-      expect(container.read(badge), 1);
-    });
+        repo.receive(msg(id: 'm1', senderId: _customerId, body: 'أهلاً'));
+        await pumpEventQueue();
+        expect(container.read(badge), 1);
+      },
+    );
 
     test("own messages never increment the counter", () async {
       final repo = FakeChatRepository();
@@ -185,29 +179,30 @@ void main() {
       expect(container.read(badge), 1);
     });
 
-    test('repeated snapshots of the same message id are not recounted',
-        () async {
-      final repo = FakeChatRepository();
-      final container = _container(repo);
-      addTearDown(container.dispose);
+    test(
+      'repeated snapshots of the same message id are not recounted',
+      () async {
+        final repo = FakeChatRepository();
+        final container = _container(repo);
+        addTearDown(container.dispose);
 
-      final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, _) {});
-      await pumpEventQueue();
+        final badge = unreadChatCountProvider('ORD-1');
+        container.listen(badge, (_, _) {});
+        await pumpEventQueue();
 
-      final foreign = msg(id: 'm1', senderId: _customerId, body: 'مرتين؟');
-      repo.receive(foreign);
-      await pumpEventQueue();
-      expect(container.read(badge), 1);
+        final foreign = msg(id: 'm1', senderId: _customerId, body: 'مرتين؟');
+        repo.receive(foreign);
+        await pumpEventQueue();
+        expect(container.read(badge), 1);
 
-      // The repository echoes full snapshots; the same id must not double.
-      repo.receive(foreign.copyWith(body: 'مرتين؟'));
-      await pumpEventQueue();
-      expect(container.read(badge), 1);
-    });
+        // The repository echoes full snapshots; the same id must not double.
+        repo.receive(foreign.copyWith(body: 'مرتين؟'));
+        await pumpEventQueue();
+        expect(container.read(badge), 1);
+      },
+    );
 
-    test('markRead zeroes the count and later messages still count',
-        () async {
+    test('markRead zeroes the count and later messages still count', () async {
       final repo = FakeChatRepository();
       final container = _container(repo);
       addTearDown(container.dispose);
@@ -278,81 +273,90 @@ void main() {
   });
 
   group('persistent read receipts (v2)', () {
-    test('foreign message newer than the receipt counts after a restart',
-        () async {
-      final store = InMemoryChatReadStateStore();
-      final repo = FakeChatRepository();
+    test(
+      'foreign message newer than the receipt counts after a restart',
+      () async {
+        final store = InMemoryChatReadStateStore();
+        final repo = FakeChatRepository();
 
-      // Session 1: baseline, markRead persists a receipt at ~now.
-      final session1 = _container(repo, readStateStore: store);
-      addTearDown(session1.dispose);
-      final badge1 = unreadChatCountProvider('ORD-1');
-      session1.listen(badge1, (_, _) {});
-      await pumpEventQueue();
-      session1.read(badge1.notifier).markRead();
-      await pumpEventQueue(); // receipt write is async fire-and-forget
+        // Session 1: baseline, markRead persists a receipt at ~now.
+        final session1 = _container(repo, readStateStore: store);
+        addTearDown(session1.dispose);
+        final badge1 = unreadChatCountProvider('ORD-1');
+        session1.listen(badge1, (_, _) {});
+        await pumpEventQueue();
+        session1.read(badge1.notifier).markRead();
+        await pumpEventQueue(); // receipt write is async fire-and-forget
 
-      // A foreign message lands AFTER the receipt (while "app closed").
-      repo.receive(
-        msg(
-          id: 'm-offline',
-          senderId: _customerId,
-          body: 'وصلت أثناء الإغلاق',
-        ).copyWith(createdAt: DateTime.now().add(const Duration(seconds: 1))),
-      );
+        // A foreign message lands AFTER the receipt (while "app closed").
+        repo.receive(
+          msg(
+            id: 'm-offline',
+            senderId: _customerId,
+            body: 'وصلت أثناء الإغلاق',
+          ).copyWith(createdAt: DateTime.now().add(const Duration(seconds: 1))),
+        );
 
-      // Session 2 (restart): fresh container over the SAME store + repo.
-      final session2 = _container(repo, readStateStore: store);
-      addTearDown(session2.dispose);
-      final badge2 = unreadChatCountProvider('ORD-1');
-      session2.listen(badge2, (_, _) {});
-      await pumpEventQueue();
-      expect(session2.read(badge2), 1);
-    });
+        // Session 2 (restart): fresh container over the SAME store + repo.
+        final session2 = _container(repo, readStateStore: store);
+        addTearDown(session2.dispose);
+        final badge2 = unreadChatCountProvider('ORD-1');
+        session2.listen(badge2, (_, _) {});
+        await pumpEventQueue();
+        expect(session2.read(badge2), 1);
+      },
+    );
 
-    test('messages older than the receipt are not recounted after restart',
-        () async {
-      final store = InMemoryChatReadStateStore();
-      final older = msg(
-        id: 'm-old',
-        senderId: _customerId,
-        body: 'قبل الإيصال',
-      ).copyWith(createdAt: DateTime.now().subtract(const Duration(hours: 1)));
-      final repo = FakeChatRepository(seed: [older]);
+    test(
+      'messages older than the receipt are not recounted after restart',
+      () async {
+        final store = InMemoryChatReadStateStore();
+        final older =
+            msg(
+              id: 'm-old',
+              senderId: _customerId,
+              body: 'قبل الإيصال',
+            ).copyWith(
+              createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+            );
+        final repo = FakeChatRepository(seed: [older]);
 
-      // Session 1: open (baseline consumes m-old as seen), then markRead —
-      // the persisted receipt is now NEWER than m-old's timestamp.
-      final session1 = _container(repo, readStateStore: store);
-      addTearDown(session1.dispose);
-      final badge1 = unreadChatCountProvider('ORD-1');
-      session1.listen(badge1, (_, _) {});
-      await pumpEventQueue();
-      session1.read(badge1.notifier).markRead();
-      await pumpEventQueue();
+        // Session 1: open (baseline consumes m-old as seen), then markRead —
+        // the persisted receipt is now NEWER than m-old's timestamp.
+        final session1 = _container(repo, readStateStore: store);
+        addTearDown(session1.dispose);
+        final badge1 = unreadChatCountProvider('ORD-1');
+        session1.listen(badge1, (_, _) {});
+        await pumpEventQueue();
+        session1.read(badge1.notifier).markRead();
+        await pumpEventQueue();
 
-      // Session 2 (restart): m-old predates the receipt → not recounted.
-      final session2 = _container(repo, readStateStore: store);
-      addTearDown(session2.dispose);
-      final badge2 = unreadChatCountProvider('ORD-1');
-      session2.listen(badge2, (_, _) {});
-      await pumpEventQueue();
-      expect(session2.read(badge2), 0);
-    });
+        // Session 2 (restart): m-old predates the receipt → not recounted.
+        final session2 = _container(repo, readStateStore: store);
+        addTearDown(session2.dispose);
+        final badge2 = unreadChatCountProvider('ORD-1');
+        session2.listen(badge2, (_, _) {});
+        await pumpEventQueue();
+        expect(session2.read(badge2), 0);
+      },
+    );
 
-    test('null-timestamp messages stay unattributed on restart baseline',
-        () async {
-      final store = InMemoryChatReadStateStore();
-      final repo = FakeChatRepository(
-        seed: [msg(id: 'm-notime', senderId: _customerId, body: 'بلا وقت')],
-      );
+    test(
+      'null-timestamp messages stay unattributed on restart baseline',
+      () async {
+        final store = InMemoryChatReadStateStore();
+        final repo = FakeChatRepository(
+          seed: [msg(id: 'm-notime', senderId: _customerId, body: 'بلا وقت')],
+        );
 
-      final session = _container(repo, readStateStore: store);
-      addTearDown(session.dispose);
-      final badge = unreadChatCountProvider('ORD-1');
-      session.listen(badge, (_, _) {});
-      await pumpEventQueue();
-      // No createdAt → cannot prove it arrived after any receipt → not counted.
-      expect(session.read(badge), 0);
-    });
+        final session = _container(repo, readStateStore: store);
+        addTearDown(session.dispose);
+        final badge = unreadChatCountProvider('ORD-1');
+        session.listen(badge, (_, _) {});
+        await pumpEventQueue();
+        // No createdAt → cannot prove it arrived after any receipt → not counted.
+        expect(session.read(badge), 0);
+      },
+    );
   });
 }

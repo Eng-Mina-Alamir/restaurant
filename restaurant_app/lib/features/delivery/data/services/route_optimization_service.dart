@@ -49,7 +49,7 @@ class OptimizedRouteResult {
   final List<LatLng> polylinePoints;
 }
 
-  /// Service providing route optimization and multi-stop planning for drivers.
+/// Service providing route optimization and multi-stop planning for drivers.
 class RouteOptimizationService {
   const RouteOptimizationService();
 
@@ -134,7 +134,8 @@ class RouteOptimizationService {
   }
 }
 
-final routeOptimizationServiceProvider =
-    Provider<RouteOptimizationService>((ref) {
+final routeOptimizationServiceProvider = Provider<RouteOptimizationService>((
+  ref,
+) {
   return const RouteOptimizationService();
 });

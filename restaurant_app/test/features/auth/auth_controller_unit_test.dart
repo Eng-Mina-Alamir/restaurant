@@ -13,7 +13,10 @@ class _FakeAuthRepository implements AuthRepository {
   Failure? failureToReturn;
 
   @override
-  Future<Either<Failure, UserEntity>> login(String identifier, String password) async {
+  Future<Either<Failure, UserEntity>> login(
+    String identifier,
+    String password,
+  ) async {
     if (failureToReturn != null) return Left(failureToReturn!);
     loggedUser = UserEntity(
       id: 'usr-1',
@@ -119,9 +122,7 @@ void main() {
     setUp(() {
       repo = _FakeAuthRepository();
       container = ProviderContainer(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(repo),
-        ],
+        overrides: [authRepositoryProvider.overrideWithValue(repo)],
       );
     });
 
@@ -141,18 +142,21 @@ void main() {
       expect(state.authFailure, isNull);
     });
 
-    test('login failure sets unauthenticated state and failure message', () async {
-      repo.failureToReturn = const ValidationFailure('Invalid credentials');
-      final controller = container.read(authControllerProvider.notifier);
+    test(
+      'login failure sets unauthenticated state and failure message',
+      () async {
+        repo.failureToReturn = const ValidationFailure('Invalid credentials');
+        final controller = container.read(authControllerProvider.notifier);
 
-      await controller.login('bad@test.com', 'badpass');
+        await controller.login('bad@test.com', 'badpass');
 
-      final state = container.read(authControllerProvider);
-      expect(state.status, AuthStatus.unauthenticated);
-      expect(state.isAuthenticated, isFalse);
-      expect(state.authFailure, isNotNull);
-      expect(state.authFailure?.message, 'Invalid credentials');
-    });
+        final state = container.read(authControllerProvider);
+        expect(state.status, AuthStatus.unauthenticated);
+        expect(state.isAuthenticated, isFalse);
+        expect(state.authFailure, isNotNull);
+        expect(state.authFailure?.message, 'Invalid credentials');
+      },
+    );
 
     test('register success sets authenticated state', () async {
       final controller = container.read(authControllerProvider.notifier);

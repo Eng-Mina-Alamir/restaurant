@@ -20,60 +20,61 @@ void main() {
   );
 
   group('KDS Flow Integration', () {
-    testWidgets('Full lifecycle: Order arrives -> Preparing -> Ready -> Completed', (tester) async {
-      final spy = SpyKdsAlertService();
-      final container = createTestContainer(
-        seedCheckoutFixtures: true,
-        extraCheckoutItems: [pizza],
-        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
-      );
-      addTearDown(container.dispose);
-      await primeMenuForCheckout(container);
+    testWidgets(
+      'Full lifecycle: Order arrives -> Preparing -> Ready -> Completed',
+      (tester) async {
+        final spy = SpyKdsAlertService();
+        final container = createTestContainer(
+          seedCheckoutFixtures: true,
+          extraCheckoutItems: [pizza],
+          additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+        );
+        addTearDown(container.dispose);
+        await primeMenuForCheckout(container);
 
-      final cart = container.read(cartControllerProvider.notifier);
-      cart.addItem(const CartItem(menuItem: pizza));
+        final cart = container.read(cartControllerProvider.notifier);
+        cart.addItem(const CartItem(menuItem: pizza));
 
-      final orders = container.read(ordersControllerProvider.notifier);
-      final created = await orders.placeOrder();
-      expect(created, isNotNull);
+        final orders = container.read(ordersControllerProvider.notifier);
+        final created = await orders.placeOrder();
+        expect(created, isNotNull);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: KdsPage(),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: KdsPage()),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // 1. Initial pending state
-      expect(find.textContaining('بيتزا مارجريتا'), findsOneWidget);
-      expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
-      // The incoming batch fired exactly one new-order alert.
-      expect(spy.newOrderAlerts, 1);
+        // 1. Initial pending state
+        expect(find.textContaining('بيتزا مارجريتا'), findsOneWidget);
+        expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
+        // The incoming batch fired exactly one new-order alert.
+        expect(spy.newOrderAlerts, 1);
 
-      // 2. Advance to preparing
-      await tester.tap(find.text('قيد التحضير').last);
-      await tester.pumpAndSettle();
+        // 2. Advance to preparing
+        await tester.tap(find.text('قيد التحضير').last);
+        await tester.pumpAndSettle();
 
-      expect(find.text('جاهز للتسليم'), findsOneWidget);
+        expect(find.text('جاهز للتسليم'), findsOneWidget);
 
-      // 3. Advance to ready
-      await tester.tap(find.text('جاهز للتسليم').last);
-      await tester.pumpAndSettle();
+        // 3. Advance to ready
+        await tester.tap(find.text('جاهز للتسليم').last);
+        await tester.pumpAndSettle();
 
-      expect(find.text('استكمال'), findsOneWidget);
+        expect(find.text('استكمال'), findsOneWidget);
 
-      // 4. Advance to served/completed
-      await tester.tap(find.text('استكمال').last);
-      await tester.pumpAndSettle();
+        // 4. Advance to served/completed
+        await tester.tap(find.text('استكمال').last);
+        await tester.pumpAndSettle();
 
-      // Order should now be completed and removed from active KDS columns
-      expect(find.textContaining('بيتزا مارجريتا'), findsNothing);
-      // Three advance taps (pending→preparing→ready→served) fired the
-      // ready-alert once per advance.
-      expect(spy.orderReadyAlerts, 3);
-    });
+        // Order should now be completed and removed from active KDS columns
+        expect(find.textContaining('بيتزا مارجريتا'), findsNothing);
+        // Three advance taps (pending→preparing→ready→served) fired the
+        // ready-alert once per advance.
+        expect(spy.orderReadyAlerts, 3);
+      },
+    );
   });
 }

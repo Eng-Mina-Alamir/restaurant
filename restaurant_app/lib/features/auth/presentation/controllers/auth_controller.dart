@@ -109,7 +109,9 @@ class AuthController extends StateNotifier<AuthState> {
     UserRole role = UserRole.customer,
   }) async {
     state = state.copyWith(status: AuthStatus.unknown, clearFailure: true);
-    final result = await ref.read(registerUseCaseProvider).call(
+    final result = await ref
+        .read(registerUseCaseProvider)
+        .call(
           name: name,
           email: email,
           phone: phone,

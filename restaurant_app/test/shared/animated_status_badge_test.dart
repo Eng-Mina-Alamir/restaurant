@@ -21,15 +21,13 @@ void main() {
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
     });
 
-    testWidgets('Triggers bounce animation when label and color update',
-        (tester) async {
+    testWidgets('Triggers bounce animation when label and color update', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AnimatedStatusBadge(
-              label: 'متاح',
-              color: Colors.green,
-            ),
+            body: AnimatedStatusBadge(label: 'متاح', color: Colors.green),
           ),
         ),
       );
@@ -40,10 +38,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AnimatedStatusBadge(
-              label: 'مشغول',
-              color: Colors.red,
-            ),
+            body: AnimatedStatusBadge(label: 'مشغول', color: Colors.red),
           ),
         ),
       );

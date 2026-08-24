@@ -41,10 +41,12 @@ class MockPaymentGateway implements PaymentGateway {
     }
 
     // Digital card/Apple pay simulation
-    final txnId = 'TXN-${request.method.name.toUpperCase()}-${DateTime.now().millisecondsSinceEpoch}';
+    final txnId =
+        'TXN-${request.method.name.toUpperCase()}-${DateTime.now().millisecondsSinceEpoch}';
     return PaymentResult.success(
       transactionId: txnId,
-      authorizationCode: 'AUTH-${(DateTime.now().millisecondsSinceEpoch % 89999) + 10000}',
+      authorizationCode:
+          'AUTH-${(DateTime.now().millisecondsSinceEpoch % 89999) + 10000}',
     );
   }
 

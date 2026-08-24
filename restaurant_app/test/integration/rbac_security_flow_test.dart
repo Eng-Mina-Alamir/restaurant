@@ -18,7 +18,10 @@ void main() {
     test('demo authentication enforces role integrity and email matching', () {
       for (final role in DemoAuthDataSource.supportedRoles) {
         final email = DemoAuthDataSource.accounts[role]!;
-        final user = DemoAuthDataSource.authenticate(email, DemoAuthDataSource.password);
+        final user = DemoAuthDataSource.authenticate(
+          email,
+          DemoAuthDataSource.password,
+        );
 
         expect(user, isNotNull);
         expect(user!.role, role);
@@ -89,7 +92,13 @@ void main() {
 
       test('admin and manager can access every staff area', () {
         for (final role in [UserRole.manager, UserRole.admin]) {
-          for (final area in ['/manager', '/manager/users', '/waiter', '/kds', '/driver']) {
+          for (final area in [
+            '/manager',
+            '/manager/users',
+            '/waiter',
+            '/kds',
+            '/driver',
+          ]) {
             expect(
               canRoleAccess(role, area),
               isTrue,

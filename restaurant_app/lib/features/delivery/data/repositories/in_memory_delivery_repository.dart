@@ -59,7 +59,8 @@ class InMemoryDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+  Future<Either<Failure, List<DeliveryAssignment>>>
+  getActiveAssignments() async {
     // Delivered rows leave the dispatch board's scope; failed ones stay
     // visible so the manager can re-assign them.
     const settled = {DeliveryStatus.delivered};

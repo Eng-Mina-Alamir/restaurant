@@ -62,7 +62,9 @@ void main() {
       expect(errUpdate, isNull);
       await Future<void>.delayed(const Duration(milliseconds: 10));
       expect(
-        controller.state.value!.firstWhere((c) => c.id == 'new-cpn').discountValue,
+        controller.state.value!
+            .firstWhere((c) => c.id == 'new-cpn')
+            .discountValue,
         60,
       );
 

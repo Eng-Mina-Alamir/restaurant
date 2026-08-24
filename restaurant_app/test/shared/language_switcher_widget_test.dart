@@ -6,7 +6,9 @@ import 'package:restaurant_app/shared/widgets/language_switcher.dart';
 
 void main() {
   group('LanguageSwitcherButton Widget Tests', () {
-    testWidgets('renders full button and toggles language on tap', (tester) async {
+    testWidgets('renders full button and toggles language on tap', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -14,9 +16,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: const MaterialApp(
-            home: Scaffold(
-              body: Center(child: LanguageSwitcherButton()),
-            ),
+            home: Scaffold(body: Center(child: LanguageSwitcherButton())),
           ),
         ),
       );

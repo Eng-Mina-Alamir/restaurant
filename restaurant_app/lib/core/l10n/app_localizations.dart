@@ -25,8 +25,8 @@ enum AppLanguage {
 /// Manages the application-wide active locale with caching and device language detection.
 class LocaleController extends StateNotifier<Locale> {
   LocaleController([LocalCacheService? cache])
-      : _cache = cache,
-        super(_resolveDefaultLocale()) {
+    : _cache = cache,
+      super(_resolveDefaultLocale()) {
     _load();
   }
 
@@ -75,9 +75,9 @@ class LocaleController extends StateNotifier<Locale> {
 /// Provider for managing and watching the active [Locale].
 final localeControllerProvider =
     StateNotifierProvider<LocaleController, Locale>((ref) {
-  final cache = ref.watch(localCacheServiceProvider);
-  return LocaleController(cache);
-});
+      final cache = ref.watch(localCacheServiceProvider);
+      return LocaleController(cache);
+    });
 
 /// Convenience provider returning whether current locale is RTL (Arabic).
 final isRtlProvider = Provider<bool>((ref) {

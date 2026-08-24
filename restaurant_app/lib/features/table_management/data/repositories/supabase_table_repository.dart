@@ -31,18 +31,20 @@ class SupabaseTableRepository implements TableRepository {
       final List<RestaurantTable> tables = [];
       for (final raw in (response as List)) {
         final map = Map<String, dynamic>.from(raw as Map);
-        tables.add(RestaurantTable(
-          id: map['id']?.toString() ?? '',
-          tableNumber: (map['table_number'] as num?)?.toInt() ?? 1,
-          capacity: (map['capacity'] as num?)?.toInt() ?? 4,
-          location: map['location'] as String? ?? 'صالة',
-          status: TableStatus.fromName(map['status'] as String?),
-          currentOrderId: map['current_order_id'] as String?,
-          assignedWaiterId: map['assigned_waiter_id'] as String?,
-          lastUpdated: map['last_updated'] != null
-              ? DateTime.tryParse(map['last_updated'] as String)
-              : null,
-        ));
+        tables.add(
+          RestaurantTable(
+            id: map['id']?.toString() ?? '',
+            tableNumber: (map['table_number'] as num?)?.toInt() ?? 1,
+            capacity: (map['capacity'] as num?)?.toInt() ?? 4,
+            location: map['location'] as String? ?? 'صالة',
+            status: TableStatus.fromName(map['status'] as String?),
+            currentOrderId: map['current_order_id'] as String?,
+            assignedWaiterId: map['assigned_waiter_id'] as String?,
+            lastUpdated: map['last_updated'] != null
+                ? DateTime.tryParse(map['last_updated'] as String)
+                : null,
+          ),
+        );
       }
 
       if (tables.isEmpty) {
@@ -62,18 +64,23 @@ class SupabaseTableRepository implements TableRepository {
   }
 
   @override
-  Future<Either<Failure, RestaurantTable>> updateTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> updateTable(
+    RestaurantTable table,
+  ) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.tablesTable).update({
-        'table_number': table.tableNumber,
-        'capacity': table.capacity,
-        'location': table.location,
-        'status': table.status.name,
-        'current_order_id': table.currentOrderId,
-        'assigned_waiter_id': table.assignedWaiterId,
-        'last_updated': DateTime.now().toIso8601String(),
-      }).eq('id', table.id);
+      await _supabase
+          .from(SupabaseConfig.tablesTable)
+          .update({
+            'table_number': table.tableNumber,
+            'capacity': table.capacity,
+            'location': table.location,
+            'status': table.status.name,
+            'current_order_id': table.currentOrderId,
+            'assigned_waiter_id': table.assignedWaiterId,
+            'last_updated': DateTime.now().toIso8601String(),
+          })
+          .eq('id', table.id);
 
       final index = _cachedTables!.indexWhere((t) => t.id == table.id);
       if (index != -1) {
@@ -91,7 +98,9 @@ class SupabaseTableRepository implements TableRepository {
   }
 
   @override
-  Future<Either<Failure, RestaurantTable>> addTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> addTable(
+    RestaurantTable table,
+  ) async {
     _ensureCache();
     try {
       await _supabase.from(SupabaseConfig.tablesTable).insert({
@@ -117,10 +126,7 @@ class SupabaseTableRepository implements TableRepository {
   Future<Either<Failure, void>> deleteTable(String id) async {
     _ensureCache();
     try {
-      await _supabase
-          .from(SupabaseConfig.tablesTable)
-          .delete()
-          .eq('id', id);
+      await _supabase.from(SupabaseConfig.tablesTable).delete().eq('id', id);
 
       _cachedTables!.removeWhere((t) => t.id == id);
       return const Right<Failure, void>(null);

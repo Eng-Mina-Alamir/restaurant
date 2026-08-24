@@ -12,7 +12,10 @@ void main() {
               child: PulseBadge(
                 color: Colors.red,
                 size: 16.0,
-                child: Text('3', style: TextStyle(color: Colors.white, fontSize: 10)),
+                child: Text(
+                  '3',
+                  style: TextStyle(color: Colors.white, fontSize: 10),
+                ),
               ),
             ),
           ),

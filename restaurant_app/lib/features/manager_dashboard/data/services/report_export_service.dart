@@ -21,7 +21,9 @@ class ReportExportService {
 
     for (final order in orders) {
       final typeStr = _orderTypeLabel(order.orderType);
-      final dateStr = Formatters.formatDateTime(order.createdAt).replaceAll(',', ' ');
+      final dateStr = Formatters.formatDateTime(
+        order.createdAt,
+      ).replaceAll(',', ' ');
       final subtotal = order.subtotal.toStringAsFixed(2);
       final tax = order.taxAmount.toStringAsFixed(2);
       final discount = order.discountAmount.toStringAsFixed(2);
@@ -39,7 +41,9 @@ class ReportExportService {
   String generateInventoryCsv(List<InventoryItemEntity> items) {
     final buffer = StringBuffer();
     buffer.write('\uFEFF');
-    buffer.writeln('معرف الصنف,اسم الصنف,الفئة,الكمية الحالية,الوحدة,الحد الأدنى,تكلفة الوحدة (ر.س),إجمالي القيمة (ر.س),حالة المخزون');
+    buffer.writeln(
+      'معرف الصنف,اسم الصنف,الفئة,الكمية الحالية,الوحدة,الحد الأدنى,تكلفة الوحدة (ر.س),إجمالي القيمة (ر.س),حالة المخزون',
+    );
 
     for (final item in items) {
       buffer.writeln(
@@ -51,25 +55,44 @@ class ReportExportService {
   }
 
   /// Generates UTF-8 CSV content with BOM for Financial P&L summary.
-  String generateFinancialReportCsv(FinancialReportMetrics metrics, String periodLabel) {
+  String generateFinancialReportCsv(
+    FinancialReportMetrics metrics,
+    String periodLabel,
+  ) {
     final buffer = StringBuffer();
     buffer.write('\uFEFF');
     buffer.writeln('بيان الأرباح والخسائر والتحليل المالي - $periodLabel');
     buffer.writeln('البند,القيمة (ر.س),النسبة');
-    buffer.writeln('إجمالي الإيرادات والمبيعات,${metrics.grossRevenue.toStringAsFixed(2)},100%');
-    buffer.writeln('تكلفة البضاعة المباعة (COGS),${metrics.cogs.toStringAsFixed(2)},${metrics.grossRevenue > 0 ? (metrics.cogs / metrics.grossRevenue * 100).toStringAsFixed(1) : 0}%');
-    buffer.writeln('مجمل الربح (Gross Profit),${(metrics.grossRevenue - metrics.cogs).toStringAsFixed(2)},${metrics.grossMarginPercentage.toStringAsFixed(1)}%');
-    buffer.writeln('المصروفات التشغيلية والعمالة,${metrics.operatingCosts.toStringAsFixed(2)},${metrics.grossRevenue > 0 ? (metrics.operatingCosts / metrics.grossRevenue * 100).toStringAsFixed(1) : 0}%');
-    buffer.writeln('صافي الربح التشغيلي (Net Income),${metrics.netProfit.toStringAsFixed(2)},${metrics.netMarginPercentage.toStringAsFixed(1)}%');
+    buffer.writeln(
+      'إجمالي الإيرادات والمبيعات,${metrics.grossRevenue.toStringAsFixed(2)},100%',
+    );
+    buffer.writeln(
+      'تكلفة البضاعة المباعة (COGS),${metrics.cogs.toStringAsFixed(2)},${metrics.grossRevenue > 0 ? (metrics.cogs / metrics.grossRevenue * 100).toStringAsFixed(1) : 0}%',
+    );
+    buffer.writeln(
+      'مجمل الربح (Gross Profit),${(metrics.grossRevenue - metrics.cogs).toStringAsFixed(2)},${metrics.grossMarginPercentage.toStringAsFixed(1)}%',
+    );
+    buffer.writeln(
+      'المصروفات التشغيلية والعمالة,${metrics.operatingCosts.toStringAsFixed(2)},${metrics.grossRevenue > 0 ? (metrics.operatingCosts / metrics.grossRevenue * 100).toStringAsFixed(1) : 0}%',
+    );
+    buffer.writeln(
+      'صافي الربح التشغيلي (Net Income),${metrics.netProfit.toStringAsFixed(2)},${metrics.netMarginPercentage.toStringAsFixed(1)}%',
+    );
     buffer.writeln('عدد الطلبات المكتملة,${metrics.completedOrders},-');
-    buffer.writeln('متوسط قيمة الطلب (AOV),${metrics.averageOrderValue.toStringAsFixed(2)},-');
+    buffer.writeln(
+      'متوسط قيمة الطلب (AOV),${metrics.averageOrderValue.toStringAsFixed(2)},-',
+    );
 
     if (metrics.topProfitableItems.isNotEmpty) {
       buffer.writeln('');
       buffer.writeln('الأصناف الأعلى ربحية:');
-      buffer.writeln('اسم الصنف,الوحدات المباعة,التكلفة التقديرية,الربح الصافي,هامش الربح');
+      buffer.writeln(
+        'اسم الصنف,الوحدات المباعة,التكلفة التقديرية,الربح الصافي,هامش الربح',
+      );
       for (final item in metrics.topProfitableItems) {
-        buffer.writeln('"${item.itemName}",${item.unitsSold},${item.estimatedCost.toStringAsFixed(2)},${item.profit.toStringAsFixed(2)},${item.marginPercent.toStringAsFixed(1)}%');
+        buffer.writeln(
+          '"${item.itemName}",${item.unitsSold},${item.estimatedCost.toStringAsFixed(2)},${item.profit.toStringAsFixed(2)},${item.marginPercent.toStringAsFixed(1)}%',
+        );
       }
     }
 
@@ -109,13 +132,21 @@ class ReportExportService {
     }
 
     buffer.writeln('------------------------------------');
-    buffer.writeln('المجموع الخاضع للضريبة: ${Formatters.formatCurrency(order.subtotal)}');
-    buffer.writeln('ضريبة القيمة المضافة 15%: ${Formatters.formatCurrency(order.taxAmount)}');
+    buffer.writeln(
+      'المجموع الخاضع للضريبة: ${Formatters.formatCurrency(order.subtotal)}',
+    );
+    buffer.writeln(
+      'ضريبة القيمة المضافة 15%: ${Formatters.formatCurrency(order.taxAmount)}',
+    );
     if (order.discountAmount > 0) {
-      buffer.writeln('الخصم: -${Formatters.formatCurrency(order.discountAmount)}');
+      buffer.writeln(
+        'الخصم: -${Formatters.formatCurrency(order.discountAmount)}',
+      );
     }
     buffer.writeln('------------------------------------');
-    buffer.writeln('المجموع الكلي: ${Formatters.formatCurrency(order.totalAmount)}');
+    buffer.writeln(
+      'المجموع الكلي: ${Formatters.formatCurrency(order.totalAmount)}',
+    );
     buffer.writeln('====================================');
     buffer.writeln('        شكراً لزيارتكم              ');
     buffer.writeln('====================================');

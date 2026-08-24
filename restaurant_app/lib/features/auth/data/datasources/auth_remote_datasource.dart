@@ -35,7 +35,6 @@ abstract class AuthRemoteDataSource {
   Future<void> logout(String? token);
 }
 
-
 /// Dio-backed implementation of [AuthRemoteDataSource].
 ///
 /// Requests are shaped against [ApiEndpoints] and responses parsed into

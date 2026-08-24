@@ -47,4 +47,3 @@ abstract class AuthRepository {
   /// Logs the current user out and clears all locally persisted auth data.
   Future<Either<Failure, void>> logout();
 }
-

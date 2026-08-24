@@ -18,18 +18,12 @@ void main() {
     final createdTables = RegExp(
       r'CREATE TABLE IF NOT EXISTS public\.([a-z_]+)',
       caseSensitive: false,
-    )
-        .allMatches(schema)
-        .map((m) => m.group(1)!)
-        .toSet();
+    ).allMatches(schema).map((m) => m.group(1)!).toSet();
 
     final rlsEnabledTables = RegExp(
       r'ALTER TABLE\s+(?:ONLY\s+)?public\.([a-z_]+)\s+ENABLE ROW LEVEL SECURITY',
       caseSensitive: false,
-    )
-        .allMatches(schema)
-        .map((m) => m.group(1)!)
-        .toSet();
+    ).allMatches(schema).map((m) => m.group(1)!).toSet();
 
     test('schema file exists and declares tables', () {
       expect(schema, isNotEmpty);
@@ -42,7 +36,8 @@ void main() {
       expect(
         unprotected,
         isEmpty,
-        reason: 'Tables without RLS are publicly readable/writable via the '
+        reason:
+            'Tables without RLS are publicly readable/writable via the '
             'anon key: $unprotected — add ENABLE ROW LEVEL SECURITY and '
             'explicit policies.',
       );
@@ -104,25 +99,29 @@ void main() {
         expect(
           normalized.contains(expectedGuard),
           isTrue,
-          reason: 'order_status_log_insert must require changed_by = auth.uid() '
+          reason:
+              'order_status_log_insert must require changed_by = auth.uid() '
               'and grant via an explicit non-driver role list',
         );
       });
 
-      test('${entry.key}: insert policy does NOT grant via plain is_staff()',
-          () {
-        final policyMatch = RegExp(
-          r'CREATE POLICY order_status_log_insert\b[^;]*;',
-          caseSensitive: false,
-        ).firstMatch(normalized);
-        expect(policyMatch, isNotNull);
-        expect(
-          policyMatch!.group(0),
-          isNot(contains('is_staff()')),
-          reason: 'is_staff() includes the driver role — a driver could forge '
-                  'audit rows for ANY order if it gates order_status_log inserts',
-        );
-      });
+      test(
+        '${entry.key}: insert policy does NOT grant via plain is_staff()',
+        () {
+          final policyMatch = RegExp(
+            r'CREATE POLICY order_status_log_insert\b[^;]*;',
+            caseSensitive: false,
+          ).firstMatch(normalized);
+          expect(policyMatch, isNotNull);
+          expect(
+            policyMatch!.group(0),
+            isNot(contains('is_staff()')),
+            reason:
+                'is_staff() includes the driver role — a driver could forge '
+                'audit rows for ANY order if it gates order_status_log inserts',
+          );
+        },
+      );
     }
   });
 
@@ -146,8 +145,9 @@ void main() {
         expect(
           drop,
           isNotNull,
-          reason: 'CREATE POLICY $policyName has no re-run guard; bare CREATE '
-                  'POLICY fails on a second migration run',
+          reason:
+              'CREATE POLICY $policyName has no re-run guard; bare CREATE '
+              'POLICY fails on a second migration run',
         );
         expect(
           drop!.start,
@@ -157,10 +157,10 @@ void main() {
         );
       }
 
-      final dropCount =
-          RegExp(r'DROP POLICY IF EXISTS \w+ ON public\.', caseSensitive: false)
-              .allMatches(migrationV3)
-              .length;
+      final dropCount = RegExp(
+        r'DROP POLICY IF EXISTS \w+ ON public\.',
+        caseSensitive: false,
+      ).allMatches(migrationV3).length;
       expect(
         dropCount,
         equals(creates.length),
@@ -168,22 +168,21 @@ void main() {
       );
     });
 
-    test('migration v3 keeps shared policies statement-identical to schema',
-        () {
-      String normalize(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ');
-      String extractInsertPolicy(String sql) => normalize(sql)
-          .split('CREATE POLICY order_status_log_insert ')
-          .last
-          .split(';')
-          .first;
+    test(
+      'migration v3 keeps shared policies statement-identical to schema',
+      () {
+        String normalize(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ');
+        String extractInsertPolicy(String sql) => normalize(
+          sql,
+        ).split('CREATE POLICY order_status_log_insert ').last.split(';').first;
 
-      expect(
-        extractInsertPolicy(migrationV3),
-        equals(extractInsertPolicy(schema)),
-        reason:
-            'order_status_log_insert must be identical in both SQL files',
-      );
-    });
+        expect(
+          extractInsertPolicy(migrationV3),
+          equals(extractInsertPolicy(schema)),
+          reason: 'order_status_log_insert must be identical in both SQL files',
+        );
+      },
+    );
   });
 
   group('migration v4 (chat) guard', () {
@@ -191,10 +190,18 @@ void main() {
     final normalizedV4 = migrationV4.replaceAll(RegExp(r'\s+'), ' ');
 
     test('chat_messages table exists in both files', () {
-      expect(normalizedSchema.contains('CREATE TABLE IF NOT EXISTS public.chat_messages'),
-          isTrue);
-      expect(normalizedV4.contains('CREATE TABLE IF NOT EXISTS public.chat_messages'),
-          isTrue);
+      expect(
+        normalizedSchema.contains(
+          'CREATE TABLE IF NOT EXISTS public.chat_messages',
+        ),
+        isTrue,
+      );
+      expect(
+        normalizedV4.contains(
+          'CREATE TABLE IF NOT EXISTS public.chat_messages',
+        ),
+        isTrue,
+      );
     });
 
     test('chat RLS binds sender_id = auth.uid() on INSERT in both files', () {
@@ -213,25 +220,32 @@ void main() {
           reason: '${entry.key}: chat inserts must be authored by the caller',
         );
         // Participant gate must reference BOTH participant paths.
-        expect(insertMatch.group(0), contains('o.customer_id = auth.uid()'),
-            reason: entry.key);
-        expect(insertMatch.group(0), contains('da.driver_id = auth.uid()'),
-            reason: entry.key);
+        expect(
+          insertMatch.group(0),
+          contains('o.customer_id = auth.uid()'),
+          reason: entry.key,
+        );
+        expect(
+          insertMatch.group(0),
+          contains('da.driver_id = auth.uid()'),
+          reason: entry.key,
+        );
       }
     });
 
     test('migration v4 keeps policies statement-identical to schema', () {
       String normalize(String sql) => sql.replaceAll(RegExp(r'\s+'), ' ');
-      String policyOf(String sql, String name) => normalize(sql)
-          .split('CREATE POLICY $name ')
-          .last
-          .split(';')
-          .first;
+      String policyOf(String sql, String name) =>
+          normalize(sql).split('CREATE POLICY $name ').last.split(';').first;
 
-      expect(policyOf(migrationV4, 'chat_messages_select'),
-          equals(policyOf(schema, 'chat_messages_select')));
-      expect(policyOf(migrationV4, 'chat_messages_insert'),
-          equals(policyOf(schema, 'chat_messages_insert')));
+      expect(
+        policyOf(migrationV4, 'chat_messages_select'),
+        equals(policyOf(schema, 'chat_messages_select')),
+      );
+      expect(
+        policyOf(migrationV4, 'chat_messages_insert'),
+        equals(policyOf(schema, 'chat_messages_insert')),
+      );
     });
 
     test('every v4 CREATE POLICY is preceded by DROP POLICY IF EXISTS', () {

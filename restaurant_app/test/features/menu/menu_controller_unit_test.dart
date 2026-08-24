@@ -41,10 +41,13 @@ void main() {
       items: [vegSalad, spicyChicken, regularBurger],
     );
 
-    test('returns all items when category is kAllCategoriesFilter and no query/diet', () {
-      final result = filterMenu(menu, kAllCategoriesFilter);
-      expect(result, hasLength(3));
-    });
+    test(
+      'returns all items when category is kAllCategoriesFilter and no query/diet',
+      () {
+        final result = filterMenu(menu, kAllCategoriesFilter);
+        expect(result, hasLength(3));
+      },
+    );
 
     test('filters by category accurately', () {
       final salads = filterMenu(menu, 'salads');
@@ -88,21 +91,11 @@ void main() {
     });
 
     test('combined category + query + diet restrictions', () {
-      final result = filterMenu(
-        menu,
-        'main',
-        'دجاج',
-        MenuDietFilter.spicy,
-      );
+      final result = filterMenu(menu, 'main', 'دجاج', MenuDietFilter.spicy);
       expect(result, hasLength(1));
       expect(result.first.id, '2');
 
-      final noneFound = filterMenu(
-        menu,
-        'salads',
-        'دجاج',
-        MenuDietFilter.none,
-      );
+      final noneFound = filterMenu(menu, 'salads', 'دجاج', MenuDietFilter.none);
       expect(noneFound, isEmpty);
     });
 

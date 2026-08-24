@@ -14,38 +14,44 @@ void main() {
     // -------------------------------------------------------------
     // TC-MGR-01: Main KPIs & Metrics
     // -------------------------------------------------------------
-    test('TC-MGR-01: Manager dashboard calculates total revenue, active orders, and table occupancy', () {
-      final orders = [
-        OrderEntity(
-          id: 'ord-kpi-1',
-          restaurantId: 'r1',
-          orderType: OrderType.dineIn,
-          status: OrderStatus.served,
-          items: const [],
-          subtotal: 100.0,
-          taxAmount: 14.0,
-          totalAmount: 114.0,
-          createdAt: DateTime.now(),
-        ),
-        OrderEntity(
-          id: 'ord-kpi-2',
-          restaurantId: 'r1',
-          orderType: OrderType.takeaway,
-          status: OrderStatus.preparing,
-          items: const [],
-          subtotal: 200.0,
-          taxAmount: 28.0,
-          totalAmount: 228.0,
-          createdAt: DateTime.now(),
-        ),
-      ];
+    test(
+      'TC-MGR-01: Manager dashboard calculates total revenue, active orders, and table occupancy',
+      () {
+        final orders = [
+          OrderEntity(
+            id: 'ord-kpi-1',
+            restaurantId: 'r1',
+            orderType: OrderType.dineIn,
+            status: OrderStatus.served,
+            items: const [],
+            subtotal: 100.0,
+            taxAmount: 14.0,
+            totalAmount: 114.0,
+            createdAt: DateTime.now(),
+          ),
+          OrderEntity(
+            id: 'ord-kpi-2',
+            restaurantId: 'r1',
+            orderType: OrderType.takeaway,
+            status: OrderStatus.preparing,
+            items: const [],
+            subtotal: 200.0,
+            taxAmount: 28.0,
+            totalAmount: 228.0,
+            createdAt: DateTime.now(),
+          ),
+        ];
 
-      final totalRevenue = orders.fold<double>(0.0, (sum, o) => sum + o.totalAmount);
-      expect(totalRevenue, 342.0);
+        final totalRevenue = orders.fold<double>(
+          0.0,
+          (sum, o) => sum + o.totalAmount,
+        );
+        expect(totalRevenue, 342.0);
 
-      final activeCount = orders.where((o) => !o.status.isTerminal).length;
-      expect(activeCount, 2);
-    });
+        final activeCount = orders.where((o) => !o.status.isTerminal).length;
+        expect(activeCount, 2);
+      },
+    );
 
     // -------------------------------------------------------------
     // TC-MGR-02: Menu Management & Out-of-Stock Toggle
@@ -86,67 +92,83 @@ void main() {
     // -------------------------------------------------------------
     // TC-MGR-03: Inventory Low Stock Alerts
     // -------------------------------------------------------------
-    test('TC-MGR-03: Inventory controller identifies items below minThreshold for alerts', () async {
-      final container = createQaContainer();
-      addTearDown(container.dispose);
+    test(
+      'TC-MGR-03: Inventory controller identifies items below minThreshold for alerts',
+      () async {
+        final container = createQaContainer();
+        addTearDown(container.dispose);
 
-      final invNotifier = container.read(inventoryControllerProvider.notifier);
+        final invNotifier = container.read(
+          inventoryControllerProvider.notifier,
+        );
 
-      await invNotifier.addItem(
-        name: 'جبنة موتزاريلا',
-        category: 'الألبان',
-        currentStock: 2.0, // Low stock (threshold 10)
-        unit: 'كجم',
-        minThreshold: 10.0,
-        costPerUnit: 120.0,
-      );
+        await invNotifier.addItem(
+          name: 'جبنة موتزاريلا',
+          category: 'الألبان',
+          currentStock: 2.0, // Low stock (threshold 10)
+          unit: 'كجم',
+          minThreshold: 10.0,
+          costPerUnit: 120.0,
+        );
 
-      final items = container.read(inventoryControllerProvider).value ?? [];
-      final lowStockItems = items.where((i) => i.currentStock <= i.minThreshold).toList();
+        final items = container.read(inventoryControllerProvider).value ?? [];
+        final lowStockItems = items
+            .where((i) => i.currentStock <= i.minThreshold)
+            .toList();
 
-      expect(lowStockItems, isNotEmpty);
-      expect(lowStockItems.any((i) => i.name == 'جبنة موتزاريلا'), isTrue);
-    });
+        expect(lowStockItems, isNotEmpty);
+        expect(lowStockItems.any((i) => i.name == 'جبنة موتزاريلا'), isTrue);
+      },
+    );
 
     // -------------------------------------------------------------
     // TC-MGR-04: Coupon Management CRUD
     // -------------------------------------------------------------
-    test('TC-MGR-04: Manager creates, updates, and validates discount coupon', () async {
-      final container = createQaContainer();
-      addTearDown(container.dispose);
+    test(
+      'TC-MGR-04: Manager creates, updates, and validates discount coupon',
+      () async {
+        final container = createQaContainer();
+        addTearDown(container.dispose);
 
-      final couponController = container.read(couponManagementControllerProvider.notifier);
+        final couponController = container.read(
+          couponManagementControllerProvider.notifier,
+        );
 
-      const newCoupon = CouponEntity(
-        id: 'coup-promo-15',
-        code: 'PROMO15',
-        title: 'خصم 15% ترويجي',
-        discountType: CouponDiscountType.percentage,
-        discountValue: 15.0,
-        maxDiscountAmount: 40.0,
-        minOrderAmount: 100.0,
-        isActive: true,
-      );
+        const newCoupon = CouponEntity(
+          id: 'coup-promo-15',
+          code: 'PROMO15',
+          title: 'خصم 15% ترويجي',
+          discountType: CouponDiscountType.percentage,
+          discountValue: 15.0,
+          maxDiscountAmount: 40.0,
+          minOrderAmount: 100.0,
+          isActive: true,
+        );
 
-      final error = await couponController.createCoupon(newCoupon);
-      expect(error, isNull);
+        final error = await couponController.createCoupon(newCoupon);
+        expect(error, isNull);
 
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      final coupons = container.read(couponManagementControllerProvider).value ?? [];
-      expect(coupons.any((c) => c.code == 'PROMO15'), isTrue);
-    });
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        final coupons =
+            container.read(couponManagementControllerProvider).value ?? [];
+        expect(coupons.any((c) => c.code == 'PROMO15'), isTrue);
+      },
+    );
 
     // -------------------------------------------------------------
     // TC-MGR-05: Table QR Generator URL Binding
     // -------------------------------------------------------------
-    test('TC-MGR-05: Table QR URL generates valid route with tableId query param', () {
-      const tableNumber = 12;
-      const qrPayload = 'https://restaurant.app/customer?table=$tableNumber';
+    test(
+      'TC-MGR-05: Table QR URL generates valid route with tableId query param',
+      () {
+        const tableNumber = 12;
+        const qrPayload = 'https://restaurant.app/customer?table=$tableNumber';
 
-      final uri = Uri.parse(qrPayload);
-      expect(uri.queryParameters['table'], '12');
-      expect(uri.path, '/customer');
-    });
+        final uri = Uri.parse(qrPayload);
+        expect(uri.queryParameters['table'], '12');
+        expect(uri.path, '/customer');
+      },
+    );
 
     // -------------------------------------------------------------
     // TC-MGR-06: Financial Calculation & VAT

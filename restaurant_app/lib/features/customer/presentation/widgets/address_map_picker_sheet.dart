@@ -61,12 +61,11 @@ class AddressMapPickerSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder:
-          (ctx) => AddressMapPickerSheet(
-            initialLatLng: initialLatLng,
-            restaurantLatLng: restaurantLatLng,
-            maxDeliveryRadiusKm: maxDeliveryRadiusKm,
-          ),
+      builder: (ctx) => AddressMapPickerSheet(
+        initialLatLng: initialLatLng,
+        restaurantLatLng: restaurantLatLng,
+        maxDeliveryRadiusKm: maxDeliveryRadiusKm,
+      ),
     );
   }
 
@@ -131,10 +130,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
 
       if (!mounted) return;
       setState(() {
-        _resolvedAddress =
-            res.displayName.isNotEmpty
-                ? res.displayName
-                : 'موقع محدد (${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)})';
+        _resolvedAddress = res.displayName.isNotEmpty
+            ? res.displayName
+            : 'موقع محدد (${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)})';
         _isGeocoding = false;
       });
     } catch (_) {
@@ -181,7 +179,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
     final newPos = LatLng(item.lat, item.lng);
     setState(() {
       _selectedLatLng = newPos;
-      _resolvedAddress = item.displayName.isNotEmpty ? item.displayName : item.name;
+      _resolvedAddress = item.displayName.isNotEmpty
+          ? item.displayName
+          : item.name;
       _autocompleteResults = [];
       _searchCtrl.text = item.name;
     });
@@ -297,17 +297,16 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                   decoration: InputDecoration(
                     hintText: 'ابحث عن اسم الشارع أو المعلم أو الحي...',
                     prefixIcon: const Icon(Icons.search),
-                    suffixIcon:
-                        _searchCtrl.text.isNotEmpty
-                            ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18),
-                              onPressed: () {
-                                _searchCtrl.clear();
-                                setState(() => _autocompleteResults = []);
-                              },
-                            )
-                            : (_isSearching
-                                ? const Padding(
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _autocompleteResults = []);
+                            },
+                          )
+                        : (_isSearching
+                              ? const Padding(
                                   padding: EdgeInsets.all(12),
                                   child: SizedBox(
                                     width: 16,
@@ -317,7 +316,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                                     ),
                                   ),
                                 )
-                                : null),
+                              : null),
                     filled: true,
                     fillColor: colorScheme.surfaceContainerHighest,
                     contentPadding: const EdgeInsets.symmetric(
@@ -407,42 +406,41 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                 IgnorePointer(
                   child: AnimatedBuilder(
                     animation: _pinBounceAnim,
-                    builder:
-                        (_, _) => Transform.translate(
-                          offset: Offset(0, _pinBounceAnim.value - 18),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.shade700,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.red.withValues(alpha: 0.5),
-                                      blurRadius: 12,
-                                      spreadRadius: 3,
-                                    ),
-                                  ],
+                    builder: (_, _) => Transform.translate(
+                      offset: Offset(0, _pinBounceAnim.value - 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade700,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.5),
+                                  blurRadius: 12,
+                                  spreadRadius: 3,
                                 ),
-                                child: const Icon(
-                                  Icons.location_pin,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-                              Container(
-                                width: 8,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.black45,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.location_pin,
+                              color: Colors.white,
+                              size: 26,
+                            ),
                           ),
-                        ),
+                          Container(
+                            width: 8,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.black45,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
 
@@ -474,8 +472,8 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                           _currentTheme == AppMapThemeOption.satellite
                               ? Icons.satellite_alt
                               : (_currentTheme == AppMapThemeOption.dark
-                                  ? Icons.dark_mode
-                                  : Icons.map),
+                                    ? Icons.dark_mode
+                                    : Icons.map),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -518,8 +516,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                   children: [
                     Icon(
                       Icons.place,
-                      color:
-                          _isWithinRange ? colorScheme.primary : Colors.orange,
+                      color: _isWithinRange
+                          ? colorScheme.primary
+                          : Colors.orange,
                       size: 24,
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -536,29 +535,29 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                           const SizedBox(height: 2),
                           _isGeocoding
                               ? Row(
-                                children: [
-                                  const SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+                                  children: [
+                                    const SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'جارٍ جلب تفاصيل العنوان...',
-                                    style: theme.textTheme.bodySmall,
-                                  ),
-                                ],
-                              )
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'جارٍ جلب تفاصيل العنوان...',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                  ],
+                                )
                               : Text(
-                                _resolvedAddress,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                                  _resolvedAddress,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
                         ],
                       ),
                     ),
@@ -573,12 +572,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        _isWithinRange
-                            ? colorScheme.primaryContainer.withValues(
-                              alpha: 0.5,
-                            )
-                            : Colors.orange.withValues(alpha: 0.15),
+                    color: _isWithinRange
+                        ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+                        : Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -591,10 +587,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                                 ? Icons.check_circle_outline
                                 : Icons.warning_amber_rounded,
                             size: 16,
-                            color:
-                                _isWithinRange
-                                    ? colorScheme.primary
-                                    : Colors.orange.shade800,
+                            color: _isWithinRange
+                                ? colorScheme.primary
+                                : Colors.orange.shade800,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -604,10 +599,9 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  _isWithinRange
-                                      ? colorScheme.primary
-                                      : Colors.orange.shade900,
+                              color: _isWithinRange
+                                  ? colorScheme.primary
+                                  : Colors.orange.shade900,
                             ),
                           ),
                         ],

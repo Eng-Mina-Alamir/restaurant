@@ -28,26 +28,34 @@ void main() {
       expect(state.value!.isNotEmpty, isTrue);
     });
 
-    test('createReservation adds reservation and sets table reserved', () async {
-      final controller = container.read(reservationControllerProvider.notifier);
-      final tables = container.read(tableControllerProvider);
-      final table = tables.first;
+    test(
+      'createReservation adds reservation and sets table reserved',
+      () async {
+        final controller = container.read(
+          reservationControllerProvider.notifier,
+        );
+        final tables = container.read(tableControllerProvider);
+        final table = tables.first;
 
-      final success = await controller.createReservation(
-        customerName: 'سارة',
-        customerPhone: '0512345678',
-        tableId: table.id,
-        tableNumber: table.tableNumber,
-        guestCount: 4,
-        reservationTime: DateTime.now().add(const Duration(hours: 2)),
-      );
+        final success = await controller.createReservation(
+          customerName: 'سارة',
+          customerPhone: '0512345678',
+          tableId: table.id,
+          tableNumber: table.tableNumber,
+          guestCount: 4,
+          reservationTime: DateTime.now().add(const Duration(hours: 2)),
+        );
 
-      expect(success, isTrue);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(success, isTrue);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final updatedTables = container.read(tableControllerProvider);
-      expect(updatedTables.firstWhere((t) => t.id == table.id).status, TableStatus.reserved);
-    });
+        final updatedTables = container.read(tableControllerProvider);
+        expect(
+          updatedTables.firstWhere((t) => t.id == table.id).status,
+          TableStatus.reserved,
+        );
+      },
+    );
 
     test('seatCustomer updates status to seated and occupies table', () async {
       final controller = container.read(reservationControllerProvider.notifier);
@@ -68,7 +76,9 @@ void main() {
       final res = resList.first;
 
       // Reserve it first
-      await container.read(tableControllerProvider.notifier).setReserved(res.tableId, reserved: true);
+      await container
+          .read(tableControllerProvider.notifier)
+          .setReserved(res.tableId, reserved: true);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       await controller.cancelReservation(res);

@@ -63,7 +63,9 @@ void main() {
     });
 
     test('addItem ignores unavailable, zero quantity or empty id items', () {
-      controller.addItem(const CartItem(menuItem: unavailableItem, quantity: 1));
+      controller.addItem(
+        const CartItem(menuItem: unavailableItem, quantity: 1),
+      );
       expect(controller.itemCount, 0);
 
       controller.addItem(const CartItem(menuItem: availableItem, quantity: 0));

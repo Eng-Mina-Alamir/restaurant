@@ -31,13 +31,16 @@ void main() {
       expect(testRating.userName, 'سارة خالد');
     });
 
-    test('getAverageScore returns score fallback or calculated average', () async {
-      final result = await repository.getAverageScore('non-existent-target');
-      expect(result.isRight, isTrue);
-      result.when(
-        onLeft: (_) => fail('Expected right default score'),
-        onRight: (score) => expect(score, greaterThanOrEqualTo(1.0)),
-      );
-    });
+    test(
+      'getAverageScore returns score fallback or calculated average',
+      () async {
+        final result = await repository.getAverageScore('non-existent-target');
+        expect(result.isRight, isTrue);
+        result.when(
+          onLeft: (_) => fail('Expected right default score'),
+          onRight: (score) => expect(score, greaterThanOrEqualTo(1.0)),
+        );
+      },
+    );
   });
 }

@@ -5,13 +5,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('Supabase Providers Unit Tests', () {
-    test('supabaseClientProvider produces a non-null SupabaseClient instance', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'supabaseClientProvider produces a non-null SupabaseClient instance',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final client = container.read(supabaseClientProvider);
-      expect(client, isA<SupabaseClient>());
-    });
+        final client = container.read(supabaseClientProvider);
+        expect(client, isA<SupabaseClient>());
+      },
+    );
 
     test('supabaseAuthProvider produces GoTrueClient', () {
       final container = ProviderContainer();
@@ -21,13 +24,16 @@ void main() {
       expect(auth, isA<GoTrueClient>());
     });
 
-    test('supabaseCurrentUserProvider returns null when no session is active', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test(
+      'supabaseCurrentUserProvider returns null when no session is active',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final user = container.read(supabaseCurrentUserProvider);
-      expect(user, isNull);
-    });
+        final user = container.read(supabaseCurrentUserProvider);
+        expect(user, isNull);
+      },
+    );
 
     test('supabaseAuthStateProvider exposes a broadcast stream', () {
       final container = ProviderContainer();

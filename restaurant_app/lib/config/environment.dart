@@ -45,7 +45,10 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'wss://staging-api.restaurant.example.com';
       case Environment.production:
-        final rawHost = SupabaseConfig.url.replaceAll(RegExp(r'^https?:\/\/'), '');
+        final rawHost = SupabaseConfig.url.replaceAll(
+          RegExp(r'^https?:\/\/'),
+          '',
+        );
         return 'wss://$rawHost/realtime/v1/websocket';
     }
   }

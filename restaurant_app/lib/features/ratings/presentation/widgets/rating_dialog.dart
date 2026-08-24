@@ -88,7 +88,8 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
                     color: Colors.amber,
                     size: 36,
                   ),
-                  onPressed: () => setState(() => _score = starValue.toDouble()),
+                  onPressed: () =>
+                      setState(() => _score = starValue.toDouble()),
                 );
               }),
             ),

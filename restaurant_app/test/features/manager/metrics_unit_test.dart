@@ -31,49 +31,67 @@ void main() {
       expect(metrics.itemsSold, isEmpty);
     });
 
-    test('calculates totalSales from completed orders only and aggregates popularity', () {
-      final now = DateTime.now();
+    test(
+      'calculates totalSales from completed orders only and aggregates popularity',
+      () {
+        final now = DateTime.now();
 
-      final completedOrder = OrderEntity(
-        id: 'ORD-1',
-        restaurantId: 'r1',
-        orderType: OrderType.dineIn,
-        status: OrderStatus.completed,
-        items: [
-          OrderItem(menuItem: item1, quantity: 2, itemTotal: 100.0, addedAt: now),
-          OrderItem(menuItem: item2, quantity: 1, itemTotal: 20.0, addedAt: now),
-        ],
-        subtotal: 120.0,
-        taxAmount: 18.0,
-        totalAmount: 138.0,
-        paymentMethod: PaymentMethod.card,
-        createdAt: now,
-      );
+        final completedOrder = OrderEntity(
+          id: 'ORD-1',
+          restaurantId: 'r1',
+          orderType: OrderType.dineIn,
+          status: OrderStatus.completed,
+          items: [
+            OrderItem(
+              menuItem: item1,
+              quantity: 2,
+              itemTotal: 100.0,
+              addedAt: now,
+            ),
+            OrderItem(
+              menuItem: item2,
+              quantity: 1,
+              itemTotal: 20.0,
+              addedAt: now,
+            ),
+          ],
+          subtotal: 120.0,
+          taxAmount: 18.0,
+          totalAmount: 138.0,
+          paymentMethod: PaymentMethod.card,
+          createdAt: now,
+        );
 
-      final pendingOrder = OrderEntity(
-        id: 'ORD-2',
-        restaurantId: 'r1',
-        orderType: OrderType.delivery,
-        status: OrderStatus.pending,
-        items: [
-          OrderItem(menuItem: item1, quantity: 1, itemTotal: 50.0, addedAt: now),
-        ],
-        subtotal: 50.0,
-        taxAmount: 7.5,
-        totalAmount: 57.5,
-        paymentMethod: PaymentMethod.cash,
-        createdAt: now,
-      );
+        final pendingOrder = OrderEntity(
+          id: 'ORD-2',
+          restaurantId: 'r1',
+          orderType: OrderType.delivery,
+          status: OrderStatus.pending,
+          items: [
+            OrderItem(
+              menuItem: item1,
+              quantity: 1,
+              itemTotal: 50.0,
+              addedAt: now,
+            ),
+          ],
+          subtotal: 50.0,
+          taxAmount: 7.5,
+          totalAmount: 57.5,
+          paymentMethod: PaymentMethod.cash,
+          createdAt: now,
+        );
 
-      final metrics = computeMetrics([completedOrder, pendingOrder]);
+        final metrics = computeMetrics([completedOrder, pendingOrder]);
 
-      expect(metrics.totalOrders, 2);
-      expect(metrics.totalSales, 138.0); // Only completed order
-      expect(metrics.averageOrderValue, 138.0 / 2);
-      expect(metrics.itemsSold['كباب'], 3); // 2 from first + 1 from second
-      expect(metrics.itemsSold['عصير برتقال'], 1);
-      expect(metrics.categoryRevenue['grills'], 150.0);
-      expect(metrics.categoryRevenue['drinks'], 20.0);
-    });
+        expect(metrics.totalOrders, 2);
+        expect(metrics.totalSales, 138.0); // Only completed order
+        expect(metrics.averageOrderValue, 138.0 / 2);
+        expect(metrics.itemsSold['كباب'], 3); // 2 from first + 1 from second
+        expect(metrics.itemsSold['عصير برتقال'], 1);
+        expect(metrics.categoryRevenue['grills'], 150.0);
+        expect(metrics.categoryRevenue['drinks'], 20.0);
+      },
+    );
   });
 }

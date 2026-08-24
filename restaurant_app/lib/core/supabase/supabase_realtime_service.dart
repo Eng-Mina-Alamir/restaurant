@@ -37,11 +37,15 @@ class SupabaseRealtimeService {
           schema: 'public',
           table: SupabaseConfig.ordersTable,
           callback: (payload) {
-            AppLogger.info('Realtime Order Inserted: ${payload.newRecord['id']}');
-            _controller?.add(RealtimeEvent(
-              type: RealtimeEventType.orderCreated,
-              payload: payload.newRecord,
-            ));
+            AppLogger.info(
+              'Realtime Order Inserted: ${payload.newRecord['id']}',
+            );
+            _controller?.add(
+              RealtimeEvent(
+                type: RealtimeEventType.orderCreated,
+                payload: payload.newRecord,
+              ),
+            );
           },
         )
         ..onPostgresChanges(
@@ -49,11 +53,15 @@ class SupabaseRealtimeService {
           schema: 'public',
           table: SupabaseConfig.ordersTable,
           callback: (payload) {
-            AppLogger.info('Realtime Order Updated: ${payload.newRecord['id']} -> ${payload.newRecord['status']}');
-            _controller?.add(RealtimeEvent(
-              type: RealtimeEventType.orderStatusChanged,
-              payload: payload.newRecord,
-            ));
+            AppLogger.info(
+              'Realtime Order Updated: ${payload.newRecord['id']} -> ${payload.newRecord['status']}',
+            );
+            _controller?.add(
+              RealtimeEvent(
+                type: RealtimeEventType.orderStatusChanged,
+                payload: payload.newRecord,
+              ),
+            );
           },
         )
         ..subscribe();
@@ -65,28 +73,35 @@ class SupabaseRealtimeService {
           schema: 'public',
           table: SupabaseConfig.tablesTable,
           callback: (payload) {
-            _controller?.add(RealtimeEvent(
-              type: RealtimeEventType.tableStatusChanged,
-              payload: payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord,
-            ));
+            _controller?.add(
+              RealtimeEvent(
+                type: RealtimeEventType.tableStatusChanged,
+                payload: payload.newRecord.isNotEmpty
+                    ? payload.newRecord
+                    : payload.oldRecord,
+              ),
+            );
           },
         )
         ..subscribe();
 
       // 3. Driver Locations Realtime Channel
-      _driverChannel = _supabase.channel('public:${SupabaseConfig.driverLocationsTable}')
-        ..onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: SupabaseConfig.driverLocationsTable,
-          callback: (payload) {
-            _controller?.add(RealtimeEvent(
-              type: RealtimeEventType.driverLocationUpdated,
-              payload: payload.newRecord,
-            ));
-          },
-        )
-        ..subscribe();
+      _driverChannel =
+          _supabase.channel('public:${SupabaseConfig.driverLocationsTable}')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: SupabaseConfig.driverLocationsTable,
+              callback: (payload) {
+                _controller?.add(
+                  RealtimeEvent(
+                    type: RealtimeEventType.driverLocationUpdated,
+                    payload: payload.newRecord,
+                  ),
+                );
+              },
+            )
+            ..subscribe();
     } catch (e) {
       AppLogger.error('Failed to subscribe to Supabase Realtime channels: $e');
     }
@@ -94,10 +109,9 @@ class SupabaseRealtimeService {
 
   /// Broadcasts an order creation event
   Future<void> broadcastOrderCreated(Map<String, dynamic> orderJson) async {
-    _controller?.add(RealtimeEvent(
-      type: RealtimeEventType.orderCreated,
-      payload: orderJson,
-    ));
+    _controller?.add(
+      RealtimeEvent(type: RealtimeEventType.orderCreated, payload: orderJson),
+    );
   }
 
   /// Broadcasts an order status change.
@@ -109,22 +123,28 @@ class SupabaseRealtimeService {
     String statusName, {
     DateTime? updatedAt,
   }) async {
-    _controller?.add(RealtimeEvent(
-      type: RealtimeEventType.orderStatusChanged,
-      payload: {
-        'id': orderId,
-        'status': statusName,
-        'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
-      },
-    ));
+    _controller?.add(
+      RealtimeEvent(
+        type: RealtimeEventType.orderStatusChanged,
+        payload: {
+          'id': orderId,
+          'status': statusName,
+          'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
+        },
+      ),
+    );
   }
 
   /// Broadcasts a table status change
-  Future<void> broadcastTableStatusChanged(Map<String, dynamic> tableJson) async {
-    _controller?.add(RealtimeEvent(
-      type: RealtimeEventType.tableStatusChanged,
-      payload: tableJson,
-    ));
+  Future<void> broadcastTableStatusChanged(
+    Map<String, dynamic> tableJson,
+  ) async {
+    _controller?.add(
+      RealtimeEvent(
+        type: RealtimeEventType.tableStatusChanged,
+        payload: tableJson,
+      ),
+    );
   }
 
   /// Broadcasts driver coordinates
@@ -142,15 +162,17 @@ class SupabaseRealtimeService {
       });
     } catch (_) {}
 
-    _controller?.add(RealtimeEvent(
-      type: RealtimeEventType.driverLocationUpdated,
-      payload: {
-        'driverId': driverId,
-        'latitude': latitude,
-        'longitude': longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-      },
-    ));
+    _controller?.add(
+      RealtimeEvent(
+        type: RealtimeEventType.driverLocationUpdated,
+        payload: {
+          'driverId': driverId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      ),
+    );
   }
 
   void dispose() {

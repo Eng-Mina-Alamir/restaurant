@@ -12,7 +12,9 @@ class AppStrings {
 
   // Auth
   String get loginTitle => isArabic ? 'تسجيل الدخول' : 'Sign In';
-  String get loginSubtitle => isArabic ? 'مرحباً بعودتك! سجّل للوصول إلى حسابك' : 'Welcome back! Sign in to continue';
+  String get loginSubtitle => isArabic
+      ? 'مرحباً بعودتك! سجّل للوصول إلى حسابك'
+      : 'Welcome back! Sign in to continue';
   String get emailLabel => isArabic ? 'البريد الإلكتروني' : 'Email Address';
   String get passwordLabel => isArabic ? 'كلمة المرور' : 'Password';
   String get loginButton => isArabic ? 'دخول' : 'Login';

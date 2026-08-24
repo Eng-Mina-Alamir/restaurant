@@ -11,7 +11,9 @@ void main() {
   });
 
   group('AddressMapPickerSheet Widget Tests', () {
-    testWidgets('renders search bar, map, and confirmation button', (tester) async {
+    testWidgets('renders search bar, map, and confirmation button', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -32,11 +34,7 @@ void main() {
 
     testWidgets('allows typing in the search bar', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AddressMapPickerSheet(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: AddressMapPickerSheet())),
       );
 
       await tester.pump();

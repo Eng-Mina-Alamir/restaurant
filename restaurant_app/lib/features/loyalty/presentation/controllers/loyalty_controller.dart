@@ -17,14 +17,12 @@ final loyaltyRepositoryProvider = Provider<LoyaltyRepository>((ref) {
   return InMemoryLoyaltyRepository();
 });
 
-final availableRewardsProvider =
-    FutureProvider<List<LoyaltyReward>>((ref) async {
+final availableRewardsProvider = FutureProvider<List<LoyaltyReward>>((
+  ref,
+) async {
   final repo = ref.watch(loyaltyRepositoryProvider);
   final result = await repo.getAvailableRewards();
-  return result.when(
-    onLeft: (_) => [],
-    onRight: (rewards) => rewards,
-  );
+  return result.when(onLeft: (_) => [], onRight: (rewards) => rewards);
 });
 
 class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
@@ -34,9 +32,9 @@ class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
   LoyaltyController({
     required LoyaltyRepository repository,
     required String userId,
-  })  : _repository = repository,
-        _userId = userId,
-        super(const AsyncValue.loading()) {
+  }) : _repository = repository,
+       _userId = userId,
+       super(const AsyncValue.loading()) {
     loadAccount();
   }
 
@@ -82,8 +80,8 @@ class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
 
 final loyaltyControllerProvider =
     StateNotifierProvider<LoyaltyController, AsyncValue<LoyaltyAccount>>((ref) {
-  final repo = ref.watch(loyaltyRepositoryProvider);
-  final user = ref.watch(authControllerProvider).user;
-  final userId = user?.id ?? 'guest-customer';
-  return LoyaltyController(repository: repo, userId: userId);
-});
+      final repo = ref.watch(loyaltyRepositoryProvider);
+      final user = ref.watch(authControllerProvider).user;
+      final userId = user?.id ?? 'guest-customer';
+      return LoyaltyController(repository: repo, userId: userId);
+    });

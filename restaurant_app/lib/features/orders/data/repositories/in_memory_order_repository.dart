@@ -49,8 +49,7 @@ class InMemoryOrderRepository implements OrderRepository {
 
   /// Audit entries produced by [revertStatus]. Exposed for tests and
   /// offline inspection.
-  List<OrderStatusLogEntry> get statusLog =>
-      List.unmodifiable(_statusLog);
+  List<OrderStatusLogEntry> get statusLog => List.unmodifiable(_statusLog);
 
   @override
   Future<Either<Failure, OrderEntity>> claimOrder(
@@ -85,8 +84,9 @@ class InMemoryOrderRepository implements OrderRepository {
       );
     }
     // Business rule: at most TWO reverts per order (التراجع مرتان كحد أقصى).
-    final revertCount =
-        _statusLog.where((e) => e.orderId == orderId && e.isRevert).length;
+    final revertCount = _statusLog
+        .where((e) => e.orderId == orderId && e.isRevert)
+        .length;
     if (revertCount >= 2) {
       return const Left<Failure, OrderEntity>(
         ValidationFailure(
@@ -96,15 +96,17 @@ class InMemoryOrderRepository implements OrderRepository {
     }
     final updated = current.copyWith(status: toStatus);
     _orders[index] = updated;
-    _statusLog.add(OrderStatusLogEntry(
-      orderId: orderId,
-      fromStatus: current.status,
-      toStatus: toStatus,
-      actorId: actorId,
-      reason: reason,
-      isRevert: true,
-      createdAt: DateTime.now(),
-    ));
+    _statusLog.add(
+      OrderStatusLogEntry(
+        orderId: orderId,
+        fromStatus: current.status,
+        toStatus: toStatus,
+        actorId: actorId,
+        reason: reason,
+        isRevert: true,
+        createdAt: DateTime.now(),
+      ),
+    );
     return Right<Failure, OrderEntity>(updated);
   }
 

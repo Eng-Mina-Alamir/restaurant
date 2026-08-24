@@ -142,13 +142,12 @@ class PushNotificationService {
   }
 
   /// Dispatches an order cancellation alert for Kitchen staff.
-  void notifyKitchenCancelledOrder({
-    required String orderId,
-    String? reason,
-  }) {
+  void notifyKitchenCancelledOrder({required String orderId, String? reason}) {
     showNotification(
       title: '⚠️ تنبيه: إلغاء طلب #$orderId',
-      body: reason != null ? 'سبب الإلغاء: $reason' : 'يرجى إيقاف تحضير هذا الطلب فوراً',
+      body: reason != null
+          ? 'سبب الإلغاء: $reason'
+          : 'يرجى إيقاف تحضير هذا الطلب فوراً',
       category: NotificationCategory.orderStatus,
       data: {'orderId': orderId, 'role': 'kitchen'},
     );
@@ -161,7 +160,8 @@ class PushNotificationService {
   }) {
     showNotification(
       title: '🎉 كسبت $pointsEarned نقطة ولاء جديدة!',
-      body: 'رصيد نقاطك الحالي أصبح $totalPoints نقطة. يمكنك استبدالها بمكافآت قيّمة.',
+      body:
+          'رصيد نقاطك الحالي أصبح $totalPoints نقطة. يمكنك استبدالها بمكافآت قيّمة.',
       category: NotificationCategory.system,
       data: {'points': pointsEarned, 'total': totalPoints},
     );
@@ -175,7 +175,6 @@ class PushNotificationService {
     }
   }
 
-
   /// Clears all stored notifications.
   void clearAll() {
     _history.clear();
@@ -187,7 +186,9 @@ class PushNotificationService {
 }
 
 /// Provider for [PushNotificationService].
-final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+final pushNotificationServiceProvider = Provider<PushNotificationService>((
+  ref,
+) {
   final service = PushNotificationService();
   ref.onDispose(service.dispose);
   return service;

@@ -85,8 +85,10 @@ class LocalCacheChatReadStateStore implements ChatReadStateStore {
     try {
       await cache.writeString(_key(userId, orderId), at.toIso8601String());
     } catch (e) {
-      AppLogger.warning('ChatReadState: write failed ($e); badge may '
-          'recount after restart');
+      AppLogger.warning(
+        'ChatReadState: write failed ($e); badge may '
+        'recount after restart',
+      );
     }
   }
 }
@@ -113,10 +115,10 @@ class UnreadChatController extends StateNotifier<int> {
     required ChatRepository repository,
     required String Function() currentUserId,
     ChatReadStateStore? readStateStore,
-  })  : _repository = repository,
-        _currentUserId = currentUserId,
-        _readStateStore = readStateStore ?? InMemoryChatReadStateStore(),
-        super(0);
+  }) : _repository = repository,
+       _currentUserId = currentUserId,
+       _readStateStore = readStateStore ?? InMemoryChatReadStateStore(),
+       super(0);
 
   final ChatRepository _repository;
   final String Function() _currentUserId;
@@ -138,7 +140,9 @@ class UnreadChatController extends StateNotifier<int> {
   /// factory at construction.
   void start(String orderId) {
     _orderId = orderId;
-    _subscription = _repository.watch(orderId).listen(
+    _subscription = _repository
+        .watch(orderId)
+        .listen(
           _onMessages,
           // The badge degrades gracefully to a possibly-stale count instead
           // of crashing the app; the thread page surfaces stream failures
@@ -157,10 +161,13 @@ class UnreadChatController extends StateNotifier<int> {
 
     if (!_hasBaseline) {
       _hasBaseline = true;
-      final persisted =
-          _readStateStore.readLastReadAt(userId: currentUserId, orderId: _orderId!);
-      final lastReadAt =
-          persisted == null ? null : DateTime.tryParse(persisted)?.toLocal();
+      final persisted = _readStateStore.readLastReadAt(
+        userId: currentUserId,
+        orderId: _orderId!,
+      );
+      final lastReadAt = persisted == null
+          ? null
+          : DateTime.tryParse(persisted)?.toLocal();
       for (final message in messages) {
         _seenMessageIds.add(message.id);
         if (_isUnreadOnBaseline(message, lastReadAt, currentUserId)) {
@@ -241,12 +248,12 @@ final chatReadStateStoreProvider = Provider<ChatReadStateStore>((ref) {
 /// [UnreadChatController.dispose] cancels the watch subscription.
 final unreadChatCountProvider =
     StateNotifierProvider.family<UnreadChatController, int, String>((
-  ref,
-  orderId,
-) {
-  return UnreadChatController(
-    repository: ref.watch(chatRepositoryProvider),
-    currentUserId: () => ref.read(chatCurrentUserIdProvider),
-    readStateStore: ref.watch(chatReadStateStoreProvider),
-  )..start(orderId);
-});
+      ref,
+      orderId,
+    ) {
+      return UnreadChatController(
+        repository: ref.watch(chatRepositoryProvider),
+        currentUserId: () => ref.read(chatCurrentUserIdProvider),
+        readStateStore: ref.watch(chatReadStateStoreProvider),
+      )..start(orderId);
+    });

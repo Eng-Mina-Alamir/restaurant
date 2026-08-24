@@ -31,12 +31,15 @@ void main() {
       final result = await repo.createAssignment(assignment);
 
       expect(result.isRight, isTrue);
-      result.when(onLeft: (_) => fail('expected success'), onRight: (created) {
-        expect(created.id, assignment.id);
-        expect(created.orderId, assignment.orderId);
-        expect(created.assignmentMethod, 'auto');
-        expect(created.assignedAt, isNull);
-      });
+      result.when(
+        onLeft: (_) => fail('expected success'),
+        onRight: (created) {
+          expect(created.id, assignment.id);
+          expect(created.orderId, assignment.orderId);
+          expect(created.assignmentMethod, 'auto');
+          expect(created.assignedAt, isNull);
+        },
+      );
     });
 
     test('createAssignment + getAssignmentByOrderId round-trip', () async {
@@ -46,13 +49,16 @@ void main() {
       final result = await repo.getAssignmentByOrderId(assignment.orderId);
 
       expect(result.isRight, isTrue);
-      result.when(onLeft: (_) => fail('expected success'), onRight: (loaded) {
-        expect(loaded, isNotNull);
-        expect(loaded!.id, assignment.id);
-        expect(loaded.orderId, assignment.orderId);
-        expect(loaded.driverId, assignment.driverId);
-        expect(loaded.deliveryStatus, DeliveryStatus.pending);
-      });
+      result.when(
+        onLeft: (_) => fail('expected success'),
+        onRight: (loaded) {
+          expect(loaded, isNotNull);
+          expect(loaded!.id, assignment.id);
+          expect(loaded.orderId, assignment.orderId);
+          expect(loaded.driverId, assignment.driverId);
+          expect(loaded.deliveryStatus, DeliveryStatus.pending);
+        },
+      );
     });
 
     test('getAssignmentByOrderId returns null for unknown order', () async {
@@ -67,23 +73,24 @@ void main() {
       );
     });
 
-    test('createAssignment upserts when the same id is re-dispatched',
-        () async {
-      final original = buildAssignment();
-      await repo.createAssignment(original);
+    test(
+      'createAssignment upserts when the same id is re-dispatched',
+      () async {
+        final original = buildAssignment();
+        await repo.createAssignment(original);
 
-      final updated = original.copyWith(
-        deliveryStatus: DeliveryStatus.accepted,
-      );
-      await repo.createAssignment(updated);
+        final updated = original.copyWith(
+          deliveryStatus: DeliveryStatus.accepted,
+        );
+        await repo.createAssignment(updated);
 
-      final result =
-          await repo.getAssignmentByOrderId(original.orderId);
-      result.when(
-        onLeft: (_) => fail('expected success'),
-        onRight: (loaded) =>
-            expect(loaded!.deliveryStatus, DeliveryStatus.accepted),
-      );
-    });
+        final result = await repo.getAssignmentByOrderId(original.orderId);
+        result.when(
+          onLeft: (_) => fail('expected success'),
+          onRight: (loaded) =>
+              expect(loaded!.deliveryStatus, DeliveryStatus.accepted),
+        );
+      },
+    );
   });
 }

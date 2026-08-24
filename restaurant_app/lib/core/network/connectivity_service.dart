@@ -4,15 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/logger.dart';
 
 /// Network connectivity state.
-enum ConnectivityStatus {
-  online,
-  offline,
-}
+enum ConnectivityStatus { online, offline }
 
 /// Service managing and broadcasting the app's online/offline network connectivity.
 class ConnectivityService {
   ConnectivityService([ConnectivityStatus initial = ConnectivityStatus.online])
-      : _status = initial {
+    : _status = initial {
     AppLogger.info('ConnectivityService initialized: ${_status.name}');
   }
 

@@ -49,9 +49,16 @@ class AlertsPage extends ConsumerWidget {
                   value: 'clear_all',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_sweep_outlined, size: 18, color: Colors.red),
+                      Icon(
+                        Icons.delete_sweep_outlined,
+                        size: 18,
+                        color: Colors.red,
+                      ),
                       SizedBox(width: 8),
-                      Text('مسح كل التنبيهات', style: TextStyle(color: Colors.red)),
+                      Text(
+                        'مسح كل التنبيهات',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -77,7 +84,8 @@ class AlertsPage extends ConsumerWidget {
                     label: Text(cat.displayName),
                     selected: isSelected,
                     onSelected: (_) {
-                      ref.read(selectedAlertCategoryProvider.notifier).state = cat;
+                      ref.read(selectedAlertCategoryProvider.notifier).state =
+                          cat;
                     },
                   ),
                 );

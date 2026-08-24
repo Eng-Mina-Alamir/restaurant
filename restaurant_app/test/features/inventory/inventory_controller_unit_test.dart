@@ -36,7 +36,9 @@ void main() {
 
       expect(success, isTrue);
       expect(controller.state.value!.length, initialCount + 1);
-      final newItem = controller.state.value!.firstWhere((i) => i.name == 'طماطم طازجة');
+      final newItem = controller.state.value!.firstWhere(
+        (i) => i.name == 'طماطم طازجة',
+      );
       expect(newItem.currentStock, 25.0);
     });
 
@@ -48,7 +50,9 @@ void main() {
       final success = await controller.restock(item.id, 10.0);
       expect(success, isTrue);
 
-      final updated = controller.state.value!.firstWhere((i) => i.id == item.id);
+      final updated = controller.state.value!.firstWhere(
+        (i) => i.id == item.id,
+      );
       expect(updated.currentStock, oldStock + 10.0);
     });
 
@@ -59,7 +63,10 @@ void main() {
 
       final updated = await controller.updateItem(modified);
       expect(updated, isTrue);
-      expect(controller.state.value!.firstWhere((i) => i.id == item.id).name, 'اسم معدل');
+      expect(
+        controller.state.value!.firstWhere((i) => i.id == item.id).name,
+        'اسم معدل',
+      );
 
       final countBeforeDelete = controller.state.value!.length;
       final deleted = await controller.deleteItem(item.id);

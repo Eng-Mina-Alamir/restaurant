@@ -49,8 +49,7 @@ class _FakeLoginRepository implements AuthRepository {
     required String password,
     required String restaurantId,
     UserRole role = UserRole.customer,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   Future<Either<Failure, UserEntity>> restoreSession() =>
@@ -60,8 +59,7 @@ class _FakeLoginRepository implements AuthRepository {
   Future<Either<Failure, UserEntity>> verifyOtp({
     required String otp,
     required String phone,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 }
 
 void main() {
@@ -74,15 +72,18 @@ void main() {
       useCase = LoginUseCase(repo);
     });
 
-    test('calls repository.login with exact parameters and returns user', () async {
-      final res = await useCase('manager@restaurant.com', '123456');
+    test(
+      'calls repository.login with exact parameters and returns user',
+      () async {
+        final res = await useCase('manager@restaurant.com', '123456');
 
-      expect(res.isRight, isTrue);
-      expect(repo.loggedIdentifier, 'manager@restaurant.com');
-      expect(repo.loggedPassword, '123456');
-      final user = (res as Right).value as UserEntity;
-      expect(user.role, UserRole.manager);
-    });
+        expect(res.isRight, isTrue);
+        expect(repo.loggedIdentifier, 'manager@restaurant.com');
+        expect(repo.loggedPassword, '123456');
+        final user = (res as Right).value as UserEntity;
+        expect(user.role, UserRole.manager);
+      },
+    );
 
     test('returns failure when repository fails', () async {
       repo.returnFailure = true;

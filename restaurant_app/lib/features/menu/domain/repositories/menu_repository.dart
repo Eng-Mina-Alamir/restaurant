@@ -29,4 +29,3 @@ abstract class MenuRepository {
     bool isAvailable,
   );
 }
-

@@ -49,7 +49,10 @@ class _FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> verifyOtp({required String otp, required String phone}) async {
+  Future<UserModel> verifyOtp({
+    required String otp,
+    required String phone,
+  }) async {
     return UserModel(
       id: 'test-user',
       name: 'User',
@@ -63,7 +66,9 @@ class _FakeAuthRemoteDataSource implements AuthRemoteDataSource {
 }
 
 void main() {
-  testWidgets('production login page does not display demo account chips', (tester) async {
+  testWidgets('production login page does not display demo account chips', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: LoginPage())),
     );
@@ -74,19 +79,29 @@ void main() {
     expect(find.text(AppConstants.loginButton), findsOneWidget);
   });
 
-  testWidgets('login page form submission triggers auth workflow', (tester) async {
+  testWidgets('login page form submission triggers auth workflow', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          authRemoteDataSourceProvider.overrideWithValue(_FakeAuthRemoteDataSource()),
+          authRemoteDataSourceProvider.overrideWithValue(
+            _FakeAuthRemoteDataSource(),
+          ),
         ],
         child: const MaterialApp(home: LoginPage()),
       ),
     );
     await tester.pump();
 
-    final emailField = find.widgetWithText(TextFormField, AppConstants.emailLabel);
-    final passwordField = find.widgetWithText(TextFormField, AppConstants.passwordLabel);
+    final emailField = find.widgetWithText(
+      TextFormField,
+      AppConstants.emailLabel,
+    );
+    final passwordField = find.widgetWithText(
+      TextFormField,
+      AppConstants.passwordLabel,
+    );
 
     await tester.enterText(emailField, 'test@example.com');
     await tester.enterText(passwordField, 'password123');

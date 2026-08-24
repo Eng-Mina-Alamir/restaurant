@@ -28,11 +28,14 @@ void main() {
       expect(nullableDateTimeFromJson('2026-08-19T12:00:00Z'), isNotNull);
     });
 
-    test('dateTimeToJson and nullableDateTimeToJson produce ISO-8601 strings', () {
-      final now = DateTime.utc(2026, 8, 19, 12, 0, 0);
-      expect(dateTimeToJson(now), '2026-08-19T12:00:00.000Z');
-      expect(nullableDateTimeToJson(null), isNull);
-    });
+    test(
+      'dateTimeToJson and nullableDateTimeToJson produce ISO-8601 strings',
+      () {
+        final now = DateTime.utc(2026, 8, 19, 12, 0, 0);
+        expect(dateTimeToJson(now), '2026-08-19T12:00:00.000Z');
+        expect(nullableDateTimeToJson(null), isNull);
+      },
+    );
 
     test('StringNullableExtensions orEmpty works properly', () {
       const String? nullString = null;

@@ -65,13 +65,14 @@ class _CartPageState extends ConsumerState<CartPage> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartControllerProvider);
     final appliedCoupon = ref.watch(appliedCouponProvider);
-    final rawSubtotal =
-        cart.fold<double>(0, (sum, item) => sum + item.linePrice);
+    final rawSubtotal = cart.fold<double>(
+      0,
+      (sum, item) => sum + item.linePrice,
+    );
     final discountAmount = appliedCoupon != null
         ? appliedCoupon.calculateDiscount(rawSubtotal)
         : 0.0;
     final totals = CartTotals.fromItems(cart, discountAmount: discountAmount);
-
 
     return Scaffold(
       appBar: AppBar(
@@ -151,8 +152,6 @@ class _CartPageState extends ConsumerState<CartPage> {
 }
 
 class _CartLine extends StatelessWidget {
-
-
   const _CartLine({
     required this.item,
     required this.onIncrement,
@@ -329,8 +328,6 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-
-
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -376,11 +373,17 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
@@ -393,7 +396,11 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                      icon: const Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Colors.red,
+                      ),
                       tooltip: 'إلغاء الكوبون',
                       onPressed: () {
                         ref.read(appliedCouponProvider.notifier).remove();
@@ -423,10 +430,14 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                 child: Container(
                   padding: const EdgeInsets.all(AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
@@ -517,10 +528,7 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
 }
 
 class _OrderTypeSelector extends StatelessWidget {
-  const _OrderTypeSelector({
-    required this.orderType,
-    required this.onChanged,
-  });
+  const _OrderTypeSelector({required this.orderType, required this.onChanged});
 
   final OrderType orderType;
   final ValueChanged<OrderType> onChanged;
@@ -621,9 +629,9 @@ class _PaymentSelector extends StatelessWidget {
       children: [
         Text(
           AppConstants.paymentMethodLabel,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: AppSpacing.xs),
         SingleChildScrollView(
@@ -751,4 +759,3 @@ class _Row extends StatelessWidget {
     );
   }
 }
-

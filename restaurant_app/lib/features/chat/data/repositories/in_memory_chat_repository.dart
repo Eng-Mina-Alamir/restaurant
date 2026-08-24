@@ -90,11 +90,9 @@ class InMemoryChatRepository implements ChatRepository {
     out = StreamController<List<ChatMessage>>(
       onListen: () {
         out.add(_snapshot(orderId));
-        busSub = _busFor(orderId).stream.listen(
-              out.add,
-              onError: out.addError,
-              onDone: out.close,
-            );
+        busSub = _busFor(
+          orderId,
+        ).stream.listen(out.add, onError: out.addError, onDone: out.close);
       },
       onPause: () => busSub.pause(),
       onResume: () => busSub.resume(),

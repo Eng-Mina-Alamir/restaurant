@@ -31,21 +31,24 @@ void main() {
       );
     });
 
-    test('login with valid demo credentials succeeds and stores session', () async {
-      final result = await repository.login('manager@demo.com', '123456');
+    test(
+      'login with valid demo credentials succeeds and stores session',
+      () async {
+        final result = await repository.login('manager@demo.com', '123456');
 
-      expect(result.isRight, isTrue);
-      final user = (result as Right<Failure, UserEntity>).value;
-      expect(user.role, UserRole.manager);
+        expect(result.isRight, isTrue);
+        final user = (result as Right<Failure, UserEntity>).value;
+        expect(user.role, UserRole.manager);
 
-      final token = await storage.readToken();
-      expect(token, isNotNull);
+        final token = await storage.readToken();
+        expect(token, isNotNull);
 
-      final session = await repository.restoreSession();
-      expect(session.isRight, isTrue);
-      final restoredUser = (session as Right<Failure, UserEntity>).value;
-      expect(restoredUser.role, UserRole.manager);
-    });
+        final session = await repository.restoreSession();
+        expect(session.isRight, isTrue);
+        final restoredUser = (session as Right<Failure, UserEntity>).value;
+        expect(restoredUser.role, UserRole.manager);
+      },
+    );
 
     test('login with invalid credentials fails with Failure', () async {
       final result = await repository.login('manager@demo.com', 'wrong_pass');
@@ -102,9 +105,10 @@ void main() {
       });
 
       test('expired JWT session is rejected and purged', () async {
-        final expired = DateTime.now()
-            .subtract(const Duration(hours: 1))
-            .millisecondsSinceEpoch ~/
+        final expired =
+            DateTime.now()
+                .subtract(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000;
         final token = buildJwt({'sub': 'usr-9', 'exp': expired});
         await storage.writeToken(token);
@@ -129,9 +133,10 @@ void main() {
       });
 
       test('live (non-expired) JWT session still restores', () async {
-        final future = DateTime.now()
-            .add(const Duration(hours: 1))
-            .millisecondsSinceEpoch ~/
+        final future =
+            DateTime.now()
+                .add(const Duration(hours: 1))
+                .millisecondsSinceEpoch ~/
             1000;
         final token = buildJwt({'sub': 'usr-10', 'exp': future});
         await storage.write(

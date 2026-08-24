@@ -80,7 +80,6 @@ class HiveTableRepository implements TableRepository {
     }
   }
 
-
   Future<List<RestaurantTable>> _load() async {
     var list = _cache.readList(cacheKey).map(RestaurantTable.fromJson).toList();
     if (list.isEmpty) {

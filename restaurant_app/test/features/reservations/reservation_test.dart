@@ -40,14 +40,21 @@ void main() {
 
     test('updates reservation status and cancels', () async {
       final listRes = await repository.getReservations();
-      final firstRes = listRes.when(onLeft: (_) => null, onRight: (l) => l)!.first;
+      final firstRes = listRes
+          .when(onLeft: (_) => null, onRight: (l) => l)!
+          .first;
 
-      final updateRes = await repository.updateStatus(firstRes.id, ReservationStatus.seated);
+      final updateRes = await repository.updateStatus(
+        firstRes.id,
+        ReservationStatus.seated,
+      );
       expect(updateRes.isRight, isTrue);
 
       await repository.cancelReservation(firstRes.id);
       final updatedListRes = await repository.getReservations();
-      final target = updatedListRes.when(onLeft: (_) => null, onRight: (l) => l)!.firstWhere((r) => r.id == firstRes.id);
+      final target = updatedListRes
+          .when(onLeft: (_) => null, onRight: (l) => l)!
+          .firstWhere((r) => r.id == firstRes.id);
       expect(target.status, ReservationStatus.cancelled);
     });
   });

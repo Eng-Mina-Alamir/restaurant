@@ -35,14 +35,23 @@ void main() {
       expect(testCoupon.validate(150.0), isNull);
     });
 
-    test('getCoupons returns Either Right or ServerFailure gracefully', () async {
-      final result = await repository.getCoupons();
-      expect(result, isNotNull);
-    });
+    test(
+      'getCoupons returns Either Right or ServerFailure gracefully',
+      () async {
+        final result = await repository.getCoupons();
+        expect(result, isNotNull);
+      },
+    );
 
-    test('validateAndGetCoupon handles non-existent code with Failure', () async {
-      final result = await repository.validateAndGetCoupon('NON_EXISTENT_CODE_XYZ', 200.0);
-      expect(result.isLeft, isTrue);
-    });
+    test(
+      'validateAndGetCoupon handles non-existent code with Failure',
+      () async {
+        final result = await repository.validateAndGetCoupon(
+          'NON_EXISTENT_CODE_XYZ',
+          200.0,
+        );
+        expect(result.isLeft, isTrue);
+      },
+    );
   });
 }

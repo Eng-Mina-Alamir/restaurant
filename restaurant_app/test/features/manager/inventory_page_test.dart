@@ -8,44 +8,45 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/pages/inv
 
 void main() {
   group('InventoryPage and Layer Tests', () {
-    testWidgets('renders inventory items, summary chips, and opens add item dialog', (tester) async {
-      final repository = InMemoryInventoryRepository([
-        const InventoryItemEntity(
-          id: 'inv-1',
-          name: 'لحم بقري مفروم (أنجوس)',
-          category: 'لحوم',
-          currentStock: 18.5,
-          unit: 'كغ',
-          minThreshold: 8.0,
-          costPerUnit: 55.0,
-        ),
-      ]);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            inventoryRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: InventoryPage(),
+    testWidgets(
+      'renders inventory items, summary chips, and opens add item dialog',
+      (tester) async {
+        final repository = InMemoryInventoryRepository([
+          const InventoryItemEntity(
+            id: 'inv-1',
+            name: 'لحم بقري مفروم (أنجوس)',
+            category: 'لحوم',
+            currentStock: 18.5,
+            unit: 'كغ',
+            minThreshold: 8.0,
+            costPerUnit: 55.0,
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        ]);
 
-      expect(find.text('إدارة المخزون والتوريد'), findsOneWidget);
-      expect(find.textContaining('منتهية'), findsWidgets);
-      expect(find.textContaining('منخفضة'), findsWidgets);
-      expect(find.text('لحم بقري مفروم (أنجوس)'), findsOneWidget);
-      expect(find.text('إضافة صنف جديد'), findsOneWidget);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              inventoryRepositoryProvider.overrideWithValue(repository),
+            ],
+            child: const MaterialApp(home: InventoryPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap FAB
-      await tester.tap(find.text('إضافة صنف جديد'));
-      await tester.pumpAndSettle();
+        expect(find.text('إدارة المخزون والتوريد'), findsOneWidget);
+        expect(find.textContaining('منتهية'), findsWidgets);
+        expect(find.textContaining('منخفضة'), findsWidgets);
+        expect(find.text('لحم بقري مفروم (أنجوس)'), findsOneWidget);
+        expect(find.text('إضافة صنف جديد'), findsOneWidget);
 
-      expect(find.text('إضافة صنف مخزون جديد'), findsOneWidget);
-      expect(find.text('اسم الصنف *'), findsOneWidget);
-    });
+        // Tap FAB
+        await tester.tap(find.text('إضافة صنف جديد'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('إضافة صنف مخزون جديد'), findsOneWidget);
+        expect(find.text('اسم الصنف *'), findsOneWidget);
+      },
+    );
 
     test('InventoryController CRUD operations work correctly', () async {
       final repository = InMemoryInventoryRepository();
@@ -64,12 +65,19 @@ void main() {
         costPerUnit: 15,
       );
       expect(added, isTrue);
-      expect(controller.state.value!.any((i) => i.name == 'صلصة طماطم إيطالية'), isTrue);
+      expect(
+        controller.state.value!.any((i) => i.name == 'صلصة طماطم إيطالية'),
+        isTrue,
+      );
 
-      final target = controller.state.value!.firstWhere((i) => i.name == 'صلصة طماطم إيطالية');
+      final target = controller.state.value!.firstWhere(
+        (i) => i.name == 'صلصة طماطم إيطالية',
+      );
       final restocked = await controller.restock(target.id, 5);
       expect(restocked, isTrue);
-      final updated = controller.state.value!.firstWhere((i) => i.id == target.id);
+      final updated = controller.state.value!.firstWhere(
+        (i) => i.id == target.id,
+      );
       expect(updated.currentStock, 15);
 
       final deleted = await controller.deleteItem(target.id);

@@ -11,7 +11,10 @@ class NotificationHandler {
   final PushNotificationService _notificationService;
 
   /// Handles user tapping on a notification action.
-  void onNotificationTapped(BuildContext context, AppNotification notification) {
+  void onNotificationTapped(
+    BuildContext context,
+    AppNotification notification,
+  ) {
     _notificationService.markAsRead(notification.id);
 
     final type = notification.data['type']?.toString();

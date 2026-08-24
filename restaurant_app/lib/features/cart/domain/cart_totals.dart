@@ -29,7 +29,10 @@ class CartTotals {
     Iterable<CartItem> items, {
     double discountAmount = 0.0,
   }) {
-    final rawSubtotal = items.fold<double>(0, (sum, item) => sum + item.linePrice);
+    final rawSubtotal = items.fold<double>(
+      0,
+      (sum, item) => sum + item.linePrice,
+    );
     final subtotal = FinancialCalculator.roundCurrency(rawSubtotal);
     final effectiveSubtotal = FinancialCalculator.roundCurrency(
       (subtotal - discountAmount).clamp(0.0, double.infinity),
@@ -52,4 +55,3 @@ class CartTotals {
       'CartTotals(subtotal: $subtotal, discount: $discountAmount, '
       'taxAmount: $taxAmount, totalAmount: $totalAmount)';
 }
-

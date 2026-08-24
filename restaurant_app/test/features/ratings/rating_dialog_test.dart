@@ -6,7 +6,9 @@ import 'package:restaurant_app/features/ratings/presentation/widgets/rating_dial
 
 void main() {
   group('RatingDialog Widget Tests', () {
-    testWidgets('renders star rating, comment box and submits rating', (tester) async {
+    testWidgets('renders star rating, comment box and submits rating', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(

@@ -29,7 +29,7 @@ class PaymentTransactionRecord {
 /// Service managing payment workflows and transaction auditing.
 class PaymentService {
   PaymentService([PaymentGateway? gateway])
-      : _gateway = gateway ?? MockPaymentGateway();
+    : _gateway = gateway ?? MockPaymentGateway();
 
   final PaymentGateway _gateway;
   final List<PaymentTransactionRecord> _transactions = [];
@@ -44,7 +44,9 @@ class PaymentService {
     required PaymentMethod method,
     String? phone,
   }) async {
-    AppLogger.info('Processing payment of $amount SAR for order $orderId via ${method.name}');
+    AppLogger.info(
+      'Processing payment of $amount SAR for order $orderId via ${method.name}',
+    );
 
     final request = PaymentRequest(
       orderId: orderId,
@@ -58,7 +60,9 @@ class PaymentService {
     if (result.isSuccess) {
       _transactions.add(
         PaymentTransactionRecord(
-          id: result.transactionId ?? 'TXN-${DateTime.now().millisecondsSinceEpoch}',
+          id:
+              result.transactionId ??
+              'TXN-${DateTime.now().millisecondsSinceEpoch}',
           orderId: orderId,
           amount: amount,
           method: method,

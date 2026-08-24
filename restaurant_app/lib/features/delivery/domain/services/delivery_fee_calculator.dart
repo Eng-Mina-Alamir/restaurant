@@ -53,7 +53,8 @@ class DeliveryFeeCalculator {
     final dLat = _degreesToRadians(endLat - startLat);
     final dLng = _degreesToRadians(endLng - startLng);
 
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_degreesToRadians(startLat)) *
             math.cos(_degreesToRadians(endLat)) *
             math.sin(dLng / 2) *

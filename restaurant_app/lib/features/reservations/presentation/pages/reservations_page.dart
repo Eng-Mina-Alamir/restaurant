@@ -64,8 +64,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                     child: ChoiceChip(
                       label: Text(status.labelAr),
                       selected: _filterStatus == status,
-                      onSelected: (_) =>
-                          setState(() => _filterStatus = status),
+                      onSelected: (_) => setState(() => _filterStatus = status),
                     ),
                   ),
               ],
@@ -100,9 +99,10 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                   itemBuilder: (context, index) {
                     final res = filtered[index];
                     final statusColor = _statusColor(res.status);
-                    final timeFormatted =
-                        DateFormat('hh:mm a - yyyy/MM/dd', 'ar')
-                            .format(res.reservationTime);
+                    final timeFormatted = DateFormat(
+                      'hh:mm a - yyyy/MM/dd',
+                      'ar',
+                    ).format(res.reservationTime);
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -112,13 +112,13 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: colorScheme.primaryContainer,
+                                      backgroundColor:
+                                          colorScheme.primaryContainer,
                                       foregroundColor:
                                           colorScheme.onPrimaryContainer,
                                       child: const Icon(Icons.person),
@@ -132,16 +132,16 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                           res.customerName,
                                           style: theme.textTheme.titleMedium
                                               ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                         ),
                                         Text(
                                           res.customerPhone,
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
-                                            color:
-                                                colorScheme.onSurfaceVariant,
-                                          ),
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -154,8 +154,9 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: statusColor.withValues(alpha: 0.12),
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.full),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.full,
+                                    ),
                                   ),
                                   child: Text(
                                     res.status.labelAr,
@@ -209,9 +210,10 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                   Expanded(
                                     child: Text(
                                       'ملاحظات: ${res.notes}',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
                                   ),
                                 ],
@@ -228,14 +230,17 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                       side: const BorderSide(color: Colors.red),
                                       visualDensity: VisualDensity.compact,
                                     ),
-                                    icon: const Icon(Icons.cancel_outlined,
-                                        size: 16),
+                                    icon: const Icon(
+                                      Icons.cancel_outlined,
+                                      size: 16,
+                                    ),
                                     label: const Text('إلغاء الحجز'),
                                     onPressed: () {
                                       ref
                                           .read(
-                                              reservationControllerProvider
-                                                  .notifier)
+                                            reservationControllerProvider
+                                                .notifier,
+                                          )
                                           .cancelReservation(res);
                                     },
                                   ),
@@ -250,11 +255,13 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                     onPressed: () {
                                       ref
                                           .read(
-                                              reservationControllerProvider
-                                                  .notifier)
+                                            reservationControllerProvider
+                                                .notifier,
+                                          )
                                           .seatCustomer(res);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             'تم إجلاس ${res.customerName} على طاولة ${res.tableNumber}',
@@ -330,8 +337,8 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                     Text(
                       'حجز طاولة جديد',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -375,7 +382,6 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                         isExpanded: true,
                         initialValue: selectedTableId,
                         items: tables
-
                             .map(
                               (t) => DropdownMenuItem(
                                 value: t.id,
@@ -404,16 +410,19 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ListTile(
-                  tileColor:
-                      Theme.of(ctx).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  tileColor: Theme.of(
+                    ctx,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   leading: const Icon(Icons.calendar_month),
                   title: const Text('تاريخ ووقت الحجز'),
                   subtitle: Text(
-                    DateFormat('yyyy/MM/dd - hh:mm a', 'ar')
-                        .format(selectedDateTime),
+                    DateFormat(
+                      'yyyy/MM/dd - hh:mm a',
+                      'ar',
+                    ).format(selectedDateTime),
                   ),
                   trailing: const Icon(Icons.edit_calendar),
                   onTap: () async {
@@ -426,8 +435,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                     if (date != null && ctx.mounted) {
                       final time = await showTimePicker(
                         context: ctx,
-                        initialTime:
-                            TimeOfDay.fromDateTime(selectedDateTime),
+                        initialTime: TimeOfDay.fromDateTime(selectedDateTime),
                       );
                       if (time != null) {
                         setSheetState(() {

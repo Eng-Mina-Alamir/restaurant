@@ -5,7 +5,9 @@ import 'package:restaurant_app/features/delivery/presentation/widgets/delivery_p
 
 void main() {
   group('DeliveryPhotoCapture Widget Tests', () {
-    testWidgets('renders placeholder card and source buttons when no photo', (tester) async {
+    testWidgets('renders placeholder card and source buttons when no photo', (
+      tester,
+    ) async {
       File? selectedPhoto;
 
       await tester.pumpWidget(

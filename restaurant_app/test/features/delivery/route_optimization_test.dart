@@ -20,9 +20,21 @@ void main() {
 
     test('optimizes multi-stop route in optimal order of proximity', () {
       final stops = [
-        const DeliveryStop(id: 'S-FAR', name: 'العميل البعيد', location: stopFar),
-        const DeliveryStop(id: 'S-NEAR', name: 'العميل القريب', location: stopNear),
-        const DeliveryStop(id: 'S-MID', name: 'العميل المتوسط', location: stopMid),
+        const DeliveryStop(
+          id: 'S-FAR',
+          name: 'العميل البعيد',
+          location: stopFar,
+        ),
+        const DeliveryStop(
+          id: 'S-NEAR',
+          name: 'العميل القريب',
+          location: stopNear,
+        ),
+        const DeliveryStop(
+          id: 'S-MID',
+          name: 'العميل المتوسط',
+          location: stopMid,
+        ),
       ];
 
       final result = service.optimizeRoute(

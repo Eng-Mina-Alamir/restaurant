@@ -39,8 +39,7 @@ class DriverInfo {
   factory DriverInfo.fromMap(Map<String, dynamic> map) {
     return DriverInfo(
       id: map['id']?.toString() ?? '',
-      name:
-          (map['name'] ?? map['full_name'])?.toString() ?? 'سائق غير معروف',
+      name: (map['name'] ?? map['full_name'])?.toString() ?? 'سائق غير معروف',
       phone: map['phone']?.toString(),
       rating: (map['rating'] as num?)?.toDouble() ?? 5.0,
       vehicleInfo: map['vehicle_info']?.toString(),

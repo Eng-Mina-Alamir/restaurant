@@ -16,13 +16,17 @@ class _FakeTableRepository implements TableRepository {
   }
 
   @override
-  Future<Either<Failure, RestaurantTable>> addTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> addTable(
+    RestaurantTable table,
+  ) async {
     tables.add(table);
     return Right(table);
   }
 
   @override
-  Future<Either<Failure, RestaurantTable>> updateTable(RestaurantTable table) async {
+  Future<Either<Failure, RestaurantTable>> updateTable(
+    RestaurantTable table,
+  ) async {
     final index = tables.indexWhere((t) => t.id == table.id);
     if (index != -1) {
       tables[index] = table;
@@ -107,13 +111,16 @@ void main() {
       expect(controller.tableById('tbl-2')?.status, TableStatus.available);
     });
 
-    test('addTable adds table and maintains sorted order by tableNumber', () async {
-      await controller.addTable(tableNumber: 5, capacity: 8);
+    test(
+      'addTable adds table and maintains sorted order by tableNumber',
+      () async {
+        await controller.addTable(tableNumber: 5, capacity: 8);
 
-      expect(controller.state, hasLength(3));
-      expect(controller.state.last.tableNumber, 5);
-      expect(controller.state.last.capacity, 8);
-    });
+        expect(controller.state, hasLength(3));
+        expect(controller.state.last.tableNumber, 5);
+        expect(controller.state.last.capacity, 8);
+      },
+    );
 
     test('editTable modifies properties', () async {
       await controller.editTable(

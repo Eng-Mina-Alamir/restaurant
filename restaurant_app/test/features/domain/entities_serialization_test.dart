@@ -145,71 +145,74 @@ void main() {
       expect(fromJson.itemsSold['برجر'], 40);
     });
 
-    test('InventoryItemEntity, CouponEntity, RatingEntity, ReservationEntity, AlertEntity models', () {
-      final now = DateTime.now();
+    test(
+      'InventoryItemEntity, CouponEntity, RatingEntity, ReservationEntity, AlertEntity models',
+      () {
+        final now = DateTime.now();
 
-      const inv = InventoryItemEntity(
-        id: 'inv-1',
-        name: 'سكر',
-        category: 'خامات',
-        currentStock: 50.0,
-        unit: 'كجم',
-        minThreshold: 10.0,
-        costPerUnit: 4.5,
-      );
-      expect(inv.id, 'inv-1');
-      expect(inv.status, StockStatus.sufficient);
-      expect(inv.copyWith(currentStock: 5.0).status, StockStatus.low);
+        const inv = InventoryItemEntity(
+          id: 'inv-1',
+          name: 'سكر',
+          category: 'خامات',
+          currentStock: 50.0,
+          unit: 'كجم',
+          minThreshold: 10.0,
+          costPerUnit: 4.5,
+        );
+        expect(inv.id, 'inv-1');
+        expect(inv.status, StockStatus.sufficient);
+        expect(inv.copyWith(currentStock: 5.0).status, StockStatus.low);
 
-      final coupon = CouponEntity(
-        id: 'c-1',
-        code: 'SAVE20',
-        title: 'خصم 20%',
-        discountType: CouponDiscountType.percentage,
-        discountValue: 20.0,
-        isActive: true,
-        validUntil: now.add(const Duration(days: 7)),
-      );
-      expect(coupon.code, 'SAVE20');
-      expect(coupon.validate(100.0), isNull);
-      expect(coupon.calculateDiscount(100.0), 20.0);
+        final coupon = CouponEntity(
+          id: 'c-1',
+          code: 'SAVE20',
+          title: 'خصم 20%',
+          discountType: CouponDiscountType.percentage,
+          discountValue: 20.0,
+          isActive: true,
+          validUntil: now.add(const Duration(days: 7)),
+        );
+        expect(coupon.code, 'SAVE20');
+        expect(coupon.validate(100.0), isNull);
+        expect(coupon.calculateDiscount(100.0), 20.0);
 
-      final rating = RatingEntity(
-        id: 'rate-1',
-        targetId: 'item-1',
-        targetType: RatingTargetType.menuItem,
-        userId: 'u-1',
-        userName: 'خالد',
-        score: 4.5,
-        comment: 'ممتاز',
-        createdAt: now,
-      );
-      expect(rating.score, 4.5);
+        final rating = RatingEntity(
+          id: 'rate-1',
+          targetId: 'item-1',
+          targetType: RatingTargetType.menuItem,
+          userId: 'u-1',
+          userName: 'خالد',
+          score: 4.5,
+          comment: 'ممتاز',
+          createdAt: now,
+        );
+        expect(rating.score, 4.5);
 
-      final res = ReservationEntity(
-        id: 'res-1',
-        customerName: 'محمد',
-        customerPhone: '0555555555',
-        tableId: 'tbl-1',
-        tableNumber: 1,
-        guestCount: 3,
-        reservationTime: now,
-        status: ReservationStatus.confirmed,
-        createdAt: now,
-      );
-      expect(res.customerName, 'محمد');
-      expect(res.status, ReservationStatus.confirmed);
+        final res = ReservationEntity(
+          id: 'res-1',
+          customerName: 'محمد',
+          customerPhone: '0555555555',
+          tableId: 'tbl-1',
+          tableNumber: 1,
+          guestCount: 3,
+          reservationTime: now,
+          status: ReservationStatus.confirmed,
+          createdAt: now,
+        );
+        expect(res.customerName, 'محمد');
+        expect(res.status, ReservationStatus.confirmed);
 
-      final alert = AlertEntity(
-        id: 'alt-1',
-        title: 'تنبيه',
-        message: 'رسالة',
-        severity: AlertSeverity.warning,
-        category: AlertCategory.inventory,
-        createdAt: now,
-      );
-      expect(alert.isRead, isFalse);
-      expect(alert.copyWith(isRead: true).isRead, isTrue);
-    });
+        final alert = AlertEntity(
+          id: 'alt-1',
+          title: 'تنبيه',
+          message: 'رسالة',
+          severity: AlertSeverity.warning,
+          category: AlertCategory.inventory,
+          createdAt: now,
+        );
+        expect(alert.isRead, isFalse);
+        expect(alert.copyWith(isRead: true).isRead, isTrue);
+      },
+    );
   });
 }

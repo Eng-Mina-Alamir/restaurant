@@ -5,13 +5,11 @@ import 'package:restaurant_app/features/customer/presentation/pages/qr_scan_page
 
 void main() {
   group('QrScanPage Widget Tests', () {
-    testWidgets('renders QR scan page with app bar and instruction text', (tester) async {
+    testWidgets('renders QR scan page with app bar and instruction text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: QrScanPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: QrScanPage())),
       );
 
       // Verify app bar title

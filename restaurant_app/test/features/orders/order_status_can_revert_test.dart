@@ -3,15 +3,13 @@ import 'package:restaurant_app/core/domain/enums.dart';
 
 void main() {
   group('OrderStatus.canRevertTo', () {
-    test('exhaustively: only ready→preparing and served→ready are allowed',
-        () {
+    test('exhaustively: only ready→preparing and served→ready are allowed', () {
       for (final current in OrderStatus.values) {
         for (final previous in OrderStatus.values) {
           final expected =
               (current == OrderStatus.ready &&
-                      previous == OrderStatus.preparing) ||
-                  (current == OrderStatus.served &&
-                      previous == OrderStatus.ready);
+                  previous == OrderStatus.preparing) ||
+              (current == OrderStatus.served && previous == OrderStatus.ready);
           expect(
             current.canRevertTo(previous),
             expected,
@@ -67,25 +65,39 @@ void main() {
 
     group('canTransitionTo remains unchanged by revert support', () {
       test('forward transitions still work', () {
-        expect(OrderStatus.pending.canTransitionTo(OrderStatus.confirmed),
-            isTrue);
-        expect(OrderStatus.confirmed.canTransitionTo(OrderStatus.preparing),
-            isTrue);
-        expect(OrderStatus.preparing.canTransitionTo(OrderStatus.ready),
-            isTrue);
+        expect(
+          OrderStatus.pending.canTransitionTo(OrderStatus.confirmed),
+          isTrue,
+        );
+        expect(
+          OrderStatus.confirmed.canTransitionTo(OrderStatus.preparing),
+          isTrue,
+        );
+        expect(
+          OrderStatus.preparing.canTransitionTo(OrderStatus.ready),
+          isTrue,
+        );
         expect(OrderStatus.ready.canTransitionTo(OrderStatus.served), isTrue);
-        expect(OrderStatus.served.canTransitionTo(OrderStatus.completed),
-            isTrue);
-        expect(OrderStatus.pending.canTransitionTo(OrderStatus.cancelled),
-            isTrue);
+        expect(
+          OrderStatus.served.canTransitionTo(OrderStatus.completed),
+          isTrue,
+        );
+        expect(
+          OrderStatus.pending.canTransitionTo(OrderStatus.cancelled),
+          isTrue,
+        );
       });
 
       test('backward moves are still rejected by canTransitionTo', () {
-        expect(OrderStatus.ready.canTransitionTo(OrderStatus.preparing),
-            isFalse);
+        expect(
+          OrderStatus.ready.canTransitionTo(OrderStatus.preparing),
+          isFalse,
+        );
         expect(OrderStatus.served.canTransitionTo(OrderStatus.ready), isFalse);
-        expect(OrderStatus.served.canTransitionTo(OrderStatus.pending),
-            isFalse);
+        expect(
+          OrderStatus.served.canTransitionTo(OrderStatus.pending),
+          isFalse,
+        );
       });
 
       test('terminal states still reject all transitions out', () {

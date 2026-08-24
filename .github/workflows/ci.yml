@@ -41,6 +41,10 @@ jobs:
         working-directory: restaurant_app
         run: flutter pub get
 
+      - name: Check Formatting
+        working-directory: restaurant_app
+        run: dart format --output=none --set-exit-if-changed .
+
       - name: Static Code Analysis (Lint)
         working-directory: restaurant_app
         run: flutter analyze --fatal-infos

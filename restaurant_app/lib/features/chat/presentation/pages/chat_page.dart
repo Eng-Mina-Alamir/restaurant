@@ -28,8 +28,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   /// Badge counter for this order, resolved once so [dispose] can clear it
   /// without touching `ref` (Riverpod forbids ref reads after unmount).
-  late final UnreadChatController _unreadBadge =
-      ref.read(unreadChatCountProvider(widget.orderId).notifier);
+  late final UnreadChatController _unreadBadge = ref.read(
+    unreadChatCountProvider(widget.orderId).notifier,
+  );
 
   bool get _canSend => _inputController.text.trim().isNotEmpty;
 
@@ -101,9 +102,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -136,7 +135,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       itemBuilder: (context, index) => _MessageBubble(
                         key: ValueKey<String>(messages[index].id),
                         message: messages[index],
-                        isMine: messages[index].senderId ==
+                        isMine:
+                            messages[index].senderId ==
                             ref.watch(chatCurrentUserIdProvider),
                       ),
                     ),
@@ -226,13 +226,15 @@ class _MessageBubble extends StatelessWidget {
             maxWidth: MediaQuery.of(context).size.width * 0.72,
           ),
           decoration: BoxDecoration(
-            color:
-                isMine ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+            color: isMine
+                ? colorScheme.primary
+                : colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Column(
-            crossAxisAlignment:
-                isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(

@@ -65,13 +65,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     CartDiscountResolver? discountResolver,
     MenuItem? Function(String menuItemId)? menuLookup,
     Future<void> Function(OrderEntity order)? onDeliveryOrderReady,
-  })  : _realtimeService = realtimeService,
-        _connectivityService = connectivityService,
-        _offlineQueueService = offlineQueueService,
-        _discountResolver = discountResolver,
-        _menuLookup = menuLookup,
-        _onDeliveryOrderReady = onDeliveryOrderReady,
-        super(const []) {
+  }) : _realtimeService = realtimeService,
+       _connectivityService = connectivityService,
+       _offlineQueueService = offlineQueueService,
+       _discountResolver = discountResolver,
+       _menuLookup = menuLookup,
+       _onDeliveryOrderReady = onDeliveryOrderReady,
+       super(const []) {
     _initRealtime();
     _initConnectivity();
   }
@@ -155,35 +155,33 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
     if (queueService != null) {
       if (!queueService.hasPending) return;
-      await queueService.drainWith(
-        (type, payload) async {
-          if (type == 'createOrder') {
-            try {
-              final order = OrderEntity.fromJson(payload);
-              final result = await _repository.createOrder(order);
-              if (result.isRight) {
-                _realtimeService?.broadcastOrderCreated(payload);
-                // Keep the UI mirror consistent with the persistent queue.
-                _offlineQueue.removeWhere((o) => o.id == order.id);
-                return true;
-              }
-              AppLogger.warning(
-                'Offline sync: createOrder ${order.id} rejected by repository; '
-                'will retry/backoff',
-              );
-              return false;
-            } catch (e, st) {
-              AppLogger.error(
-                'Offline sync: corrupt queued order dropped',
-                error: e,
-                stackTrace: st,
-              );
-              return true; // Poison payload — let the queue dead-letter it.
+      await queueService.drainWith((type, payload) async {
+        if (type == 'createOrder') {
+          try {
+            final order = OrderEntity.fromJson(payload);
+            final result = await _repository.createOrder(order);
+            if (result.isRight) {
+              _realtimeService?.broadcastOrderCreated(payload);
+              // Keep the UI mirror consistent with the persistent queue.
+              _offlineQueue.removeWhere((o) => o.id == order.id);
+              return true;
             }
+            AppLogger.warning(
+              'Offline sync: createOrder ${order.id} rejected by repository; '
+              'will retry/backoff',
+            );
+            return false;
+          } catch (e, st) {
+            AppLogger.error(
+              'Offline sync: corrupt queued order dropped',
+              error: e,
+              stackTrace: st,
+            );
+            return true; // Poison payload — let the queue dead-letter it.
           }
-          return true;
-        },
-      );
+        }
+        return true;
+      });
       return;
     }
 
@@ -224,8 +222,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       } else if (event.type == RealtimeEventType.orderStatusChanged ||
           event.type == RealtimeEventType.orderStatusReverted) {
         try {
-          final orderId =
-              (event.payload['orderId'] ?? event.payload['id'])?.toString();
+          final orderId = (event.payload['orderId'] ?? event.payload['id'])
+              ?.toString();
           final statusName = event.payload['status']?.toString();
           if (orderId == null || statusName == null) {
             AppLogger.warning(
@@ -238,8 +236,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           // than the last event we APPLIED for this order is dropped, so a
           // delayed message can never move an order backwards.
           final rawUpdatedAt = event.payload['updatedAt'];
-          final eventAt =
-              rawUpdatedAt is String ? DateTime.tryParse(rawUpdatedAt) : null;
+          final eventAt = rawUpdatedAt is String
+              ? DateTime.tryParse(rawUpdatedAt)
+              : null;
           final lastApplied = _statusEventAt[orderId];
           if (eventAt != null &&
               lastApplied != null &&
@@ -272,9 +271,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
             }
           }
         } catch (e, st) {
-          AppLogger.warning(
-            'Realtime: bad status-change payload: $e\n$st',
-          );
+          AppLogger.warning('Realtime: bad status-change payload: $e\n$st');
         }
       }
     });
@@ -374,8 +371,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _placing = true;
     try {
       final createdAt = DateTime.now();
-      final discountAmount =
-          _discountResolver?.call(cartItems) ?? 0.0;
+      final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForCustomer(
         orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
         restaurantId: MenuSeedData.restaurantId,
@@ -401,7 +397,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final result = await _repository.createOrder(order);
       switch (result) {
         case Left(:final value):
-          AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          AppLogger.warning(
+            'Server order creation returned error: ${value.message}. Storing in offline queue.',
+          );
           await _persistOfflineOrder(order);
           state = [...state, order];
           _cart.clear();
@@ -442,8 +440,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _placing = true;
     try {
       final createdAt = DateTime.now();
-      final discountAmount =
-          _discountResolver?.call(cartItems) ?? 0.0;
+      final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForTable(
         orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
         restaurantId: MenuSeedData.restaurantId,
@@ -467,7 +464,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final result = await _repository.createOrder(order);
       switch (result) {
         case Left(:final value):
-          AppLogger.warning('Server order creation returned error: ${value.message}. Storing in offline queue.');
+          AppLogger.warning(
+            'Server order creation returned error: ${value.message}. Storing in offline queue.',
+          );
           await _persistOfflineOrder(order);
           state = [...state, order];
           _cart.clear();
@@ -514,8 +513,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
     // Waiter pickup alert: when a dine-in order reaches "ready", emit the
     // dedicated event so waiter dashboards can chime + badge it (Gap 11).
-    if (status == OrderStatus.ready &&
-        updated.orderType == OrderType.dineIn) {
+    if (status == OrderStatus.ready && updated.orderType == OrderType.dineIn) {
       _realtimeService?.broadcastOrderReadyForPickup(
         orderId,
         tableId: updated.tableId,
@@ -536,10 +534,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       await _notifyDeliveryOrderReady(updated);
     }
 
-    return result.when(
-      onLeft: (_) => null,
-      onRight: (_) => updated,
-    );
+    return result.when(onLeft: (_) => null, onRight: (_) => updated);
   }
 
   /// Claims [orderId] for [kitchenUserId] (KDS استلام الطلب).
@@ -547,10 +542,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// Optimistically stamps the local order so the claiming chef keeps seeing
   /// the ticket while other KDS clients filter it out; persists through
   /// [OrderRepository.claimOrder].
-  Future<OrderEntity?> claim(
-    String orderId, {
-    String? kitchenUserId,
-  }) async {
+  Future<OrderEntity?> claim(String orderId, {String? kitchenUserId}) async {
     final uid = kitchenUserId;
     if (uid == null || uid.isEmpty) {
       AppLogger.warning('claim($orderId) ignored: no authenticated chef id');
@@ -567,10 +559,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _stampStatusEvent(orderId);
 
     final result = await _repository.claimOrder(orderId, uid);
-    return result.when(
-      onLeft: (_) => null,
-      onRight: (_) => updated,
-    );
+    return result.when(onLeft: (_) => null, onRight: (_) => updated);
   }
 
   /// Moves [orderId] BACK to [toStatus] (guarded revert, e.g.
@@ -699,204 +688,200 @@ final newOrderNotifierProvider = Provider<NewOrderNotifier>((ref) {
 const Duration _dispatchRetryInterval = Duration(seconds: 30);
 
 final StateNotifierProvider<OrdersController, List<OrderEntity>>
-    ordersControllerProvider = StateNotifierProvider((ref) {
-      // Hybrid auto-dispatch with periodic retry: when a delivery order hits
-      // "ready", rank the available drivers and create exactly one assignment
-      // for the winner, then broadcast it so driver/dispatch clients stay in
-      // sync. A Waiting decision (or any failure) queues the order id and a
-      // single periodic timer re-attempts dispatch every
-      // [_dispatchRetryInterval] until it succeeds or the order turns
-      // terminal/cancelled — manual manager reassign stays possible at any
-      // point.
-      final pendingDispatchOrderIds = <String>{};
-      Timer? dispatchRetryTimer;
+ordersControllerProvider = StateNotifierProvider((ref) {
+  // Hybrid auto-dispatch with periodic retry: when a delivery order hits
+  // "ready", rank the available drivers and create exactly one assignment
+  // for the winner, then broadcast it so driver/dispatch clients stay in
+  // sync. A Waiting decision (or any failure) queues the order id and a
+  // single periodic timer re-attempts dispatch every
+  // [_dispatchRetryInterval] until it succeeds or the order turns
+  // terminal/cancelled — manual manager reassign stays possible at any
+  // point.
+  final pendingDispatchOrderIds = <String>{};
+  Timer? dispatchRetryTimer;
 
-      // Set once the controller below is constructed; the retry tick reads
-      // current order state through it.
-      OrdersController? wiredController;
+  // Set once the controller below is constructed; the retry tick reads
+  // current order state through it.
+  OrdersController? wiredController;
 
-      void cancelRetryTimer() {
-        dispatchRetryTimer?.cancel();
-        dispatchRetryTimer = null;
-      }
+  void cancelRetryTimer() {
+    dispatchRetryTimer?.cancel();
+    dispatchRetryTimer = null;
+  }
 
-      // Never leak timers into tests/teardown.
-      ref.onDispose(() {
-        cancelRetryTimer();
-        pendingDispatchOrderIds.clear();
-      });
+  // Never leak timers into tests/teardown.
+  ref.onDispose(() {
+    cancelRetryTimer();
+    pendingDispatchOrderIds.clear();
+  });
 
-      /// ONE idempotent dispatch attempt for [order]: ranks drivers, creates
-      /// exactly one assignment on success and broadcasts it. Returns true
-      /// only when an assignment was persisted AND broadcast; any Waiting /
-      /// failure path returns false so the caller can queue a retry.
-      Future<bool> attemptAutoDispatch(OrderEntity order) async {
-        AppLogger.info(
-          '[Dispatch] outcome=attempt-start orderId=${order.id} method=auto',
-        );
-        try {
-          final deliveryRepo = ref.read(deliveryRepositoryProvider);
-          final realtime = ref.read(realtimeServiceProvider);
+  /// ONE idempotent dispatch attempt for [order]: ranks drivers, creates
+  /// exactly one assignment on success and broadcasts it. Returns true
+  /// only when an assignment was persisted AND broadcast; any Waiting /
+  /// failure path returns false so the caller can queue a retry.
+  Future<bool> attemptAutoDispatch(OrderEntity order) async {
+    AppLogger.info(
+      '[Dispatch] outcome=attempt-start orderId=${order.id} method=auto',
+    );
+    try {
+      final deliveryRepo = ref.read(deliveryRepositoryProvider);
+      final realtime = ref.read(realtimeServiceProvider);
 
-          final driversResult = await deliveryRepo.getAvailableDrivers();
-          final drivers = driversResult.when(
-            onLeft: (failure) {
-              AppLogger.warning(
-                '[Dispatch] outcome=get-drivers-failed '
-                'orderId=${order.id} reason=${failure.message}',
-              );
-              return null;
-            },
-            onRight: (list) => list,
+      final driversResult = await deliveryRepo.getAvailableDrivers();
+      final drivers = driversResult.when(
+        onLeft: (failure) {
+          AppLogger.warning(
+            '[Dispatch] outcome=get-drivers-failed '
+            'orderId=${order.id} reason=${failure.message}',
           );
-          if (drivers == null) return false;
-
-          final decision = const DriverAssignmentService().assign(
-            candidates: drivers,
-            restaurantLat: DeliveryFeeCalculator.restaurantLat,
-            restaurantLng: DeliveryFeeCalculator.restaurantLng,
-          );
-
-          switch (decision) {
-            case Waiting(:final reason):
-              AppLogger.info(
-                '[Dispatch] outcome=waiting orderId=${order.id} '
-                'reason=$reason',
-              );
-              return false;
-            case Assigned(:final driverId):
-              final now = DateTime.now();
-              final assignment = DeliveryAssignment(
-                id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
-                orderId: order.id,
-                driverId: driverId,
-                pickupTime: now,
-                deliveryLocation: order.deliveryAddress ?? '',
-                deliveryStatus: DeliveryStatus.pending,
-                assignmentMethod: 'auto',
-                assignedAt: now,
-              );
-              var dispatched = false;
-              final createdResult =
-                  await deliveryRepo.createAssignment(assignment);
-              createdResult.when(
-                onLeft: (failure) => AppLogger.warning(
-                  '[Dispatch] outcome=create-rejected '
-                  'orderId=${order.id} driverId=$driverId '
-                  'reason=${failure.message}',
-                ),
-                onRight: (created) {
-                  realtime.broadcastDeliveryAssignmentCreated(created.toJson());
-                  dispatched = true;
-                  AppLogger.info(
-                    '[Dispatch] outcome=assigned orderId=${order.id} '
-                    'driverId=$driverId method=auto',
-                  );
-                  AppLogger.info(
-                    '[Dispatch] outcome=broadcast-sent '
-                    'orderId=${order.id} driverId=$driverId '
-                    'assignmentId=${created.id}',
-                  );
-                },
-              );
-              return dispatched;
-          }
-        } catch (e, st) {
-          AppLogger.error(
-            '[Dispatch] outcome=error orderId=${order.id} '
-            'reason=unexpected-exception',
-            error: e,
-            stackTrace: st,
-          );
-          return false;
-        }
-      }
-
-      /// Re-invokes dispatch for every queued order id against the CURRENT
-      /// notifier state: terminal/cancelled (or vanished) orders are dropped
-      /// silently, successes leave the queue, failures stay for next tick.
-      Future<void> retryPendingDispatches() async {
-        final controller = wiredController;
-        if (controller == null || !controller.mounted) {
-          cancelRetryTimer();
-          return;
-        }
-        for (final orderId in List<String>.of(pendingDispatchOrderIds)) {
-          // Always re-read the CURRENT order from the notifier: it may have
-          // been cancelled/terminal (or removed) since it was queued.
-          final currentOrder = controller.orderById(orderId);
-          if (currentOrder == null || currentOrder.status.isTerminal) {
-            pendingDispatchOrderIds.remove(orderId);
-            continue;
-          }
-
-          AppLogger.info(
-            '[Dispatch] outcome=retry-attempt orderId=$orderId',
-          );
-          if (await attemptAutoDispatch(currentOrder)) {
-            pendingDispatchOrderIds.remove(orderId);
-          }
-        }
-        // Queue drained — nothing left to wake up for.
-        if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
-      }
-
-      /// Lazily starts the single retry timer once the queue becomes
-      /// non-empty; never stacks duplicate timers.
-      void ensureRetryTimer() {
-        if (dispatchRetryTimer != null || pendingDispatchOrderIds.isEmpty) {
-          return;
-        }
-        dispatchRetryTimer = Timer.periodic(_dispatchRetryInterval, (_) {
-          unawaited(retryPendingDispatches());
-        });
-      }
-
-      /// First-attempt entry point wired into [OrdersController]: immediate
-      /// attempt when status lands on ready; a Waiting/failure queues the id
-      /// and lazily starts the retry timer.
-      Future<void> autoDispatchDeliveryOrder(OrderEntity order) async {
-        if (await attemptAutoDispatch(order)) {
-          // Success also clears any stale queue entry (e.g. the same order
-          // was reverted to preparing and hit ready again).
-          pendingDispatchOrderIds.remove(order.id);
-          if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
-          return;
-        }
-        pendingDispatchOrderIds.add(order.id);
-        ensureRetryTimer();
-      }
-
-      final controller = OrdersController(
-        ref.watch(orderRepositoryProvider),
-        ref.watch(cartControllerProvider.notifier),
-        ref.watch(newOrderNotifierProvider),
-        realtimeService: ref.watch(realtimeServiceProvider),
-        connectivityService: ref.watch(connectivityServiceProvider),
-        offlineQueueService: ref.watch(offlineQueueServiceProvider),
-        // Checkout integrity: persisted totals include the applied coupon so
-        // they match what the cart UI displayed.
-        discountResolver: (items) {
-          final coupon = ref.read(appliedCouponProvider);
-          if (coupon == null) return 0.0;
-          final rawSubtotal = items.fold<double>(
-            0,
-            (sum, item) => sum + item.linePrice,
-          );
-          return coupon.calculateDiscount(rawSubtotal);
-        },
-        // Checkout-time revalidation against the live menu snapshot.
-        menuLookup: (menuItemId) {
-          final menu =
-              ref.read(menuControllerProvider).valueOrNull;
-          for (final item in menu?.items ?? const <MenuItem>[]) {
-            if (item.id == menuItemId) return item;
-          }
           return null;
         },
-        onDeliveryOrderReady: autoDispatchDeliveryOrder,
+        onRight: (list) => list,
+      );
+      if (drivers == null) return false;
+
+      final decision = const DriverAssignmentService().assign(
+        candidates: drivers,
+        restaurantLat: DeliveryFeeCalculator.restaurantLat,
+        restaurantLng: DeliveryFeeCalculator.restaurantLng,
       );
 
-      wiredController = controller;
-      return controller;
+      switch (decision) {
+        case Waiting(:final reason):
+          AppLogger.info(
+            '[Dispatch] outcome=waiting orderId=${order.id} '
+            'reason=$reason',
+          );
+          return false;
+        case Assigned(:final driverId):
+          final now = DateTime.now();
+          final assignment = DeliveryAssignment(
+            id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
+            orderId: order.id,
+            driverId: driverId,
+            pickupTime: now,
+            deliveryLocation: order.deliveryAddress ?? '',
+            deliveryStatus: DeliveryStatus.pending,
+            assignmentMethod: 'auto',
+            assignedAt: now,
+          );
+          var dispatched = false;
+          final createdResult = await deliveryRepo.createAssignment(assignment);
+          createdResult.when(
+            onLeft: (failure) => AppLogger.warning(
+              '[Dispatch] outcome=create-rejected '
+              'orderId=${order.id} driverId=$driverId '
+              'reason=${failure.message}',
+            ),
+            onRight: (created) {
+              realtime.broadcastDeliveryAssignmentCreated(created.toJson());
+              dispatched = true;
+              AppLogger.info(
+                '[Dispatch] outcome=assigned orderId=${order.id} '
+                'driverId=$driverId method=auto',
+              );
+              AppLogger.info(
+                '[Dispatch] outcome=broadcast-sent '
+                'orderId=${order.id} driverId=$driverId '
+                'assignmentId=${created.id}',
+              );
+            },
+          );
+          return dispatched;
+      }
+    } catch (e, st) {
+      AppLogger.error(
+        '[Dispatch] outcome=error orderId=${order.id} '
+        'reason=unexpected-exception',
+        error: e,
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  /// Re-invokes dispatch for every queued order id against the CURRENT
+  /// notifier state: terminal/cancelled (or vanished) orders are dropped
+  /// silently, successes leave the queue, failures stay for next tick.
+  Future<void> retryPendingDispatches() async {
+    final controller = wiredController;
+    if (controller == null || !controller.mounted) {
+      cancelRetryTimer();
+      return;
+    }
+    for (final orderId in List<String>.of(pendingDispatchOrderIds)) {
+      // Always re-read the CURRENT order from the notifier: it may have
+      // been cancelled/terminal (or removed) since it was queued.
+      final currentOrder = controller.orderById(orderId);
+      if (currentOrder == null || currentOrder.status.isTerminal) {
+        pendingDispatchOrderIds.remove(orderId);
+        continue;
+      }
+
+      AppLogger.info('[Dispatch] outcome=retry-attempt orderId=$orderId');
+      if (await attemptAutoDispatch(currentOrder)) {
+        pendingDispatchOrderIds.remove(orderId);
+      }
+    }
+    // Queue drained — nothing left to wake up for.
+    if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
+  }
+
+  /// Lazily starts the single retry timer once the queue becomes
+  /// non-empty; never stacks duplicate timers.
+  void ensureRetryTimer() {
+    if (dispatchRetryTimer != null || pendingDispatchOrderIds.isEmpty) {
+      return;
+    }
+    dispatchRetryTimer = Timer.periodic(_dispatchRetryInterval, (_) {
+      unawaited(retryPendingDispatches());
     });
+  }
+
+  /// First-attempt entry point wired into [OrdersController]: immediate
+  /// attempt when status lands on ready; a Waiting/failure queues the id
+  /// and lazily starts the retry timer.
+  Future<void> autoDispatchDeliveryOrder(OrderEntity order) async {
+    if (await attemptAutoDispatch(order)) {
+      // Success also clears any stale queue entry (e.g. the same order
+      // was reverted to preparing and hit ready again).
+      pendingDispatchOrderIds.remove(order.id);
+      if (pendingDispatchOrderIds.isEmpty) cancelRetryTimer();
+      return;
+    }
+    pendingDispatchOrderIds.add(order.id);
+    ensureRetryTimer();
+  }
+
+  final controller = OrdersController(
+    ref.watch(orderRepositoryProvider),
+    ref.watch(cartControllerProvider.notifier),
+    ref.watch(newOrderNotifierProvider),
+    realtimeService: ref.watch(realtimeServiceProvider),
+    connectivityService: ref.watch(connectivityServiceProvider),
+    offlineQueueService: ref.watch(offlineQueueServiceProvider),
+    // Checkout integrity: persisted totals include the applied coupon so
+    // they match what the cart UI displayed.
+    discountResolver: (items) {
+      final coupon = ref.read(appliedCouponProvider);
+      if (coupon == null) return 0.0;
+      final rawSubtotal = items.fold<double>(
+        0,
+        (sum, item) => sum + item.linePrice,
+      );
+      return coupon.calculateDiscount(rawSubtotal);
+    },
+    // Checkout-time revalidation against the live menu snapshot.
+    menuLookup: (menuItemId) {
+      final menu = ref.read(menuControllerProvider).valueOrNull;
+      for (final item in menu?.items ?? const <MenuItem>[]) {
+        if (item.id == menuItemId) return item;
+      }
+      return null;
+    },
+    onDeliveryOrderReady: autoDispatchDeliveryOrder,
+  );
+
+  wiredController = controller;
+  return controller;
+});

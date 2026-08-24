@@ -40,7 +40,9 @@ class _FakeLoyaltyRepository implements LoyaltyRepository {
     required LoyaltyReward reward,
   }) async {
     if (shouldFailRedeem || (account?.currentPoints ?? 0) < reward.pointsCost) {
-      return const Left(ValidationFailure('نقاطك لا تكفي لاستبدال هذه المكافأة'));
+      return const Left(
+        ValidationFailure('نقاطك لا تكفي لاستبدال هذه المكافأة'),
+      );
     }
 
     account = account!.copyWith(

@@ -20,7 +20,7 @@ final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
 class ReservationController
     extends StateNotifier<AsyncValue<List<ReservationEntity>>> {
   ReservationController(this._repository, this._ref)
-      : super(const AsyncValue.loading()) {
+    : super(const AsyncValue.loading()) {
     loadReservations();
   }
 
@@ -31,7 +31,8 @@ class ReservationController
     state = const AsyncValue.loading();
     final result = await _repository.getReservations();
     result.when(
-      onLeft: (failure) => state = AsyncValue.error(failure, StackTrace.current),
+      onLeft: (failure) =>
+          state = AsyncValue.error(failure, StackTrace.current),
       onRight: (data) => state = AsyncValue.data(data),
     );
   }
@@ -90,10 +91,13 @@ class ReservationController
   }
 }
 
-final reservationControllerProvider = StateNotifierProvider<
-    ReservationController, AsyncValue<List<ReservationEntity>>>((ref) {
-  return ReservationController(
-    ref.watch(reservationRepositoryProvider),
-    ref,
-  );
-});
+final reservationControllerProvider =
+    StateNotifierProvider<
+      ReservationController,
+      AsyncValue<List<ReservationEntity>>
+    >((ref) {
+      return ReservationController(
+        ref.watch(reservationRepositoryProvider),
+        ref,
+      );
+    });

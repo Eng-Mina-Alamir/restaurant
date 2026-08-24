@@ -24,35 +24,41 @@ void main() {
       extraPrice: 5.0,
     );
 
-    test('unitPrice and linePrice calculate modifiers and quantity correctly', () {
-      const cartItem = CartItem(
-        menuItem: pizza,
-        quantity: 3,
-        selectedModifiers: [extraCheese, olives],
-      );
+    test(
+      'unitPrice and linePrice calculate modifiers and quantity correctly',
+      () {
+        const cartItem = CartItem(
+          menuItem: pizza,
+          quantity: 3,
+          selectedModifiers: [extraCheese, olives],
+        );
 
-      // unitPrice = 50 + 10 + 5 = 65
-      expect(cartItem.unitPrice, 65.0);
-      // linePrice = 65 * 3 = 195
-      expect(cartItem.linePrice, 195.0);
-    });
+        // unitPrice = 50 + 10 + 5 = 65
+        expect(cartItem.unitPrice, 65.0);
+        // linePrice = 65 * 3 = 195
+        expect(cartItem.linePrice, 195.0);
+      },
+    );
 
-    test('configKey is deterministic regardless of modifier insertion order', () {
-      const itemA = CartItem(
-        menuItem: pizza,
-        quantity: 1,
-        selectedModifiers: [extraCheese, olives],
-      );
+    test(
+      'configKey is deterministic regardless of modifier insertion order',
+      () {
+        const itemA = CartItem(
+          menuItem: pizza,
+          quantity: 1,
+          selectedModifiers: [extraCheese, olives],
+        );
 
-      const itemB = CartItem(
-        menuItem: pizza,
-        quantity: 2,
-        selectedModifiers: [olives, extraCheese],
-      );
+        const itemB = CartItem(
+          menuItem: pizza,
+          quantity: 2,
+          selectedModifiers: [olives, extraCheese],
+        );
 
-      expect(itemA.configKey, itemB.configKey);
-      expect(itemA.configKey, 'pizza-1|mod-cheese,mod-olives');
-    });
+        expect(itemA.configKey, itemB.configKey);
+        expect(itemA.configKey, 'pizza-1|mod-cheese,mod-olives');
+      },
+    );
 
     test('round-trip JSON serialization', () {
       final json = {

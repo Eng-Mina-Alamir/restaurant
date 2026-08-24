@@ -71,8 +71,7 @@ class _TableManagementCrudPageState
                         '${status.labelAr} (${tables.where((t) => t.status == status).length})',
                       ),
                       selected: _filterStatus == status,
-                      onSelected: (_) =>
-                          setState(() => _filterStatus = status),
+                      onSelected: (_) => setState(() => _filterStatus = status),
                     ),
                   ),
               ],
@@ -95,11 +94,11 @@ class _TableManagementCrudPageState
                     ),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 260,
-                      mainAxisSpacing: AppSpacing.md,
-                      crossAxisSpacing: AppSpacing.md,
-                      childAspectRatio: 1.1,
-                    ),
+                          maxCrossAxisExtent: 260,
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 1.1,
+                        ),
                     itemCount: filteredTables.length,
                     itemBuilder: (context, index) {
                       final table = filteredTables[index];
@@ -125,8 +124,9 @@ class _TableManagementCrudPageState
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   CircleAvatar(
-                                    backgroundColor:
-                                        statusColor.withValues(alpha: 0.15),
+                                    backgroundColor: statusColor.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     foregroundColor: statusColor,
                                     child: Text(
                                       '${table.tableNumber}',
@@ -160,12 +160,17 @@ class _TableManagementCrudPageState
                                         value: 'delete',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.delete_outline,
-                                                size: 18, color: Colors.red),
+                                            Icon(
+                                              Icons.delete_outline,
+                                              size: 18,
+                                              color: Colors.red,
+                                            ),
                                             SizedBox(width: 8),
                                             Text(
                                               'حذف الطاولة',
-                                              style: TextStyle(color: Colors.red),
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -179,8 +184,10 @@ class _TableManagementCrudPageState
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.people_outline,
-                                          size: 16),
+                                      const Icon(
+                                        Icons.people_outline,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'السعة: ${table.capacity} أفراد',
@@ -207,24 +214,29 @@ class _TableManagementCrudPageState
                                 ),
                                 decoration: BoxDecoration(
                                   color: statusColor.withValues(alpha: 0.1),
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
                                 ),
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<TableStatus>(
                                     value: table.status,
                                     isDense: true,
-                                    icon: const Icon(Icons.arrow_drop_down,
-                                        size: 18),
-                                    style: theme.textTheme.labelMedium?.copyWith(
-                                      color: statusColor,
-                                      fontWeight: FontWeight.bold,
+                                    icon: const Icon(
+                                      Icons.arrow_drop_down,
+                                      size: 18,
                                     ),
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          color: statusColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                     onChanged: (newStatus) {
                                       if (newStatus != null) {
                                         ref
                                             .read(
-                                                tableControllerProvider.notifier)
+                                              tableControllerProvider.notifier,
+                                            )
                                             .editTable(
                                               table.id,
                                               status: newStatus,
@@ -323,7 +335,9 @@ class _TableManagementCrudPageState
                 return;
               }
 
-              ref.read(tableControllerProvider.notifier).addTable(
+              ref
+                  .read(tableControllerProvider.notifier)
+                  .addTable(
                     tableNumber: number,
                     capacity: cap,
                     assignedWaiterId: waiterCtrl.text.trim().isEmpty
@@ -340,12 +354,13 @@ class _TableManagementCrudPageState
   }
 
   void _showEditTableDialog(BuildContext context, RestaurantTable table) {
-    final numberCtrl =
-        TextEditingController(text: table.tableNumber.toString());
-    final capacityCtrl =
-        TextEditingController(text: table.capacity.toString());
-    final waiterCtrl =
-        TextEditingController(text: table.assignedWaiterId ?? '');
+    final numberCtrl = TextEditingController(
+      text: table.tableNumber.toString(),
+    );
+    final capacityCtrl = TextEditingController(text: table.capacity.toString());
+    final waiterCtrl = TextEditingController(
+      text: table.assignedWaiterId ?? '',
+    );
 
     showDialog<void>(
       context: context,
@@ -392,7 +407,9 @@ class _TableManagementCrudPageState
               final cap = int.tryParse(capacityCtrl.text.trim()) ?? 4;
               if (number == null || number <= 0) return;
 
-              ref.read(tableControllerProvider.notifier).editTable(
+              ref
+                  .read(tableControllerProvider.notifier)
+                  .editTable(
                     table.id,
                     tableNumber: number,
                     capacity: cap,
@@ -414,9 +431,7 @@ class _TableManagementCrudPageState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('تأكيد حذف الطاولة'),
-        content: Text(
-          'هل أنت متأكد من حذف طاولة رقم ${table.tableNumber}؟',
-        ),
+        content: Text('هل أنت متأكد من حذف طاولة رقم ${table.tableNumber}؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -425,9 +440,7 @@ class _TableManagementCrudPageState
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              ref
-                  .read(tableControllerProvider.notifier)
-                  .deleteTable(table.id);
+              ref.read(tableControllerProvider.notifier).deleteTable(table.id);
               Navigator.pop(ctx);
             },
             child: const Text('حذف'),

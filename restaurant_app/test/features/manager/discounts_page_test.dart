@@ -5,13 +5,11 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/pages/dis
 
 void main() {
   group('DiscountsPage', () {
-    testWidgets('renders discounts list and allows adding new discount', (tester) async {
+    testWidgets('renders discounts list and allows adding new discount', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: DiscountsPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: DiscountsPage())),
       );
       await tester.pumpAndSettle();
 

@@ -89,7 +89,9 @@ class ManagerDashboardPage extends ConsumerWidget {
                           Expanded(
                             child: _MetricCard(
                               title: AppConstants.metricsAvgOrderTitle,
-                              value: Formatters.formatCurrency(data.averageOrderValue),
+                              value: Formatters.formatCurrency(
+                                data.averageOrderValue,
+                              ),
                               icon: Icons.percent_outlined,
                               color: Colors.orange,
                             ),
@@ -133,7 +135,9 @@ class ManagerDashboardPage extends ConsumerWidget {
                           Expanded(
                             child: _MetricCard(
                               title: AppConstants.metricsAvgOrderTitle,
-                              value: Formatters.formatCurrency(data.averageOrderValue),
+                              value: Formatters.formatCurrency(
+                                data.averageOrderValue,
+                              ),
                               icon: Icons.percent_outlined,
                               color: Colors.orange,
                             ),
@@ -156,7 +160,9 @@ class ManagerDashboardPage extends ConsumerWidget {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    _StatusBreakdown(orders: ref.watch(ordersControllerProvider)),
+                    _StatusBreakdown(
+                      orders: ref.watch(ordersControllerProvider),
+                    ),
                     const SizedBox(height: AppSpacing.lg),
 
                     // ── Quick Actions grid ──────────────────────────────────────────
@@ -205,8 +211,6 @@ class ManagerDashboardPage extends ConsumerWidget {
                           onTap: () => context.push('/manager/coupons'),
                         ),
 
-
-
                         _QuickAction(
                           icon: Icons.inventory_2_outlined,
                           label: 'المخزون',
@@ -242,7 +246,8 @@ class ManagerDashboardPage extends ConsumerWidget {
                           icon: Icons.analytics_outlined,
                           label: 'الأرباح و P&L',
                           color: Colors.green.shade800,
-                          onTap: () => context.push('/manager/financial-reports'),
+                          onTap: () =>
+                              context.push('/manager/financial-reports'),
                         ),
 
                         _QuickAction(
@@ -350,20 +355,26 @@ class ManagerDashboardPage extends ConsumerWidget {
                           child: Column(
                             children: [
                               for (final entry
-                                  in data.itemsSold.entries.toList()
-                                    ..sort((a, b) => b.value.compareTo(a.value)))
+                                  in data.itemsSold.entries.toList()..sort(
+                                    (a, b) => b.value.compareTo(a.value),
+                                  ))
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.xs,
                                   ),
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(child: Text(entry.key)),
                                       Text(
                                         '${entry.value}',
-                                        style: Theme.of(context).textTheme.titleSmall
-                                            ?.copyWith(fontWeight: FontWeight.bold),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -381,81 +392,95 @@ class ManagerDashboardPage extends ConsumerWidget {
                     if (data.categoryRevenue.isEmpty)
                       const Card(
                         child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.md),
-                  child: Text(AppConstants.metricsNoData),
-                ),
-              )
-            else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    children: [
-                      for (final entry
-                          in data.categoryRevenue.entries.toList()
-                            ..sort((a, b) => b.value.compareTo(a.value)))
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xs,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          child: Text(AppConstants.metricsNoData),
+                        ),
+                      )
+                    else
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
                             children: [
-                              Expanded(child: Text(entry.key)),
-                              Text(
-                                Formatters.formatCurrency(entry.value),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
+                              for (final entry
+                                  in data.categoryRevenue.entries.toList()
+                                    ..sort(
+                                      (a, b) => b.value.compareTo(a.value),
+                                    ))
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(child: Text(entry.key)),
+                                      Text(
+                                        Formatters.formatCurrency(entry.value),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              AppConstants.metricsByPayment,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (data.paymentMethodRevenue.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.md),
-                  child: Text(AppConstants.metricsNoData),
-                ),
-              )
-            else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    children: [
-                      for (final entry
-                          in data.paymentMethodRevenue.entries.toList()
-                            ..sort((a, b) => b.value.compareTo(a.value)))
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xs,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      AppConstants.metricsByPayment,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (data.paymentMethodRevenue.isEmpty)
+                      const Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(AppSpacing.md),
+                          child: Text(AppConstants.metricsNoData),
+                        ),
+                      )
+                    else
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
                             children: [
-                              Expanded(child: Text(entry.key)),
-                              Text(
-                                Formatters.formatCurrency(entry.value),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
+                              for (final entry
+                                  in data.paymentMethodRevenue.entries.toList()
+                                    ..sort(
+                                      (a, b) => b.value.compareTo(a.value),
+                                    ))
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(child: Text(entry.key)),
+                                      Text(
+                                        Formatters.formatCurrency(entry.value),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                    ],
-                  ),
-                ),
-              ),
+                      ),
                   ],
                 ),
               ),
@@ -491,10 +516,7 @@ class _MetricCard extends StatelessWidget {
     final theme = Theme.of(context);
     return AnimatedPressCard(
       borderRadius: AppRadius.md,
-      border: Border.all(
-        color: color.withValues(alpha: 0.25),
-        width: 1.0,
-      ),
+      border: Border.all(color: color.withValues(alpha: 0.25), width: 1.0),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(

@@ -28,24 +28,26 @@ class _FakeAuthController extends AuthController {
 }
 
 UserEntity _chef(String id) => UserEntity(
-      id: id,
-      name: 'Chef $id',
-      email: '$id@restaurant.test',
-      phone: '01000000000',
-      role: UserRole.kitchen,
-      createdAt: DateTime(2026, 1, 1),
-    );
+  id: id,
+  name: 'Chef $id',
+  email: '$id@restaurant.test',
+  phone: '01000000000',
+  role: UserRole.kitchen,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 ProviderContainer _containerWithChef(
   String chefId, {
   List<Override> additionalOverrides = const [],
 }) {
-  return createTestContainer(additionalOverrides: [
-    authControllerProvider.overrideWith(
-      (ref) => _FakeAuthController(ref, _chef(chefId)),
-    ),
-    ...additionalOverrides,
-  ]);
+  return createTestContainer(
+    additionalOverrides: [
+      authControllerProvider.overrideWith(
+        (ref) => _FakeAuthController(ref, _chef(chefId)),
+      ),
+      ...additionalOverrides,
+    ],
+  );
 }
 
 void main() {
@@ -277,25 +279,24 @@ void main() {
     OrderEntity seedOrder(
       String id, {
       OrderStatus status = OrderStatus.pending,
-    }) =>
-        OrderEntity(
-          id: id,
-          restaurantId: 'rest-1',
-          orderType: OrderType.dineIn,
-          items: [
-            OrderItem(
-              menuItem: burger,
-              quantity: 1,
-              itemTotal: 28,
-              addedAt: DateTime(2026, 8, 23, 12),
-            ),
-          ],
-          status: status,
-          subtotal: 28,
-          taxAmount: 0,
-          totalAmount: 28,
-          createdAt: DateTime.now(),
-        );
+    }) => OrderEntity(
+      id: id,
+      restaurantId: 'rest-1',
+      orderType: OrderType.dineIn,
+      items: [
+        OrderItem(
+          menuItem: burger,
+          quantity: 1,
+          itemTotal: 28,
+          addedAt: DateTime(2026, 8, 23, 12),
+        ),
+      ],
+      status: status,
+      subtotal: 28,
+      taxAmount: 0,
+      totalAmount: 28,
+      createdAt: DateTime.now(),
+    );
 
     void seedOrders(ProviderContainer container, List<OrderEntity> orders) {
       container.read(ordersControllerProvider.notifier).state = orders;
@@ -303,15 +304,13 @@ void main() {
 
     testWidgets('hides orders claimed by another chef', (tester) async {
       final spy = SpyKdsAlertService();
-      final container = _containerWithChef('chef-1', additionalOverrides: [
-        kdsAlertServiceProvider.overrideWithValue(spy),
-      ]);
+      final container = _containerWithChef(
+        'chef-1',
+        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+      );
       addTearDown(container.dispose);
 
-      seedOrders(container, [
-        seedOrder('ORD-KDS-1'),
-        seedOrder('ORD-KDS-2'),
-      ]);
+      seedOrders(container, [seedOrder('ORD-KDS-1'), seedOrder('ORD-KDS-2')]);
       // A colleague claims the second ticket before we open the board.
       await container
           .read(ordersControllerProvider.notifier)
@@ -329,9 +328,10 @@ void main() {
       expect(find.textContaining('برجر كلاسيك'), findsOneWidget);
       expect(find.text('استلام الطلب'), findsOneWidget);
       expect(
-        container.read(ordersControllerProvider).firstWhere(
-              (o) => o.id == 'ORD-KDS-1',
-            ).assignedKitchenId,
+        container
+            .read(ordersControllerProvider)
+            .firstWhere((o) => o.id == 'ORD-KDS-1')
+            .assignedKitchenId,
         isNull,
       );
     });
@@ -340,9 +340,10 @@ void main() {
       tester,
     ) async {
       final spy = SpyKdsAlertService();
-      final container = _containerWithChef('chef-1', additionalOverrides: [
-        kdsAlertServiceProvider.overrideWithValue(spy),
-      ]);
+      final container = _containerWithChef(
+        'chef-1',
+        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+      );
       addTearDown(container.dispose);
 
       seedOrders(container, [seedOrder('ORD-KDS-1')]);
@@ -369,11 +370,13 @@ void main() {
     ) async {
       final repo = InMemoryOrderRepository();
       final spy = SpyKdsAlertService();
-      final container =
-          _containerWithChef('chef-1', additionalOverrides: [
-        orderRepositoryProvider.overrideWithValue(repo),
-        kdsAlertServiceProvider.overrideWithValue(spy),
-      ]);
+      final container = _containerWithChef(
+        'chef-1',
+        additionalOverrides: [
+          orderRepositoryProvider.overrideWithValue(repo),
+          kdsAlertServiceProvider.overrideWithValue(spy),
+        ],
+      );
       addTearDown(container.dispose);
 
       const orderId = 'ORD-KDS-R1';
@@ -421,9 +424,10 @@ void main() {
       tester,
     ) async {
       final spy = SpyKdsAlertService();
-      final container = _containerWithChef('chef-1', additionalOverrides: [
-        kdsAlertServiceProvider.overrideWithValue(spy),
-      ]);
+      final container = _containerWithChef(
+        'chef-1',
+        additionalOverrides: [kdsAlertServiceProvider.overrideWithValue(spy)],
+      );
       addTearDown(container.dispose);
 
       seedOrders(container, [
@@ -449,10 +453,10 @@ void main() {
       tester,
     ) async {
       final repo = InMemoryOrderRepository();
-      final container =
-          _containerWithChef('chef-1', additionalOverrides: [
-        orderRepositoryProvider.overrideWithValue(repo),
-      ]);
+      final container = _containerWithChef(
+        'chef-1',
+        additionalOverrides: [orderRepositoryProvider.overrideWithValue(repo)],
+      );
       addTearDown(container.dispose);
 
       const orderId = 'ORD-KDS-T1';

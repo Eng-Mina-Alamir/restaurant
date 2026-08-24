@@ -78,7 +78,8 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                       return _DeliveryCard(
                         assignment: assignment,
                         onAction: () => _handleAction(ref, assignment),
-                        onOpenMap: () => _showTrackingMap(context, ref, assignment),
+                        onOpenMap: () =>
+                            _showTrackingMap(context, ref, assignment),
                         onOpenChat: () =>
                             context.push('/chat/${assignment.orderId}'),
                       );
@@ -99,8 +100,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
       _announcedIds.addAll(current.map((a) => a.id));
       return;
     }
-    final fresh =
-        current.where((a) => !_announcedIds.contains(a.id)).toList();
+    final fresh = current.where((a) => !_announcedIds.contains(a.id)).toList();
     if (fresh.isEmpty) return;
     for (final a in fresh) {
       _announcedIds.add(a.id);
@@ -152,8 +152,8 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                     child: Text(
                       'ملاحة وتتبع الطلب ${Formatters.formatOrderId(assignment.orderId)}',
                       style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -179,7 +179,9 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                   showDeliveryRadius: true,
                   deliveryRadiusMeters: 10000,
                   onLocationUpdate: (pos) {
-                    ref.read(deliveryControllerProvider.notifier).updateLocation(
+                    ref
+                        .read(deliveryControllerProvider.notifier)
+                        .updateLocation(
                           latitude: pos.latitude,
                           longitude: pos.longitude,
                         );
@@ -196,7 +198,10 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                   Expanded(
                     child: Text(
                       assignment.deliveryLocation,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -433,8 +438,9 @@ class _DeliveryCard extends ConsumerWidget {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: colorScheme.error,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.full),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
                             ),
                             child: Text(
                               '$unreadCount',

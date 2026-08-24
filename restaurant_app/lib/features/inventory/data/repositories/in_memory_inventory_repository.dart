@@ -6,7 +6,8 @@ import '../../domain/repositories/inventory_repository.dart';
 /// In-memory implementation of [InventoryRepository] with realistic Egyptian restaurant ingredients.
 class InMemoryInventoryRepository implements InventoryRepository {
   InMemoryInventoryRepository([List<InventoryItemEntity>? initial]) {
-    _items = initial ??
+    _items =
+        initial ??
         [
           const InventoryItemEntity(
             id: 'inv-1',

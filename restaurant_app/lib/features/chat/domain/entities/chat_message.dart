@@ -44,12 +44,12 @@ class ChatMessage {
   }
 
   Map<String, dynamic> toJson() => {
-        if (id.isNotEmpty) 'id': id,
-        'order_id': orderId,
-        'sender_id': senderId,
-        'body': body,
-        if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
-      };
+    if (id.isNotEmpty) 'id': id,
+    'order_id': orderId,
+    'sender_id': senderId,
+    'body': body,
+    if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+  };
 
   ChatMessage copyWith({
     String? id,

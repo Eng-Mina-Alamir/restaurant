@@ -40,32 +40,36 @@ class QrGeneratorPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.table_bar_outlined, size: 64, color: colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.table_bar_outlined,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(height: 16),
                   const Text('لا توجد طاولات مضافة بعد'),
                 ],
               ),
             )
           : GridView.builder(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 240,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 0.70,
-          ),
-          itemCount: tables.length,
-          itemBuilder: (context, index) {
-            final table = tables[index];
-            return _QrCard(
-              tableId: table.id,
-              tableNumber: table.tableNumber,
-              capacity: table.capacity,
-              colorScheme: colorScheme,
-              theme: theme,
-            );
-          },
-        ),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 240,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+                childAspectRatio: 0.70,
+              ),
+              itemCount: tables.length,
+              itemBuilder: (context, index) {
+                final table = tables[index];
+                return _QrCard(
+                  tableId: table.id,
+                  tableNumber: table.tableNumber,
+                  capacity: table.capacity,
+                  colorScheme: colorScheme,
+                  theme: theme,
+                );
+              },
+            ),
     );
   }
 }

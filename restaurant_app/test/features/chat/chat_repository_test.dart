@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
 import 'package:restaurant_app/features/chat/domain/entities/chat_message.dart';
@@ -9,8 +9,7 @@ ChatMessage msg({
   String orderId = 'ORD-1',
   String senderId = 'cust-1',
   String body = 'Ù…Ø±Ø­Ø¨Ø§Ù‹',
-}) =>
-    ChatMessage(id: id, orderId: orderId, senderId: senderId, body: body);
+}) => ChatMessage(id: id, orderId: orderId, senderId: senderId, body: body);
 
 void main() {
   group('ChatMessage entity', () {
@@ -27,20 +26,14 @@ void main() {
       expect(restored.orderId, original.orderId);
       expect(restored.senderId, original.senderId);
       expect(restored.body, original.body);
-      expect(
-        restored.createdAt!.toUtc(),
-        original.createdAt!.toUtc(),
-      );
+      expect(restored.createdAt!.toUtc(), original.createdAt!.toUtc());
     });
 
     test('isValidBody enforces 1..maxBodyLength trimmed', () {
       expect(msg(body: '  ').isValidBody, isFalse);
       expect(msg(body: '').isValidBody, isFalse);
       expect(msg(body: 'x').isValidBody, isTrue);
-      expect(
-        msg(body: 'a' * ChatMessage.maxBodyLength).isValidBody,
-        isTrue,
-      );
+      expect(msg(body: 'a' * ChatMessage.maxBodyLength).isValidBody, isTrue);
       expect(
         msg(body: 'a' * (ChatMessage.maxBodyLength + 1)).isValidBody,
         isFalse,
@@ -53,34 +46,36 @@ void main() {
 
     setUp(() => repo = InMemoryChatRepository());
 
-    test('send persists with generated id and timestamp; history returns it',
-        () async {
-      final result = await repo.send(msg(senderId: 'cust-1'));
-      final saved = result.when(
-        onLeft: (f) => fail('send should not fail: ${f.message}'),
-        onRight: (m) => m,
-      );
+    test(
+      'send persists with generated id and timestamp; history returns it',
+      () async {
+        final result = await repo.send(msg(senderId: 'cust-1'));
+        final saved = result.when(
+          onLeft: (f) => fail('send should not fail: ${f.message}'),
+          onRight: (m) => m,
+        );
 
-      expect(saved.id, isNotEmpty);
-      expect(saved.createdAt, isNotNull);
+        expect(saved.id, isNotEmpty);
+        expect(saved.createdAt, isNotNull);
 
-      final history = await repo.history('ORD-1');
-      expect(
-        history.when(
-          onLeft: (f) => fail('history failed: ${f.message}'),
-          onRight: (l) => l,
-        ),
-        [saved],
-      );
-    });
+        final history = await repo.history('ORD-1');
+        expect(
+          history.when(
+            onLeft: (f) => fail('history failed: ${f.message}'),
+            onRight: (l) => l,
+          ),
+          [saved],
+        );
+      },
+    );
 
-    test('send rejects empty/overlong bodies with ValidationFailure',
-        () async {
+    test('send rejects empty/overlong bodies with ValidationFailure', () async {
       final empty = await repo.send(msg(body: '   '));
       expect(empty.isLeft, isTrue);
 
-      final overlong =
-          await repo.send(msg(body: 'a' * (ChatMessage.maxBodyLength + 1)));
+      final overlong = await repo.send(
+        msg(body: 'a' * (ChatMessage.maxBodyLength + 1)),
+      );
       expect(overlong.isLeft, isTrue);
 
       expect(repo.messagesFor('ORD-1'), isEmpty);
@@ -88,7 +83,10 @@ void main() {
 
     test('history for unknown order returns empty list', () async {
       final history = await repo.history('ORD-NONE');
-      expect(history.when(onLeft: (f) => fail('history failed'), onRight: (l) => l), isEmpty);
+      expect(
+        history.when(onLeft: (f) => fail('history failed'), onRight: (l) => l),
+        isEmpty,
+      );
     });
 
     test('watch emits history snapshot first, then live updates', () async {
@@ -105,38 +103,42 @@ void main() {
       await repo.send(msg(id: 'live-3'));
       await Future<void>.delayed(Duration.zero);
       expect(received, hasLength(2));
-      expect(received.last.map((m) => m.id),
-          ['seed-1', 'seed-2', 'live-3']);
+      expect(received.last.map((m) => m.id), ['seed-1', 'seed-2', 'live-3']);
 
       await sub.cancel();
     });
 
-    test('history caps at historyPageSize, keeping the newest window',
-        () async {
-      const total = ChatRepository.historyPageSize * 2; // 100
-      final bigRepo = InMemoryChatRepository(
-        seed: List.generate(total, (i) => msg(id: 'seed-${i + 1}')),
-      );
+    test(
+      'history caps at historyPageSize, keeping the newest window',
+      () async {
+        const total = ChatRepository.historyPageSize * 2; // 100
+        final bigRepo = InMemoryChatRepository(
+          seed: List.generate(total, (i) => msg(id: 'seed-${i + 1}')),
+        );
 
-      final page = await bigRepo.history('ORD-1');
-      final messages = page.when(
-        onLeft: (f) => fail('history failed: ${f.message}'),
-        onRight: (l) => l,
-      );
+        final page = await bigRepo.history('ORD-1');
+        final messages = page.when(
+          onLeft: (f) => fail('history failed: ${f.message}'),
+          onRight: (l) => l,
+        );
 
-      // Exactly one page: messages #51..#100 of 100, oldest first — i.e. the
-      // FIRST returned id is message #51 of N.
-      expect(messages, hasLength(ChatRepository.historyPageSize));
-      expect(messages.first.id, 'seed-${total - ChatRepository.historyPageSize + 1}');
-      expect(messages.last.id, 'seed-$total');
-      expect(
-        messages.map((m) => m.id).toList(),
-        List.generate(
-          ChatRepository.historyPageSize,
-          (i) => 'seed-${total - ChatRepository.historyPageSize + i + 1}',
-        ),
-      );
-    });
+        // Exactly one page: messages #51..#100 of 100, oldest first — i.e. the
+        // FIRST returned id is message #51 of N.
+        expect(messages, hasLength(ChatRepository.historyPageSize));
+        expect(
+          messages.first.id,
+          'seed-${total - ChatRepository.historyPageSize + 1}',
+        );
+        expect(messages.last.id, 'seed-$total');
+        expect(
+          messages.map((m) => m.id).toList(),
+          List.generate(
+            ChatRepository.historyPageSize,
+            (i) => 'seed-${total - ChatRepository.historyPageSize + i + 1}',
+          ),
+        );
+      },
+    );
 
     test('watch snapshot is capped to the newest window', () async {
       const total = ChatRepository.historyPageSize * 2; // 100
@@ -170,4 +172,3 @@ void main() {
     });
   });
 }
-

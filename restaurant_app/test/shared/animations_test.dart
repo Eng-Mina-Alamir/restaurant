@@ -7,13 +7,13 @@ import 'package:restaurant_app/shared/animations/shimmer_loading.dart';
 
 void main() {
   group('Shared Animations & Micro-interactions', () {
-    testWidgets('FadeSlideTransitionWidget renders and animates child', (tester) async {
+    testWidgets('FadeSlideTransitionWidget renders and animates child', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: FadeSlideTransitionWidget(
-              child: Text('Animated Text'),
-            ),
+            body: FadeSlideTransitionWidget(child: Text('Animated Text')),
           ),
         ),
       );
@@ -24,12 +24,12 @@ void main() {
       expect(find.text('Animated Text'), findsOneWidget);
     });
 
-    testWidgets('ShimmerLoading and SkeletonBox render properly', (tester) async {
+    testWidgets('ShimmerLoading and SkeletonBox render properly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: SkeletonBox(width: 100, height: 20),
-          ),
+          home: Scaffold(body: SkeletonBox(width: 100, height: 20)),
         ),
       );
 
@@ -38,15 +38,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets('PulseBadge renders with animated pulse effect', (tester) async {
+    testWidgets('PulseBadge renders with animated pulse effect', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: PulseBadge(
-              color: Colors.red,
-              size: 14,
-            ),
-          ),
+          home: Scaffold(body: PulseBadge(color: Colors.red, size: 14)),
         ),
       );
 
@@ -54,7 +51,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
     });
 
-    testWidgets('ScaleButton reacts to press and triggers onTap', (tester) async {
+    testWidgets('ScaleButton reacts to press and triggers onTap', (
+      tester,
+    ) async {
       bool tapped = false;
       await tester.pumpWidget(
         MaterialApp(

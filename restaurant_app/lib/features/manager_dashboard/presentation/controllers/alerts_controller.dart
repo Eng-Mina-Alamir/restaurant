@@ -62,7 +62,9 @@ class AlertsController extends StateNotifier<List<AlertEntity>> {
 
   /// Marks an alert as read.
   void markAsRead(String id) {
-    state = state.map((a) => a.id == id ? a.copyWith(isRead: true) : a).toList();
+    state = state
+        .map((a) => a.id == id ? a.copyWith(isRead: true) : a)
+        .toList();
   }
 
   /// Marks all alerts as read.
@@ -83,12 +85,13 @@ class AlertsController extends StateNotifier<List<AlertEntity>> {
 
 final alertsControllerProvider =
     StateNotifierProvider<AlertsController, List<AlertEntity>>((ref) {
-  return AlertsController();
-});
+      return AlertsController();
+    });
 
 /// Currently selected alert filter category.
-final selectedAlertCategoryProvider =
-    StateProvider<AlertCategory>((ref) => AlertCategory.all);
+final selectedAlertCategoryProvider = StateProvider<AlertCategory>(
+  (ref) => AlertCategory.all,
+);
 
 /// Count of unread critical/warning alerts.
 final unreadAlertsCountProvider = Provider<int>((ref) {

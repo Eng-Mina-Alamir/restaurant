@@ -61,43 +61,45 @@ void main() {
       expect(list.first.id, 'ORD-TEST-1');
     });
 
-    test('HiveOrderRepository creates and retrieves orders via LocalCacheService', () async {
-      final box = await Hive.openBox<String>('orders_box_test');
-      await box.clear();
-      final cache = LocalCacheService(box);
-      final repo = HiveOrderRepository(cache);
+    test(
+      'HiveOrderRepository creates and retrieves orders via LocalCacheService',
+      () async {
+        final box = await Hive.openBox<String>('orders_box_test');
+        await box.clear();
+        final cache = LocalCacheService(box);
+        final repo = HiveOrderRepository(cache);
 
-      final createRes = await repo.createOrder(sampleOrder);
-      expect(createRes.isRight, isTrue);
+        final createRes = await repo.createOrder(sampleOrder);
+        expect(createRes.isRight, isTrue);
 
-      final listRes = await repo.getOrders();
-      expect(listRes.isRight, isTrue);
-      final list = (listRes as Right<Failure, List<OrderEntity>>).value;
-      expect(list.length, 1);
-      expect(list.first.id, 'ORD-TEST-1');
-    });
+        final listRes = await repo.getOrders();
+        expect(listRes.isRight, isTrue);
+        final list = (listRes as Right<Failure, List<OrderEntity>>).value;
+        expect(list.length, 1);
+        expect(list.first.id, 'ORD-TEST-1');
+      },
+    );
   });
 
   group('KDS claim and guarded revert (local repositories)', () {
     OrderEntity orderWithStatus(OrderStatus status) => OrderEntity(
-          id: 'ORD-KDS-1',
-          restaurantId: 'rest-1',
-          tableId: 't1',
-          orderType: OrderType.dineIn,
-          status: status,
-          items: const [],
-          subtotal: 50.0,
-          taxAmount: 7.5,
-          totalAmount: 57.5,
-          createdAt: DateTime.now(),
-        );
+      id: 'ORD-KDS-1',
+      restaurantId: 'rest-1',
+      tableId: 't1',
+      orderType: OrderType.dineIn,
+      status: status,
+      items: const [],
+      subtotal: 50.0,
+      taxAmount: 7.5,
+      totalAmount: 57.5,
+      createdAt: DateTime.now(),
+    );
 
     test('InMemory claimOrder assigns kitchen user id', () async {
       final repo = InMemoryOrderRepository();
       await repo.createOrder(orderWithStatus(OrderStatus.pending));
 
-      final claimRes =
-          await repo.claimOrder('ORD-KDS-1', 'chef-9');
+      final claimRes = await repo.claimOrder('ORD-KDS-1', 'chef-9');
       expect(claimRes.isRight, isTrue);
       expect(
         (claimRes as Right<Failure, OrderEntity>).value.assignedKitchenId,
@@ -114,47 +116,54 @@ void main() {
       );
     });
 
-    test('InMemory revertStatus round-trips guarded moves and logs them', () async {
-      final repo = InMemoryOrderRepository();
-      await repo.createOrder(orderWithStatus(OrderStatus.pending));
+    test(
+      'InMemory revertStatus round-trips guarded moves and logs them',
+      () async {
+        final repo = InMemoryOrderRepository();
+        await repo.createOrder(orderWithStatus(OrderStatus.pending));
 
-      // Illegal revert from pending is rejected.
-      final illegal =
-          await repo.revertStatus('ORD-KDS-1', OrderStatus.preparing,
-              actorId: 'chef-9');
-      expect(illegal.isLeft, isTrue);
-      expect(repo.statusLog, isEmpty);
+        // Illegal revert from pending is rejected.
+        final illegal = await repo.revertStatus(
+          'ORD-KDS-1',
+          OrderStatus.preparing,
+          actorId: 'chef-9',
+        );
+        expect(illegal.isLeft, isTrue);
+        expect(repo.statusLog, isEmpty);
 
-      // Legal revert ready → preparing.
-      await repo.updateOrderStatus('ORD-KDS-1', OrderStatus.ready);
-      final revertRes = await repo.revertStatus(
-        'ORD-KDS-1',
-        OrderStatus.preparing,
-        actorId: 'chef-9',
-        reason: 'تم التجهيز بالخطأ',
-      );
-      expect(revertRes.isRight, isTrue);
-      expect(
-        (revertRes as Right<Failure, OrderEntity>).value.status,
-        OrderStatus.preparing,
-      );
+        // Legal revert ready → preparing.
+        await repo.updateOrderStatus('ORD-KDS-1', OrderStatus.ready);
+        final revertRes = await repo.revertStatus(
+          'ORD-KDS-1',
+          OrderStatus.preparing,
+          actorId: 'chef-9',
+          reason: 'تم التجهيز بالخطأ',
+        );
+        expect(revertRes.isRight, isTrue);
+        expect(
+          (revertRes as Right<Failure, OrderEntity>).value.status,
+          OrderStatus.preparing,
+        );
 
-      // Terminal target is never allowed.
-      final toTerminal =
-          await repo.revertStatus('ORD-KDS-1', OrderStatus.completed,
-              actorId: 'chef-9');
-      expect(toTerminal.isLeft, isTrue);
+        // Terminal target is never allowed.
+        final toTerminal = await repo.revertStatus(
+          'ORD-KDS-1',
+          OrderStatus.completed,
+          actorId: 'chef-9',
+        );
+        expect(toTerminal.isLeft, isTrue);
 
-      // Exactly one audit entry, attributed and flagged as revert.
-      expect(repo.statusLog, hasLength(1));
-      final entry = repo.statusLog.single;
-      expect(entry.orderId, 'ORD-KDS-1');
-      expect(entry.fromStatus, OrderStatus.ready);
-      expect(entry.toStatus, OrderStatus.preparing);
-      expect(entry.actorId, 'chef-9');
-      expect(entry.reason, 'تم التجهيز بالخطأ');
-      expect(entry.isRevert, isTrue);
-    });
+        // Exactly one audit entry, attributed and flagged as revert.
+        expect(repo.statusLog, hasLength(1));
+        final entry = repo.statusLog.single;
+        expect(entry.orderId, 'ORD-KDS-1');
+        expect(entry.fromStatus, OrderStatus.ready);
+        expect(entry.toStatus, OrderStatus.preparing);
+        expect(entry.actorId, 'chef-9');
+        expect(entry.reason, 'تم التجهيز بالخطأ');
+        expect(entry.isRevert, isTrue);
+      },
+    );
 
     test('Hive claimOrder and revertStatus round-trip through cache', () async {
       final box = await Hive.openBox<String>('orders_claim_box_test');
@@ -197,17 +206,17 @@ void main() {
     const orderId = 'ORD-MAX-REVERT';
 
     OrderEntity orderWithStatus(String id, OrderStatus status) => OrderEntity(
-          id: id,
-          restaurantId: 'rest-1',
-          tableId: 't1',
-          orderType: OrderType.dineIn,
-          status: status,
-          items: const [],
-          subtotal: 50.0,
-          taxAmount: 7.5,
-          totalAmount: 57.5,
-          createdAt: DateTime.now(),
-        );
+      id: id,
+      restaurantId: 'rest-1',
+      tableId: 't1',
+      orderType: OrderType.dineIn,
+      status: status,
+      items: const [],
+      subtotal: 50.0,
+      taxAmount: 7.5,
+      totalAmount: 57.5,
+      createdAt: DateTime.now(),
+    );
 
     /// Two legal reverts succeed; a third legal-shape revert is rejected
     /// with the exact Arabic ValidationFailure and leaves the order

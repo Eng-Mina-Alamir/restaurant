@@ -36,7 +36,9 @@ class PaymentResult {
     return PaymentResult._(
       isSuccess: true,
       transactionId: transactionId,
-      authorizationCode: authorizationCode ?? 'AUTH-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      authorizationCode:
+          authorizationCode ??
+          'AUTH-${DateTime.now().millisecondsSinceEpoch % 100000}',
       timestamp: DateTime.now(),
     );
   }
@@ -69,18 +71,11 @@ class RefundResult {
     required String refundId,
     required double amount,
   }) {
-    return RefundResult._(
-      isSuccess: true,
-      refundId: refundId,
-      amount: amount,
-    );
+    return RefundResult._(isSuccess: true, refundId: refundId, amount: amount);
   }
 
   factory RefundResult.failure(String errorMessage) {
-    return RefundResult._(
-      isSuccess: false,
-      errorMessage: errorMessage,
-    );
+    return RefundResult._(isSuccess: false, errorMessage: errorMessage);
   }
 
   final bool isSuccess;

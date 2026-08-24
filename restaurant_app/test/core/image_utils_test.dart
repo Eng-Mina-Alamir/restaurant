@@ -21,7 +21,9 @@ void main() {
       expect(find.byType(ClipRRect), findsOneWidget);
     });
 
-    testWidgets('buildGradientBanner renders title, subtitle, and icon', (tester) async {
+    testWidgets('buildGradientBanner renders title, subtitle, and icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

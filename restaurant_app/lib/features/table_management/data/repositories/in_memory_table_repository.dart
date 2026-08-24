@@ -56,4 +56,3 @@ class InMemoryTableRepository implements TableRepository {
     return const Right<Failure, void>(null);
   }
 }
-

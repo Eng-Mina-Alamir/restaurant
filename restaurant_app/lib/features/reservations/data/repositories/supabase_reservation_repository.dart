@@ -9,7 +9,7 @@ import '../../domain/repositories/reservation_repository.dart';
 
 class SupabaseReservationRepository implements ReservationRepository {
   SupabaseReservationRepository({required SupabaseClient supabase})
-      : _supabase = supabase;
+    : _supabase = supabase;
 
   final SupabaseClient _supabase;
 
@@ -32,7 +32,11 @@ class SupabaseReservationRepository implements ReservationRepository {
       _cachedReservations.addAll(reservations);
       return Right(reservations);
     } catch (e, st) {
-      AppLogger.warning('Supabase getReservations fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase getReservations fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       return Right(List.unmodifiable(_cachedReservations));
     }
   }
@@ -70,11 +74,14 @@ class SupabaseReservationRepository implements ReservationRepository {
       try {
         await _supabase.from(SupabaseConfig.reservationsTable).insert(payload);
       } catch (e) {
-        if (e.toString().contains('phone') || e.toString().contains('PGRST204')) {
+        if (e.toString().contains('phone') ||
+            e.toString().contains('PGRST204')) {
           final legacyPayload = Map<String, dynamic>.from(payload)
             ..remove('phone')
             ..['customer_phone'] = reservation.customerPhone;
-          await _supabase.from(SupabaseConfig.reservationsTable).insert(legacyPayload);
+          await _supabase
+              .from(SupabaseConfig.reservationsTable)
+              .insert(legacyPayload);
         } else {
           rethrow;
         }
@@ -83,7 +90,11 @@ class SupabaseReservationRepository implements ReservationRepository {
       _cachedReservations.add(reservation);
       return Right(reservation);
     } catch (e, st) {
-      AppLogger.warning('Supabase createReservation fallback: $e', error: e, stackTrace: st);
+      AppLogger.warning(
+        'Supabase createReservation fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
       _cachedReservations.add(reservation);
       return Right(reservation);
     }
@@ -107,12 +118,18 @@ class SupabaseReservationRepository implements ReservationRepository {
           .maybeSingle();
 
       if (updatedRaw != null) {
-        return Right(_mapToReservationEntity(Map<String, dynamic>.from(updatedRaw)));
+        return Right(
+          _mapToReservationEntity(Map<String, dynamic>.from(updatedRaw)),
+        );
       }
 
       return const Left(NotFoundFailure('الحجز غير موجود'));
     } catch (e, st) {
-      AppLogger.error('Supabase updateStatus reservation error', error: e, stackTrace: st);
+      AppLogger.error(
+        'Supabase updateStatus reservation error',
+        error: e,
+        stackTrace: st,
+      );
       return Left(ServerFailure('فشل تحديث حالة الحجز: $e'));
     }
   }
@@ -126,7 +143,11 @@ class SupabaseReservationRepository implements ReservationRepository {
           .eq('id', id);
       return const Right(null);
     } catch (e, st) {
-      AppLogger.error('Supabase cancelReservation error', error: e, stackTrace: st);
+      AppLogger.error(
+        'Supabase cancelReservation error',
+        error: e,
+        stackTrace: st,
+      );
       return Left(ServerFailure('فشل إلغاء الحجز: $e'));
     }
   }
@@ -146,7 +167,8 @@ class SupabaseReservationRepository implements ReservationRepository {
       tableNumber: (map['table_number'] as num?)?.toInt() ?? 1,
       guestCount: (map['party_size'] as num?)?.toInt() ?? 2,
       reservationTime: map['reservation_time'] != null
-          ? DateTime.tryParse(map['reservation_time'] as String) ?? DateTime.now()
+          ? DateTime.tryParse(map['reservation_time'] as String) ??
+                DateTime.now()
           : DateTime.now(),
       notes: map['notes'] as String?,
       status: status,

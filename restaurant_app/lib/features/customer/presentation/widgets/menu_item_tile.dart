@@ -52,10 +52,7 @@ class MenuItemTile extends StatelessWidget {
                       if (item.isVegetarian)
                         const _Badge(AppConstants.dietVegetarian),
                       if (item.isSpicy)
-                        const _Badge(
-                          AppConstants.dietSpicy,
-                          color: Colors.red,
-                        ),
+                        const _Badge(AppConstants.dietSpicy, color: Colors.red),
                       if (!item.isAvailable)
                         const _Badge(
                           AppConstants.itemUnavailable,

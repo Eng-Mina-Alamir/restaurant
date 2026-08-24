@@ -67,9 +67,7 @@ class SupabaseChatRepository implements ChatRepository {
         'Supabase send chat message error: $e '
         '(orderId=${message.orderId}, senderId=${message.senderId})',
       );
-      return Left<Failure, ChatMessage>(
-        ServerFailure('فشل إرسال الرسالة: $e'),
-      );
+      return Left<Failure, ChatMessage>(ServerFailure('فشل إرسال الرسالة: $e'));
     }
   }
 
@@ -99,9 +97,7 @@ class SupabaseChatRepository implements ChatRepository {
           .toList();
       return Right<Failure, List<ChatMessage>>(messages.reversed.toList());
     } catch (e) {
-      AppLogger.error(
-        'Supabase chat history error: $e (orderId=$orderId)',
-      );
+      AppLogger.error('Supabase chat history error: $e (orderId=$orderId)');
       return Left<Failure, List<ChatMessage>>(
         ServerFailure('فشل جلب سجل المحادثة: $e'),
       );
@@ -131,7 +127,9 @@ class SupabaseChatRepository implements ChatRepository {
         // 1. History snapshot first.
         final result = await history(orderId);
         result.when(
-          onLeft: (_) {/* live events still flow below */},
+          onLeft: (_) {
+            /* live events still flow below */
+          },
           onRight: (rows) {
             buffer
               ..clear()
@@ -182,9 +180,7 @@ class SupabaseChatRepository implements ChatRepository {
           try {
             await _supabase.removeChannel(ch);
           } catch (e) {
-            AppLogger.warning(
-              'Supabase chat watch unsubscribe error: $e',
-            );
+            AppLogger.warning('Supabase chat watch unsubscribe error: $e');
           }
         }
         await out.close();

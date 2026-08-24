@@ -113,7 +113,8 @@ class QaMockAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<void> logout(String? token) async {}
 
   @override
-  Future<String> refreshToken(String refreshToken) async => 'jwt-token-refreshed';
+  Future<String> refreshToken(String refreshToken) async =>
+      'jwt-token-refreshed';
 
   @override
   Future<UserModel> register({
@@ -139,7 +140,10 @@ class QaMockAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel> verifyOtp({required String otp, required String phone}) async {
+  Future<UserModel> verifyOtp({
+    required String otp,
+    required String phone,
+  }) async {
     return QaSeedAccounts.customer.copyWith(phone: phone);
   }
 }
@@ -160,7 +164,11 @@ class QaSeedData {
         isRequired: false,
         maxSelection: 3,
         options: [
-          MenuModifierOption(id: 'opt-extra-cheese', name: 'جبن شيدر إضافي', extraPrice: 15.0),
+          MenuModifierOption(
+            id: 'opt-extra-cheese',
+            name: 'جبن شيدر إضافي',
+            extraPrice: 15.0,
+          ),
         ],
       ),
       MenuModifierGroup(
@@ -170,7 +178,11 @@ class QaSeedData {
         maxSelection: 1,
         options: [
           MenuModifierOption(id: 'opt-reg', name: 'حجم عادي', extraPrice: 0.0),
-          MenuModifierOption(id: 'opt-large', name: 'حجم كبير (دابل)', extraPrice: 25.0),
+          MenuModifierOption(
+            id: 'opt-large',
+            name: 'حجم كبير (دابل)',
+            extraPrice: 25.0,
+          ),
         ],
       ),
     ],

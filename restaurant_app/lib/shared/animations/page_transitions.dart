@@ -27,10 +27,7 @@ class AppPageTransitions {
 
         return FadeTransition(
           opacity: fadeAnim,
-          child: SlideTransition(
-            position: slideAnim,
-            child: child,
-          ),
+          child: SlideTransition(position: slideAnim, child: child),
         );
       },
     );
@@ -58,10 +55,7 @@ class AppPageTransitions {
 
         return FadeTransition(
           opacity: fadeAnim,
-          child: ScaleTransition(
-            scale: scaleAnim,
-            child: child,
-          ),
+          child: ScaleTransition(scale: scaleAnim, child: child),
         );
       },
     );
@@ -89,10 +83,7 @@ class AppPageTransitions {
 
         return SlideTransition(
           position: inSlide,
-          child: FadeTransition(
-            opacity: inFade,
-            child: child,
-          ),
+          child: FadeTransition(opacity: inFade, child: child),
         );
       },
     );

@@ -116,10 +116,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
       );
       return false;
     }
-    state = [
-      ...state.where((a) => a.id != created.id),
-      created,
-    ];
+    state = [...state.where((a) => a.id != created.id), created];
     _realtimeService?.broadcastDeliveryAssignmentCreated(created.toJson());
     return true;
   }
@@ -199,13 +196,10 @@ final deliveryControllerProvider =
 /// Auto-dispose: the query lives only while a tracking page watches it.
 /// Returns null when no driver has been assigned yet (order still pending /
 /// not dispatched) — callers render a "searching for driver" placeholder.
-final deliveryAssignmentForOrderProvider =
-    FutureProvider.autoDispose.family<DeliveryAssignment?, String>(
-  (ref, orderId) async {
-    final result =
-        await ref.watch(deliveryRepositoryProvider).getAssignmentByOrderId(
-              orderId,
-            );
-    return result.when(onLeft: (_) => null, onRight: (a) => a);
-  },
-);
+final deliveryAssignmentForOrderProvider = FutureProvider.autoDispose
+    .family<DeliveryAssignment?, String>((ref, orderId) async {
+      final result = await ref
+          .watch(deliveryRepositoryProvider)
+          .getAssignmentByOrderId(orderId);
+      return result.when(onLeft: (_) => null, onRight: (a) => a);
+    });

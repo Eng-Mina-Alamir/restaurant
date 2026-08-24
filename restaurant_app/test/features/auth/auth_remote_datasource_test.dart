@@ -54,7 +54,7 @@ void main() {
             'email': 'test@restaurant.com',
             'phone': '1234567890',
             'role': 'manager',
-          }
+          },
         },
         statusCode: 200,
       );
@@ -125,7 +125,7 @@ void main() {
             'email': 'otp@test.com',
             'phone': '0500000000',
             'role': 'waiter',
-          }
+          },
         },
         statusCode: 200,
       );
@@ -138,9 +138,7 @@ void main() {
     test('refreshToken returns new token string on success', () async {
       fakeDio.nextResponse = Response<Map<String, dynamic>>(
         requestOptions: RequestOptions(path: '/auth/refresh'),
-        data: <String, dynamic>{
-          'token': 'new_jwt_access_token_123',
-        },
+        data: <String, dynamic>{'token': 'new_jwt_access_token_123'},
         statusCode: 200,
       );
 

@@ -17,30 +17,27 @@ final ratingRepositoryProvider = Provider<RatingRepository>((ref) {
 });
 
 /// Family provider for fetching ratings list for a target (item, driver, or restaurant).
-final targetRatingsProvider =
-    FutureProvider.family<List<RatingEntity>, String>((ref, targetId) async {
-  final repo = ref.watch(ratingRepositoryProvider);
-  final result = await repo.getRatingsForTarget(targetId);
-  return result.when(
-    onLeft: (failure) => [],
-    onRight: (list) => list,
-  );
-});
+final targetRatingsProvider = FutureProvider.family<List<RatingEntity>, String>(
+  (ref, targetId) async {
+    final repo = ref.watch(ratingRepositoryProvider);
+    final result = await repo.getRatingsForTarget(targetId);
+    return result.when(onLeft: (failure) => [], onRight: (list) => list);
+  },
+);
 
 /// Family provider for fetching average score for a target.
-final targetAverageScoreProvider =
-    FutureProvider.family<double, String>((ref, targetId) async {
+final targetAverageScoreProvider = FutureProvider.family<double, String>((
+  ref,
+  targetId,
+) async {
   final repo = ref.watch(ratingRepositoryProvider);
   final result = await repo.getAverageScore(targetId);
-  return result.when(
-    onLeft: (_) => 5.0,
-    onRight: (score) => score,
-  );
+  return result.when(onLeft: (_) => 5.0, onRight: (score) => score);
 });
 
 class RatingSubmissionController extends StateNotifier<AsyncValue<void>> {
   RatingSubmissionController(this._repository, this._ref)
-      : super(const AsyncValue.data(null));
+    : super(const AsyncValue.data(null));
 
   final RatingRepository _repository;
   final Ref _ref;
@@ -81,10 +78,10 @@ class RatingSubmissionController extends StateNotifier<AsyncValue<void>> {
   }
 }
 
-final ratingSubmissionControllerProvider = StateNotifierProvider<
-    RatingSubmissionController, AsyncValue<void>>((ref) {
-  return RatingSubmissionController(
-    ref.watch(ratingRepositoryProvider),
-    ref,
-  );
-});
+final ratingSubmissionControllerProvider =
+    StateNotifierProvider<RatingSubmissionController, AsyncValue<void>>((ref) {
+      return RatingSubmissionController(
+        ref.watch(ratingRepositoryProvider),
+        ref,
+      );
+    });

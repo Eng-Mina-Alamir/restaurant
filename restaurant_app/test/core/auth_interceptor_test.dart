@@ -28,15 +28,18 @@ void main() {
       expect(handler.nextCalled, isTrue);
     });
 
-    test('onRequest leaves Authorization empty when no token is stored', () async {
-      final options = RequestOptions(path: '/api/v1/menu');
-      final handler = _FakeRequestHandler();
+    test(
+      'onRequest leaves Authorization empty when no token is stored',
+      () async {
+        final options = RequestOptions(path: '/api/v1/menu');
+        final handler = _FakeRequestHandler();
 
-      await interceptor.onRequest(options, handler);
+        await interceptor.onRequest(options, handler);
 
-      expect(options.headers.containsKey('Authorization'), isFalse);
-      expect(handler.nextCalled, isTrue);
-    });
+        expect(options.headers.containsKey('Authorization'), isFalse);
+        expect(handler.nextCalled, isTrue);
+      },
+    );
 
     test('onError passes through non-401 errors without refresh', () async {
       final requestOptions = RequestOptions(path: '/api/v1/orders');
@@ -52,22 +55,25 @@ void main() {
       expect(handler.lastError?.response?.statusCode, 500);
     });
 
-    test('onError does not retry if request is already stamped with auth_retried', () async {
-      await storage.writeRefreshToken('test-refresh-token');
-      final requestOptions = RequestOptions(
-        path: '/api/v1/orders',
-        extra: {'auth_retried': true},
-      );
-      final dioException = DioException(
-        requestOptions: requestOptions,
-        response: Response(requestOptions: requestOptions, statusCode: 401),
-      );
+    test(
+      'onError does not retry if request is already stamped with auth_retried',
+      () async {
+        await storage.writeRefreshToken('test-refresh-token');
+        final requestOptions = RequestOptions(
+          path: '/api/v1/orders',
+          extra: {'auth_retried': true},
+        );
+        final dioException = DioException(
+          requestOptions: requestOptions,
+          response: Response(requestOptions: requestOptions, statusCode: 401),
+        );
 
-      final handler = _FakeErrorHandler();
-      await interceptor.onError(dioException, handler);
+        final handler = _FakeErrorHandler();
+        await interceptor.onError(dioException, handler);
 
-      expect(handler.nextCalled, isTrue);
-    });
+        expect(handler.nextCalled, isTrue);
+      },
+    );
 
     test('onError fails gracefully if no refreshToken is available', () async {
       final requestOptions = RequestOptions(path: '/api/v1/orders');

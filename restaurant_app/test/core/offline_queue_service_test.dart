@@ -44,29 +44,32 @@ void main() {
       expect(service.pendingCount, 1);
     });
 
-    test('drainWith replays items and deletes when handler returns true', () async {
-      await service.enqueue(
-        operationType: 'createOrder',
-        payload: {'orderId': 'ORD-001'},
-      );
-      await service.enqueue(
-        operationType: 'updateTableStatus',
-        payload: {'tableId': 'tbl-1', 'status': 'occupied'},
-      );
+    test(
+      'drainWith replays items and deletes when handler returns true',
+      () async {
+        await service.enqueue(
+          operationType: 'createOrder',
+          payload: {'orderId': 'ORD-001'},
+        );
+        await service.enqueue(
+          operationType: 'updateTableStatus',
+          payload: {'tableId': 'tbl-1', 'status': 'occupied'},
+        );
 
-      expect(service.pendingCount, 2);
+        expect(service.pendingCount, 2);
 
-      final replayedTypes = <String>[];
-      final replayedCount = await service.drainWith((type, payload) async {
-        replayedTypes.add(type);
-        return true; // Successfully processed
-      });
+        final replayedTypes = <String>[];
+        final replayedCount = await service.drainWith((type, payload) async {
+          replayedTypes.add(type);
+          return true; // Successfully processed
+        });
 
-      expect(replayedCount, 2);
-      expect(replayedTypes, ['createOrder', 'updateTableStatus']);
-      expect(service.hasPending, isFalse);
-      expect(service.pendingCount, 0);
-    });
+        expect(replayedCount, 2);
+        expect(replayedTypes, ['createOrder', 'updateTableStatus']);
+        expect(service.hasPending, isFalse);
+        expect(service.pendingCount, 0);
+      },
+    );
 
     test('drainWith retains items when handler returns false', () async {
       await service.enqueue(
@@ -140,8 +143,11 @@ void main() {
               baseBackoff: Duration.zero,
             );
             expect(replayed, 0);
-            expect(service.pendingCount, 1,
-                reason: 'Entry must stay queued while under maxAttempts');
+            expect(
+              service.pendingCount,
+              1,
+              reason: 'Entry must stay queued while under maxAttempts',
+            );
           }
           expect(attempts, 3);
           expect(service.deadLetteredCount, 0);
@@ -157,57 +163,70 @@ void main() {
 
           expect(replayed, 0);
           expect(service.deadLetteredCount, 1);
-          expect(service.hasPending, isFalse,
-              reason: 'Dead-lettered entries must be removed from the queue');
+          expect(
+            service.hasPending,
+            isFalse,
+            reason: 'Dead-lettered entries must be removed from the queue',
+          );
           expect(deadLettered.single['orderId'], 'ORD-POISON');
         },
       );
 
-      test('entries inside their backoff window are skipped, not lost',
-          () async {
-        await service.enqueue(
-          operationType: 'createOrder',
-          payload: {'orderId': 'ORD-BACKOFF'},
-        );
+      test(
+        'entries inside their backoff window are skipped, not lost',
+        () async {
+          await service.enqueue(
+            operationType: 'createOrder',
+            payload: {'orderId': 'ORD-BACKOFF'},
+          );
 
-        var calls = 0;
-        // Default 2s base backoff: first failure arms a retry delay.
-        await service.drain((type, payload) async {
-          calls++;
-          return false;
-        }, maxAttempts: 99);
-        expect(calls, 1);
+          var calls = 0;
+          // Default 2s base backoff: first failure arms a retry delay.
+          await service.drain((type, payload) async {
+            calls++;
+            return false;
+          }, maxAttempts: 99);
+          expect(calls, 1);
 
-        // Immediate second drain: entry exists but is not yet due.
-        await service.drain((type, payload) async {
-          calls++;
-          return false;
-        }, maxAttempts: 99);
+          // Immediate second drain: entry exists but is not yet due.
+          await service.drain((type, payload) async {
+            calls++;
+            return false;
+          }, maxAttempts: 99);
 
-        expect(calls, 1,
-            reason: 'Backed-off entries must be skipped until due');
-        expect(service.pendingCount, 1,
-            reason: 'Skipped entries must be retained');
-      });
+          expect(
+            calls,
+            1,
+            reason: 'Backed-off entries must be skipped until due',
+          );
+          expect(
+            service.pendingCount,
+            1,
+            reason: 'Skipped entries must be retained',
+          );
+        },
+      );
 
-      test('corrupt JSON entries are dropped instead of blocking the queue',
-          () async {
-        await service.enqueue(
-          operationType: 'createOrder',
-          payload: {'orderId': 'ORD-GOOD'},
-        );
-        await service.debugInjectRaw('{corrupt json!!');
+      test(
+        'corrupt JSON entries are dropped instead of blocking the queue',
+        () async {
+          await service.enqueue(
+            operationType: 'createOrder',
+            payload: {'orderId': 'ORD-GOOD'},
+          );
+          await service.debugInjectRaw('{corrupt json!!');
 
-        var processed = 0;
-        final replayed = await service.drainWith((type, payload) async {
-          processed++;
-          return true;
-        });
+          var processed = 0;
+          final replayed = await service.drainWith((type, payload) async {
+            processed++;
+            return true;
+          });
 
-        expect(processed, 1, reason: 'Only the healthy entry is replayed');
-        expect(replayed, 1);
-        expect(service.hasPending, isFalse);
-      });
+          expect(processed, 1, reason: 'Only the healthy entry is replayed');
+          expect(replayed, 1);
+          expect(service.hasPending, isFalse);
+        },
+      );
     });
   });
 }

@@ -7,11 +7,7 @@ void main() {
   group('CouponManagementPage Widget Tests', () {
     testWidgets('renders coupon list and action buttons', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: CouponManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: CouponManagementPage())),
       );
       await tester.pumpAndSettle();
 
@@ -19,13 +15,11 @@ void main() {
       expect(find.text('إنشاء كوبون'), findsOneWidget);
     });
 
-    testWidgets('tapping create coupon button opens creation modal', (tester) async {
+    testWidgets('tapping create coupon button opens creation modal', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: CouponManagementPage(),
-          ),
-        ),
+        const ProviderScope(child: MaterialApp(home: CouponManagementPage())),
       );
       await tester.pumpAndSettle();
 

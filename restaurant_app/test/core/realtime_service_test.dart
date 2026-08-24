@@ -47,7 +47,11 @@ void main() {
     test('parses driverLocationUpdated event', () {
       final raw = jsonEncode({
         'type': 'driverLocationUpdated',
-        'data': {'driverId': 'driver-1', 'latitude': 24.7136, 'longitude': 46.6753},
+        'data': {
+          'driverId': 'driver-1',
+          'latitude': 24.7136,
+          'longitude': 46.6753,
+        },
       });
       final event = RealtimeEvent.fromRaw(raw);
       expect(event.type, RealtimeEventType.driverLocationUpdated);
@@ -82,7 +86,10 @@ void main() {
         createdAt: now,
       );
 
-      final raw = jsonEncode({'type': 'orderCreated', 'data': newOrder.toJson()});
+      final raw = jsonEncode({
+        'type': 'orderCreated',
+        'data': newOrder.toJson(),
+      });
       final parsed = RealtimeEvent.fromRaw(raw);
       expect(parsed.type, RealtimeEventType.orderCreated);
 

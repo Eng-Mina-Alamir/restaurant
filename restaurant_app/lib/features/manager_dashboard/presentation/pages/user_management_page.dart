@@ -107,8 +107,8 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
 
 final userManagementControllerProvider =
     StateNotifierProvider<UserManagementController, List<UserEntity>>((ref) {
-  return UserManagementController();
-});
+      return UserManagementController();
+    });
 
 /// Staff and user CRUD management page for restaurant manager.
 class UserManagementPage extends ConsumerStatefulWidget {
@@ -131,7 +131,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
     final filteredUsers = users.where((u) {
       final matchesRole = _filterRole == null || u.role == _filterRole;
       final q = _search.trim().toLowerCase();
-      final matchesSearch = q.isEmpty ||
+      final matchesSearch =
+          q.isEmpty ||
           u.name.toLowerCase().contains(q) ||
           u.email.toLowerCase().contains(q) ||
           u.phone.contains(q);
@@ -237,7 +238,9 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                             children: [
                               Text(
                                 user.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               if (!user.isActive)
@@ -279,7 +282,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                               if (val == 'toggle') {
                                 ref
                                     .read(
-                                        userManagementControllerProvider.notifier)
+                                      userManagementControllerProvider.notifier,
+                                    )
                                     .toggleStatus(user.id);
                               } else if (val == 'edit') {
                                 _showEditUserDialog(context, user);
@@ -324,8 +328,11 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline,
-                                        size: 18, color: Colors.red),
+                                    Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       'حذف الحساب',
@@ -409,8 +416,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                     Text(
                       'إضافة موظف جديد',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -449,10 +456,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                   initialValue: role,
                   items: UserRole.values
                       .map(
-                        (r) => DropdownMenuItem(
-                          value: r,
-                          child: Text(r.labelAr),
-                        ),
+                        (r) =>
+                            DropdownMenuItem(value: r, child: Text(r.labelAr)),
                       )
                       .toList(),
                   onChanged: (val) {
@@ -525,8 +530,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                     Text(
                       'تعديل بيانات: ${user.name}',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -565,10 +570,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                   initialValue: role,
                   items: UserRole.values
                       .map(
-                        (r) => DropdownMenuItem(
-                          value: r,
-                          child: Text(r.labelAr),
-                        ),
+                        (r) =>
+                            DropdownMenuItem(value: r, child: Text(r.labelAr)),
                       )
                       .toList(),
                   onChanged: (val) {

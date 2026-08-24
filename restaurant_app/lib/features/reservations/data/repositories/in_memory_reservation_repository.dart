@@ -85,8 +85,9 @@ class InMemoryReservationRepository implements ReservationRepository {
   Future<Either<Failure, void>> cancelReservation(String id) async {
     final index = _reservations.indexWhere((r) => r.id == id);
     if (index != -1) {
-      _reservations[index] =
-          _reservations[index].copyWith(status: ReservationStatus.cancelled);
+      _reservations[index] = _reservations[index].copyWith(
+        status: ReservationStatus.cancelled,
+      );
     }
     return const Right<Failure, void>(null);
   }

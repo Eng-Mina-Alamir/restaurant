@@ -53,7 +53,8 @@ class CouponManagementPage extends ConsumerWidget {
             itemCount: coupons.length,
             itemBuilder: (context, index) {
               final coupon = coupons[index];
-              final isExpired = coupon.validUntil != null &&
+              final isExpired =
+                  coupon.validUntil != null &&
                   DateTime.now().isAfter(coupon.validUntil!);
 
               return Card(
@@ -75,10 +76,13 @@ class CouponManagementPage extends ConsumerWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primaryContainer,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.sm),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
                                   border: Border.all(
-                                    color: colorScheme.primary.withValues(alpha: 0.3),
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -118,7 +122,9 @@ class CouponManagementPage extends ConsumerWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(alpha: 0.12),
+                                    color: Colors.orange.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: const Text(
@@ -159,7 +165,9 @@ class CouponManagementPage extends ConsumerWidget {
                               } else if (val == 'toggle') {
                                 ref
                                     .read(
-                                        couponManagementControllerProvider.notifier)
+                                      couponManagementControllerProvider
+                                          .notifier,
+                                    )
                                     .updateCoupon(
                                       coupon.copyWith(
                                         isActive: !coupon.isActive,
@@ -202,11 +210,16 @@ class CouponManagementPage extends ConsumerWidget {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline,
-                                        size: 18, color: Colors.red),
+                                    Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
                                     SizedBox(width: 8),
-                                    Text('حذف',
-                                        style: TextStyle(color: Colors.red)),
+                                    Text(
+                                      'حذف',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -234,8 +247,11 @@ class CouponManagementPage extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          Icon(Icons.shopping_bag_outlined,
-                              size: 14, color: colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'حد أدنى للطلب: ${coupon.minOrderAmount} ريال',
@@ -245,8 +261,11 @@ class CouponManagementPage extends ConsumerWidget {
                           ),
                           const SizedBox(width: AppSpacing.md),
                           if (coupon.validUntil != null) ...[
-                            Icon(Icons.event_outlined,
-                                size: 14, color: colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.event_outlined,
+                              size: 14,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'ينتهي: ${Formatters.formatDate(coupon.validUntil!)}',
@@ -260,8 +279,11 @@ class CouponManagementPage extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          Icon(Icons.people_alt_outlined,
-                              size: 14, color: colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.people_alt_outlined,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'الاستخدام: ${coupon.usageCount} ${coupon.usageLimit != null ? '/ ${coupon.usageLimit}' : 'مرات'}',
@@ -289,14 +311,18 @@ class CouponManagementPage extends ConsumerWidget {
   }) {
     final codeCtrl = TextEditingController(text: coupon?.code ?? '');
     final titleCtrl = TextEditingController(text: coupon?.title ?? '');
-    final valueCtrl =
-        TextEditingController(text: coupon?.discountValue.toString() ?? '20');
-    final minOrderCtrl =
-        TextEditingController(text: coupon?.minOrderAmount.toString() ?? '50');
+    final valueCtrl = TextEditingController(
+      text: coupon?.discountValue.toString() ?? '20',
+    );
+    final minOrderCtrl = TextEditingController(
+      text: coupon?.minOrderAmount.toString() ?? '50',
+    );
     final maxDiscountCtrl = TextEditingController(
-        text: coupon?.maxDiscountAmount?.toString() ?? '30');
+      text: coupon?.maxDiscountAmount?.toString() ?? '30',
+    );
     final usageLimitCtrl = TextEditingController(
-        text: coupon?.usageLimit?.toString() ?? '100');
+      text: coupon?.usageLimit?.toString() ?? '100',
+    );
     CouponDiscountType discountType =
         coupon?.discountType ?? CouponDiscountType.percentage;
 
@@ -323,8 +349,8 @@ class CouponManagementPage extends ConsumerWidget {
                     Text(
                       coupon == null ? 'إنشاء كود خصم جديد' : 'تعديل كود الخصم',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -353,8 +379,10 @@ class CouponManagementPage extends ConsumerWidget {
                 DropdownButtonFormField<CouponDiscountType>(
                   initialValue: discountType,
                   items: CouponDiscountType.values
-
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t.labelAr)))
+                      .map(
+                        (t) =>
+                            DropdownMenuItem(value: t, child: Text(t.labelAr)),
+                      )
                       .toList(),
                   onChanged: (val) {
                     if (val != null) setSheetState(() => discountType = val);
@@ -412,20 +440,23 @@ class CouponManagementPage extends ConsumerWidget {
                     final value = double.tryParse(valueCtrl.text.trim()) ?? 0.0;
                     final minOrder =
                         double.tryParse(minOrderCtrl.text.trim()) ?? 0.0;
-                    final maxDiscount =
-                        double.tryParse(maxDiscountCtrl.text.trim());
+                    final maxDiscount = double.tryParse(
+                      maxDiscountCtrl.text.trim(),
+                    );
                     final usageLimit = int.tryParse(usageLimitCtrl.text.trim());
 
                     if (code.isEmpty || title.isEmpty || value <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('يرجى ملء جميع الحقول الإلزامية')),
+                          content: Text('يرجى ملء جميع الحقول الإلزامية'),
+                        ),
                       );
                       return;
                     }
 
                     final newCoupon = CouponEntity(
-                      id: coupon?.id ??
+                      id:
+                          coupon?.id ??
                           'cpn-${DateTime.now().millisecondsSinceEpoch}',
                       code: code,
                       title: title,
@@ -433,15 +464,15 @@ class CouponManagementPage extends ConsumerWidget {
                       discountValue: value,
                       minOrderAmount: minOrder,
                       maxDiscountAmount: maxDiscount,
-                      validUntil:
-                          DateTime.now().add(const Duration(days: 30)),
+                      validUntil: DateTime.now().add(const Duration(days: 30)),
                       usageLimit: usageLimit,
                       usageCount: coupon?.usageCount ?? 0,
                       isActive: coupon?.isActive ?? true,
                     );
 
-                    final controller =
-                        ref.read(couponManagementControllerProvider.notifier);
+                    final controller = ref.read(
+                      couponManagementControllerProvider.notifier,
+                    );
                     final err = coupon == null
                         ? await controller.createCoupon(newCoupon)
                         : await controller.updateCoupon(newCoupon);

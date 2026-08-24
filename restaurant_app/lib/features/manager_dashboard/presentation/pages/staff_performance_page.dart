@@ -75,8 +75,9 @@ final _mockStaff = [
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
-final staffPerformanceProvider =
-    Provider<List<StaffPerformance>>((ref) => _mockStaff);
+final staffPerformanceProvider = Provider<List<StaffPerformance>>(
+  (ref) => _mockStaff,
+);
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -90,13 +91,10 @@ class StaffPerformancePage extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
     final staff = ref.watch(staffPerformanceProvider);
 
-    final topPerformer =
-        staff.reduce((a, b) => a.rating >= b.rating ? a : b);
+    final topPerformer = staff.reduce((a, b) => a.rating >= b.rating ? a : b);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('أداء الموظفين'),
-      ),
+      appBar: AppBar(title: const Text('أداء الموظفين')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
@@ -117,14 +115,16 @@ class StaffPerformancePage extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          ...staff.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: _StaffCard(
-                  performer: s,
-                  colorScheme: colorScheme,
-                  theme: theme,
-                ),
-              )),
+          ...staff.map(
+            (s) => Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: _StaffCard(
+                performer: s,
+                colorScheme: colorScheme,
+                theme: theme,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -150,10 +150,7 @@ class _TopPerformerBanner extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            colorScheme.primary,
-            colorScheme.tertiary,
-          ],
+          colors: [colorScheme.primary, colorScheme.tertiary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -207,7 +204,9 @@ class _TopPerformerBanner extends StatelessWidget {
                 children: List.generate(
                   5,
                   (i) => Icon(
-                    i < performer.rating.round() ? Icons.star : Icons.star_outline,
+                    i < performer.rating.round()
+                        ? Icons.star
+                        : Icons.star_outline,
                     color: Colors.amber,
                     size: 14,
                   ),
@@ -280,7 +279,9 @@ class _StaffCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: performer.ratingColor(colorScheme).withValues(alpha: 0.15),
+                    color: performer
+                        .ratingColor(colorScheme)
+                        .withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(

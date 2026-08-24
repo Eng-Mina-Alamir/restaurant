@@ -10,7 +10,7 @@ class MenuRepositoryImpl implements MenuRepository {
   /// Creates a repository seeded with [initialMenu], falling back to the
   /// offline [MenuSeedData] menu when null (non-breaking default).
   MenuRepositoryImpl({Menu? initialMenu})
-      : _currentMenu = initialMenu ?? MenuSeedData.buildMenu();
+    : _currentMenu = initialMenu ?? MenuSeedData.buildMenu();
 
   Menu _currentMenu;
 
@@ -22,10 +22,9 @@ class MenuRepositoryImpl implements MenuRepository {
   @override
   Future<Either<Failure, MenuItem>> addMenuItem(MenuItem item) async {
     final updatedItems = [..._currentMenu.items, item];
-    final updatedCategories =
-        _currentMenu.categories.contains(item.categoryId)
-            ? _currentMenu.categories
-            : [..._currentMenu.categories, item.categoryId];
+    final updatedCategories = _currentMenu.categories.contains(item.categoryId)
+        ? _currentMenu.categories
+        : [..._currentMenu.categories, item.categoryId];
     _currentMenu = _currentMenu.copyWith(
       items: updatedItems,
       categories: updatedCategories,
@@ -46,8 +45,9 @@ class MenuRepositoryImpl implements MenuRepository {
 
   @override
   Future<Either<Failure, void>> deleteMenuItem(String itemId) async {
-    final updatedItems =
-        _currentMenu.items.where((i) => i.id != itemId).toList();
+    final updatedItems = _currentMenu.items
+        .where((i) => i.id != itemId)
+        .toList();
     _currentMenu = _currentMenu.copyWith(items: updatedItems);
     return const Right<Failure, void>(null);
   }
@@ -64,10 +64,12 @@ class MenuRepositoryImpl implements MenuRepository {
 
   @override
   Future<Either<Failure, void>> deleteCategory(String categoryName) async {
-    final updatedCategories =
-        _currentMenu.categories.where((c) => c != categoryName).toList();
-    final updatedItems =
-        _currentMenu.items.where((i) => i.categoryId != categoryName).toList();
+    final updatedCategories = _currentMenu.categories
+        .where((c) => c != categoryName)
+        .toList();
+    final updatedItems = _currentMenu.items
+        .where((i) => i.categoryId != categoryName)
+        .toList();
     _currentMenu = _currentMenu.copyWith(
       categories: updatedCategories,
       items: updatedItems,
@@ -84,11 +86,11 @@ class MenuRepositoryImpl implements MenuRepository {
     if (index == -1) {
       return const Left(ValidationFailure('الصنف غير موجود'));
     }
-    final updatedItem =
-        _currentMenu.items[index].copyWith(isAvailable: isAvailable);
+    final updatedItem = _currentMenu.items[index].copyWith(
+      isAvailable: isAvailable,
+    );
     final updatedItems = [..._currentMenu.items]..[index] = updatedItem;
     _currentMenu = _currentMenu.copyWith(items: updatedItems);
     return Right<Failure, MenuItem>(updatedItem);
   }
 }
-

@@ -60,27 +60,27 @@ class RatingEntity {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'targetId': targetId,
-        'targetType': targetType.name,
-        'userId': userId,
-        'userName': userName,
-        'score': score,
-        'comment': comment,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'targetId': targetId,
+    'targetType': targetType.name,
+    'userId': userId,
+    'userName': userName,
+    'score': score,
+    'comment': comment,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory RatingEntity.fromJson(Map<String, dynamic> json) => RatingEntity(
-        id: json['id'] as String,
-        targetId: json['targetId'] as String,
-        targetType: RatingTargetType.values.firstWhere(
-          (e) => e.name == json['targetType'],
-          orElse: () => RatingTargetType.menuItem,
-        ),
-        userId: json['userId'] as String,
-        userName: json['userName'] as String,
-        score: (json['score'] as num).toDouble(),
-        comment: json['comment'] as String?,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    id: json['id'] as String,
+    targetId: json['targetId'] as String,
+    targetType: RatingTargetType.values.firstWhere(
+      (e) => e.name == json['targetType'],
+      orElse: () => RatingTargetType.menuItem,
+    ),
+    userId: json['userId'] as String,
+    userName: json['userName'] as String,
+    score: (json['score'] as num).toDouble(),
+    comment: json['comment'] as String?,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }

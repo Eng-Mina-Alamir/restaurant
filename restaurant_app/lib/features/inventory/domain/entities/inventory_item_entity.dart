@@ -78,14 +78,14 @@ class InventoryItemEntity {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'category': category,
-        'currentStock': currentStock,
-        'unit': unit,
-        'minThreshold': minThreshold,
-        'costPerUnit': costPerUnit,
-      };
+    'id': id,
+    'name': name,
+    'category': category,
+    'currentStock': currentStock,
+    'unit': unit,
+    'minThreshold': minThreshold,
+    'costPerUnit': costPerUnit,
+  };
 
   factory InventoryItemEntity.fromJson(Map<String, dynamic> json) {
     return InventoryItemEntity(

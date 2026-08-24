@@ -5,39 +5,44 @@ import '../helpers/test_container.dart';
 
 void main() {
   group('Menu Management Flow Integration Test', () {
-    test('adds custom menu item, filters menu, and verifies availability toggle', () async {
-      final container = createTestContainer();
-      addTearDown(container.dispose);
+    test(
+      'adds custom menu item, filters menu, and verifies availability toggle',
+      () async {
+        final container = createTestContainer();
+        addTearDown(container.dispose);
 
-      final menuNotifier = container.read(menuControllerProvider.notifier);
+        final menuNotifier = container.read(menuControllerProvider.notifier);
 
-      // Wait for initial menu load
-      final initialMenu = await container.read(menuControllerProvider.future);
-      expect(initialMenu.items, isNotEmpty);
+        // Wait for initial menu load
+        final initialMenu = await container.read(menuControllerProvider.future);
+        expect(initialMenu.items, isNotEmpty);
 
-      const newItem = MenuItem(
-        id: 'item-custom-99',
-        categoryId: 'grills',
-        name: 'ريش ضأن فاخرة',
-        description: 'ريش مشوية متبلة بالبهارات الخاصة',
-        price: 180.0,
-        isAvailable: true,
-      );
+        const newItem = MenuItem(
+          id: 'item-custom-99',
+          categoryId: 'grills',
+          name: 'ريش ضأن فاخرة',
+          description: 'ريش مشوية متبلة بالبهارات الخاصة',
+          price: 180.0,
+          isAvailable: true,
+        );
 
-      await menuNotifier.addItem(newItem);
+        await menuNotifier.addItem(newItem);
 
-      final updatedMenu = await container.read(menuControllerProvider.future);
-      expect(updatedMenu.items.any((i) => i.id == 'item-custom-99'), isTrue);
+        final updatedMenu = await container.read(menuControllerProvider.future);
+        expect(updatedMenu.items.any((i) => i.id == 'item-custom-99'), isTrue);
 
-      final filtered = filterMenu(updatedMenu, 'grills', 'ريش');
-      expect(filtered, hasLength(1));
-      expect(filtered.first.price, 180.0);
+        final filtered = filterMenu(updatedMenu, 'grills', 'ريش');
+        expect(filtered, hasLength(1));
+        expect(filtered.first.price, 180.0);
 
-      // Toggle availability
-      await menuNotifier.toggleAvailability('item-custom-99', false);
-      final toggledMenu = await container.read(menuControllerProvider.future);
-      final toggledItem = toggledMenu.items.firstWhere((i) => i.id == 'item-custom-99');
-      expect(toggledItem.isAvailable, isFalse);
-    });
+        // Toggle availability
+        await menuNotifier.toggleAvailability('item-custom-99', false);
+        final toggledMenu = await container.read(menuControllerProvider.future);
+        final toggledItem = toggledMenu.items.firstWhere(
+          (i) => i.id == 'item-custom-99',
+        );
+        expect(toggledItem.isAvailable, isFalse);
+      },
+    );
   });
 }

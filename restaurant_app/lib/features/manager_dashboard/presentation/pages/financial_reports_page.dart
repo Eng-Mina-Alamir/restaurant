@@ -69,7 +69,9 @@ class FinancialReportsPage extends ConsumerWidget {
                         onSelected: (selected) {
                           if (selected) {
                             ref
-                                .read(financialReportsControllerProvider.notifier)
+                                .read(
+                                  financialReportsControllerProvider.notifier,
+                                )
                                 .setPeriod(period);
                           }
                         },
@@ -97,7 +99,8 @@ class FinancialReportsPage extends ConsumerWidget {
                   child: _KpiCard(
                     title: 'صافي الأرباح (Net Profit)',
                     value: Formatters.formatCurrency(metrics.netProfit),
-                    subtitle: 'هامش صافي: ${metrics.netMarginPercentage.toStringAsFixed(1)}%',
+                    subtitle:
+                        'هامش صافي: ${metrics.netMarginPercentage.toStringAsFixed(1)}%',
                     icon: Icons.trending_up,
                     color: Colors.green,
                   ),
@@ -354,15 +357,16 @@ class _FinancialRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(label, style: textStyle),
-          ),
+          Expanded(child: Text(label, style: textStyle)),
           Row(
             children: [
               if (percentage != null)
                 Container(
                   margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -376,10 +380,7 @@ class _FinancialRow extends StatelessWidget {
                     ),
                   ),
                 ),
-              Text(
-                Formatters.formatCurrency(amount.abs()),
-                style: textStyle,
-              ),
+              Text(Formatters.formatCurrency(amount.abs()), style: textStyle),
             ],
           ),
         ],

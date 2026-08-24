@@ -68,9 +68,7 @@ void main() {
 
     test('buildForTable creates dineIn order linked to tableId', () {
       final now = DateTime(2026, 8, 19, 15, 0);
-      const items = [
-        CartItem(menuItem: burger, quantity: 1),
-      ];
+      const items = [CartItem(menuItem: burger, quantity: 1)];
 
       final order = OrderMapper.buildForTable(
         orderId: 'ORD-0002',

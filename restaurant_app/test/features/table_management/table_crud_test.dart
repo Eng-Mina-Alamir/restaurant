@@ -37,12 +37,16 @@ void main() {
 
     test('deletes table', () async {
       final allRes = await repository.getTables();
-      final firstTable = allRes.when(onLeft: (_) => null, onRight: (t) => t)!.first;
+      final firstTable = allRes
+          .when(onLeft: (_) => null, onRight: (t) => t)!
+          .first;
 
       await repository.deleteTable(firstTable.id);
 
       final updatedRes = await repository.getTables();
-      final exists = updatedRes.when(onLeft: (_) => null, onRight: (t) => t)!.any((t) => t.id == firstTable.id);
+      final exists = updatedRes
+          .when(onLeft: (_) => null, onRight: (t) => t)!
+          .any((t) => t.id == firstTable.id);
       expect(exists, isFalse);
     });
   });

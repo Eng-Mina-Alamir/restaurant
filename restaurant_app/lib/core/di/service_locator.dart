@@ -114,7 +114,9 @@ final supabaseStorageServiceProvider = Provider<SupabaseStorageService>((ref) {
   return SupabaseStorageService(ref.watch(supabaseClientProvider));
 });
 
-final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((ref) {
+final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((
+  ref,
+) {
   final service = SupabaseRealtimeService(ref.watch(supabaseClientProvider));
   service.subscribe();
   ref.onDispose(service.dispose);

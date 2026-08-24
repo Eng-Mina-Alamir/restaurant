@@ -34,9 +34,7 @@ class _SplitBillSheetState extends ConsumerState<SplitBillSheet> {
         return Container(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: ListView(
             controller: scrollController,
@@ -87,10 +85,7 @@ class _SplitBillSheetState extends ConsumerState<SplitBillSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'المجموع الكلي',
-                      style: theme.textTheme.bodyLarge,
-                    ),
+                    Text('المجموع الكلي', style: theme.textTheme.bodyLarge),
                     Text(
                       Formatters.formatCurrency(total),
                       style: theme.textTheme.bodyLarge?.copyWith(
@@ -105,10 +100,7 @@ class _SplitBillSheetState extends ConsumerState<SplitBillSheet> {
               const SizedBox(height: AppSpacing.xl),
 
               // Person counter
-              Text(
-                'عدد الأشخاص',
-                style: theme.textTheme.titleMedium,
-              ),
+              Text('عدد الأشخاص', style: theme.textTheme.titleMedium),
 
               const SizedBox(height: AppSpacing.md),
 

@@ -47,27 +47,28 @@ void main() {
       expect(order.orderType, OrderType.dineIn);
     });
 
-    test('buildForCustomer propagates delivery order type with address/notes',
-        () {
-      final order = OrderMapper.buildForCustomer(
-        orderId: 'ORD-102',
-        restaurantId: 'rest-1',
-        cartItems: cartItems,
-        createdAt: now,
-        orderType: OrderType.delivery,
-        deliveryAddress: 'حي الزمالك، شارع 26 يوليو، القاهرة',
-        deliveryNotes: 'الدور الثالث، جرس الشقة 5',
-      );
+    test(
+      'buildForCustomer propagates delivery order type with address/notes',
+      () {
+        final order = OrderMapper.buildForCustomer(
+          orderId: 'ORD-102',
+          restaurantId: 'rest-1',
+          cartItems: cartItems,
+          createdAt: now,
+          orderType: OrderType.delivery,
+          deliveryAddress: 'حي الزمالك، شارع 26 يوليو، القاهرة',
+          deliveryNotes: 'الدور الثالث، جرس الشقة 5',
+        );
 
-      expect(order.orderType, OrderType.delivery);
-      expect(order.deliveryAddress, 'حي الزمالك، شارع 26 يوليو، القاهرة');
-      expect(order.deliveryNotes, 'الدور الثالث، جرس الشقة 5');
-      expect(order.status, OrderStatus.pending);
-      expect(order.totalAmount, closeTo(184.0, 0.001)); // 160 * 1.15
-    });
+        expect(order.orderType, OrderType.delivery);
+        expect(order.deliveryAddress, 'حي الزمالك، شارع 26 يوليو، القاهرة');
+        expect(order.deliveryNotes, 'الدور الثالث، جرس الشقة 5');
+        expect(order.status, OrderStatus.pending);
+        expect(order.totalAmount, closeTo(184.0, 0.001)); // 160 * 1.15
+      },
+    );
 
-    test('delivery address and notes survive toJson/fromJson round-trip',
-        () {
+    test('delivery address and notes survive toJson/fromJson round-trip', () {
       final order = OrderMapper.buildForCustomer(
         orderId: 'ORD-103',
         restaurantId: 'rest-1',

@@ -31,12 +31,12 @@ class OrderStatusLogEntry {
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'orderId': orderId,
-        'fromStatus': fromStatus.name,
-        'toStatus': toStatus.name,
-        'actorId': actorId,
-        if (reason != null) 'reason': reason,
-        'isRevert': isRevert,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'orderId': orderId,
+    'fromStatus': fromStatus.name,
+    'toStatus': toStatus.name,
+    'actorId': actorId,
+    if (reason != null) 'reason': reason,
+    'isRevert': isRevert,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }

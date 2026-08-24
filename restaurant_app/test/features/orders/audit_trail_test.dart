@@ -31,17 +31,17 @@ void main() {
   });
 
   OrderEntity orderWithStatus(String id, OrderStatus status) => OrderEntity(
-        id: id,
-        restaurantId: 'rest-1',
-        tableId: 't1',
-        orderType: OrderType.dineIn,
-        status: status,
-        items: const [],
-        subtotal: 50.0,
-        taxAmount: 7.5,
-        totalAmount: 57.5,
-        createdAt: DateTime.now(),
-      );
+    id: id,
+    restaurantId: 'rest-1',
+    tableId: 't1',
+    orderType: OrderType.dineIn,
+    status: status,
+    items: const [],
+    subtotal: 50.0,
+    taxAmount: 7.5,
+    totalAmount: 57.5,
+    createdAt: DateTime.now(),
+  );
 
   /// Seeds two guarded reverts on [orderId] (ready→preparing, then
   /// served→ready) and one revert on a sibling order, proving per-order
@@ -67,11 +67,7 @@ void main() {
       reason: 'تم التجهيز بالخطأ',
     );
     await repo.updateOrderStatus(orderId, OrderStatus.served);
-    await repo.revertStatus(
-      orderId,
-      OrderStatus.ready,
-      actorId: 'chef-b',
-    );
+    await repo.revertStatus(orderId, OrderStatus.ready, actorId: 'chef-b');
   }
 
   void expectTrailMatchesSeed(List<OrderStatusLogEntry> trail, String orderId) {
@@ -99,16 +95,18 @@ void main() {
   }
 
   group('getAuditTrail (local repositories)', () {
-    test('InMemoryOrderRepository returns seeded entries oldest-first', () async {
-      final repo = InMemoryOrderRepository();
-      await seedReverts(repo, 'ORD-AUDIT-1');
+    test(
+      'InMemoryOrderRepository returns seeded entries oldest-first',
+      () async {
+        final repo = InMemoryOrderRepository();
+        await seedReverts(repo, 'ORD-AUDIT-1');
 
-      final res = await repo.getAuditTrail('ORD-AUDIT-1');
-      expect(res.isRight, isTrue);
-      final trail =
-          (res as Right<Failure, List<OrderStatusLogEntry>>).value;
-      expectTrailMatchesSeed(trail, 'ORD-AUDIT-1');
-    });
+        final res = await repo.getAuditTrail('ORD-AUDIT-1');
+        expect(res.isRight, isTrue);
+        final trail = (res as Right<Failure, List<OrderStatusLogEntry>>).value;
+        expectTrailMatchesSeed(trail, 'ORD-AUDIT-1');
+      },
+    );
 
     test('HiveOrderRepository returns seeded entries oldest-first', () async {
       final box = await Hive.openBox<String>('audit_trail_box_test');
@@ -119,19 +117,24 @@ void main() {
 
       final res = await repo.getAuditTrail('ORD-AUDIT-2');
       expect(res.isRight, isTrue);
-      final trail =
-          (res as Right<Failure, List<OrderStatusLogEntry>>).value;
+      final trail = (res as Right<Failure, List<OrderStatusLogEntry>>).value;
       expectTrailMatchesSeed(trail, 'ORD-AUDIT-2');
     });
 
-    test('InMemoryOrderRepository returns empty trail for unknown order', () async {
-      final repo = InMemoryOrderRepository();
-      await seedReverts(repo, 'ORD-AUDIT-3');
+    test(
+      'InMemoryOrderRepository returns empty trail for unknown order',
+      () async {
+        final repo = InMemoryOrderRepository();
+        await seedReverts(repo, 'ORD-AUDIT-3');
 
-      final res = await repo.getAuditTrail('ORD-UNKNOWN');
-      expect(res.isRight, isTrue);
-      expect((res as Right<Failure, List<OrderStatusLogEntry>>).value, isEmpty);
-    });
+        final res = await repo.getAuditTrail('ORD-UNKNOWN');
+        expect(res.isRight, isTrue);
+        expect(
+          (res as Right<Failure, List<OrderStatusLogEntry>>).value,
+          isEmpty,
+        );
+      },
+    );
 
     test('HiveOrderRepository returns empty trail for unknown order', () async {
       final box = await Hive.openBox<String>('audit_trail_unknown_box_test');

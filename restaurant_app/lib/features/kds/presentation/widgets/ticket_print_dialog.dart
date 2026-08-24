@@ -9,11 +9,7 @@ class TicketPrintDialog extends ConsumerStatefulWidget {
   final OrderEntity order;
   final String? tableDisplay;
 
-  const TicketPrintDialog({
-    super.key,
-    required this.order,
-    this.tableDisplay,
-  });
+  const TicketPrintDialog({super.key, required this.order, this.tableDisplay});
 
   static Future<void> show(
     BuildContext context, {
@@ -22,10 +18,8 @@ class TicketPrintDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog<void>(
       context: context,
-      builder: (_) => TicketPrintDialog(
-        order: order,
-        tableDisplay: tableDisplay,
-      ),
+      builder: (_) =>
+          TicketPrintDialog(order: order, tableDisplay: tableDisplay),
     );
   }
 
@@ -150,14 +144,14 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
                             ? '🖨️ تم إرسال أمر الطباعة إلى طابعة المطبخ بنجاح!'
                             : 'فشل الاتصال بالطابعة الحرارية',
                       ),
-                      backgroundColor:
-                          success ? Colors.green.shade700 : Colors.red.shade700,
+                      backgroundColor: success
+                          ? Colors.green.shade700
+                          : Colors.red.shade700,
                     ),
                   );
                 },
         ),
       ],
     );
-
   }
 }

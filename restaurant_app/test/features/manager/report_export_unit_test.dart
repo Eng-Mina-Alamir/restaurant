@@ -67,38 +67,41 @@ void main() {
       expect(csv, contains('250'));
     });
 
-    test('generateFinancialReportCsv includes P&L lines and top profitable items', () {
-      const metrics = FinancialReportMetrics(
-        grossRevenue: 10000.0,
-        cogs: 4000.0,
-        operatingCosts: 2000.0,
-        netProfit: 4000.0,
-        grossMarginPercentage: 60.0,
-        netMarginPercentage: 40.0,
-        averageOrderValue: 200.0,
-        totalOrders: 50,
-        completedOrders: 48,
-        cancelledOrders: 2,
-        paymentBreakdown: {'نقداً': 5000.0, 'بطاقة': 5000.0},
-        topProfitableItems: [
-          ItemProfitability(
-            itemName: 'مشويات',
-            unitsSold: 30,
-            revenue: 6000.0,
-            estimatedCost: 2000.0,
-            profit: 4000.0,
-            marginPercent: 66.7,
-          ),
-        ],
-      );
+    test(
+      'generateFinancialReportCsv includes P&L lines and top profitable items',
+      () {
+        const metrics = FinancialReportMetrics(
+          grossRevenue: 10000.0,
+          cogs: 4000.0,
+          operatingCosts: 2000.0,
+          netProfit: 4000.0,
+          grossMarginPercentage: 60.0,
+          netMarginPercentage: 40.0,
+          averageOrderValue: 200.0,
+          totalOrders: 50,
+          completedOrders: 48,
+          cancelledOrders: 2,
+          paymentBreakdown: {'نقداً': 5000.0, 'بطاقة': 5000.0},
+          topProfitableItems: [
+            ItemProfitability(
+              itemName: 'مشويات',
+              unitsSold: 30,
+              revenue: 6000.0,
+              estimatedCost: 2000.0,
+              profit: 4000.0,
+              marginPercent: 66.7,
+            ),
+          ],
+        );
 
-      final csv = service.generateFinancialReportCsv(metrics, 'أغسطس 2026');
+        final csv = service.generateFinancialReportCsv(metrics, 'أغسطس 2026');
 
-      expect(csv, contains('بيان الأرباح والخسائر'));
-      expect(csv, contains('10000.00'));
-      expect(csv, contains('مشويات'));
-      expect(csv, contains('66.7%'));
-    });
+        expect(csv, contains('بيان الأرباح والخسائر'));
+        expect(csv, contains('10000.00'));
+        expect(csv, contains('مشويات'));
+        expect(csv, contains('66.7%'));
+      },
+    );
 
     test('generateZatcaReceiptText formats tax invoice text accurately', () {
       final receipt = service.generateZatcaReceiptText(testOrder);

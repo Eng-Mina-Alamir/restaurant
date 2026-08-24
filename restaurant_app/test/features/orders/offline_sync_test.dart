@@ -37,15 +37,13 @@ class _RecordingOrderRepository implements OrderRepository {
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
     OrderStatus status,
-  ) =>
-      _inner.updateOrderStatus(orderId, status);
+  ) => _inner.updateOrderStatus(orderId, status);
 
   @override
   Future<Either<Failure, OrderEntity>> claimOrder(
     String orderId,
     String kitchenUserId,
-  ) =>
-      _inner.claimOrder(orderId, kitchenUserId);
+  ) => _inner.claimOrder(orderId, kitchenUserId);
 
   @override
   Future<Either<Failure, OrderEntity>> revertStatus(
@@ -59,8 +57,7 @@ class _RecordingOrderRepository implements OrderRepository {
   @override
   Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
     String orderId,
-  ) =>
-      _inner.getAuditTrail(orderId);
+  ) => _inner.getAuditTrail(orderId);
 }
 
 void main() {
@@ -85,138 +82,153 @@ void main() {
   );
 
   group('Offline order queue and sync', () {
-    test('queues orders placed while offline and auto-syncs when online', () async {
-      final connectivity = ConnectivityService();
-      final cart = CartController();
-      final repository = InMemoryOrderRepository();
-      final notifier = NewOrderNotifier();
+    test(
+      'queues orders placed while offline and auto-syncs when online',
+      () async {
+        final connectivity = ConnectivityService();
+        final cart = CartController();
+        final repository = InMemoryOrderRepository();
+        final notifier = NewOrderNotifier();
 
-      final controller = OrdersController(
-        repository,
-        cart,
-        notifier,
-        connectivityService: connectivity,
-      );
-      addTearDown(controller.dispose);
-      addTearDown(connectivity.dispose);
-      addTearDown(notifier.dispose);
+        final controller = OrdersController(
+          repository,
+          cart,
+          notifier,
+          connectivityService: connectivity,
+        );
+        addTearDown(controller.dispose);
+        addTearDown(connectivity.dispose);
+        addTearDown(notifier.dispose);
 
-      // 1. Go offline
-      connectivity.goOffline();
-      expect(connectivity.isOffline, isTrue);
+        // 1. Go offline
+        connectivity.goOffline();
+        expect(connectivity.isOffline, isTrue);
 
-      // 2. Add item to cart and place order
-      cart.addItem(const CartItem(menuItem: burger));
-      final order1 = await controller.placeOrder();
-      expect(order1, isNotNull);
-      expect(controller.pendingSyncCount, 1);
-      expect(controller.offlineQueue.first.id, order1?.id);
+        // 2. Add item to cart and place order
+        cart.addItem(const CartItem(menuItem: burger));
+        final order1 = await controller.placeOrder();
+        expect(order1, isNotNull);
+        expect(controller.pendingSyncCount, 1);
+        expect(controller.offlineQueue.first.id, order1?.id);
 
-      // 3. Place another order
-      cart.addItem(const CartItem(menuItem: burger, quantity: 2));
-      final order2 = await controller.placeOrder();
-      expect(order2, isNotNull);
-      expect(controller.pendingSyncCount, 2);
+        // 3. Place another order
+        cart.addItem(const CartItem(menuItem: burger, quantity: 2));
+        final order2 = await controller.placeOrder();
+        expect(order2, isNotNull);
+        expect(controller.pendingSyncCount, 2);
 
-      // 4. Go online -> auto syncs and clears queue
-      connectivity.goOnline();
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        // 4. Go online -> auto syncs and clears queue
+        connectivity.goOnline();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      expect(controller.pendingSyncCount, 0);
-      expect(controller.offlineQueue, isEmpty);
-      expect(controller.state.length, 2);
-    });
+        expect(controller.pendingSyncCount, 0);
+        expect(controller.offlineQueue, isEmpty);
+        expect(controller.state.length, 2);
+      },
+    );
 
-    test('offline orders are submitted EXACTLY ONCE with persistent queue',
-        () async {
-      final connectivity = ConnectivityService();
-      final cart = CartController();
-      final notifier = NewOrderNotifier();
-      final queueService = OfflineQueueService();
-      await queueService.init();
-      await queueService.clear();
+    test(
+      'offline orders are submitted EXACTLY ONCE with persistent queue',
+      () async {
+        final connectivity = ConnectivityService();
+        final cart = CartController();
+        final notifier = NewOrderNotifier();
+        final queueService = OfflineQueueService();
+        await queueService.init();
+        await queueService.clear();
 
-      final recordingRepo = _RecordingOrderRepository(
-        InMemoryOrderRepository(),
-      );
+        final recordingRepo = _RecordingOrderRepository(
+          InMemoryOrderRepository(),
+        );
 
-      final controller = OrdersController(
-        recordingRepo,
-        cart,
-        notifier,
-        connectivityService: connectivity,
-        offlineQueueService: queueService,
-      );
-      addTearDown(controller.dispose);
-      addTearDown(connectivity.dispose);
-      addTearDown(notifier.dispose);
-      addTearDown(queueService.close);
+        final controller = OrdersController(
+          recordingRepo,
+          cart,
+          notifier,
+          connectivityService: connectivity,
+          offlineQueueService: queueService,
+        );
+        addTearDown(controller.dispose);
+        addTearDown(connectivity.dispose);
+        addTearDown(notifier.dispose);
+        addTearDown(queueService.close);
 
-      // Place an order while offline.
-      connectivity.goOffline();
-      cart.addItem(const CartItem(menuItem: burger));
-      final order = await controller.placeOrder();
-      expect(order, isNotNull);
-      expect(recordingRepo.createCalls, isEmpty,
-          reason: 'Offline placement must not hit the repository');
+        // Place an order while offline.
+        connectivity.goOffline();
+        cart.addItem(const CartItem(menuItem: burger));
+        final order = await controller.placeOrder();
+        expect(order, isNotNull);
+        expect(
+          recordingRepo.createCalls,
+          isEmpty,
+          reason: 'Offline placement must not hit the repository',
+        );
 
-      // Simulate a flapping reconnect: several online events in a row.
-      connectivity.goOnline();
-      await Future<void>.delayed(const Duration(milliseconds: 30));
-      connectivity.goOffline();
-      connectivity.goOnline();
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      connectivity.goOnline(); // duplicate online event
-      await Future<void>.delayed(const Duration(milliseconds: 60));
+        // Simulate a flapping reconnect: several online events in a row.
+        connectivity.goOnline();
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        connectivity.goOffline();
+        connectivity.goOnline();
+        await Future<void>.delayed(const Duration(milliseconds: 60));
+        connectivity.goOnline(); // duplicate online event
+        await Future<void>.delayed(const Duration(milliseconds: 60));
 
-      // The single queued order must have been replayed exactly once.
-      expect(recordingRepo.createCalls[order!.id], 1,
-          reason:
-              'Double submission detected: ${recordingRepo.createCalls}');
-      expect(queueService.pendingCount, 0);
-      expect(controller.pendingSyncCount, 0);
-      expect(controller.state.where((o) => o.id == order.id).length, 1);
-    });
+        // The single queued order must have been replayed exactly once.
+        expect(
+          recordingRepo.createCalls[order!.id],
+          1,
+          reason: 'Double submission detected: ${recordingRepo.createCalls}',
+        );
+        expect(queueService.pendingCount, 0);
+        expect(controller.pendingSyncCount, 0);
+        expect(controller.state.where((o) => o.id == order.id).length, 1);
+      },
+    );
 
-    test('poison offline orders dead-letter instead of retrying forever',
-        () async {
-      final connectivity = ConnectivityService();
-      final cart = CartController();
-      final notifier = NewOrderNotifier();
-      final queueService = OfflineQueueService(
-        maxAttempts: 3,
-        baseBackoff: Duration.zero, // deterministic: no waiting in tests
-      );
-      await queueService.init();
-      await queueService.clear();
+    test(
+      'poison offline orders dead-letter instead of retrying forever',
+      () async {
+        final connectivity = ConnectivityService();
+        final cart = CartController();
+        final notifier = NewOrderNotifier();
+        final queueService = OfflineQueueService(
+          maxAttempts: 3,
+          baseBackoff: Duration.zero, // deterministic: no waiting in tests
+        );
+        await queueService.init();
+        await queueService.clear();
 
-      final controller = OrdersController(
-        _AlwaysFailingRepository(),
-        cart,
-        notifier,
-        connectivityService: connectivity,
-        offlineQueueService: queueService,
-      );
-      addTearDown(controller.dispose);
-      addTearDown(connectivity.dispose);
-      addTearDown(notifier.dispose);
-      addTearDown(queueService.close);
+        final controller = OrdersController(
+          _AlwaysFailingRepository(),
+          cart,
+          notifier,
+          connectivityService: connectivity,
+          offlineQueueService: queueService,
+        );
+        addTearDown(controller.dispose);
+        addTearDown(connectivity.dispose);
+        addTearDown(notifier.dispose);
+        addTearDown(queueService.close);
 
-      connectivity.goOffline();
-      cart.addItem(const CartItem(menuItem: burger));
-      final order = await controller.placeOrder();
-      expect(order, isNotNull);
-      expect(queueService.pendingCount, 1);
+        connectivity.goOffline();
+        cart.addItem(const CartItem(menuItem: burger));
+        final order = await controller.placeOrder();
+        expect(order, isNotNull);
+        expect(queueService.pendingCount, 1);
 
-      // Repeated syncs must eventually give up on the poison entry.
-      for (var i = 0; i < 4; i++) {
-        await controller.syncOfflineOrders();
-      }
+        // Repeated syncs must eventually give up on the poison entry.
+        for (var i = 0; i < 4; i++) {
+          await controller.syncOfflineOrders();
+        }
 
-      expect(queueService.pendingCount, 0,
-          reason: 'Poison entries must be dead-lettered, not retried forever');
-      expect(queueService.deadLetteredCount, 1);
-    });
+        expect(
+          queueService.pendingCount,
+          0,
+          reason: 'Poison entries must be dead-lettered, not retried forever',
+        );
+        expect(queueService.deadLetteredCount, 1);
+      },
+    );
   });
 }
 
@@ -224,9 +236,7 @@ void main() {
 class _AlwaysFailingRepository implements OrderRepository {
   @override
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
-    return const Left<Failure, OrderEntity>(
-      ServerFailure('validation failed'),
-    );
+    return const Left<Failure, OrderEntity>(ServerFailure('validation failed'));
   }
 
   @override
@@ -237,15 +247,13 @@ class _AlwaysFailingRepository implements OrderRepository {
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
     OrderStatus status,
-  ) async =>
-      const Right<Failure, void>(null);
+  ) async => const Right<Failure, void>(null);
 
   @override
   Future<Either<Failure, OrderEntity>> claimOrder(
     String orderId,
     String kitchenUserId,
-  ) async =>
-      const Left(ServerFailure('permanent rejection'));
+  ) async => const Left(ServerFailure('permanent rejection'));
 
   @override
   Future<Either<Failure, OrderEntity>> revertStatus(
@@ -253,15 +261,11 @@ class _AlwaysFailingRepository implements OrderRepository {
     OrderStatus toStatus, {
     required String actorId,
     String? reason,
-  }) async =>
-      const Left(ServerFailure('permanent rejection'));
+  }) async => const Left(ServerFailure('permanent rejection'));
 
   @override
   Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
     String orderId,
   ) async =>
-      const Right<Failure, List<OrderStatusLogEntry>>(
-        <OrderStatusLogEntry>[],
-      );
+      const Right<Failure, List<OrderStatusLogEntry>>(<OrderStatusLogEntry>[]);
 }
-

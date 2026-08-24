@@ -3,81 +3,93 @@ import 'package:restaurant_app/features/coupons/domain/entities/coupon_entity.da
 
 void main() {
   group('Coupon Boundary & Edge Cases Unit Tests', () {
-    test('matchesCode handles lowercase, uppercase, and leading/trailing whitespace', () {
-      const coupon = CouponEntity(
-        id: 'c-1',
-        code: 'PROMO2026',
-        title: 'خصم رأس السنة',
-        discountType: CouponDiscountType.percentage,
-        discountValue: 20.0,
-      );
+    test(
+      'matchesCode handles lowercase, uppercase, and leading/trailing whitespace',
+      () {
+        const coupon = CouponEntity(
+          id: 'c-1',
+          code: 'PROMO2026',
+          title: 'خصم رأس السنة',
+          discountType: CouponDiscountType.percentage,
+          discountValue: 20.0,
+        );
 
-      expect(coupon.matchesCode('PROMO2026'), isTrue);
-      expect(coupon.matchesCode('promo2026'), isTrue);
-      expect(coupon.matchesCode('  Promo2026  '), isTrue);
-      expect(coupon.matchesCode('\tPROMO2026\n'), isTrue);
-      expect(coupon.matchesCode('OTHERCODE'), isFalse);
-      expect(coupon.matchesCode(null), isFalse);
-    });
+        expect(coupon.matchesCode('PROMO2026'), isTrue);
+        expect(coupon.matchesCode('promo2026'), isTrue);
+        expect(coupon.matchesCode('  Promo2026  '), isTrue);
+        expect(coupon.matchesCode('\tPROMO2026\n'), isTrue);
+        expect(coupon.matchesCode('OTHERCODE'), isFalse);
+        expect(coupon.matchesCode(null), isFalse);
+      },
+    );
 
-    test('Fixed discount larger than subtotal is clamped to exact subtotal (no negative total)', () {
-      const largeFixedCoupon = CouponEntity(
-        id: 'c-large',
-        code: 'SAVE100',
-        title: 'قسيمة 100 ريال',
-        discountType: CouponDiscountType.fixed,
-        discountValue: 100.0,
-      );
+    test(
+      'Fixed discount larger than subtotal is clamped to exact subtotal (no negative total)',
+      () {
+        const largeFixedCoupon = CouponEntity(
+          id: 'c-large',
+          code: 'SAVE100',
+          title: 'قسيمة 100 ريال',
+          discountType: CouponDiscountType.fixed,
+          discountValue: 100.0,
+        );
 
-      // Subtotal 40 SAR -> Discount should be 40 SAR (not 100 SAR)
-      final discount = largeFixedCoupon.calculateDiscount(40.0);
-      expect(discount, 40.0);
-    });
+        // Subtotal 40 SAR -> Discount should be 40 SAR (not 100 SAR)
+        final discount = largeFixedCoupon.calculateDiscount(40.0);
+        expect(discount, 40.0);
+      },
+    );
 
-    test('Percentage discount with max cap enforces maximum limit accurately', () {
-      const cappedPercentCoupon = CouponEntity(
-        id: 'c-cap',
-        code: 'HALFPRICE',
-        title: 'خصم 50% بحد أقصى 30 ريال',
-        discountType: CouponDiscountType.percentage,
-        discountValue: 50.0,
-        maxDiscountAmount: 30.0,
-      );
+    test(
+      'Percentage discount with max cap enforces maximum limit accurately',
+      () {
+        const cappedPercentCoupon = CouponEntity(
+          id: 'c-cap',
+          code: 'HALFPRICE',
+          title: 'خصم 50% بحد أقصى 30 ريال',
+          discountType: CouponDiscountType.percentage,
+          discountValue: 50.0,
+          maxDiscountAmount: 30.0,
+        );
 
-      // 50% of 40 SAR = 20 SAR (< 30 SAR max)
-      expect(cappedPercentCoupon.calculateDiscount(40.0), 20.0);
+        // 50% of 40 SAR = 20 SAR (< 30 SAR max)
+        expect(cappedPercentCoupon.calculateDiscount(40.0), 20.0);
 
-      // 50% of 100 SAR = 50 SAR -> capped at 30 SAR
-      expect(cappedPercentCoupon.calculateDiscount(100.0), 30.0);
-    });
+        // 50% of 100 SAR = 50 SAR -> capped at 30 SAR
+        expect(cappedPercentCoupon.calculateDiscount(100.0), 30.0);
+      },
+    );
 
-    test('validUntil expiration rejects expired coupons and accepts active ones', () {
-      final now = DateTime.now();
-      final expiredCoupon = CouponEntity(
-        id: 'c-exp',
-        code: 'EXPIRED',
-        title: 'منتهي',
-        discountType: CouponDiscountType.fixed,
-        discountValue: 15.0,
-        validUntil: now.subtract(const Duration(seconds: 5)),
-      );
+    test(
+      'validUntil expiration rejects expired coupons and accepts active ones',
+      () {
+        final now = DateTime.now();
+        final expiredCoupon = CouponEntity(
+          id: 'c-exp',
+          code: 'EXPIRED',
+          title: 'منتهي',
+          discountType: CouponDiscountType.fixed,
+          discountValue: 15.0,
+          validUntil: now.subtract(const Duration(seconds: 5)),
+        );
 
-      expect(expiredCoupon.validate(50.0), isNotNull);
-      expect(expiredCoupon.validate(50.0), contains('انتهت صلاحية'));
-      expect(expiredCoupon.calculateDiscount(50.0), 0.0);
+        expect(expiredCoupon.validate(50.0), isNotNull);
+        expect(expiredCoupon.validate(50.0), contains('انتهت صلاحية'));
+        expect(expiredCoupon.calculateDiscount(50.0), 0.0);
 
-      final activeCoupon = CouponEntity(
-        id: 'c-act',
-        code: 'ACTIVE',
-        title: 'فعال',
-        discountType: CouponDiscountType.fixed,
-        discountValue: 15.0,
-        validUntil: now.add(const Duration(hours: 2)),
-      );
+        final activeCoupon = CouponEntity(
+          id: 'c-act',
+          code: 'ACTIVE',
+          title: 'فعال',
+          discountType: CouponDiscountType.fixed,
+          discountValue: 15.0,
+          validUntil: now.add(const Duration(hours: 2)),
+        );
 
-      expect(activeCoupon.validate(50.0), isNull);
-      expect(activeCoupon.calculateDiscount(50.0), 15.0);
-    });
+        expect(activeCoupon.validate(50.0), isNull);
+        expect(activeCoupon.calculateDiscount(50.0), 15.0);
+      },
+    );
 
     test('usageLimit boundary enforces max redemption count', () {
       const exhaustedCoupon = CouponEntity(
@@ -110,7 +122,10 @@ void main() {
       );
 
       expect(minSpendCoupon.validate(80.0), isNotNull);
-      expect(minSpendCoupon.validate(80.0), contains('الحد الأدنى لتطبيق هذا الكود هو 100.0 ريال'));
+      expect(
+        minSpendCoupon.validate(80.0),
+        contains('الحد الأدنى لتطبيق هذا الكود هو 100.0 ريال'),
+      );
       expect(minSpendCoupon.calculateDiscount(80.0), 0.0);
 
       expect(minSpendCoupon.validate(100.0), isNull);

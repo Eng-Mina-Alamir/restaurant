@@ -25,7 +25,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('Triggers onLongPress callback when long pressed', (tester) async {
+    testWidgets('Triggers onLongPress callback when long pressed', (
+      tester,
+    ) async {
       bool longPressed = false;
 
       await tester.pumpWidget(
@@ -45,8 +47,9 @@ void main() {
       expect(longPressed, isTrue);
     });
 
-    testWidgets('Animates scale down on tap down and restores on cancel',
-        (tester) async {
+    testWidgets('Animates scale down on tap down and restores on cancel', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -68,7 +71,9 @@ void main() {
       expect(find.text('Scale Card'), findsOneWidget);
     });
 
-    testWidgets('Renders properly with disableAnimations: true', (tester) async {
+    testWidgets('Renders properly with disableAnimations: true', (
+      tester,
+    ) async {
       bool tapped = false;
       await tester.pumpWidget(
         MaterialApp(

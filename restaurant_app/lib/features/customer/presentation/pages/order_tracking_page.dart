@@ -59,8 +59,14 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   String? _assignedDriverId;
 
   // Cairo Coordinates (Downtown, Nile, Zamalek)
-  static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(lat: 30.0444, lng: 31.2357);
-  static const MhjMapsLatLng _customerLatLng = MhjMapsLatLng(lat: 30.0626, lng: 31.2497);
+  static const MhjMapsLatLng _restaurantLatLng = MhjMapsLatLng(
+    lat: 30.0444,
+    lng: 31.2357,
+  );
+  static const MhjMapsLatLng _customerLatLng = MhjMapsLatLng(
+    lat: 30.0626,
+    lng: 31.2497,
+  );
   MhjMapsLatLng _driverLatLng = const MhjMapsLatLng(lat: 30.0510, lng: 31.2410);
 
   @override
@@ -144,8 +150,9 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     final isDark = theme.brightness == Brightness.dark;
 
     // Live delivery assignment for this order (driver identity + position).
-    final assignmentAsync =
-        ref.watch(deliveryAssignmentForOrderProvider(widget.orderId));
+    final assignmentAsync = ref.watch(
+      deliveryAssignmentForOrderProvider(widget.orderId),
+    );
 
     ref.listen<AsyncValue<DeliveryAssignment?>>(
       deliveryAssignmentForOrderProvider(widget.orderId),
@@ -155,8 +162,10 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
         _assignedDriverId = assignment.driverId;
         if (assignment.latitude != 0 || assignment.longitude != 0) {
           setState(() {
-            _driverLatLng =
-                MhjMapsLatLng(lat: assignment.latitude, lng: assignment.longitude);
+            _driverLatLng = MhjMapsLatLng(
+              lat: assignment.latitude,
+              lng: assignment.longitude,
+            );
           });
           _updateMapMarkers();
         }
@@ -272,12 +281,16 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
           Expanded(
             flex: 3,
             child: LiveTrackingMap(
-              pickupLatLng: LatLng(_restaurantLatLng.lat, _restaurantLatLng.lng),
+              pickupLatLng: LatLng(
+                _restaurantLatLng.lat,
+                _restaurantLatLng.lng,
+              ),
               deliveryLatLng: LatLng(_customerLatLng.lat, _customerLatLng.lng),
               pickupLabel: 'المطعم',
               deliveryLabel: 'عنوانك',
-              initialTheme:
-                  isDark ? AppMapThemeOption.dark : AppMapThemeOption.voyager,
+              initialTheme: isDark
+                  ? AppMapThemeOption.dark
+                  : AppMapThemeOption.voyager,
               showControls: true,
               showNavigationHud: true,
               showDeliveryRadius: true,
@@ -435,15 +448,14 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     );
     if (confirmed != true || !mounted) return;
 
-    await ref.read(ordersControllerProvider.notifier).updateStatus(
-          widget.orderId,
-          OrderStatus.cancelled,
-        );
+    await ref
+        .read(ordersControllerProvider.notifier)
+        .updateStatus(widget.orderId, OrderStatus.cancelled);
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إلغاء الطلب بنجاح')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تم إلغاء الطلب بنجاح')));
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
@@ -513,8 +525,8 @@ class _OrderStepper extends StatelessWidget {
               label: i < currentStep
                   ? '${_stages[i]} — مكتملة'
                   : i == currentStep
-                      ? '${_stages[i]} — المرحلة الحالية'
-                      : '${_stages[i]} — لم تُكتمل بعد',
+                  ? '${_stages[i]} — المرحلة الحالية'
+                  : '${_stages[i]} — لم تُكتمل بعد',
               excludeSemantics: true,
               child: Column(
                 children: [
@@ -601,7 +613,11 @@ class _PinMarker extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.black87),
+            style: const TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
         ),
       ],
@@ -629,11 +645,7 @@ class _DriverMarker extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.delivery_dining,
-        color: Colors.white,
-        size: 24,
-      ),
+      child: const Icon(Icons.delivery_dining, color: Colors.white, size: 24),
     );
   }
 }

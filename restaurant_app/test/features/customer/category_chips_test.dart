@@ -6,7 +6,9 @@ import 'package:restaurant_app/features/menu/presentation/controllers/menu_contr
 
 void main() {
   group('CategoryChips Widget Tests', () {
-    testWidgets('renders all category chips with initial selected', (tester) async {
+    testWidgets('renders all category chips with initial selected', (
+      tester,
+    ) async {
       String selectedCat = kAllCategoriesFilter;
 
       await tester.pumpWidget(

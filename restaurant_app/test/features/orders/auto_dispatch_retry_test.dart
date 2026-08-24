@@ -31,12 +31,12 @@ const MenuItem _burger = MenuItem(
 /// Driver parked ≈222 m north of the restaurant — inside the 5000 m service
 /// radius with zero active assignments.
 DriverInfo _nearbyDriver(String id) => DriverInfo(
-      id: id,
-      name: id,
-      rating: 5.0,
-      latitude: DeliveryFeeCalculator.restaurantLat + 0.002,
-      longitude: DeliveryFeeCalculator.restaurantLng,
-    );
+  id: id,
+  name: id,
+  rating: 5.0,
+  latitude: DeliveryFeeCalculator.restaurantLat + 0.002,
+  longitude: DeliveryFeeCalculator.restaurantLng,
+);
 
 /// Controllable driver pool: [availableDrivers] is returned verbatim by
 /// getAvailableDrivers so tests can flip the pool between ticks; every
@@ -119,36 +119,38 @@ void main() {
   }
 
   testWidgets(
-      'driver pool empty at ready-time queues the order without assigning',
-      (tester) async {
-    final repo = _ScriptedDriverPoolRepository(); // empty pool on purpose
-    final realtime = _SpyRealtimeService();
-    final container = buildRetryContainer(repo, realtime);
+    'driver pool empty at ready-time queues the order without assigning',
+    (tester) async {
+      final repo = _ScriptedDriverPoolRepository(); // empty pool on purpose
+      final realtime = _SpyRealtimeService();
+      final container = buildRetryContainer(repo, realtime);
 
-    final orderId = await placeReadyDeliveryOrder(container);
+      final orderId = await placeReadyDeliveryOrder(container);
 
-    // First attempt found nobody available: nothing created or broadcast…
-    expect(repo.createdAssignments, isEmpty);
-    expect(realtime.assignmentBroadcasts, isEmpty);
-    expect(container.read(ordersControllerProvider).single.id, orderId);
+      // First attempt found nobody available: nothing created or broadcast…
+      expect(repo.createdAssignments, isEmpty);
+      expect(realtime.assignmentBroadcasts, isEmpty);
+      expect(container.read(ordersControllerProvider).single.id, orderId);
 
-    // …and even a later tick with a still-empty pool keeps it queued.
-    repo.availableDrivers = const [];
-    await tester.pump(const Duration(seconds: 31));
-    await tester.pump();
+      // …and even a later tick with a still-empty pool keeps it queued.
+      repo.availableDrivers = const [];
+      await tester.pump(const Duration(seconds: 31));
+      await tester.pump();
 
-    expect(repo.createdAssignments, isEmpty);
-    expect(realtime.assignmentBroadcasts, isEmpty);
-    expect(container.read(ordersControllerProvider).single.id, orderId);
+      expect(repo.createdAssignments, isEmpty);
+      expect(realtime.assignmentBroadcasts, isEmpty);
+      expect(container.read(ordersControllerProvider).single.id, orderId);
 
-    // The retry timer is intentionally STILL ARMED here (the order remains
-    // queued), so disposal must happen inside the test body — teardown runs
-    // after flutter_test's pending-timer invariant check.
-    container.dispose();
-  });
+      // The retry timer is intentionally STILL ARMED here (the order remains
+      // queued), so disposal must happen inside the test body — teardown runs
+      // after flutter_test's pending-timer invariant check.
+      container.dispose();
+    },
+  );
 
-  testWidgets('a driver appearing later is auto-assigned on the next tick',
-      (tester) async {
+  testWidgets('a driver appearing later is auto-assigned on the next tick', (
+    tester,
+  ) async {
     final repo = _ScriptedDriverPoolRepository();
     final realtime = _SpyRealtimeService();
     final container = buildRetryContainer(repo, realtime);
@@ -179,8 +181,9 @@ void main() {
     expect(realtime.assignmentBroadcasts, hasLength(1));
   });
 
-  testWidgets('an order cancelled while waiting is dropped without dispatch',
-      (tester) async {
+  testWidgets('an order cancelled while waiting is dropped without dispatch', (
+    tester,
+  ) async {
     final repo = _ScriptedDriverPoolRepository();
     final realtime = _SpyRealtimeService();
     final container = buildRetryContainer(repo, realtime);
@@ -203,8 +206,9 @@ void main() {
     expect(realtime.assignmentBroadcasts, isEmpty);
   });
 
-  testWidgets('disposing the container cancels the retry timer',
-      (tester) async {
+  testWidgets('disposing the container cancels the retry timer', (
+    tester,
+  ) async {
     final repo = _ScriptedDriverPoolRepository();
     final realtime = _SpyRealtimeService();
     final container = buildRetryContainer(repo, realtime);

@@ -35,21 +35,24 @@ void main() {
       createdAt: DateTime.now(),
     );
 
-    test('calculates gross revenue, COGS, operating costs, and margins correctly', () {
-      final controller = FinancialReportsController([completedOrder]);
+    test(
+      'calculates gross revenue, COGS, operating costs, and margins correctly',
+      () {
+        final controller = FinancialReportsController([completedOrder]);
 
-      final metrics = controller.state.metrics;
-      expect(metrics.grossRevenue, 184.0);
-      expect(metrics.completedOrders, 1);
-      // cogs = 184 * 0.30 = 55.2
-      expect(metrics.cogs, closeTo(55.2, 0.001));
-      // operatingCosts = 184 * 0.25 = 46.0
-      expect(metrics.operatingCosts, closeTo(46.0, 0.001));
-      // netProfit = (184 - 55.2) - 46.0 = 82.8
-      expect(metrics.netProfit, closeTo(82.8, 0.001));
-      expect(metrics.topProfitableItems, hasLength(1));
-      expect(metrics.topProfitableItems.first.itemName, 'طاجن بامية باللحم');
-    });
+        final metrics = controller.state.metrics;
+        expect(metrics.grossRevenue, 184.0);
+        expect(metrics.completedOrders, 1);
+        // cogs = 184 * 0.30 = 55.2
+        expect(metrics.cogs, closeTo(55.2, 0.001));
+        // operatingCosts = 184 * 0.25 = 46.0
+        expect(metrics.operatingCosts, closeTo(46.0, 0.001));
+        // netProfit = (184 - 55.2) - 46.0 = 82.8
+        expect(metrics.netProfit, closeTo(82.8, 0.001));
+        expect(metrics.topProfitableItems, hasLength(1));
+        expect(metrics.topProfitableItems.first.itemName, 'طاجن بامية باللحم');
+      },
+    );
 
     test('switching period filters orders and updates metrics', () {
       final oldOrder = OrderEntity(

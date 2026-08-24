@@ -52,7 +52,9 @@ class TopItemsBarChart extends StatelessWidget {
       color: colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -84,7 +86,8 @@ class TopItemsBarChart extends StatelessWidget {
                   maxY: maxY,
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
-                      getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
+                      getTooltipColor: (_) =>
+                          colorScheme.surfaceContainerHighest,
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final item = topList[group.x.toInt()];
                         return BarTooltipItem(
@@ -100,8 +103,12 @@ class TopItemsBarChart extends StatelessWidget {
                   ),
                   titlesData: FlTitlesData(
                     show: true,
-                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -170,10 +177,15 @@ class TopItemsBarChart extends StatelessWidget {
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
                               colors: i == 0
-                                  ? [Colors.amber.shade700, Colors.amber.shade400]
+                                  ? [
+                                      Colors.amber.shade700,
+                                      Colors.amber.shade400,
+                                    ]
                                   : [
                                       colorScheme.primary,
-                                      colorScheme.primary.withValues(alpha: 0.7),
+                                      colorScheme.primary.withValues(
+                                        alpha: 0.7,
+                                      ),
                                     ],
                             ),
                             width: 18,

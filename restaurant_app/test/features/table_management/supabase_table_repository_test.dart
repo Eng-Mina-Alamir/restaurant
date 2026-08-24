@@ -15,18 +15,21 @@ void main() {
       repository = SupabaseTableRepository(client);
     });
 
-    test('getTables gracefully falls back to seed table data when remote is offline/empty', () async {
-      final result = await repository.getTables();
+    test(
+      'getTables gracefully falls back to seed table data when remote is offline/empty',
+      () async {
+        final result = await repository.getTables();
 
-      expect(result.isRight, isTrue);
-      result.when(
-        onLeft: (_) => fail('Expected right tables'),
-        onRight: (tables) {
-          expect(tables, isNotEmpty);
-          expect(tables.any((t) => t.tableNumber == 1), isTrue);
-        },
-      );
-    });
+        expect(result.isRight, isTrue);
+        result.when(
+          onLeft: (_) => fail('Expected right tables'),
+          onRight: (tables) {
+            expect(tables, isNotEmpty);
+            expect(tables.any((t) => t.tableNumber == 1), isTrue);
+          },
+        );
+      },
+    );
 
     test('updateTable handles table update without crashing', () async {
       // Prime cache

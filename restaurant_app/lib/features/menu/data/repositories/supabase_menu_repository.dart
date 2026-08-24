@@ -79,21 +79,23 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       for (final raw in (itemResponse as List)) {
         final map = Map<String, dynamic>.from(raw as Map);
         final itemId = map['id']?.toString() ?? '';
-        items.add(MenuItem(
-          id: itemId,
-          categoryId: map['category_id'] as String? ?? 'عام',
-          name: map['name'] as String? ?? '',
-          description: map['description'] as String? ?? '',
-          price: (map['price'] as num?)?.toDouble() ?? 0.0,
-          imageUrl: map['image_url'] as String?,
-          isAvailable: map['is_available'] as bool? ?? true,
-          isVegetarian: map['is_vegetarian'] as bool? ?? false,
-          isSpicy: map['is_spicy'] as bool? ?? false,
-          preparationTime: (map['preparation_time'] as num?)?.toDouble(),
-          rating: (map['rating'] as num?)?.toDouble() ?? 5.0,
-          orderCount: (map['order_count'] as num?)?.toInt() ?? 0,
-          modifierGroups: itemGroupsMap[itemId] ?? [],
-        ));
+        items.add(
+          MenuItem(
+            id: itemId,
+            categoryId: map['category_id'] as String? ?? 'عام',
+            name: map['name'] as String? ?? '',
+            description: map['description'] as String? ?? '',
+            price: (map['price'] as num?)?.toDouble() ?? 0.0,
+            imageUrl: map['image_url'] as String?,
+            isAvailable: map['is_available'] as bool? ?? true,
+            isVegetarian: map['is_vegetarian'] as bool? ?? false,
+            isSpicy: map['is_spicy'] as bool? ?? false,
+            preparationTime: (map['preparation_time'] as num?)?.toDouble(),
+            rating: (map['rating'] as num?)?.toDouble() ?? 5.0,
+            orderCount: (map['order_count'] as num?)?.toInt() ?? 0,
+            modifierGroups: itemGroupsMap[itemId] ?? [],
+          ),
+        );
       }
 
       if (items.isEmpty && categories.isEmpty) {
@@ -114,7 +116,9 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       _cachedMenu = menu;
       return Right<Failure, Menu>(menu);
     } catch (e) {
-      AppLogger.warning('Supabase getMenu failed: $e, falling back to cache or seed data');
+      AppLogger.warning(
+        'Supabase getMenu failed: $e, falling back to cache or seed data',
+      );
       final fallback = _cachedMenu ?? MenuSeedData.buildMenu();
       _cachedMenu = fallback;
       return Right<Failure, Menu>(fallback);
@@ -157,24 +161,31 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   Future<Either<Failure, MenuItem>> updateMenuItem(MenuItem item) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.menuItemsTable).update({
-        'category_id': item.categoryId,
-        'name': item.name,
-        'description': item.description,
-        'price': item.price,
-        'image_url': item.imageUrl,
-        'is_available': item.isAvailable,
-        'is_vegetarian': item.isVegetarian,
-        'is_spicy': item.isSpicy,
-        'preparation_time': item.preparationTime,
-      }).eq('id', item.id);
+      await _supabase
+          .from(SupabaseConfig.menuItemsTable)
+          .update({
+            'category_id': item.categoryId,
+            'name': item.name,
+            'description': item.description,
+            'price': item.price,
+            'image_url': item.imageUrl,
+            'is_available': item.isAvailable,
+            'is_vegetarian': item.isVegetarian,
+            'is_spicy': item.isSpicy,
+            'preparation_time': item.preparationTime,
+          })
+          .eq('id', item.id);
       _cachedMenu = _cachedMenu!.copyWith(
-        items: _cachedMenu!.items.map((i) => i.id == item.id ? item : i).toList(),
+        items: _cachedMenu!.items
+            .map((i) => i.id == item.id ? item : i)
+            .toList(),
       );
       return Right<Failure, MenuItem>(item);
     } catch (e) {
       _cachedMenu = _cachedMenu!.copyWith(
-        items: _cachedMenu!.items.map((i) => i.id == item.id ? item : i).toList(),
+        items: _cachedMenu!.items
+            .map((i) => i.id == item.id ? item : i)
+            .toList(),
       );
       return Right<Failure, MenuItem>(item);
     }
@@ -232,12 +243,16 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
           .delete()
           .eq('name', categoryName);
       _cachedMenu = _cachedMenu!.copyWith(
-        categories: _cachedMenu!.categories.where((c) => c != categoryName).toList(),
+        categories: _cachedMenu!.categories
+            .where((c) => c != categoryName)
+            .toList(),
       );
       return const Right<Failure, void>(null);
     } catch (e) {
       _cachedMenu = _cachedMenu!.copyWith(
-        categories: _cachedMenu!.categories.where((c) => c != categoryName).toList(),
+        categories: _cachedMenu!.categories
+            .where((c) => c != categoryName)
+            .toList(),
       );
       return const Right<Failure, void>(null);
     }
@@ -257,9 +272,13 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
 
       final index = _cachedMenu!.items.indexWhere((i) => i.id == itemId);
       if (index != -1) {
-        final updated = _cachedMenu!.items[index].copyWith(isAvailable: isAvailable);
+        final updated = _cachedMenu!.items[index].copyWith(
+          isAvailable: isAvailable,
+        );
         _cachedMenu = _cachedMenu!.copyWith(
-          items: _cachedMenu!.items.map((i) => i.id == itemId ? updated : i).toList(),
+          items: _cachedMenu!.items
+              .map((i) => i.id == itemId ? updated : i)
+              .toList(),
         );
         return Right<Failure, MenuItem>(updated);
       }
@@ -276,13 +295,19 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
     } catch (e) {
       final index = _cachedMenu!.items.indexWhere((i) => i.id == itemId);
       if (index != -1) {
-        final updated = _cachedMenu!.items[index].copyWith(isAvailable: isAvailable);
+        final updated = _cachedMenu!.items[index].copyWith(
+          isAvailable: isAvailable,
+        );
         _cachedMenu = _cachedMenu!.copyWith(
-          items: _cachedMenu!.items.map((i) => i.id == itemId ? updated : i).toList(),
+          items: _cachedMenu!.items
+              .map((i) => i.id == itemId ? updated : i)
+              .toList(),
         );
         return Right<Failure, MenuItem>(updated);
       }
-      return Left<Failure, MenuItem>(ServerFailure('فشل تغيير حالة التوفر: $e'));
+      return Left<Failure, MenuItem>(
+        ServerFailure('فشل تغيير حالة التوفر: $e'),
+      );
     }
   }
 }

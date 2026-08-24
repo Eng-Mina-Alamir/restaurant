@@ -32,37 +32,34 @@ class _FakeLogoutUseCase extends LogoutUseCase {
 }
 
 void main() {
-  testWidgets('logout action button transitions to unauthenticated and shows snackbar', (
-    tester,
-  ) async {
-    final container = ProviderContainer(
-      overrides: [
-        logoutUseCaseProvider.overrideWithValue(_FakeLogoutUseCase()),
-      ],
-    );
-    addTearDown(container.dispose);
+  testWidgets(
+    'logout action button transitions to unauthenticated and shows snackbar',
+    (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          logoutUseCaseProvider.overrideWithValue(_FakeLogoutUseCase()),
+        ],
+      );
+      addTearDown(container.dispose);
 
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const MaterialApp(
-          home: Scaffold(
-            body: LogoutActionButton(),
-          ),
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Scaffold(body: LogoutActionButton())),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.logout), findsOneWidget);
+      expect(find.byIcon(Icons.logout), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.logout));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.logout));
+      await tester.pumpAndSettle();
 
-    expect(
-      container.read(authControllerProvider).status,
-      AuthStatus.unauthenticated,
-    );
-    expect(find.text(AppConstants.logoutMessage), findsOneWidget);
-  });
+      expect(
+        container.read(authControllerProvider).status,
+        AuthStatus.unauthenticated,
+      );
+      expect(find.text(AppConstants.logoutMessage), findsOneWidget);
+    },
+  );
 }

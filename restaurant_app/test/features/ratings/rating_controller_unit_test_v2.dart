@@ -11,7 +11,9 @@ class _FakeRatingRepository implements RatingRepository {
   bool shouldFail = false;
 
   @override
-  Future<Either<Failure, RatingEntity>> submitRating(RatingEntity rating) async {
+  Future<Either<Failure, RatingEntity>> submitRating(
+    RatingEntity rating,
+  ) async {
     if (shouldFail) {
       return const Left(ValidationFailure('فشل في إرسال التقييم'));
     }
@@ -20,7 +22,9 @@ class _FakeRatingRepository implements RatingRepository {
   }
 
   @override
-  Future<Either<Failure, List<RatingEntity>>> getRatingsForTarget(String targetId) async {
+  Future<Either<Failure, List<RatingEntity>>> getRatingsForTarget(
+    String targetId,
+  ) async {
     return Right(ratings.where((r) => r.targetId == targetId).toList());
   }
 
@@ -65,42 +69,48 @@ void main() {
       expect(deserialized.comment, 'لذيذ جداً');
     });
 
-    test('submitRating success updates state and invalidates target providers', () async {
-      final repo = _FakeRatingRepository();
-      final container = ProviderContainer(
-        overrides: [
-          ratingRepositoryProvider.overrideWithValue(repo),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'submitRating success updates state and invalidates target providers',
+      () async {
+        final repo = _FakeRatingRepository();
+        final container = ProviderContainer(
+          overrides: [ratingRepositoryProvider.overrideWithValue(repo)],
+        );
+        addTearDown(container.dispose);
 
-      final controller = container.read(ratingSubmissionControllerProvider.notifier);
+        final controller = container.read(
+          ratingSubmissionControllerProvider.notifier,
+        );
 
-      final success = await controller.submitRating(
-        targetId: 'item-burger',
-        targetType: RatingTargetType.menuItem,
-        userId: 'usr-1',
-        userName: 'كريم',
-        score: 5.0,
-        comment: 'ممتاز',
-      );
+        final success = await controller.submitRating(
+          targetId: 'item-burger',
+          targetType: RatingTargetType.menuItem,
+          userId: 'usr-1',
+          userName: 'كريم',
+          score: 5.0,
+          comment: 'ممتاز',
+        );
 
-      expect(success, isTrue);
-      expect(repo.ratings, hasLength(1));
-      expect(container.read(ratingSubmissionControllerProvider).hasError, isFalse);
-    });
+        expect(success, isTrue);
+        expect(repo.ratings, hasLength(1));
+        expect(
+          container.read(ratingSubmissionControllerProvider).hasError,
+          isFalse,
+        );
+      },
+    );
 
     test('submitRating failure sets error state and returns false', () async {
       final repo = _FakeRatingRepository();
       repo.shouldFail = true;
       final container = ProviderContainer(
-        overrides: [
-          ratingRepositoryProvider.overrideWithValue(repo),
-        ],
+        overrides: [ratingRepositoryProvider.overrideWithValue(repo)],
       );
       addTearDown(container.dispose);
 
-      final controller = container.read(ratingSubmissionControllerProvider.notifier);
+      final controller = container.read(
+        ratingSubmissionControllerProvider.notifier,
+      );
 
       final success = await controller.submitRating(
         targetId: 'item-burger',
@@ -111,7 +121,10 @@ void main() {
       );
 
       expect(success, isFalse);
-      expect(container.read(ratingSubmissionControllerProvider).hasError, isTrue);
+      expect(
+        container.read(ratingSubmissionControllerProvider).hasError,
+        isTrue,
+      );
     });
   });
 }

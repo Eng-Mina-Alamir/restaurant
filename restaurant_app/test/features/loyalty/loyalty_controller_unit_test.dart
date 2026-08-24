@@ -32,44 +32,62 @@ void main() {
       final controller = container.read(loyaltyControllerProvider.notifier);
       await controller.loadAccount();
 
-      final initialPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+      final initialPoints = container
+          .read(loyaltyControllerProvider)
+          .value!
+          .currentPoints;
 
       await controller.earnPoints(orderTotal: 100.0, orderId: 'ORD-TEST-1');
-      final newPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+      final newPoints = container
+          .read(loyaltyControllerProvider)
+          .value!
+          .currentPoints;
 
       expect(newPoints, greaterThan(initialPoints));
     });
 
-    test('redeemReward succeeds when points sufficient and fails when insufficient', () async {
-      final controller = container.read(loyaltyControllerProvider.notifier);
-      await controller.loadAccount();
+    test(
+      'redeemReward succeeds when points sufficient and fails when insufficient',
+      () async {
+        final controller = container.read(loyaltyControllerProvider.notifier);
+        await controller.loadAccount();
 
-      // Earn enough points first
-      await controller.earnPoints(orderTotal: 1000.0, orderId: 'ORD-EARN-BIG');
-      final currentPoints = container.read(loyaltyControllerProvider).value!.currentPoints;
+        // Earn enough points first
+        await controller.earnPoints(
+          orderTotal: 1000.0,
+          orderId: 'ORD-EARN-BIG',
+        );
+        final currentPoints = container
+            .read(loyaltyControllerProvider)
+            .value!
+            .currentPoints;
 
-      const cheapReward = LoyaltyReward(
-        id: 'r-cheap',
-        title: 'مشروب مجاني',
-        description: 'وصف',
-        pointsCost: 50,
-        discountAmount: 10.0,
-      );
+        const cheapReward = LoyaltyReward(
+          id: 'r-cheap',
+          title: 'مشروب مجاني',
+          description: 'وصف',
+          pointsCost: 50,
+          discountAmount: 10.0,
+        );
 
-      final success = await controller.redeemReward(cheapReward);
-      expect(success, isTrue);
-      expect(container.read(loyaltyControllerProvider).value!.currentPoints, currentPoints - 50);
+        final success = await controller.redeemReward(cheapReward);
+        expect(success, isTrue);
+        expect(
+          container.read(loyaltyControllerProvider).value!.currentPoints,
+          currentPoints - 50,
+        );
 
-      const expensiveReward = LoyaltyReward(
-        id: 'r-huge',
-        title: 'وجبة فاخرة',
-        description: 'وصف',
-        pointsCost: 999999,
-        discountAmount: 500.0,
-      );
+        const expensiveReward = LoyaltyReward(
+          id: 'r-huge',
+          title: 'وجبة فاخرة',
+          description: 'وصف',
+          pointsCost: 999999,
+          discountAmount: 500.0,
+        );
 
-      final failed = await controller.redeemReward(expensiveReward);
-      expect(failed, isFalse);
-    });
+        final failed = await controller.redeemReward(expensiveReward);
+        expect(failed, isFalse);
+      },
+    );
   });
 }

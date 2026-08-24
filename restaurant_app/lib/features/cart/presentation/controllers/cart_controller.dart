@@ -54,8 +54,10 @@ class CartController extends StateNotifier<List<CartItem>> {
     } else {
       final existing = state[index];
       final merged = existing.copyWith(
-        quantity: (existing.quantity + item.quantity)
-            .clamp(1, kMaxQuantityPerLine),
+        quantity: (existing.quantity + item.quantity).clamp(
+          1,
+          kMaxQuantityPerLine,
+        ),
       );
       state = [...state]..[index] = merged;
     }
@@ -103,7 +105,10 @@ class CartController extends StateNotifier<List<CartItem>> {
   /// Returns an exact list of per-person amounts across [numPersons] where
   /// the sum is guaranteed to equal [totals.totalAmount] with remainder cents allocated.
   List<double> splitTotalDetailed(int numPersons) {
-    return FinancialCalculator.splitBillDetailed(totals.totalAmount, numPersons);
+    return FinancialCalculator.splitBillDetailed(
+      totals.totalAmount,
+      numPersons,
+    );
   }
 
   void _mutate(String configKey, CartItem Function(CartItem) transform) {
@@ -139,4 +144,3 @@ final activeTableIdProvider = Provider<String?>(
 final selectedDeliveryAddressProvider = StateProvider<String?>(
   (ref) => 'حي الزمالك، شارع 26 يوليو، القاهرة',
 );
-

@@ -65,7 +65,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     // same convention as the loyalty/ratings features.
     final currentUserId =
         ref.watch(authControllerProvider).user?.id ??
-            ref.watch(supabaseCurrentUserProvider)?.id;
+        ref.watch(supabaseCurrentUserProvider)?.id;
 
     final active = orders.where((o) => !o.status.isTerminal).toList();
 
@@ -73,23 +73,27 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     // they personally claimed (استلام الطلب).
     active.retainWhere(
       (o) =>
-          o.assignedKitchenId == null ||
-          o.assignedKitchenId == currentUserId,
+          o.assignedKitchenId == null || o.assignedKitchenId == currentUserId,
     );
 
     // Alert when new pending orders arrive
-    final pendingCount = active.where((o) => o.status == OrderStatus.pending).length;
+    final pendingCount = active
+        .where((o) => o.status == OrderStatus.pending)
+        .length;
     if (pendingCount > _lastOrderCount) {
       ref.read(kdsAlertServiceProvider).alertNewOrder();
     }
     _lastOrderCount = pendingCount;
 
-    final pendingList = active.where((o) => o.status == OrderStatus.pending).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final preparingList = active.where((o) => o.status == OrderStatus.preparing).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final readyList = active.where((o) => o.status == OrderStatus.ready).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final pendingList =
+        active.where((o) => o.status == OrderStatus.pending).toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final preparingList =
+        active.where((o) => o.status == OrderStatus.preparing).toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    final readyList =
+        active.where((o) => o.status == OrderStatus.ready).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return DefaultTabController(
       length: 3,
@@ -113,15 +117,14 @@ class _KdsPageState extends ConsumerState<KdsPage> {
               ? TabBar(
                   tabs: [
                     Tab(
-                      text: '${AppConstants.kdsPending} (${pendingList.length})',
+                      text:
+                          '${AppConstants.kdsPending} (${pendingList.length})',
                     ),
                     Tab(
                       text:
                           '${AppConstants.kdsPreparing} (${preparingList.length})',
                     ),
-                    Tab(
-                      text: '${AppConstants.kdsReady} (${readyList.length})',
-                    ),
+                    Tab(text: '${AppConstants.kdsReady} (${readyList.length})'),
                   ],
                 )
               : null,
@@ -137,8 +140,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: pendingList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -148,8 +155,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: preparingList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -159,8 +170,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: readyList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                       isExpanded: false,
                     ),
@@ -174,8 +189,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: pendingList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                     ),
                     _KdsColumn(
@@ -184,8 +203,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: preparingList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                     ),
                     _KdsColumn(
@@ -194,8 +217,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       orders: readyList,
                       onAdvance: (order) => _advance(context, ref, order),
                       onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) =>
-                          _confirmAndRevert(context, order, target, currentUserId ?? ''),
+                      onRevert: (order, target) => _confirmAndRevert(
+                        context,
+                        order,
+                        target,
+                        currentUserId ?? '',
+                      ),
                       tableNumberById: tableNumberById,
                     ),
                   ],
@@ -412,7 +439,8 @@ class _OrderCard extends StatelessWidget {
     final urgencyColor = _getUrgencyColor(elapsed);
     final highlight = _isNew ? theme.colorScheme.primary : urgencyColor;
 
-    final displayTable = tableNumber ??
+    final displayTable =
+        tableNumber ??
         (order.tableId != null
             ? int.tryParse(order.tableId!.replaceAll(RegExp(r'[^0-9]'), ''))
             : null);
@@ -454,7 +482,9 @@ class _OrderCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.15,
+                          ),
                           borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
@@ -606,12 +636,10 @@ class _OrderCard extends StatelessWidget {
                 ],
               ],
             ),
-
           ],
         ),
       ),
     );
-
   }
 
   int _elapsedMinutes(DateTime createdAt) =>
@@ -620,9 +648,8 @@ class _OrderCard extends StatelessWidget {
   /// Maps a status to its revert target, or null when no backward move is
   /// defined (pending/preparing/completed/cancelled never offer undo).
   static OrderStatus? _revertTargetOf(OrderStatus status) => switch (status) {
-        OrderStatus.ready => OrderStatus.preparing,
-        OrderStatus.served => OrderStatus.ready,
-        _ => null,
-      };
+    OrderStatus.ready => OrderStatus.preparing,
+    OrderStatus.served => OrderStatus.ready,
+    _ => null,
+  };
 }
-

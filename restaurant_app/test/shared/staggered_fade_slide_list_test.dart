@@ -4,8 +4,9 @@ import 'package:restaurant_app/shared/animations/staggered_fade_slide_list.dart'
 
 void main() {
   group('StaggeredFadeSlideList & AnimatedListItem Tests', () {
-    testWidgets('AnimatedListItem renders child and completes transition',
-        (tester) async {
+    testWidgets('AnimatedListItem renders child and completes transition', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -24,8 +25,9 @@ void main() {
       expect(find.text('Staggered Item 0'), findsOneWidget);
     });
 
-    testWidgets('StaggeredFadeSlideList renders multiple items sequentially',
-        (tester) async {
+    testWidgets('StaggeredFadeSlideList renders multiple items sequentially', (
+      tester,
+    ) async {
       final items = List.generate(5, (i) => 'Item $i');
 
       await tester.pumpWidget(

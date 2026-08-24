@@ -67,12 +67,12 @@ class PointsTransaction {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'points': points,
-        'description': description,
-        'createdAt': createdAt.toIso8601String(),
-        'type': type.name,
-      };
+    'id': id,
+    'points': points,
+    'description': description,
+    'createdAt': createdAt.toIso8601String(),
+    'type': type.name,
+  };
 
   factory PointsTransaction.fromJson(Map<String, dynamic> json) =>
       PointsTransaction(

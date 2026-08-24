@@ -30,25 +30,28 @@ class _FloatingIllustrationState extends State<FloatingIllustration>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _animation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: -widget.distance)
-            .chain(CurveTween(curve: widget.curve)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: -widget.distance,
+        ).chain(CurveTween(curve: widget.curve)),
         weight: 25,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: -widget.distance, end: widget.distance)
-            .chain(CurveTween(curve: widget.curve)),
+        tween: Tween<double>(
+          begin: -widget.distance,
+          end: widget.distance,
+        ).chain(CurveTween(curve: widget.curve)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: widget.distance, end: 0.0)
-            .chain(CurveTween(curve: widget.curve)),
+        tween: Tween<double>(
+          begin: widget.distance,
+          end: 0.0,
+        ).chain(CurveTween(curve: widget.curve)),
         weight: 25,
       ),
     ]).animate(_controller);
@@ -114,25 +117,28 @@ class _BreathingWidgetState extends State<BreathingWidget>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: widget.maxScale)
-            .chain(CurveTween(curve: Curves.easeInOutSine)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: widget.maxScale,
+        ).chain(CurveTween(curve: Curves.easeInOutSine)),
         weight: 25,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: widget.maxScale, end: widget.minScale)
-            .chain(CurveTween(curve: Curves.easeInOutSine)),
+        tween: Tween<double>(
+          begin: widget.maxScale,
+          end: widget.minScale,
+        ).chain(CurveTween(curve: Curves.easeInOutSine)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: widget.minScale, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOutSine)),
+        tween: Tween<double>(
+          begin: widget.minScale,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOutSine)),
         weight: 25,
       ),
     ]).animate(_controller);
@@ -159,10 +165,7 @@ class _BreathingWidgetState extends State<BreathingWidget>
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
       },
       child: widget.child,
     );
