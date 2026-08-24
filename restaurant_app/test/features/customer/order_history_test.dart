@@ -238,10 +238,13 @@ void main() {
 
     /// Places an order of [orderType], seeds its delivery assignment into an
     /// overridden [InMemoryDeliveryRepository] and pumps the history page.
+    /// Pass [router] to pump inside a GoRouter-backed app (needed for
+    /// navigation assertions).
     Future<ProviderContainer> pumpHistoryWithAssignment(
       WidgetTester tester, {
       required OrderType orderType,
       DeliveryStatus assignmentStatus = DeliveryStatus.inTransit,
+      GoRouter? router,
     }) async {
       // Overriding the repository keeps the lookup local and lets the test
       // seed the assignment the card should render.
@@ -269,7 +272,9 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: OrderHistoryPage()),
+          child: router == null
+              ? const MaterialApp(home: OrderHistoryPage())
+              : MaterialApp.router(routerConfig: router),
         ),
       );
       await tester.pumpAndSettle();
@@ -329,6 +334,65 @@ void main() {
       expect(find.text('قيّم السائق'), findsNothing);
       // Card itself renders unchanged.
       expect(find.text('أعد الطلب'), findsOneWidget);
+    });
+
+    testWidgets('delivery card with assignment offers a driver-chat entry',
+        (tester) async {
+      await pumpHistoryWithAssignment(
+        tester,
+        orderType: OrderType.delivery,
+      );
+
+      expect(find.byIcon(Icons.chat_bubble_outline), findsOneWidget);
+      expect(find.byTooltip('محادثة السائق'), findsOneWidget);
+    });
+
+    testWidgets('dine-in and takeaway cards show no driver-chat entry even '
+        'when an assignment exists', (tester) async {
+      for (final type in [OrderType.dineIn, OrderType.takeaway]) {
+        await pumpHistoryWithAssignment(tester, orderType: type);
+
+        expect(find.byIcon(Icons.chat_bubble_outline), findsNothing);
+        expect(find.byTooltip('محادثة السائق'), findsNothing);
+      }
+    });
+
+    testWidgets('tapping driver-chat navigates to /chat/:orderId',
+        (tester) async {
+      Object? navigatedTo;
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const OrderHistoryPage(),
+          ),
+          GoRoute(
+            path: '/chat/:orderId',
+            builder: (context, state) {
+              navigatedTo = state.uri.path;
+              return Scaffold(
+                body: Center(
+                  child:
+                      Text('chat-stub-${state.pathParameters['orderId']}'),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+      final container = await pumpHistoryWithAssignment(
+        tester,
+        orderType: OrderType.delivery,
+        router: router,
+      );
+      final orderId = container.read(ordersControllerProvider).single.id;
+
+      await tester.tap(find.byIcon(Icons.chat_bubble_outline));
+      await tester.pumpAndSettle();
+
+      expect(navigatedTo, '/chat/$orderId');
+      expect(find.text('chat-stub-$orderId'), findsOneWidget);
     });
   });
 }

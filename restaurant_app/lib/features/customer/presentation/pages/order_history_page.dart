@@ -190,6 +190,21 @@ class _OrderHistoryCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                // Chat with the assigned driver (delivery orders only).
+                if (assignment != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                    child: Semantics(
+                      label: 'محادثة السائق',
+                      button: true,
+                      child: IconButton(
+                        tooltip: 'محادثة السائق',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                        onPressed: () => context.push('/chat/${order.id}'),
+                      ),
+                    ),
+                  ),
                 if (!order.status.isTerminal)
                   Padding(
                     padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
