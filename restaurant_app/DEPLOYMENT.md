@@ -151,6 +151,34 @@ Then smoke-test against live Supabase:
 4. As manager, open `/manager/dispatch` → board lists undispatched orders;
    manually reassign one if needed.
 
+### Manual-dispatch half (no free driver → manager fallback)
+
+The steps above only exercise automatic assignment. Verify the manual escape
+hatch end-to-end too:
+
+1. **Undispatched:** mark a delivery order ready while every driver is
+   unavailable (offline, or at the load cap of 3 active runs) → auto-dispatch
+   logs `[Dispatch] outcome=waiting`; on `/manager/dispatch` the order shows
+   under **طلبات بانتظار سواق**.
+2. **Manual assign:** as manager, tap **تعيين سواق** on that card and pick an
+   available driver from the bottom sheet → a `pending` assignment is created
+   (`assignment_method = 'manual'`) and broadcast over realtime.
+3. **Driver receives it:** log in as the chosen driver → the new-assignment
+   alert fires and the order appears as a pending card.
+4. **Fail the run:** have the driver mark the delivery FAILED
+   (`DeliveryController.fail`; if your build has no failure button, set
+   `delivery_status = 'failed'` on the assignment row in Supabase Studio) →
+   back on `/manager/dispatch` the order moves to **إعادة تعيين (فشل سابق)**,
+   listing the failed driver's id on its card.
+5. **Re-dispatch upserts the SAME row:** assign again to a different driver →
+   the original row id is reused (reset to `pending`, stamped `manual`) — no
+   duplicate assignment forks for the same order (check
+   `delivery_assignments` by `order_id`: still one row).
+6. **Terminal states free capacity:** note that `delivered` and `failed` are
+   both end-of-line statuses — either immediately drops off the driver's
+   active-run count (`getAvailableDrivers` counts only non-terminal rows), so
+   the driver becomes dispatchable again right away without any cleanup step.
+
 ---
 
 ## 5. Delivery Dispatch Architecture

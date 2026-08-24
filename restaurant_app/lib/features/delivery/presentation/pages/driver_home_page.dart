@@ -297,8 +297,17 @@ class _DeliveryCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final status = assignment.deliveryStatus;
-    // Session-scoped unread counter for this order's thread (0 until the
-    // customer replies after the badge subscription started).
+    // Unread counter for this order's thread (0 until the customer replies
+    // after the badge subscription started). Cost model: each card rendered
+    // here opens ONE realtime channel + ONE history query per distinct order
+    // (see SupabaseChatRepository.watch), and because unreadChatCountProvider
+    // is a non-autoDispose family, every order ever listed on this page keeps
+    // its channel open for the whole session even after the card leaves the
+    // list — getAssignments feeds this page the driver's full unbounded
+    // history. Keeping per-order subscriptions is a deliberate tradeoff for
+    // now: converting to autoDispose would break ChatPage's .notifier-based
+    // markRead path; the decision and constraints are recorded on
+    // unreadChatCountProvider.
     final unreadCount = ref.watch(unreadChatCountProvider(assignment.orderId));
     final actionLabel = switch (status) {
       DeliveryStatus.pending => AppConstants.actionAccept,

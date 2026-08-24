@@ -246,6 +246,27 @@ final chatReadStateStoreProvider = Provider<ChatReadStateStore>((ref) {
 ///
 /// The provider element disposes the [StateNotifier] itself, whose overridden
 /// [UnreadChatController.dispose] cancels the watch subscription.
+///
+/// ### Subscription cost model (deliberate: NOT autoDispose)
+///
+/// Every family element opened by a watcher holds exactly ONE live channel
+/// and ONE history query downstream: [SupabaseChatRepository.watch] opens a
+/// Realtime Postgres-Changes channel scoped to `order_id=eq.<id>` and runs a
+/// history fetch on listen. DriverHomePage watches this provider once per
+/// assignment card, and Supabase `getAssignments` returns the driver's full
+/// history unbounded — so over a long shift N distinct orders accumulate ~N
+/// open channels + snapshots that outlive their cards (non-autoDispose family
+/// elements are never released until the container dies).
+///
+/// Decision (recorded): keep per-order subscriptions for now. Converting this
+/// family to `.autoDispose` would break ChatPage, which reads
+/// `unreadChatCountProvider(orderId).notifier` in initState/dispose to call
+/// [UnreadChatController.markRead] OUTSIDE any active listener window — an
+/// autoDispose element would be torn down between those reads and drop the
+/// receipt write. Any conversion must first move ChatPage onto a keep-alive /
+/// listener-based pattern as its own guarded change (regression guard:
+/// test/features/chat/unread_subscription_lifecycle_test.dart proves dispose
+/// cancels every stream cleanly).
 final unreadChatCountProvider =
     StateNotifierProvider.family<UnreadChatController, int, String>((
       ref,
