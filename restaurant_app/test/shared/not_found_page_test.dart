@@ -14,9 +14,9 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => const Scaffold(body: Text('home')),
+          builder: (_, _) => const Scaffold(body: Text('home')),
         ),
-        GoRoute(path: '/nope', builder: (_, __) => const NotFoundPage()),
+        GoRoute(path: '/nope', builder: (_, _) => const NotFoundPage()),
       ],
     );
 

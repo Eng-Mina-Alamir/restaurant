@@ -211,7 +211,7 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       await _supabase
           .from(SupabaseConfig.deliveryAssignmentsTable)
           .update({
-            if (driverId != null) 'driver_id': driverId,
+            'driver_id': ?driverId,
             'pickup_time': assignment.pickupTime.toIso8601String(),
             'delivered_time': assignment.deliveredTime?.toIso8601String(),
             'delivery_location': assignment.deliveryLocation,

@@ -143,7 +143,7 @@ class UnreadChatController extends StateNotifier<int> {
           // The badge degrades gracefully to a possibly-stale count instead
           // of crashing the app; the thread page surfaces stream failures
           // itself through ChatController's error state.
-          onError: (Object _, StackTrace __) {},
+          onError: (Object _, StackTrace _) {},
         );
   }
 

@@ -852,7 +852,7 @@ class _TurnByTurnSheet extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.sm),
               itemCount: maneuvers.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, _) => const Divider(height: 1),
               itemBuilder: (ctx, index) {
                 final m = maneuvers[index];
                 return ListTile(
@@ -1072,7 +1072,7 @@ class _DriverDotState extends State<_DriverDot>
     return AnimatedBuilder(
       animation: _anim,
       builder:
-          (_, __) => Container(
+          (_, _) => Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: widget.color.withValues(alpha: _anim.value),

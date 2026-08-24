@@ -90,7 +90,7 @@ class LoyaltyPage extends ConsumerWidget {
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  error: (_, __) =>
+                  error: (_, _) =>
                       const Text('تعذر تحميل المكافآت حالياً'),
                   data: (rewards) => Column(
                     children: [
@@ -124,7 +124,7 @@ class LoyaltyPage extends ConsumerWidget {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: account.transactions.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final tx = account.transactions[index];
                         final isPositive = tx.points > 0;

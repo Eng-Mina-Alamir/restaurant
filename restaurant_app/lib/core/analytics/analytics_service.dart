@@ -57,7 +57,7 @@ class AnalyticsService {
   void logScreenView(String screenName, [String? screenClass]) {
     logEvent('screen_view', {
       'screen_name': screenName,
-      if (screenClass != null) 'screen_class': screenClass,
+      'screen_class': ?screenClass,
     });
   }
 

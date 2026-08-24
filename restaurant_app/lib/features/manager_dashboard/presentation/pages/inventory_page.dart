@@ -183,7 +183,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                           AppSpacing.xl * 2,
                         ),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(height: AppSpacing.sm),
                         itemBuilder: (context, i) => _InventoryCard(
                           item: filtered[i],

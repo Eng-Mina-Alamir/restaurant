@@ -153,7 +153,7 @@ void main() {
       addTearDown(container.dispose);
 
       final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, __) {});
+      container.listen(badge, (_, _) {});
       // Flush the initial (history-baseline) snapshot delivered on listen.
       await pumpEventQueue();
       expect(container.read(badge), 0);
@@ -169,7 +169,7 @@ void main() {
       addTearDown(container.dispose);
 
       final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, __) {});
+      container.listen(badge, (_, _) {});
       await pumpEventQueue();
 
       repo.receive(msg(id: 'm1', senderId: _driverId, body: 'على الطريق'));
@@ -192,7 +192,7 @@ void main() {
       addTearDown(container.dispose);
 
       final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, __) {});
+      container.listen(badge, (_, _) {});
       await pumpEventQueue();
 
       final foreign = msg(id: 'm1', senderId: _customerId, body: 'مرتين؟');
@@ -213,7 +213,7 @@ void main() {
       addTearDown(container.dispose);
 
       final badge = unreadChatCountProvider('ORD-1');
-      container.listen(badge, (_, __) {});
+      container.listen(badge, (_, _) {});
       await pumpEventQueue();
 
       repo.receive(msg(id: 'm1', senderId: _customerId, body: 'واحدة'));
@@ -287,7 +287,7 @@ void main() {
       final session1 = _container(repo, readStateStore: store);
       addTearDown(session1.dispose);
       final badge1 = unreadChatCountProvider('ORD-1');
-      session1.listen(badge1, (_, __) {});
+      session1.listen(badge1, (_, _) {});
       await pumpEventQueue();
       session1.read(badge1.notifier).markRead();
       await pumpEventQueue(); // receipt write is async fire-and-forget
@@ -305,7 +305,7 @@ void main() {
       final session2 = _container(repo, readStateStore: store);
       addTearDown(session2.dispose);
       final badge2 = unreadChatCountProvider('ORD-1');
-      session2.listen(badge2, (_, __) {});
+      session2.listen(badge2, (_, _) {});
       await pumpEventQueue();
       expect(session2.read(badge2), 1);
     });
@@ -325,7 +325,7 @@ void main() {
       final session1 = _container(repo, readStateStore: store);
       addTearDown(session1.dispose);
       final badge1 = unreadChatCountProvider('ORD-1');
-      session1.listen(badge1, (_, __) {});
+      session1.listen(badge1, (_, _) {});
       await pumpEventQueue();
       session1.read(badge1.notifier).markRead();
       await pumpEventQueue();
@@ -334,7 +334,7 @@ void main() {
       final session2 = _container(repo, readStateStore: store);
       addTearDown(session2.dispose);
       final badge2 = unreadChatCountProvider('ORD-1');
-      session2.listen(badge2, (_, __) {});
+      session2.listen(badge2, (_, _) {});
       await pumpEventQueue();
       expect(session2.read(badge2), 0);
     });
@@ -349,7 +349,7 @@ void main() {
       final session = _container(repo, readStateStore: store);
       addTearDown(session.dispose);
       final badge = unreadChatCountProvider('ORD-1');
-      session.listen(badge, (_, __) {});
+      session.listen(badge, (_, _) {});
       await pumpEventQueue();
       // No createdAt → cannot prove it arrived after any receipt → not counted.
       expect(session.read(badge), 0);

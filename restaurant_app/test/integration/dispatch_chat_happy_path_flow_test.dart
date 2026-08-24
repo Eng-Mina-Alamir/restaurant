@@ -51,7 +51,7 @@ class _SeededPoolDeliveryRepository extends InMemoryDeliveryRepository {
   @override
   Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async =>
       Right<Failure, List<DriverInfo>>(<DriverInfo>[
-        if (availableDriver != null) availableDriver!,
+        ?availableDriver,
       ]);
 }
 

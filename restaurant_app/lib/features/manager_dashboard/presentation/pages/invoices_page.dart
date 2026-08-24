@@ -74,7 +74,7 @@ class InvoicesPage extends ConsumerWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: completedOrders.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) => _InvoiceCard(
                 order: completedOrders[i],

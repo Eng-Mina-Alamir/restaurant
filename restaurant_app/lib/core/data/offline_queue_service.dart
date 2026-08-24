@@ -103,7 +103,7 @@ class OfflineQueueService {
       final value = jsonEncode({
         'type': operationType,
         'payload': payload,
-        if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+        'idempotencyKey': ?idempotencyKey,
         'attempts': 0,
       });
 

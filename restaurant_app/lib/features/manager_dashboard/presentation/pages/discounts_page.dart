@@ -152,7 +152,7 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
                 100,
               ),
               itemCount: discounts.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) =>
                   _DiscountCard(discount: discounts[i], index: i),

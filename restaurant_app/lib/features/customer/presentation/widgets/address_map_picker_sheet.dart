@@ -352,7 +352,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                       shrinkWrap: true,
                       padding: EdgeInsets.zero,
                       itemCount: _autocompleteResults.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (ctx, idx) {
                         final item = _autocompleteResults[idx];
                         return ListTile(
@@ -408,7 +408,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                   child: AnimatedBuilder(
                     animation: _pinBounceAnim,
                     builder:
-                        (_, __) => Transform.translate(
+                        (_, _) => Transform.translate(
                           offset: Offset(0, _pinBounceAnim.value - 18),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,

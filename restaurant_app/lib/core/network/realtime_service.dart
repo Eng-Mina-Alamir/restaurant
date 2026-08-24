@@ -307,7 +307,7 @@ class RealtimeService {
     sendEvent('orderReadyForPickup', {
       'orderId': orderId,
       'id': orderId,
-      if (tableId != null) 'tableId': tableId,
+      'tableId': ?tableId,
       'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
     });
   }
@@ -328,7 +328,7 @@ class RealtimeService {
       'latitude': latitude,
       'longitude': longitude,
       'timestamp': DateTime.now().toIso8601String(),
-      if (orderId != null) 'orderId': orderId,
+      'orderId': ?orderId,
     });
   }
 
