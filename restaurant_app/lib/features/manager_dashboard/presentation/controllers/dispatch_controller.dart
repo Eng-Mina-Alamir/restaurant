@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
@@ -84,12 +86,52 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     required List<OrderEntity> Function() ordersSource,
   }) : _ordersSource = ordersSource,
        super(const AsyncValue.loading()) {
+    // Realtime assignment broadcasts (including this device's own writes in
+    // demo-mode loopback) re-classify the board after the debounce window.
+    _realtimeSubscription = _realtimeService.events.listen((event) {
+      if (event.type == RealtimeEventType.deliveryAssignmentCreated) {
+        scheduleRefresh();
+      }
+    });
     refresh();
   }
 
   final DeliveryRepository _repository;
   final RealtimeService _realtimeService;
   final List<OrderEntity> Function() _ordersSource;
+
+  /// Quiet period a burst of upstream mutations must settle for before the
+  /// board re-classifies itself.
+  static const Duration _refreshDebounce = Duration(milliseconds: 400);
+
+  Timer? _refreshDebounceTimer;
+  StreamSubscription<RealtimeEvent>? _realtimeSubscription;
+
+  /// True while [assignDriver]'s write+refresh sequence is awaiting; a
+  /// debounced refresh must never fire mid-assignment.
+  bool _assignInFlight = false;
+
+  /// Schedules a debounced [refresh]: re-triggering cancels the pending timer
+  /// and restarts the window, so bursts of mutations (orders state changes,
+  /// realtime assignment events) collapse into ONE reclassify pass.
+  ///
+  /// Never fires while an [assignDriver] sequence is awaiting — its own
+  /// explicit [refresh] already reflects the post-write state.
+  void scheduleRefresh() {
+    if (_assignInFlight) return;
+    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer = Timer(_refreshDebounce, () {
+      if (_assignInFlight) return;
+      unawaited(refresh());
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshDebounceTimer?.cancel();
+    _realtimeSubscription?.cancel();
+    super.dispose();
+  }
 
   /// Orders eligible for dispatch right now: delivery-type, non-terminal, and
   /// already prepared (kitchen released them at "ready" or later).
@@ -247,33 +289,41 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     }
 
     String? failureMessage;
-    final result = await _repository.createAssignment(assignment);
-    final created = result.when(
-      onLeft: (failure) {
-        failureMessage = failure.message;
-        return null;
-      },
-      onRight: (a) => a,
-    );
-    if (created == null) {
-      AppLogger.warning(
-        '[Dispatch] outcome=create-rejected orderId=$orderId '
-        'driverId=$driverId method=manual reason=$failureMessage',
+    // Guarded section: while this write+refresh sequence is awaiting, no
+    // debounced refresh may fire (its own explicit refresh below already
+    // reflects the post-write state).
+    _assignInFlight = true;
+    try {
+      final result = await _repository.createAssignment(assignment);
+      final created = result.when(
+        onLeft: (failure) {
+          failureMessage = failure.message;
+          return null;
+        },
+        onRight: (a) => a,
       );
-      state = AsyncValue.data(
-        (state.valueOrNull ?? const DispatchBoardState()).copyWith(
-          errorMessage: failureMessage,
-        ),
-      );
-      return false;
-    }
+      if (created == null) {
+        AppLogger.warning(
+          '[Dispatch] outcome=create-rejected orderId=$orderId '
+          'driverId=$driverId method=manual reason=$failureMessage',
+        );
+        state = AsyncValue.data(
+          (state.valueOrNull ?? const DispatchBoardState()).copyWith(
+            errorMessage: failureMessage,
+          ),
+        );
+        return false;
+      }
 
-    _realtimeService.broadcastDeliveryAssignmentCreated(created.toJson());
-    AppLogger.info(
-      '[Dispatch] outcome=assigned orderId=$orderId '
-      'driverId=$driverId method=manual',
-    );
-    await refresh();
+      _realtimeService.broadcastDeliveryAssignmentCreated(created.toJson());
+      AppLogger.info(
+        '[Dispatch] outcome=assigned orderId=$orderId '
+        'driverId=$driverId method=manual',
+      );
+      await refresh();
+    } finally {
+      _assignInFlight = false;
+    }
     return true;
   }
 }
@@ -282,9 +332,16 @@ final dispatchControllerProvider =
     StateNotifierProvider<DispatchController, AsyncValue<DispatchBoardState>>((
       ref,
     ) {
-      return DispatchController(
+      final controller = DispatchController(
         ref.watch(deliveryRepositoryProvider),
         ref.watch(realtimeServiceProvider),
         ordersSource: () => ref.read(ordersControllerProvider),
       );
+      // Orders advancing (e.g. realtime lands an order on "ready") must
+      // re-classify the board without waiting for a manual pull-to-refresh.
+      ref.listen(
+        ordersControllerProvider,
+        (_, _) => controller.scheduleRefresh(),
+      );
+      return controller;
     });

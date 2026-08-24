@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,16 @@ class SpyRealtimeService extends RealtimeService {
   }
 }
 
+/// Feeds broadcasts straight back onto [events], mirroring the demo-mode
+/// socket loopback in [RealtimeService.send] (no open channel → loop-back),
+/// so synthetic deliveryAssignmentCreated events reach subscribers.
+class LoopbackRealtimeService extends SpyRealtimeService {
+  @override
+  void broadcastDeliveryAssignmentCreated(Map<String, dynamic> assignmentJson) {
+    sendEvent('deliveryAssignmentCreated', assignmentJson);
+  }
+}
+
 /// Always rejects writes while reads behave like the real in-memory store.
 class FailingCreateAssignmentRepository extends InMemoryDeliveryRepository {
   FailingCreateAssignmentRepository({super.seed});
@@ -72,6 +83,49 @@ class CountingBulkRepository extends InMemoryDeliveryRepository {
     return super.getAssignmentByOrderId(orderId);
   }
 }
+
+/// Counts refresh invocations so debounced scheduling can be asserted exactly.
+///
+/// The counter starts DISABLED on purpose: the base constructor dispatches
+/// `refresh()` virtually BEFORE this subclass's field initializers run, so a
+/// plain int field would be read while uninitialized. [markBaseline] arms it.
+class RefreshSpyDispatchController extends DispatchController {
+  RefreshSpyDispatchController(
+    super.repository,
+    super.realtimeService, {
+    required super.ordersSource,
+  });
+
+  int? _refreshCalls;
+
+  /// Refresh passes since [markBaseline] (excludes the constructor pass).
+  int get refreshCalls => _refreshCalls ?? 0;
+
+  void markBaseline() => _refreshCalls = 0;
+
+  @override
+  Future<void> refresh() {
+    if (_refreshCalls != null) _refreshCalls = _refreshCalls! + 1;
+    return super.refresh();
+  }
+}
+
+/// Mirrors the production dispatch wiring (repository + realtime + orders
+/// listener) against a [RefreshSpyDispatchController].
+final spyDispatchControllerProvider =
+    StateNotifierProvider<RefreshSpyDispatchController,
+        AsyncValue<DispatchBoardState>>((ref) {
+      final controller = RefreshSpyDispatchController(
+        ref.watch(deliveryRepositoryProvider),
+        ref.watch(realtimeServiceProvider),
+        ordersSource: () => ref.read(ordersControllerProvider),
+      );
+      ref.listen(
+        ordersControllerProvider,
+        (_, _) => controller.scheduleRefresh(),
+      );
+      return controller;
+    });
 
 OrderEntity buildOrder({
   required String id,
@@ -325,6 +379,134 @@ void main() {
       );
       expect(newDriverRows, hasLength(1));
       expect(newDriverRows.single.id, originalId);
+    });
+
+    test(
+      'orders mutated AFTER construction reclassify within the debounce window',
+      () {
+        fakeAsync((async) {
+          final repo = CountingBulkRepository(seed: const []);
+          // Disposed inside the fake zone so timer/subscription teardown
+          // happens against fake time; no addTearDown here.
+          final container = buildDispatchContainer(
+            orders: [buildOrder(id: 'ORD-A')],
+            repository: repo,
+          );
+
+          container.read(dispatchControllerProvider.notifier);
+          async.flushMicrotasks(); // settle constructor refresh
+          var board = container.read(dispatchControllerProvider).requireValue;
+          expect(board.undispatchedOrders.map((o) => o.id), ['ORD-A']);
+          final bulkCallsAfterCtorRefresh = repo.bulkCalls;
+
+          // Simulate realtime landing a new ready delivery order.
+          final mock =
+              container.read(ordersControllerProvider.notifier)
+                  as OrdersControllerMock;
+          mock.state = [...mock.state, buildOrder(id: 'ORD-F')];
+
+          // Halfway through the window: nothing re-classified yet.
+          async.elapse(const Duration(milliseconds: 200));
+          board = container.read(dispatchControllerProvider).requireValue;
+          expect(board.undispatchedOrders.map((o) => o.id), ['ORD-A']);
+
+          // Past the debounce window: exactly ONE extra refresh pass picked
+          // up the new order.
+          async.elapse(const Duration(milliseconds: 250));
+          async.flushMicrotasks();
+          board = container.read(dispatchControllerProvider).requireValue;
+          expect(board.undispatchedOrders.map((o) => o.id), [
+            'ORD-A',
+            'ORD-F',
+          ]);
+          expect(repo.bulkCalls, bulkCallsAfterCtorRefresh + 1);
+
+          container.dispose();
+        });
+      },
+    );
+
+    test(
+      'synthetic deliveryAssignmentCreated via realtime loopback triggers '
+      'a debounced refresh',
+      () {
+        fakeAsync((async) {
+          final realtime = LoopbackRealtimeService();
+          final repo = CountingBulkRepository(seed: const []);
+          final container = buildDispatchContainer(
+            orders: [buildOrder(id: 'ORD-A')],
+            repository: repo,
+            realtimeService: realtime,
+          );
+
+          container.read(dispatchControllerProvider.notifier);
+          async.flushMicrotasks(); // settle constructor refresh
+          final bulkCallsAfterCtorRefresh = repo.bulkCalls;
+
+          // A remote assignment lands while this client never called
+          // assignDriver — the events subscription must still re-classify.
+          realtime.broadcastDeliveryAssignmentCreated({
+            'id': 'ASG-synthetic-1',
+            'orderId': 'ORD-A',
+            'driverId': 'driver-remote',
+          });
+
+          async.elapse(const Duration(milliseconds: 450));
+          async.flushMicrotasks();
+
+          expect(repo.bulkCalls, bulkCallsAfterCtorRefresh + 1);
+
+          container.dispose();
+        });
+      },
+    );
+
+    test('a burst of 3 rapid order mutations collapses into EXACTLY one '
+        'debounced refresh pass', () {
+      fakeAsync((async) {
+        final container = createTestContainer(
+          additionalOverrides: [
+            ordersControllerProvider.overrideWith(
+              (ref) => OrdersControllerMock([buildOrder(id: 'ORD-A')]),
+            ),
+            spyDispatchControllerProvider,
+          ],
+        );
+
+        final controller = container.read(
+          spyDispatchControllerProvider.notifier,
+        );
+        async.flushMicrotasks(); // settle constructor refresh
+        controller.markBaseline();
+        expect(controller.refreshCalls, 0);
+
+        final mock =
+            container.read(ordersControllerProvider.notifier)
+                as OrdersControllerMock;
+        mock.state = [...mock.state, buildOrder(id: 'ORD-B')];
+        mock.state = [...mock.state, buildOrder(id: 'ORD-C')];
+        mock.state = [...mock.state, buildOrder(id: 'ORD-D')];
+
+        // Burst armed the debounce but the window keeps restarting; nothing
+        // fires before quiet.
+        expect(controller.refreshCalls, 0);
+
+        async.elapse(const Duration(milliseconds: 450));
+        async.flushMicrotasks();
+
+        expect(controller.refreshCalls, 1);
+        final board = container
+            .read(spyDispatchControllerProvider)
+            .requireValue;
+        expect(board.undispatchedOrders.map((o) => o.id), [
+          'ORD-A',
+          'ORD-B',
+          'ORD-C',
+          'ORD-D',
+        ]);
+
+        container.dispose();
+      });
     });
   });
 }
