@@ -1,5 +1,5 @@
-// coverage:ignore-file
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,320 +9,308 @@ part of 'order_item.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// dart format off
 T _$identity<T>(T value) => value;
-
-final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
-
-OrderItem _$OrderItemFromJson(Map<String, dynamic> json) {
-  return _OrderItem.fromJson(json);
-}
 
 /// @nodoc
 mixin _$OrderItem {
-  MenuItem get menuItem => throw _privateConstructorUsedError;
-  int get quantity => throw _privateConstructorUsedError;
-  List<MenuModifierOption> get selectedModifiers =>
-      throw _privateConstructorUsedError;
-  String? get specialNotes => throw _privateConstructorUsedError;
-  double get itemTotal => throw _privateConstructorUsedError;
-  @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-  DateTime get addedAt => throw _privateConstructorUsedError;
+
+ MenuItem get menuItem; int get quantity; List<MenuModifierOption> get selectedModifiers; String? get specialNotes; double get itemTotal;@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime get addedAt;
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OrderItemCopyWith<OrderItem> get copyWith => _$OrderItemCopyWithImpl<OrderItem>(this as OrderItem, _$identity);
 
   /// Serializes this OrderItem to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  Map<String, dynamic> toJson();
 
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $OrderItemCopyWith<OrderItem> get copyWith =>
-      throw _privateConstructorUsedError;
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OrderItem&&(identical(other.menuItem, menuItem) || other.menuItem == menuItem)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&const DeepCollectionEquality().equals(other.selectedModifiers, selectedModifiers)&&(identical(other.specialNotes, specialNotes) || other.specialNotes == specialNotes)&&(identical(other.itemTotal, itemTotal) || other.itemTotal == itemTotal)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,menuItem,quantity,const DeepCollectionEquality().hash(selectedModifiers),specialNotes,itemTotal,addedAt);
+
+@override
+String toString() {
+  return 'OrderItem(menuItem: $menuItem, quantity: $quantity, selectedModifiers: $selectedModifiers, specialNotes: $specialNotes, itemTotal: $itemTotal, addedAt: $addedAt)';
+}
+
+
 }
 
 /// @nodoc
-abstract class $OrderItemCopyWith<$Res> {
-  factory $OrderItemCopyWith(OrderItem value, $Res Function(OrderItem) then) =
-      _$OrderItemCopyWithImpl<$Res, OrderItem>;
-  @useResult
-  $Res call({
-    MenuItem menuItem,
-    int quantity,
-    List<MenuModifierOption> selectedModifiers,
-    String? specialNotes,
-    double itemTotal,
-    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-    DateTime addedAt,
-  });
+abstract mixin class $OrderItemCopyWith<$Res>  {
+  factory $OrderItemCopyWith(OrderItem value, $Res Function(OrderItem) _then) = _$OrderItemCopyWithImpl;
+@useResult
+$Res call({
+ MenuItem menuItem, int quantity, List<MenuModifierOption> selectedModifiers, String? specialNotes, double itemTotal,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime addedAt
+});
 
-  $MenuItemCopyWith<$Res> get menuItem;
+
+$MenuItemCopyWith<$Res> get menuItem;
+
 }
-
 /// @nodoc
-class _$OrderItemCopyWithImpl<$Res, $Val extends OrderItem>
+class _$OrderItemCopyWithImpl<$Res>
     implements $OrderItemCopyWith<$Res> {
-  _$OrderItemCopyWithImpl(this._value, this._then);
+  _$OrderItemCopyWithImpl(this._self, this._then);
 
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
+  final OrderItem _self;
+  final $Res Function(OrderItem) _then;
 
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? menuItem = null,
-    Object? quantity = null,
-    Object? selectedModifiers = null,
-    Object? specialNotes = freezed,
-    Object? itemTotal = null,
-    Object? addedAt = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            menuItem: null == menuItem
-                ? _value.menuItem
-                : menuItem // ignore: cast_nullable_to_non_nullable
-                      as MenuItem,
-            quantity: null == quantity
-                ? _value.quantity
-                : quantity // ignore: cast_nullable_to_non_nullable
-                      as int,
-            selectedModifiers: null == selectedModifiers
-                ? _value.selectedModifiers
-                : selectedModifiers // ignore: cast_nullable_to_non_nullable
-                      as List<MenuModifierOption>,
-            specialNotes: freezed == specialNotes
-                ? _value.specialNotes
-                : specialNotes // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            itemTotal: null == itemTotal
-                ? _value.itemTotal
-                : itemTotal // ignore: cast_nullable_to_non_nullable
-                      as double,
-            addedAt: null == addedAt
-                ? _value.addedAt
-                : addedAt // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
-          )
-          as $Val,
-    );
-  }
-
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $MenuItemCopyWith<$Res> get menuItem {
-    return $MenuItemCopyWith<$Res>(_value.menuItem, (value) {
-      return _then(_value.copyWith(menuItem: value) as $Val);
-    });
-  }
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? menuItem = null,Object? quantity = null,Object? selectedModifiers = null,Object? specialNotes = freezed,Object? itemTotal = null,Object? addedAt = null,}) {
+  return _then(_self.copyWith(
+menuItem: null == menuItem ? _self.menuItem : menuItem // ignore: cast_nullable_to_non_nullable
+as MenuItem,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as int,selectedModifiers: null == selectedModifiers ? _self.selectedModifiers : selectedModifiers // ignore: cast_nullable_to_non_nullable
+as List<MenuModifierOption>,specialNotes: freezed == specialNotes ? _self.specialNotes : specialNotes // ignore: cast_nullable_to_non_nullable
+as String?,itemTotal: null == itemTotal ? _self.itemTotal : itemTotal // ignore: cast_nullable_to_non_nullable
+as double,addedAt: null == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
 }
-
-/// @nodoc
-abstract class _$$OrderItemImplCopyWith<$Res>
-    implements $OrderItemCopyWith<$Res> {
-  factory _$$OrderItemImplCopyWith(
-    _$OrderItemImpl value,
-    $Res Function(_$OrderItemImpl) then,
-  ) = __$$OrderItemImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    MenuItem menuItem,
-    int quantity,
-    List<MenuModifierOption> selectedModifiers,
-    String? specialNotes,
-    double itemTotal,
-    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-    DateTime addedAt,
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MenuItemCopyWith<$Res> get menuItem {
+  
+  return $MenuItemCopyWith<$Res>(_self.menuItem, (value) {
+    return _then(_self.copyWith(menuItem: value));
   });
-
-  @override
-  $MenuItemCopyWith<$Res> get menuItem;
+}
 }
 
-/// @nodoc
-class __$$OrderItemImplCopyWithImpl<$Res>
-    extends _$OrderItemCopyWithImpl<$Res, _$OrderItemImpl>
-    implements _$$OrderItemImplCopyWith<$Res> {
-  __$$OrderItemImplCopyWithImpl(
-    _$OrderItemImpl _value,
-    $Res Function(_$OrderItemImpl) _then,
-  ) : super(_value, _then);
 
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? menuItem = null,
-    Object? quantity = null,
-    Object? selectedModifiers = null,
-    Object? specialNotes = freezed,
-    Object? itemTotal = null,
-    Object? addedAt = null,
-  }) {
-    return _then(
-      _$OrderItemImpl(
-        menuItem: null == menuItem
-            ? _value.menuItem
-            : menuItem // ignore: cast_nullable_to_non_nullable
-                  as MenuItem,
-        quantity: null == quantity
-            ? _value.quantity
-            : quantity // ignore: cast_nullable_to_non_nullable
-                  as int,
-        selectedModifiers: null == selectedModifiers
-            ? _value._selectedModifiers
-            : selectedModifiers // ignore: cast_nullable_to_non_nullable
-                  as List<MenuModifierOption>,
-        specialNotes: freezed == specialNotes
-            ? _value.specialNotes
-            : specialNotes // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        itemTotal: null == itemTotal
-            ? _value.itemTotal
-            : itemTotal // ignore: cast_nullable_to_non_nullable
-                  as double,
-        addedAt: null == addedAt
-            ? _value.addedAt
-            : addedAt // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
-      ),
-    );
-  }
+/// Adds pattern-matching-related methods to [OrderItem].
+extension OrderItemPatterns on OrderItem {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OrderItem value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OrderItem() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OrderItem value)  $default,){
+final _that = this;
+switch (_that) {
+case _OrderItem():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OrderItem value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OrderItem() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( MenuItem menuItem,  int quantity,  List<MenuModifierOption> selectedModifiers,  String? specialNotes,  double itemTotal, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime addedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OrderItem() when $default != null:
+return $default(_that.menuItem,_that.quantity,_that.selectedModifiers,_that.specialNotes,_that.itemTotal,_that.addedAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( MenuItem menuItem,  int quantity,  List<MenuModifierOption> selectedModifiers,  String? specialNotes,  double itemTotal, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime addedAt)  $default,) {final _that = this;
+switch (_that) {
+case _OrderItem():
+return $default(_that.menuItem,_that.quantity,_that.selectedModifiers,_that.specialNotes,_that.itemTotal,_that.addedAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( MenuItem menuItem,  int quantity,  List<MenuModifierOption> selectedModifiers,  String? specialNotes,  double itemTotal, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)  DateTime addedAt)?  $default,) {final _that = this;
+switch (_that) {
+case _OrderItem() when $default != null:
+return $default(_that.menuItem,_that.quantity,_that.selectedModifiers,_that.specialNotes,_that.itemTotal,_that.addedAt);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 
 @JsonSerializable(explicitToJson: true)
-class _$OrderItemImpl extends _OrderItem {
-  const _$OrderItemImpl({
-    required this.menuItem,
-    required this.quantity,
-    final List<MenuModifierOption> selectedModifiers =
-        const <MenuModifierOption>[],
-    this.specialNotes,
-    this.itemTotal = 0,
-    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-    required this.addedAt,
-  }) : _selectedModifiers = selectedModifiers,
-       super._();
+class _OrderItem extends OrderItem {
+  const _OrderItem({required this.menuItem, required this.quantity, final  List<MenuModifierOption> selectedModifiers = const <MenuModifierOption>[], this.specialNotes, this.itemTotal = 0, @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) required this.addedAt}): _selectedModifiers = selectedModifiers,super._();
+  factory _OrderItem.fromJson(Map<String, dynamic> json) => _$OrderItemFromJson(json);
 
-  factory _$OrderItemImpl.fromJson(Map<String, dynamic> json) =>
-      _$$OrderItemImplFromJson(json);
-
-  @override
-  final MenuItem menuItem;
-  @override
-  final int quantity;
-  final List<MenuModifierOption> _selectedModifiers;
-  @override
-  @JsonKey()
-  List<MenuModifierOption> get selectedModifiers {
-    if (_selectedModifiers is EqualUnmodifiableListView)
-      return _selectedModifiers;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_selectedModifiers);
-  }
-
-  @override
-  final String? specialNotes;
-  @override
-  @JsonKey()
-  final double itemTotal;
-  @override
-  @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-  final DateTime addedAt;
-
-  @override
-  String toString() {
-    return 'OrderItem(menuItem: $menuItem, quantity: $quantity, selectedModifiers: $selectedModifiers, specialNotes: $specialNotes, itemTotal: $itemTotal, addedAt: $addedAt)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$OrderItemImpl &&
-            (identical(other.menuItem, menuItem) ||
-                other.menuItem == menuItem) &&
-            (identical(other.quantity, quantity) ||
-                other.quantity == quantity) &&
-            const DeepCollectionEquality().equals(
-              other._selectedModifiers,
-              _selectedModifiers,
-            ) &&
-            (identical(other.specialNotes, specialNotes) ||
-                other.specialNotes == specialNotes) &&
-            (identical(other.itemTotal, itemTotal) ||
-                other.itemTotal == itemTotal) &&
-            (identical(other.addedAt, addedAt) || other.addedAt == addedAt));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    menuItem,
-    quantity,
-    const DeepCollectionEquality().hash(_selectedModifiers),
-    specialNotes,
-    itemTotal,
-    addedAt,
-  );
-
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$OrderItemImplCopyWith<_$OrderItemImpl> get copyWith =>
-      __$$OrderItemImplCopyWithImpl<_$OrderItemImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$OrderItemImplToJson(this);
-  }
+@override final  MenuItem menuItem;
+@override final  int quantity;
+ final  List<MenuModifierOption> _selectedModifiers;
+@override@JsonKey() List<MenuModifierOption> get selectedModifiers {
+  if (_selectedModifiers is EqualUnmodifiableListView) return _selectedModifiers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_selectedModifiers);
 }
 
-abstract class _OrderItem extends OrderItem {
-  const factory _OrderItem({
-    required final MenuItem menuItem,
-    required final int quantity,
-    final List<MenuModifierOption> selectedModifiers,
-    final String? specialNotes,
-    final double itemTotal,
-    @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-    required final DateTime addedAt,
-  }) = _$OrderItemImpl;
-  const _OrderItem._() : super._();
+@override final  String? specialNotes;
+@override@JsonKey() final  double itemTotal;
+@override@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) final  DateTime addedAt;
 
-  factory _OrderItem.fromJson(Map<String, dynamic> json) =
-      _$OrderItemImpl.fromJson;
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OrderItemCopyWith<_OrderItem> get copyWith => __$OrderItemCopyWithImpl<_OrderItem>(this, _$identity);
 
-  @override
-  MenuItem get menuItem;
-  @override
-  int get quantity;
-  @override
-  List<MenuModifierOption> get selectedModifiers;
-  @override
-  String? get specialNotes;
-  @override
-  double get itemTotal;
-  @override
-  @JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson)
-  DateTime get addedAt;
-
-  /// Create a copy of OrderItem
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$OrderItemImplCopyWith<_$OrderItemImpl> get copyWith =>
-      throw _privateConstructorUsedError;
+@override
+Map<String, dynamic> toJson() {
+  return _$OrderItemToJson(this, );
 }
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OrderItem&&(identical(other.menuItem, menuItem) || other.menuItem == menuItem)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&const DeepCollectionEquality().equals(other._selectedModifiers, _selectedModifiers)&&(identical(other.specialNotes, specialNotes) || other.specialNotes == specialNotes)&&(identical(other.itemTotal, itemTotal) || other.itemTotal == itemTotal)&&(identical(other.addedAt, addedAt) || other.addedAt == addedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,menuItem,quantity,const DeepCollectionEquality().hash(_selectedModifiers),specialNotes,itemTotal,addedAt);
+
+@override
+String toString() {
+  return 'OrderItem(menuItem: $menuItem, quantity: $quantity, selectedModifiers: $selectedModifiers, specialNotes: $specialNotes, itemTotal: $itemTotal, addedAt: $addedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OrderItemCopyWith<$Res> implements $OrderItemCopyWith<$Res> {
+  factory _$OrderItemCopyWith(_OrderItem value, $Res Function(_OrderItem) _then) = __$OrderItemCopyWithImpl;
+@override @useResult
+$Res call({
+ MenuItem menuItem, int quantity, List<MenuModifierOption> selectedModifiers, String? specialNotes, double itemTotal,@JsonKey(fromJson: dateTimeFromJson, toJson: dateTimeToJson) DateTime addedAt
+});
+
+
+@override $MenuItemCopyWith<$Res> get menuItem;
+
+}
+/// @nodoc
+class __$OrderItemCopyWithImpl<$Res>
+    implements _$OrderItemCopyWith<$Res> {
+  __$OrderItemCopyWithImpl(this._self, this._then);
+
+  final _OrderItem _self;
+  final $Res Function(_OrderItem) _then;
+
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? menuItem = null,Object? quantity = null,Object? selectedModifiers = null,Object? specialNotes = freezed,Object? itemTotal = null,Object? addedAt = null,}) {
+  return _then(_OrderItem(
+menuItem: null == menuItem ? _self.menuItem : menuItem // ignore: cast_nullable_to_non_nullable
+as MenuItem,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as int,selectedModifiers: null == selectedModifiers ? _self._selectedModifiers : selectedModifiers // ignore: cast_nullable_to_non_nullable
+as List<MenuModifierOption>,specialNotes: freezed == specialNotes ? _self.specialNotes : specialNotes // ignore: cast_nullable_to_non_nullable
+as String?,itemTotal: null == itemTotal ? _self.itemTotal : itemTotal // ignore: cast_nullable_to_non_nullable
+as double,addedAt: null == addedAt ? _self.addedAt : addedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+/// Create a copy of OrderItem
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$MenuItemCopyWith<$Res> get menuItem {
+  
+  return $MenuItemCopyWith<$Res>(_self.menuItem, (value) {
+    return _then(_self.copyWith(menuItem: value));
+  });
+}
+}
+
+// dart format on

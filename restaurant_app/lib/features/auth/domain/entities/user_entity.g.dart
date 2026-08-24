@@ -6,20 +6,19 @@ part of 'user_entity.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$UserEntityImpl _$$UserEntityImplFromJson(Map<String, dynamic> json) =>
-    _$UserEntityImpl(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String,
-      role: _roleFromJson(json['role'] as String?),
-      restaurantId: json['restaurantId'] as String?,
-      token: json['token'] as String?,
-      createdAt: dateTimeFromJson(json['createdAt']),
-      isActive: json['isActive'] as bool? ?? true,
-    );
+_UserEntity _$UserEntityFromJson(Map<String, dynamic> json) => _UserEntity(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  email: json['email'] as String,
+  phone: json['phone'] as String,
+  role: _roleFromJson(json['role'] as String?),
+  restaurantId: json['restaurantId'] as String?,
+  token: json['token'] as String?,
+  createdAt: dateTimeFromJson(json['createdAt']),
+  isActive: json['isActive'] as bool? ?? true,
+);
 
-Map<String, dynamic> _$$UserEntityImplToJson(_$UserEntityImpl instance) =>
+Map<String, dynamic> _$UserEntityToJson(_UserEntity instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,

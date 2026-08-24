@@ -6,8 +6,8 @@ part of 'sales_metrics.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SalesMetricsImpl _$$SalesMetricsImplFromJson(Map<String, dynamic> json) =>
-    _$SalesMetricsImpl(
+_SalesMetrics _$SalesMetricsFromJson(Map<String, dynamic> json) =>
+    _SalesMetrics(
       totalSales: (json['totalSales'] as num?)?.toDouble() ?? 0,
       totalOrders: (json['totalOrders'] as num?)?.toInt() ?? 0,
       averageOrderValue: (json['averageOrderValue'] as num?)?.toDouble() ?? 0,
@@ -30,7 +30,7 @@ _$SalesMetricsImpl _$$SalesMetricsImplFromJson(Map<String, dynamic> json) =>
       prepTimeAverage: (json['prepTimeAverage'] as num?)?.toDouble() ?? 0,
     );
 
-Map<String, dynamic> _$$SalesMetricsImplToJson(_$SalesMetricsImpl instance) =>
+Map<String, dynamic> _$SalesMetricsToJson(_SalesMetrics instance) =>
     <String, dynamic>{
       'totalSales': instance.totalSales,
       'totalOrders': instance.totalOrders,
