@@ -12,6 +12,7 @@ import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/alerts_controller.dart';
+import '../controllers/dispatch_controller.dart';
 import '../controllers/metrics_controller.dart';
 import '../widgets/peak_hours_chart.dart';
 import '../widgets/sales_line_chart.dart';
@@ -154,6 +155,10 @@ class ManagerDashboardPage extends ConsumerWidget {
                         ],
                       ),
                     ],
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Dispatch health ──────────────────────────────────────
+                    const _DispatchHealthCard(),
                     const SizedBox(height: AppSpacing.lg),
                     Text(
                       AppConstants.metricsOrdersByStatus,
@@ -547,6 +552,120 @@ class _MetricCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Dispatch-health strip between the KPI cards and Quick Actions: live
+/// pending-orders / failed-assignments / available-drivers counts that taps
+/// through to the manual dispatch board.
+class _DispatchHealthCard extends ConsumerWidget {
+  const _DispatchHealthCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final board = ref.watch(dispatchControllerProvider);
+
+    return AnimatedPressCard(
+      key: const ValueKey('dispatch_health_card'),
+      borderRadius: AppRadius.md,
+      onTap: () => context.push('/manager/dispatch'),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: board.when(
+          loading: () => const Row(
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: AppSpacing.sm),
+              Text(AppConstants.dispatchHealthLoading),
+            ],
+          ),
+          error: (_, _) => Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 18,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(
+                child: Text(AppConstants.dispatchHealthUnavailable),
+              ),
+            ],
+          ),
+          data: (state) => Row(
+            children: [
+              Expanded(
+                child: _DispatchHealthStat(
+                  label: AppConstants.dispatchHealthPendingOrders,
+                  value: '${state.undispatchedOrders.length}',
+                  color: Colors.orange.shade800,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _DispatchHealthStat(
+                  label: AppConstants.dispatchHealthFailedAssignments,
+                  value: '${state.failedAssignments.length}',
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _DispatchHealthStat(
+                  label: AppConstants.dispatchHealthAvailableDrivers,
+                  value: '${state.availableDrivers.length}',
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One labeled count inside [_DispatchHealthCard].
+class _DispatchHealthStat extends StatelessWidget {
+  const _DispatchHealthStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }

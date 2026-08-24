@@ -158,6 +158,11 @@ abstract final class AppConstants {
   static const String metricsOverview = 'نظرة عامة';
   static const String metricsItemsSold = 'الأصناف الأكثر مبيعاً';
   static const String metricsNoData = 'لا توجد بيانات بعد';
+  static const String dispatchHealthPendingOrders = 'طلبات بانتظار سواق';
+  static const String dispatchHealthFailedAssignments = 'تكليفات فاشلة';
+  static const String dispatchHealthAvailableDrivers = 'سواق متاحون';
+  static const String dispatchHealthLoading = 'جارٍ تحميل حالة التوصيل…';
+  static const String dispatchHealthUnavailable = 'تعذر تحميل حالة التوصيل';
 
   // ── Driver / Delivery ────────────────────────────────────────────────────
   static const String driverTitle = 'شاشة السائق';
