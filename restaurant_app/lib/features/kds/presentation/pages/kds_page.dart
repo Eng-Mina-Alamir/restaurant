@@ -429,6 +429,14 @@ class _OrderCard extends StatelessWidget {
       _ => AppConstants.ok,
     };
 
+    // Semantic keys so tests can target the advance action without fragile
+    // Arabic text lookups (the labels also appear as column titles).
+    final actionKey = switch (order.status) {
+      OrderStatus.pending => const ValueKey<String>('kds_action_preparing'),
+      OrderStatus.ready => const ValueKey<String>('kds_action_resume'),
+      _ => null,
+    };
+
     // Guarded undo: only legal single-step backward moves offer a revert
     // (ready→preparing, served→ready); terminal statuses never do.
     final revertTarget = _revertTargetOf(order.status);
@@ -617,6 +625,7 @@ class _OrderCard extends StatelessWidget {
                 ],
                 Expanded(
                   child: FilledButton.tonal(
+                    key: actionKey,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         vertical: AppSpacing.xs,

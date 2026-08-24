@@ -47,6 +47,10 @@ Future<void> main() async {
   Future<void> appRunner() async {
     await runZonedGuarded(
       () async {
+        // Cache setup is independent of the backend, so start it now and
+        // await it below; both initializations then run concurrently.
+        final cacheFuture = initAppCache();
+
         // Initialize Supabase backend
         try {
           await Supabase.initialize(
@@ -62,7 +66,7 @@ Future<void> main() async {
           );
         }
 
-        final cache = await initAppCache();
+        final cache = await cacheFuture;
 
         runApp(
           ProviderScope(

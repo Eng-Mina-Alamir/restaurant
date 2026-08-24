@@ -173,6 +173,11 @@ class _OrderStatusCard extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
+                  // Semantic key for the pending -> 'مؤكد' confirmation
+                  // action, so tests avoid the ambiguous Arabic text lookup.
+                  key: next == OrderStatus.confirmed
+                      ? const ValueKey<String>('orders_confirm_action')
+                      : null,
                   onPressed: () async {
                     await ref
                         .read(ordersControllerProvider.notifier)
