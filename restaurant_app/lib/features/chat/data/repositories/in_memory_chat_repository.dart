@@ -30,8 +30,17 @@ class InMemoryChatRepository implements ChatRepository {
   List<ChatMessage> messagesFor(String orderId) =>
       List.unmodifiable(_store[orderId] ?? const []);
 
-  List<ChatMessage> _snapshot(String orderId) =>
-      List.unmodifiable(_store[orderId] ?? const <ChatMessage>[]);
+  List<ChatMessage> _snapshot(String orderId) {
+    final all = _store[orderId] ?? const <ChatMessage>[];
+    // Cap to the newest [ChatRepository.historyPageSize] window; the store is
+    // append-ordered (oldest first), so slicing the tail preserves ordering.
+    if (all.length <= ChatRepository.historyPageSize) {
+      return List.unmodifiable(all);
+    }
+    return List.unmodifiable(
+      all.sublist(all.length - ChatRepository.historyPageSize),
+    );
+  }
 
   StreamController<List<ChatMessage>> _busFor(String orderId) =>
       _buses.putIfAbsent(
@@ -61,14 +70,18 @@ class InMemoryChatRepository implements ChatRepository {
     return Right(persisted);
   }
 
+  /// Loads the conversation history for an order, oldest first.
+  ///
+  /// Returns at most the newest [ChatRepository.historyPageSize] messages.
   @override
   Future<Either<Failure, List<ChatMessage>>> history(String orderId) async {
     return Right(_snapshot(orderId));
   }
 
-  /// History-first feed: the current snapshot is delivered synchronously on
-  /// listen (buffered by the single-subscription wrapper), then live updates
-  /// are forwarded from the per-order broadcast bus until cancellation.
+  /// History-first feed: the newest-window snapshot (capped like [history])
+  /// is delivered synchronously on listen (buffered by the single-subscription
+  /// wrapper), then live updates are forwarded from the per-order broadcast
+  /// bus until cancellation.
   @override
   Stream<List<ChatMessage>> watch(String orderId) {
     late final StreamController<List<ChatMessage>> out;

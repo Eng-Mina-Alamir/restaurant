@@ -73,6 +73,11 @@ class SupabaseChatRepository implements ChatRepository {
     }
   }
 
+  /// Loads the conversation history for an order, oldest first.
+  ///
+  /// Capped at the newest [ChatRepository.historyPageSize] messages: the
+  /// query fetches newest-first (DESC + LIMIT) for efficiency, then the rows
+  /// are reversed to preserve the oldest-first contract.
   @override
   Future<Either<Failure, List<ChatMessage>>> history(String orderId) async {
     try {
@@ -85,13 +90,14 @@ class SupabaseChatRepository implements ChatRepository {
           .from(SupabaseConfig.chatMessagesTable)
           .select()
           .eq('order_id', sanitized)
-          .order('created_at', ascending: true);
+          .order('created_at', ascending: false)
+          .limit(ChatRepository.historyPageSize);
       final messages = (response as List)
           .map(
             (raw) => ChatMessage.fromMap(Map<String, dynamic>.from(raw as Map)),
           )
           .toList();
-      return Right<Failure, List<ChatMessage>>(messages);
+      return Right<Failure, List<ChatMessage>>(messages.reversed.toList());
     } catch (e) {
       AppLogger.error(
         'Supabase chat history error: $e (orderId=$orderId)',

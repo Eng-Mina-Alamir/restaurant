@@ -2,6 +2,7 @@
 
 import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
 import 'package:restaurant_app/features/chat/domain/entities/chat_message.dart';
+import 'package:restaurant_app/features/chat/domain/repositories/chat_repository.dart';
 
 ChatMessage msg({
   String id = '',
@@ -106,6 +107,51 @@ void main() {
       expect(received, hasLength(2));
       expect(received.last.map((m) => m.id),
           ['seed-1', 'seed-2', 'live-3']);
+
+      await sub.cancel();
+    });
+
+    test('history caps at historyPageSize, keeping the newest window',
+        () async {
+      const total = ChatRepository.historyPageSize * 2; // 100
+      final bigRepo = InMemoryChatRepository(
+        seed: List.generate(total, (i) => msg(id: 'seed-${i + 1}')),
+      );
+
+      final page = await bigRepo.history('ORD-1');
+      final messages = page.when(
+        onLeft: (f) => fail('history failed: ${f.message}'),
+        onRight: (l) => l,
+      );
+
+      // Exactly one page: messages #51..#100 of 100, oldest first — i.e. the
+      // FIRST returned id is message #51 of N.
+      expect(messages, hasLength(ChatRepository.historyPageSize));
+      expect(messages.first.id, 'seed-${total - ChatRepository.historyPageSize + 1}');
+      expect(messages.last.id, 'seed-$total');
+      expect(
+        messages.map((m) => m.id).toList(),
+        List.generate(
+          ChatRepository.historyPageSize,
+          (i) => 'seed-${total - ChatRepository.historyPageSize + i + 1}',
+        ),
+      );
+    });
+
+    test('watch snapshot is capped to the newest window', () async {
+      const total = ChatRepository.historyPageSize * 2; // 100
+      final bigRepo = InMemoryChatRepository(
+        seed: List.generate(total, (i) => msg(id: 'seed-${i + 1}')),
+      );
+
+      final received = <List<ChatMessage>>[];
+      final sub = bigRepo.watch('ORD-1').listen(received.add);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, hasLength(1));
+      expect(received.first, hasLength(ChatRepository.historyPageSize));
+      expect(received.first.first.id, 'seed-51');
+      expect(received.first.last.id, 'seed-$total');
 
       await sub.cancel();
     });
