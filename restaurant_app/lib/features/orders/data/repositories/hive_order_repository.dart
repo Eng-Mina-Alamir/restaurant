@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/entities/order_status_log_entry.dart';
 import '../../domain/repositories/order_repository.dart';
+import '../../../../core/utils/logger.dart';
 
 /// Hive-persisted [OrderRepository].
 ///
@@ -30,7 +31,10 @@ class HiveOrderRepository implements OrderRepository {
       await _saveAll(all);
       return Right<Failure, OrderEntity>(order);
     } catch (e) {
-      return Left<Failure, OrderEntity>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveOrderRepository.createOrder failed for order ${order.id}: $e',
+      );
+      return const Left<Failure, OrderEntity>(CacheFailure());
     }
   }
 
@@ -39,7 +43,8 @@ class HiveOrderRepository implements OrderRepository {
     try {
       return Right<Failure, List<OrderEntity>>(await _loadAll());
     } catch (e) {
-      return Left<Failure, List<OrderEntity>>(CacheFailure(e.toString()));
+      AppLogger.warning('HiveOrderRepository.getOrders failed to load: $e');
+      return const Left<Failure, List<OrderEntity>>(CacheFailure());
     }
   }
 
@@ -58,7 +63,10 @@ class HiveOrderRepository implements OrderRepository {
       await _saveAll(all);
       return const Right(null);
     } catch (e) {
-      return Left<Failure, void>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveOrderRepository.updateOrderStatus failed for order $orderId: $e',
+      );
+      return const Left<Failure, void>(CacheFailure());
     }
   }
 
@@ -87,7 +95,10 @@ class HiveOrderRepository implements OrderRepository {
       await _saveAll(all);
       return Right<Failure, OrderEntity>(claimed);
     } catch (e) {
-      return Left<Failure, OrderEntity>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveOrderRepository.claimOrder failed for order $orderId: $e',
+      );
+      return const Left<Failure, OrderEntity>(CacheFailure());
     }
   }
 
@@ -135,7 +146,10 @@ class HiveOrderRepository implements OrderRepository {
       ));
       return Right<Failure, OrderEntity>(updated);
     } catch (e) {
-      return Left<Failure, OrderEntity>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveOrderRepository.revertStatus failed for order $orderId: $e',
+      );
+      return const Left<Failure, OrderEntity>(CacheFailure());
     }
   }
 
@@ -148,9 +162,10 @@ class HiveOrderRepository implements OrderRepository {
       final trail = _statusLog.where((e) => e.orderId == orderId).toList();
       return Right<Failure, List<OrderStatusLogEntry>>(trail);
     } catch (e) {
-      return Left<Failure, List<OrderStatusLogEntry>>(
-        CacheFailure(e.toString()),
+      AppLogger.warning(
+        'HiveOrderRepository.getAuditTrail failed for order $orderId: $e',
       );
+      return const Left<Failure, List<OrderStatusLogEntry>>(CacheFailure());
     }
   }
 

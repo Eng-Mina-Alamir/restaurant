@@ -325,8 +325,8 @@ class SupabaseOrderRepository implements OrderRepository {
       return Right<Failure, List<OrderStatusLogEntry>>(trail);
     } catch (e) {
       AppLogger.error('Supabase getAuditTrail error: $e');
-      return const Left<Failure, List<OrderStatusLogEntry>>(
-        ServerFailure('فشل تحميل سجل الحالة'),
+      return Left<Failure, List<OrderStatusLogEntry>>(
+        ServerFailure('فشل تحميل سجل الحالة: $e'),
       );
     }
   }

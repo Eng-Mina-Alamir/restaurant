@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/entities/driver_info.dart';
 import '../../domain/repositories/delivery_repository.dart';
+import '../../../../core/utils/logger.dart';
 import '../delivery_seed_data.dart';
 
 /// Hive-persisted [DeliveryRepository].
@@ -27,9 +28,10 @@ class HiveDeliveryRepository implements DeliveryRepository {
       final list = all.where((a) => a.driverId == driverId).toList();
       return Right<Failure, List<DeliveryAssignment>>(list);
     } catch (e) {
-      return Left<Failure, List<DeliveryAssignment>>(
-        CacheFailure(e.toString()),
+      AppLogger.warning(
+        'HiveDeliveryRepository.getAssignments failed for driver $driverId: $e',
       );
+      return const Left<Failure, List<DeliveryAssignment>>(CacheFailure());
     }
   }
 
@@ -48,7 +50,11 @@ class HiveDeliveryRepository implements DeliveryRepository {
       await _cache.writeList(cacheKey, all.map((a) => a.toJson()).toList());
       return Right<Failure, DeliveryAssignment>(assignment);
     } catch (e) {
-      return Left<Failure, DeliveryAssignment>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveDeliveryRepository.updateAssignment failed for '
+        'assignment ${assignment.id}: $e',
+      );
+      return const Left<Failure, DeliveryAssignment>(CacheFailure());
     }
   }
 
@@ -72,7 +78,11 @@ class HiveDeliveryRepository implements DeliveryRepository {
       }
       return Right<Failure, DeliveryAssignment?>(match);
     } catch (e) {
-      return Left<Failure, DeliveryAssignment?>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveDeliveryRepository.getAssignmentByOrderId failed for '
+        'order $orderId: $e',
+      );
+      return const Left<Failure, DeliveryAssignment?>(CacheFailure());
     }
   }
 
@@ -87,9 +97,10 @@ class HiveDeliveryRepository implements DeliveryRepository {
           all.where((a) => !settled.contains(a.deliveryStatus)).toList();
       return Right<Failure, List<DeliveryAssignment>>(list);
     } catch (e) {
-      return Left<Failure, List<DeliveryAssignment>>(
-        CacheFailure(e.toString()),
+      AppLogger.warning(
+        'HiveDeliveryRepository.getActiveAssignments failed to load: $e',
       );
+      return const Left<Failure, List<DeliveryAssignment>>(CacheFailure());
     }
   }
 
@@ -119,7 +130,10 @@ class HiveDeliveryRepository implements DeliveryRepository {
           .toList();
       return Right<Failure, List<DriverInfo>>(drivers);
     } catch (e) {
-      return Left<Failure, List<DriverInfo>>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveDeliveryRepository.getAvailableDrivers failed to load: $e',
+      );
+      return const Left<Failure, List<DriverInfo>>(CacheFailure());
     }
   }
 

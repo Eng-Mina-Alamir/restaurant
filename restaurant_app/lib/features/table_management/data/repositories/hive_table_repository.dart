@@ -3,6 +3,7 @@ import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
+import '../../../../core/utils/logger.dart';
 import '../table_seed_data.dart';
 
 /// Hive-persisted [TableRepository].
@@ -22,7 +23,8 @@ class HiveTableRepository implements TableRepository {
       final list = await _load();
       return Right<Failure, List<RestaurantTable>>(list);
     } catch (e) {
-      return Left<Failure, List<RestaurantTable>>(CacheFailure(e.toString()));
+      AppLogger.warning('HiveTableRepository.getTables failed to load: $e');
+      return const Left<Failure, List<RestaurantTable>>(CacheFailure());
     }
   }
 
@@ -41,7 +43,10 @@ class HiveTableRepository implements TableRepository {
       await _cache.writeList(cacheKey, all.map((t) => t.toJson()).toList());
       return Right<Failure, RestaurantTable>(table);
     } catch (e) {
-      return Left<Failure, RestaurantTable>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveTableRepository.updateTable failed for table ${table.id}: $e',
+      );
+      return const Left<Failure, RestaurantTable>(CacheFailure());
     }
   }
 
@@ -55,7 +60,10 @@ class HiveTableRepository implements TableRepository {
       await _cache.writeList(cacheKey, all.map((t) => t.toJson()).toList());
       return Right<Failure, RestaurantTable>(table);
     } catch (e) {
-      return Left<Failure, RestaurantTable>(CacheFailure(e.toString()));
+      AppLogger.warning(
+        'HiveTableRepository.addTable failed for table ${table.id}: $e',
+      );
+      return const Left<Failure, RestaurantTable>(CacheFailure());
     }
   }
 
@@ -67,7 +75,8 @@ class HiveTableRepository implements TableRepository {
       await _cache.writeList(cacheKey, all.map((t) => t.toJson()).toList());
       return const Right<Failure, void>(null);
     } catch (e) {
-      return Left<Failure, void>(CacheFailure(e.toString()));
+      AppLogger.warning('HiveTableRepository.deleteTable failed for $id: $e');
+      return const Left<Failure, void>(CacheFailure());
     }
   }
 
