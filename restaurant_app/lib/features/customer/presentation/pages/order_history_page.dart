@@ -17,12 +17,37 @@ import '../../../ratings/presentation/widgets/rating_dialog.dart';
 
 /// Customer order history: lists past orders and lets the user re-order (add
 /// the full contents of a past order back to the cart).
-class OrderHistoryPage extends ConsumerWidget {
+class OrderHistoryPage extends ConsumerStatefulWidget {
   const OrderHistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrderHistoryPage> createState() => _OrderHistoryPageState();
+}
+
+class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
+  /// How many of the newest orders are currently rendered.
+  ///
+  /// Display-window rationale: [ordersControllerProvider] accumulates every
+  /// order of the session — each realtime orderCreated appends to it, and
+  /// terminal (completed/cancelled) orders are retained — so rendering the
+  /// entire list would make this page progressively heavier the longer the
+  /// app runs. The window is therefore bounded here: newest
+  /// [AppConstants.orderHistoryInitialWindow] orders up front, extended by
+  /// [AppConstants.orderHistoryPageSize] per "عرض المزيد" tap. This is purely
+  /// presentational; the controller state below is never trimmed or mutated.
+  int _visibleCount = AppConstants.orderHistoryInitialWindow;
+
+  @override
+  Widget build(BuildContext context) {
     final orders = ref.watch(ordersControllerProvider);
+
+    // Newest-first so the bounded window always shows the most recent orders.
+    final sortedNewestFirst = [...orders]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final visibleOrders = sortedNewestFirst
+        .take(_visibleCount)
+        .toList(growable: false);
+    final hasMore = sortedNewestFirst.length > visibleOrders.length;
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.orderHistoryTitle)),
@@ -30,16 +55,37 @@ class OrderHistoryPage extends ConsumerWidget {
           ? EmptyOrdersState(onAction: () => context.go('/customer'))
           : ListView.builder(
               padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: orders.length,
-              itemBuilder: (context, index) => _OrderHistoryCard(
-                order: orders[index],
-                onReorder: () => _reorder(ref, orders[index], context),
-              ),
+              // +1 reserves the trailing slot for "عرض المزيد" while orders
+              // remain hidden behind the display window.
+              itemCount: visibleOrders.length + (hasMore ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= visibleOrders.length) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
+                    child: Center(
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => setState(() {
+                          _visibleCount += AppConstants.orderHistoryPageSize;
+                        }),
+                        icon: const Icon(Icons.unfold_more),
+                        label: const Text(AppConstants.orderHistoryLoadMore),
+                      ),
+                    ),
+                  );
+                }
+                final order = visibleOrders[index];
+                return _OrderHistoryCard(
+                  order: order,
+                  onReorder: () => _reorder(order, context),
+                );
+              },
             ),
     );
   }
 
-  void _reorder(WidgetRef ref, OrderEntity order, BuildContext context) {
+  void _reorder(OrderEntity order, BuildContext context) {
     final cart = ref.read(cartControllerProvider.notifier);
     // Only currently-available items can be reordered.
     final availableItems = order.items.where((i) => i.menuItem.isAvailable);

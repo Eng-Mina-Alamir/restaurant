@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
@@ -13,6 +14,7 @@ import 'package:restaurant_app/features/delivery/data/repositories/in_memory_del
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
+import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/controllers/rating_controller.dart';
@@ -386,6 +388,126 @@ void main() {
 
       expect(navigatedTo, '/chat/$orderId');
       expect(find.text('chat-stub-$orderId'), findsOneWidget);
+    });
+  });
+
+  group('order history display window (Cycle 14)', () {
+    /// Enlarges the test viewport so [ListView.builder] materializes every
+    /// row of the bounded window — with the default 800×600 surface only
+    /// the first few cards would be built, making count assertions useless.
+    void useTallViewport(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1080, 24000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    /// Places [count] staggered takeaway orders into controller state
+    /// (ids ORD-1001..ORD-1000+count, createdAt strictly increasing so
+    /// ORD-1000+count is always the newest).
+    ///
+    /// Entities are built DIRECTLY instead of via placeOrder: the provider's
+    /// real RealtimeService would loopback-broadcast orderCreated for a real
+    /// placement, and that async echo lands AFTER the state replacement
+    /// below — re-appending the original order and breaking exact counts.
+    ProviderContainer seedOrders(WidgetTester tester, int count) {
+      final container = createTestContainer(seedCheckoutFixtures: true);
+      addTearDown(container.dispose);
+
+      final base = DateTime(2026, 8, 24, 12);
+      container.read(ordersControllerProvider.notifier).state = [
+        for (var i = 1; i <= count; i++)
+          OrderEntity(
+            id: 'ORD-${1000 + i}',
+            restaurantId: 'demo-restaurant-1',
+            orderType: OrderType.takeaway,
+            items: const [],
+            status: OrderStatus.completed,
+            subtotal: 10,
+            taxAmount: 1.5,
+            discountAmount: 0,
+            totalAmount: 11.5,
+            createdAt: base.add(Duration(minutes: i)),
+          ),
+      ];
+      return container;
+    }
+
+    Future<void> pumpHistory(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: OrderHistoryPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    /// Each history card renders exactly one reorder button, so counting
+    /// 'أعد الطلب' labels counts rendered cards.
+    Finder reorderButtons() => find.text(AppConstants.reorderAction);
+
+    testWidgets('initial render shows only the newest window, newest first', (
+      tester,
+    ) async {
+      useTallViewport(tester);
+      const total = AppConstants.orderHistoryInitialWindow + 5;
+      final container = seedOrders(tester, total);
+      await pumpHistory(tester, container);
+
+      // Window bound respected: exactly the newest N orders render.
+      expect(
+        reorderButtons(),
+        findsNWidgets(AppConstants.orderHistoryInitialWindow),
+      );
+      // More remain hidden behind the "عرض المزيد" row.
+      expect(find.text(AppConstants.orderHistoryLoadMore), findsOneWidget);
+
+      // Newest-first ordering: #1025 (newest) renders above #1024, and the
+      // oldest orders stay outside the window entirely.
+      String label(int i) => '#${1000 + i}';
+      expect(
+        tester.getTopLeft(find.textContaining(label(total))).dy,
+        lessThan(tester.getTopLeft(find.textContaining(label(total - 1))).dy),
+        reason: 'Newer orders must render above older ones',
+      );
+      expect(find.textContaining(label(total)), findsOneWidget);
+      expect(find.textContaining(label(2)), findsNothing);
+    });
+
+    testWidgets('load more extends the window by one page', (tester) async {
+      useTallViewport(tester);
+      const total = AppConstants.orderHistoryInitialWindow + 5;
+      final container = seedOrders(tester, total);
+      await pumpHistory(tester, container);
+
+      await tester.tap(find.text(AppConstants.orderHistoryLoadMore));
+      await tester.pumpAndSettle();
+
+      expect(reorderButtons(), findsNWidgets(total));
+      // Exhausted: everything is visible and the button disappears.
+      expect(find.text(AppConstants.orderHistoryLoadMore), findsNothing);
+      expect(find.textContaining('#${1000 + 1}'), findsOneWidget);
+    });
+
+    testWidgets('no load-more button when the list fits the initial window', (
+      tester,
+    ) async {
+      useTallViewport(tester);
+      final container = seedOrders(
+        tester,
+        AppConstants.orderHistoryInitialWindow,
+      );
+      await pumpHistory(tester, container);
+
+      expect(
+        reorderButtons(),
+        findsNWidgets(AppConstants.orderHistoryInitialWindow),
+      );
+      expect(find.text(AppConstants.orderHistoryLoadMore), findsNothing);
     });
   });
 }

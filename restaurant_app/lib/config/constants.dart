@@ -66,6 +66,14 @@ abstract final class AppConstants {
   static const String sendToKitchen = 'إرسال إلى المطبخ';
   static const String sentToKitchen = 'تم إرسال الطلب إلى المطبخ';
   static const String orderHistoryTitle = 'سجل الطلبات';
+
+  /// Display window for the customer order-history page: how many of the
+  /// newest orders render initially ([orderHistoryInitialWindow]) and how
+  /// many more each "عرض المزيد" tap reveals ([orderHistoryPageSize]).
+  /// Purely a UI pagination knob — the session list itself is never trimmed.
+  static const int orderHistoryInitialWindow = 20;
+  static const int orderHistoryPageSize = 20;
+  static const String orderHistoryLoadMore = 'عرض المزيد';
   static const String reorderAction = 'أعد الطلب';
   static const String tableDetailTitle = 'تفاصيل الطاولة';
   static const String tableActiveOrder = 'الطلب النشط';

@@ -254,4 +254,162 @@ void main() {
       expect(controller.state.length, 1);
     });
   });
+
+  group('Realtime revert-event staleness guard (orderStatusReverted)', () {
+    late RealtimeService realtime;
+    late OrdersController controller;
+    late ConnectivityService connectivity;
+    late NewOrderNotifier notifier;
+
+    /// Mirrors [RealtimeService.broadcastOrderStatusChanged]'s wire payload.
+    void emitStatus(String orderId, String status, DateTime updatedAt) {
+      realtime.send(
+        jsonEncode({
+          'type': 'orderStatusChanged',
+          'data': {
+            'orderId': orderId,
+            'status': status,
+            'updatedAt': updatedAt.toIso8601String(),
+          },
+        }),
+      );
+    }
+
+    /// Mirrors RealtimeService.broadcastOrderStatusReverted's wire payload:
+    /// `status` carries the restored (earlier) status, `fromStatus` the one
+    /// being reverted, and `updatedAt` stamps the event for staleness checks.
+    void emitRevert(
+      String orderId,
+      String fromStatus,
+      String toStatus,
+      DateTime updatedAt,
+    ) {
+      realtime.send(
+        jsonEncode({
+          'type': 'orderStatusReverted',
+          'data': {
+            'orderId': orderId,
+            'id': orderId,
+            'fromStatus': fromStatus,
+            'status': toStatus,
+            'updatedAt': updatedAt.toIso8601String(),
+          },
+        }),
+      );
+    }
+
+    Future<void> pump() =>
+        Future<void>.delayed(const Duration(milliseconds: 15));
+
+    setUp(() {
+      realtime = RealtimeService(wsUrl: 'ws://127.0.0.1:9'); // never connects
+      realtime.events.listen((_) {}); // initialize the broadcast controller
+      connectivity = ConnectivityService();
+      notifier = NewOrderNotifier();
+      controller = OrdersController(
+        InMemoryOrderRepository(),
+        // Cart is unused in these tests; orders arrive via realtime.
+        CartController(),
+        notifier,
+        realtimeService: realtime,
+        connectivityService: connectivity,
+      );
+    });
+
+    tearDown(() {
+      controller.dispose();
+      notifier.dispose();
+      connectivity.dispose();
+      realtime.disconnect();
+    });
+
+    /// Seeds [orderId] as pending via realtime, then advances it remotely to
+    /// ready (pending → preparing → ready) with strictly increasing stamps,
+    /// leaving `_statusEventAt[orderId] == t1`.
+    Future<DateTime> seedAdvancedToReady(String orderId) async {
+      realtime.send(
+        jsonEncode({'type': 'orderCreated', 'data': _orderJson(orderId)}),
+      );
+      await pump();
+      final t0 = DateTime.now();
+      final t1 = t0.add(const Duration(milliseconds: 1));
+      emitStatus(orderId, 'preparing', t0);
+      await pump();
+      emitStatus(orderId, 'ready', t1);
+      await pump();
+      expect(controller.state.single.status, OrderStatus.ready);
+      return t1;
+    }
+
+    test('revert stamped OLDER than lastApplied is dropped', () async {
+      const orderId = 'ORD-9101';
+      final lastApplied = await seedAdvancedToReady(orderId);
+
+      // Delayed revert with a legal shape (ready→preparing) stamped STRICTLY
+      // BEFORE the last applied event: ONLY the staleness guard can reject
+      // it — removing the guard would regress the order to preparing and
+      // fail this assertion.
+      final stale = lastApplied.subtract(const Duration(milliseconds: 1));
+      emitRevert(orderId, 'ready', 'preparing', stale);
+      await pump();
+
+      expect(
+        controller.state.single.status,
+        OrderStatus.ready,
+        reason:
+            'Stale revert must NOT move ready back to preparing '
+            '(stamp $stale < applied $lastApplied)',
+      );
+    });
+
+    test('revert stamped NEWER than lastApplied applies', () async {
+      const orderId = 'ORD-9102';
+      final lastApplied = await seedAdvancedToReady(orderId);
+
+      final fresh = lastApplied.add(const Duration(milliseconds: 1));
+      emitRevert(orderId, 'ready', 'preparing', fresh);
+      await pump();
+
+      expect(
+        controller.state.single.status,
+        OrderStatus.preparing,
+        reason: 'A fresh revert event must still be honored',
+      );
+    });
+
+    test('revert stamped EXACTLY EQUAL to lastApplied is dropped', () async {
+      const orderId = 'ORD-9103';
+      final lastApplied = await seedAdvancedToReady(orderId);
+
+      // Same-millisecond replay of an already-applied transition: the guard
+      // treats "not strictly after" as stale, so this must be dropped —
+      // without the guard the legal-shaped revert would apply.
+      emitRevert(orderId, 'ready', 'preparing', lastApplied);
+      await pump();
+
+      expect(
+        controller.state.single.status,
+        OrderStatus.ready,
+        reason: 'Equal stamps count as stale (isAfter is strict)',
+      );
+    });
+
+    test('fresh but illegal-shape revert (canRevertTo false) is ignored',
+        () async {
+      const orderId = 'ORD-9104';
+      final lastApplied = await seedAdvancedToReady(orderId);
+
+      // Multi-step backward jump (ready→confirmed) violates the single-step
+      // revert rule; even a fresh stamp must not apply it.
+      final fresh = lastApplied.add(const Duration(milliseconds: 1));
+      emitRevert(orderId, 'ready', 'confirmed', fresh);
+      await pump();
+
+      expect(
+        controller.state.single.status,
+        OrderStatus.ready,
+        reason: 'canRevertTo(ready → confirmed) is false; nothing may change',
+      );
+    });
+  });
 }
