@@ -1,4 +1,4 @@
-# 🍽️ تطبيق المطعم الذكي المتكامل — Smart Restaurant Multi-Role System
+﻿# 🍽️ تطبيق المطعم الذكي المتكامل — Smart Restaurant Multi-Role System
 
 <div align="center">
 
@@ -6,12 +6,12 @@
 ![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Backend%20%26%20Realtime-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Riverpod](https://img.shields.io/badge/State-Riverpod%202.x-black?style=for-the-badge)
-![Tests](https://img.shields.io/badge/Tests-815%2F815%20Passed-success?style=for-the-badge)
+![Tests](https://img.shields.io/badge/Tests-998%2F998%20Passed-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=for-the-badge)
 
 **نظام متكامل لإدارة المطاعم وطلبات الطعام يغطي 5 أدوار مختلفة بنظام الوقت الفعلي (Real-time WebSockets) والهيكل البرمجي النظيف (Clean Architecture).**
 
-[📱 خطة الاختبار الشاملة](file:///c:/resturunt/MOBILE_APP_TEST_PLAN.md) • [🗄️ مخطط قاعدة البيانات](file:///c:/resturunt/supabase_schema.sql) • [🚀 مجلد التطبيق](file:///c:/resturunt/restaurant_app)
+[📱 خطة الاختبار الشاملة](MOBILE_APP_TEST_PLAN.md) • [🗄️ مخطط قاعدة البيانات](restaurant_app/supabase_schema.sql) • [🚀 مجلد التطبيق](restaurant_app/)
 
 </div>
 
@@ -33,7 +33,7 @@
 تم بناء التطبيق باتباع مبادئ **Clean Architecture** و **Feature-First**:
 
 ```text
-c:\resturunt\restaurant_app\lib
+restaurant_app/lib
 ├── config/                  # بيئات التشغيل (Dev / Staging / Production) والثوابت
 ├── core/                    # النواة المشتركة
 │   ├── analytics/           # تتبع الأحداث والتحليلات
@@ -68,8 +68,8 @@ c:\resturunt\restaurant_app\lib
 ## 🗄️ إعداد قاعدة البيانات (Supabase Backend Setup)
 
 ملفات الـ SQL الجاهزة للإنتاج موجودة في مسار المشروع:
-1. [supabase_schema.sql](file:///c:/resturunt/supabase_schema.sql): المخطط الكامل للجداول، المفاتيح الخارجية، الدوال، والمشغلات (Triggers)، وتفعيل الـ RLS وحاويات التخزين (Storage Buckets).
-2. [seed_staff_users.sql](file:///c:/resturunt/seed_staff_users.sql): بيانات تجريبية لحسابات الموظفين ومستخدمي الأدوار.
+1. [supabase_schema.sql](restaurant_app/supabase_schema.sql): المخطط الكامل للجداول، المفاتيح الخارجية، الدوال، والمشغلات (Triggers)، وتفعيل الـ RLS وحاويات التخزين (Storage Buckets).
+2. [seed_staff_users.sql](seed_staff_users.sql): بيانات تجريبية لحسابات الموظفين ومستخدمي الأدوار.
 
 ### الجداول الأساسية:
 - `profiles`: الحسابات المرتبطة بنظام المصادقة مع تحديد الدور (`customer`, `waiter`, `kitchen`, `driver`, `manager`, `admin`).
@@ -90,7 +90,7 @@ c:\resturunt\restaurant_app\lib
 | **Unit & Entity Tests (اختبارات الوحدات والمنطق الحسابي)** | 450+ | ✅ 100% ناجح |
 | **Widget & UI Interaction Tests (اختبارات واجهات المستخدم)** | 220+ | ✅ 100% ناجح |
 | **End-to-End Timeline Journeys (رحلات المستخدمين الكاملة)** | 96 | ✅ 100% ناجح |
-| **الإجمالي العام (Total Test Suite)** | **815** | **✅ 815/815 Passed** |
+| **الإجمالي العام (Total Test Suite)** | **998** | **✅ 998/998 Passed** |
 | **التحليل الساكن (Static Analysis - `flutter analyze`)** | - | **✅ 0 Issues / 0 Warnings** |
 
 ---
@@ -112,7 +112,7 @@ flutter pub get
 # 3. فحص الكود والتأكد من خلوه من الأخطاء
 flutter analyze
 
-# 4. تشغيل كافة الاختبارات المؤتمتة (815 اختبار)
+# 4. تشغيل كافة الاختبارات المؤتمتة (الاختبارات كاملة خضراء — شغّل flutter test)
 flutter test
 
 # 5. تشغيل التطبيق في وضع التطوير

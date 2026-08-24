@@ -83,18 +83,44 @@ lib/
 │   ├── theme/                    # Material 3 Arabic RTL theme
 │   ├── utils/                    # validators, formatters, logger
 │   └── errors/                   # failures, exceptions, Either
-├── features/
+├── features/                     # 19 modules
 │   ├── auth/                     # login, OTP, session
-│   ├── customer/                 # dine-in flow
-│   ├── menu/                     # categories, items, modifiers
 │   ├── cart/                     # cart state
+│   ├── chat/                     # customer ↔ driver realtime order chat
+│   ├── coupons/                  # coupon codes & discounts
+│   ├── customer/                 # dine-in flow, live tracking, cancellation
+│   ├── delivery/                 # driver flow & assignments
+│   ├── inventory/                # stock levels & shortage tracking
+│   ├── kds/                      # kitchen display (multi-chef claim/revert)
+│   ├── loyalty/                  # points & rewards
+│   ├── manager_dashboard/        # analytics + dispatch board
+│   ├── menu/                     # categories, items, modifiers
+│   ├── notifications/            # KDS/waiter/driver alert services
+│   ├── onboarding/               # first-run intro screens
 │   ├── orders/                   # order entity & lifecycle
-│   ├── table_management/         # waiter tables
-│   ├── kds/                      # kitchen display
-│   ├── delivery/                 # driver flow
-│   └── manager_dashboard/        # analytics
+│   ├── ratings/                  # service ratings
+│   ├── reservations/             # table reservations
+│   ├── restaurant/               # restaurant profile & info
+│   ├── settings/                 # app settings
+│   └── table_management/         # waiter tables
 └── shared/                       # widgets, animations, extensions
 ```
+
+## Feature matrix
+
+| Capability | Where |
+|------------|-------|
+| Delivery auto-dispatch (weighted driver scoring, 30 s retry) + manual dispatch board | `/manager/dispatch` |
+| KDS multi-chef claim/revert with max-2 concurrent claims per chef | `features/kds` |
+| Order audit trail viewer (`order_status_log`) | `features/orders` |
+| Waiter ready-for-pickup + driver new-assignment alerts (audio + in-app) | `lib/core/notifications/{kds,waiter,driver}_alert_service.dart` |
+| Live delivery tracking with real driver GPS data | `features/customer` |
+| Pending-only order cancellation | `features/customer` |
+| Realtime customer ↔ driver chat — Hive-persisted read receipts, 50-message cap | `features/chat` |
+| Offline order queue with idempotency keys (Hive) | `core/data` |
+| Loyalty points & rewards | `features/loyalty` |
+| Table reservations | `features/reservations` |
+| Coupons & discounts | `features/coupons` |
 
 ## Roadmap status
 
@@ -121,7 +147,7 @@ lib/
 - [x] Alerts: waiter ready-for-pickup, driver new-assignment (realtime)
 - [x] Customer live delivery tracking (real driver data, pending-only cancel)
 - [x] Customer ↔ driver order chat (`/chat/:orderId`, realtime, schema v4)
-- [ ] Push notifications / audio alerts for new orders
+- [ ] FCM remote push polish (local audio/in-app alerts already shipped via the alert services)
 - [ ] QR ordering + self-pay
 
 ## Verification
@@ -136,3 +162,5 @@ All feature controllers (cart, orders, tables, delivery, dispatch, metrics,
 notifications, KDS claim/revert) have pure-Dart unit tests; pages have widget
 smoke tests. Tests run fully offline via the in-memory repository overrides in
 `test/helpers/test_container.dart`.
+
+Page-coverage guarantee: **all 37 pages** have convention-matching widget tests.
