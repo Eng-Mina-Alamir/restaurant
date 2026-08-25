@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Stock level status for an inventory item.
 enum StockStatus {
   sufficient, // كافٍ
@@ -41,17 +39,6 @@ class InventoryItemEntity {
         return 'منخفض';
       case StockStatus.outOfStock:
         return 'منتهي';
-    }
-  }
-
-  Color statusColor(ColorScheme cs) {
-    switch (status) {
-      case StockStatus.sufficient:
-        return Colors.green;
-      case StockStatus.low:
-        return Colors.orange;
-      case StockStatus.outOfStock:
-        return cs.error;
     }
   }
 

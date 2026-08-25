@@ -590,7 +590,7 @@ class _InventoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final statusColor = item.statusColor(colorScheme);
+    final statusColor = StatusColors.stock(item.status, theme.brightness);
     final progress = item.minThreshold > 0
         ? (item.currentStock / (item.minThreshold * 2)).clamp(0.0, 1.0)
         : 1.0;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../domain/entities/rating_entity.dart';
 import '../controllers/rating_controller.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
@@ -85,7 +86,7 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
                 return IconButton(
                   icon: Icon(
                     starValue <= _score ? Icons.star : Icons.star_border,
-                    color: Colors.amber,
+                    color: StatusColors.starRating(theme.brightness),
                     size: 36,
                   ),
                   onPressed: () =>

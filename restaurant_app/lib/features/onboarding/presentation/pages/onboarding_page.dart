@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
 import '../../../../shared/animations/scale_button.dart';
 
@@ -24,21 +25,21 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       description:
           'امسح رمز QR على طاولتك، تصفح المنيو المصور مع خيارات التخصيص الكاملة، وأرسل طلبك للمطبخ بلمسة واحدة.',
       icon: Icons.qr_code_scanner_rounded,
-      color: Color(0xFFE65100),
+      tone: SemanticTone.warning,
     ),
     _OnboardingItem(
       title: 'متابعة حية لحظة بلحظة ⏱️',
       description:
           'شاهد مراحل تحضير طعامك في شاشة المطبخ KDS وتتبع مسار سائق التوصيل على الخريطة المباشرة بدقة.',
       icon: Icons.timer_outlined,
-      color: Color(0xFF2E7D32),
+      tone: SemanticTone.success,
     ),
     _OnboardingItem(
       title: 'دفع متعدد ونقاط ولاء ومكافآت 🎁',
       description:
           'ادفع بالطريقة التي تفضلها (نقدي، بطاقة، محفظة، دفع إلكتروني) واكسب نقاط ولاء مع كل طلب لاستبدالها بوجبات مجانية.',
       icon: Icons.card_giftcard_rounded,
-      color: Color(0xFF6A1B9A),
+      tone: SemanticTone.info,
     ),
   ];
 
@@ -69,7 +70,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         child: Column(
           children: [
             Align(
-              alignment: Alignment.topRight,
+              alignment: AlignmentDirectional.topEnd,
               child: TextButton(
                 onPressed: () => context.go('/customer'),
                 child: Text('تخطي', style: theme.textTheme.bodyLarge),
@@ -82,6 +83,12 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 onPageChanged: (idx) => setState(() => _currentPage = idx),
                 itemBuilder: (context, index) {
                   final slide = _slides[index];
+                  // Resolve the audited accent once per build so light/dark
+                  // modes both keep their >= 4.5:1 contrast bar.
+                  final accent = StatusColors.tone(
+                    slide.tone,
+                    theme.brightness,
+                  );
                   return Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.xl,
@@ -95,19 +102,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                             width: 140,
                             height: 140,
                             decoration: BoxDecoration(
-                              color: slide.color.withValues(
+                              color: accent.withValues(
                                 alpha: isDark ? 0.25 : 0.12,
                               ),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: slide.color.withValues(alpha: 0.4),
+                                color: accent.withValues(alpha: 0.4),
                                 width: 2,
                               ),
                             ),
                             child: Icon(
                               slide.icon,
                               size: 70,
-                              color: slide.color,
+                              color: accent,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xl),
@@ -188,11 +195,14 @@ class _OnboardingItem {
     required this.title,
     required this.description,
     required this.icon,
-    required this.color,
+    required this.tone,
   });
 
   final String title;
   final String description;
   final IconData icon;
-  final Color color;
+
+  /// Semantic accent tone; resolved to a brightness-aware audited color via
+  /// [StatusColors.tone] at build time (never a raw hardcoded hue).
+  final SemanticTone tone;
 }
