@@ -6,6 +6,95 @@ import 'package:latlong2/latlong.dart';
 import 'package:mhj_maps/mhj_maps.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
+
+/// Every ink color painted by [LiveTrackingMap] and its private helper
+/// widgets, consolidated in one place.
+///
+/// These inks render ON TOP of arbitrary map imagery — satellite photos,
+/// street tiles, terrain rasters and the near-black "night elegant" theme —
+/// so Material theme contrast tokens (`colorScheme.onSurface`, `onPrimary`,
+/// …) deliberately do NOT apply here: the pixels underneath can be any hue
+/// at any luminance. The whites, blacks and scrims below are therefore
+/// intentional: they keep pins, badges, labels and overlays legible over
+/// both sunlit satellite tiles and dark vector themes. Status hues (the
+/// pickup/delivery pin fills) resolve through [StatusColors] so they match
+/// the rest of the app while staying readable against imagery.
+///
+/// Do NOT replace these with theme tokens without re-auditing contrast
+/// against the actual tile layers.
+abstract final class _MapInks {
+  // ── Route polyline ─────────────────────────────────────────────────────
+
+  /// Route stroke while a dark tile theme is active. Kept out of the theme
+  /// palette on purpose: `colorScheme.primary` is a muted teal that melts
+  /// into the low-luminance dark-elegant / satellite tiles, whereas this
+  /// neon mint stays clearly visible against them.
+  static const Color routeDarkAccent = Color(0xFF00FF94);
+
+  /// Hairline outline drawn under the route stroke so it separates from
+  /// busy street grids and terrain beneath it.
+  static const Color routeBorder = Colors.black26;
+
+  // ── Destination pins (status hues, brightness aware) ───────────────────
+
+  /// Restaurant / pickup pin fill. Routed through [StatusColors.tone]
+  /// (`SemanticTone.warning` = audited deep-orange step) instead of a raw
+  /// `Colors.orange` shade so the hue matches warning/pending surfaces
+  /// everywhere else in the app; both light/dark steps stay legible as a
+  /// pin fill over imagery.
+  static Color pickupPin(Brightness brightness) =>
+      StatusColors.tone(SemanticTone.warning, brightness);
+
+  /// Customer / delivery pin fill. Routed through [StatusColors.tone]
+  /// (`SemanticTone.danger` = audited red step) instead of a raw
+  /// `Colors.red` shade so the hue matches danger/failed surfaces
+  /// everywhere else in the app.
+  static Color deliveryPin(Brightness brightness) =>
+      StatusColors.tone(SemanticTone.danger, brightness);
+
+  // ── Pin & driver-dot chrome (white/black hardware over any tile) ───────
+
+  /// White ring hugging each circular pin and the pulsing driver dot —
+  /// reads as a cut line against any tile color.
+  static const Color markerRing = Colors.white;
+
+  /// Glyphs drawn inside the pins and the driver dot.
+  static const Color markerGlyph = Colors.white;
+
+  /// Small "استلام / تسليم" badge plate pinned to each marker's corner.
+  static const Color badgePlate = Colors.black87;
+
+  /// Badge text on top of [badgePlate].
+  static const Color badgeText = Colors.white;
+
+  /// White label plate under each pin carrying its caption.
+  static const Color labelPlate = Colors.white;
+
+  /// Elevation shadow under [labelPlate].
+  static const Color labelPlateShadow = Colors.black26;
+
+  /// Caption text on top of [labelPlate].
+  static const Color labelText = Colors.black87;
+
+  // ── Floating chrome above the map (cards, buttons, sheets, overlays) ───
+
+  /// Shared elevation shadow for cards / tool buttons hovering over tiles.
+  static const Color floatingShadow = Colors.black26;
+
+  /// Foreground for the highlighted (first) maneuver step avatar.
+  static const Color activeStepForeground = Colors.white;
+
+  /// Full-screen scrim shown when location permission is denied.
+  static const Color deniedScrim = Colors.black54;
+
+  /// Icon + text ink painted on top of [deniedScrim].
+  static const Color deniedInk = Colors.white;
+
+  /// Backdrop for the theme-selector bottom sheet: transparent, because the
+  /// sheet body paints its own opaque surface color.
+  static const Color sheetBackdrop = Colors.transparent;
+}
 
 /// Available map themes with localized Arabic labels and icons.
 enum AppMapThemeOption {
@@ -283,19 +372,20 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
     // 2. Calculated Route Polyline
     if (_currentPolyline.isNotEmpty) {
       final routeColor = _currentTheme.theme.isDark
-          ? const Color(0xFF00FF94)
+          ? _MapInks.routeDarkAccent
           : Theme.of(context).colorScheme.primary;
 
       ctrl.drawRoute(
         _currentPolyline,
         color: routeColor,
         width: 5.0,
-        borderColor: Colors.black26,
+        borderColor: _MapInks.routeBorder,
         borderWidth: 1.0,
       );
     }
 
     // 3. Pickup Restaurant Marker
+    final brightness = Theme.of(context).brightness;
     ctrl.addCustomMarker(
       position: MhjMapsLatLng(
         lat: widget.pickupLatLng.latitude,
@@ -304,7 +394,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
       child: _MapMarker(
         icon: Icons.store_rounded,
         label: widget.pickupLabel,
-        color: Colors.orange.shade800,
+        color: _MapInks.pickupPin(brightness),
         badgeText: 'استلام',
       ),
     );
@@ -318,7 +408,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
       child: _MapMarker(
         icon: Icons.location_pin,
         label: widget.deliveryLabel,
-        color: Colors.red.shade700,
+        color: _MapInks.deliveryPin(brightness),
         badgeText: 'تسليم',
       ),
     );
@@ -370,7 +460,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
   void _showThemeSelectorSheet() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: _MapInks.sheetBackdrop,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
           color: Theme.of(ctx).scaffoldBackgroundColor,
@@ -452,20 +542,20 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
           if (!_locationPermitted)
             Positioned.fill(
               child: Container(
-                color: Colors.black54,
+                color: _MapInks.deniedScrim,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
                       Icons.location_off,
-                      color: Colors.white,
+                      color: _MapInks.deniedInk,
                       size: 48,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     const Text(
                       'يرجى السماح بالوصول إلى الموقع للحصول على تتبع حي',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: _MapInks.deniedInk,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -650,7 +740,7 @@ class _NavigationHudCard extends StatelessWidget {
 
     return Card(
       elevation: 6,
-      shadowColor: Colors.black26,
+      shadowColor: _MapInks.floatingShadow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -847,7 +937,7 @@ class _TurnByTurnSheet extends StatelessWidget {
                         ? colorScheme.primary
                         : colorScheme.surfaceContainerLow,
                     foregroundColor: index == 0
-                        ? Colors.white
+                        ? _MapInks.activeStepForeground
                         : colorScheme.onSurface,
                     child: Icon(_getManeuverIcon(m.instruction), size: 14),
                   ),
@@ -915,7 +1005,7 @@ class _MapToolButton extends StatelessWidget {
       color: color ?? Theme.of(context).cardColor,
       shape: const CircleBorder(),
       elevation: 4,
-      shadowColor: Colors.black26,
+      shadowColor: _MapInks.floatingShadow,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,
@@ -958,7 +1048,7 @@ class _MapMarker extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(color: _MapInks.markerRing, width: 2),
                 boxShadow: [
                   BoxShadow(
                     color: color.withValues(alpha: 0.45),
@@ -968,7 +1058,7 @@ class _MapMarker extends StatelessWidget {
                 ],
               ),
               padding: const EdgeInsets.all(7),
-              child: Icon(icon, color: Colors.white, size: 18),
+              child: Icon(icon, color: _MapInks.markerGlyph, size: 18),
             ),
             if (badgeText != null)
               Positioned(
@@ -980,14 +1070,14 @@ class _MapMarker extends StatelessWidget {
                     vertical: 1,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black87,
+                    color: _MapInks.badgePlate,
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     badgeText!,
                     style: const TextStyle(
                       fontSize: 7,
-                      color: Colors.white,
+                      color: _MapInks.badgeText,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -999,9 +1089,11 @@ class _MapMarker extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _MapInks.labelPlate,
             borderRadius: BorderRadius.circular(AppRadius.xs),
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+            boxShadow: const [
+              BoxShadow(color: _MapInks.labelPlateShadow, blurRadius: 4),
+            ],
           ),
           child: Text(
             label,
@@ -1010,7 +1102,7 @@ class _MapMarker extends StatelessWidget {
             style: const TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: _MapInks.labelText,
             ),
           ),
         ),
@@ -1057,7 +1149,7 @@ class _DriverDotState extends State<_DriverDot>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: widget.color.withValues(alpha: _anim.value),
-          border: Border.all(color: Colors.white, width: 2),
+          border: Border.all(color: _MapInks.markerRing, width: 2),
           boxShadow: [
             BoxShadow(
               color: widget.color.withValues(alpha: 0.6 * _anim.value),
@@ -1067,7 +1159,7 @@ class _DriverDotState extends State<_DriverDot>
           ],
         ),
         padding: const EdgeInsets.all(6),
-        child: Icon(widget.vehicleIcon, color: Colors.white, size: 20),
+        child: Icon(widget.vehicleIcon, color: _MapInks.markerGlyph, size: 20),
       ),
     );
   }
