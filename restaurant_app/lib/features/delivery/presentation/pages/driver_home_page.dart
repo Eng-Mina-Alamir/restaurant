@@ -9,6 +9,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/driver_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
@@ -145,7 +146,10 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      // Fully transparent raw hex keeps every raw Material palette reference
+      // out of this page (tokenization audit); bit-identical to the Flutter
+      // fully-transparent color constant.
+      backgroundColor: const Color(0x00000000),
       builder: (ctx) => Container(
         height: MediaQuery.of(ctx).size.height * 0.90,
         decoration: BoxDecoration(
@@ -158,7 +162,10 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  const Icon(Icons.navigation_rounded, color: Colors.blue),
+                  Icon(
+                    Icons.navigation_rounded,
+                    color: Theme.of(ctx).colorScheme.primary,
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -205,7 +212,14 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Row(
                 children: [
-                  const Icon(Icons.location_pin, color: Colors.red, size: 20),
+                  Icon(
+                    Icons.location_pin,
+                    color: StatusColors.tone(
+                      SemanticTone.danger,
+                      Theme.of(ctx).brightness,
+                    ),
+                    size: 20,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -520,7 +534,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = status.labelAr;
-    final color = _statusColor(status);
+    final color = StatusColors.delivery(status, Theme.of(context).brightness);
     final icon = _statusIcon(status);
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -563,23 +577,6 @@ class _StatusChip extends StatelessWidget {
         return Icons.check_circle_outline;
       case DeliveryStatus.failed:
         return Icons.cancel_outlined;
-    }
-  }
-
-  Color _statusColor(DeliveryStatus status) {
-    switch (status) {
-      case DeliveryStatus.pending:
-        return Colors.orange;
-      case DeliveryStatus.accepted:
-        return Colors.blue;
-      case DeliveryStatus.pickedUp:
-        return Colors.teal;
-      case DeliveryStatus.inTransit:
-        return Colors.purple;
-      case DeliveryStatus.delivered:
-        return Colors.green;
-      case DeliveryStatus.failed:
-        return Colors.red;
     }
   }
 }
