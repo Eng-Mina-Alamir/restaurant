@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/printing/ticket_printer_service.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 
 class TicketPrintDialog extends ConsumerStatefulWidget {
@@ -33,17 +34,18 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
   @override
   Widget build(BuildContext context) {
     final printerService = ref.watch(ticketPrinterServiceProvider);
+    final colorScheme = Theme.of(context).colorScheme;
     final ticketText = printerService.generateTicketText(
       widget.order,
       tableDisplay: widget.tableDisplay,
     );
 
     return AlertDialog(
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.print_outlined, color: Colors.indigo),
-          SizedBox(width: 8),
-          Expanded(
+          Icon(Icons.print_outlined, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          const Expanded(
             child: Text(
               'معاينة تذكرة الطباعة الحرارية',
               overflow: TextOverflow.ellipsis,
@@ -56,12 +58,14 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
           width: 320,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: Colors.amber.shade50.withValues(alpha: 0.7),
+            // Receipt "paper" look built from neutral surface roles so the
+            // metaphor holds in both themes without amber/brown hues.
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: Colors.brown.shade200),
+            border: Border.all(color: colorScheme.outlineVariant),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: colorScheme.shadow.withValues(alpha: 0.05),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
@@ -73,34 +77,34 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
               Container(
                 alignment: Alignment.center,
                 padding: const EdgeInsets.only(bottom: 8),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
-                      color: Colors.brown,
+                      color: colorScheme.outlineVariant,
                       style: BorderStyle.solid,
                       width: 1,
                     ),
                   ),
                 ),
-                child: const Text(
-                  '🧾 ESC/POS Thermal 80mm',
+                child: Text(
+                  'ESC/POS Thermal 80mm',
                   style: TextStyle(
                     fontFamily: 'Courier',
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.brown,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               SelectableText(
                 ticketText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Courier',
                   fontSize: 12,
                   height: 1.4,
                   fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -114,12 +118,12 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
         ),
         FilledButton.icon(
           icon: _printing
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                   ),
                 )
               : const Icon(Icons.print),
@@ -129,6 +133,9 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
               : () async {
                   final nav = Navigator.of(context);
                   final messenger = ScaffoldMessenger.of(context);
+                  // Captured before the async gap so the snackbar tone matches
+                  // the brightness active when printing started.
+                  final brightness = Theme.of(context).brightness;
                   setState(() => _printing = true);
                   final success = await printerService.printKitchenTicket(
                     widget.order,
@@ -141,12 +148,15 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
                     SnackBar(
                       content: Text(
                         success
-                            ? '🖨️ تم إرسال أمر الطباعة إلى طابعة المطبخ بنجاح!'
+                            ? 'تم إرسال أمر الطباعة إلى طابعة المطبخ بنجاح!'
                             : 'فشل الاتصال بالطابعة الحرارية',
                       ),
                       backgroundColor: success
-                          ? Colors.green.shade700
-                          : Colors.red.shade700,
+                          ? StatusColors.tone(
+                              SemanticTone.success,
+                              brightness,
+                            )
+                          : StatusColors.tone(SemanticTone.danger, brightness),
                     ),
                   );
                 },
