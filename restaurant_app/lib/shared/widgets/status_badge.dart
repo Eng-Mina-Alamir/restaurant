@@ -63,6 +63,20 @@ class StatusBadge extends StatelessWidget {
         colorResolver: (brightness) => StatusColors.stock(status, brightness),
       );
 
+  /// Badge for a generic [SemanticTone] when no domain enum applies
+  /// (e.g. KDS ticket-age urgency mapped onto success/warning/danger).
+  factory StatusBadge.tone({
+    required String label,
+    required SemanticTone semanticTone,
+    IconData? icon,
+  }) =>
+      StatusBadge._(
+        label: label,
+        icon: icon,
+        colorResolver: (brightness) =>
+            StatusColors.tone(semanticTone, brightness),
+      );
+
   static const Map<OrderStatus, IconData> _orderIcons = {
     OrderStatus.pending: Icons.schedule,
     OrderStatus.confirmed: Icons.check_circle_outline,

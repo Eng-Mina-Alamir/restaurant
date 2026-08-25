@@ -9,10 +9,12 @@ import '../../../../core/notifications/kds_alert_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../../shared/widgets/status_badge.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -458,17 +460,27 @@ class _OrderCard extends StatelessWidget {
 
   bool get _isNew => DateTime.now().difference(order.createdAt) < _newThreshold;
 
-  Color _getUrgencyColor(int minutes) {
-    if (minutes < 5) return Colors.green;
-    if (minutes < 10) return Colors.orange;
-    return Colors.red;
+  /// Elapsed-time urgency mapped onto the audited semantic tones
+  /// (< 5 min on time, < 10 min warning, otherwise late).
+  static SemanticTone _urgencyTone(int minutes) {
+    if (minutes < 5) return SemanticTone.success;
+    if (minutes < 10) return SemanticTone.warning;
+    return SemanticTone.danger;
   }
 
-  String _getUrgencyBadge(int minutes) {
-    if (minutes < 5) return '🟢 في الوقت ($minutes د)';
-    if (minutes < 10) return '🟡 تنبيه ($minutes د)';
-    return '🔴 متأخر! ($minutes د)';
-  }
+  /// Icon shown next to the urgency label on the ticket card.
+  static IconData _urgencyIcon(SemanticTone tone) => switch (tone) {
+    SemanticTone.success => Icons.check_circle_outline,
+    SemanticTone.warning => Icons.warning_amber_rounded,
+    _ => Icons.error_outline,
+  };
+
+  /// Arabic urgency label for the badge (emoji-free).
+  static String _urgencyLabel(int minutes, SemanticTone tone) => switch (tone) {
+    SemanticTone.success => 'في الوقت ($minutes د)',
+    SemanticTone.warning => 'تنبيه ($minutes د)',
+    _ => 'متأخر! ($minutes د)',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -495,7 +507,8 @@ class _OrderCard extends StatelessWidget {
         revertTarget != null && order.status.canRevertTo(revertTarget);
 
     final elapsed = _elapsedMinutes(order.createdAt);
-    final urgencyColor = _getUrgencyColor(elapsed);
+    final urgencyTone = _urgencyTone(elapsed);
+    final urgencyColor = StatusColors.tone(urgencyTone, theme.brightness);
     final highlight = _isNew ? theme.colorScheme.primary : urgencyColor;
 
     final displayTable =
@@ -570,7 +583,11 @@ class _OrderCard extends StatelessWidget {
                       )
                     else if (order.orderType == OrderType.delivery)
                       const Chip(
-                        label: Text('توصيل 🚗'),
+                        avatar: Icon(
+                          Icons.local_shipping_outlined,
+                          size: 18,
+                        ),
+                        label: Text('توصيل'),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
@@ -593,9 +610,8 @@ class _OrderCard extends StatelessWidget {
                   ),
                   child: Text(
                     item.selectedModifiers.map((m) => m.name).join('، '),
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -606,10 +622,9 @@ class _OrderCard extends StatelessWidget {
                   ),
                   child: Text(
                     '${AppConstants.specialNotesLabel}: ${item.specialNotes}',
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.error,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -638,12 +653,12 @@ class _OrderCard extends StatelessWidget {
             if (elapsed >= 1)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  _getUrgencyBadge(elapsed),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: urgencyColor,
-                    fontWeight: FontWeight.bold,
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: StatusBadge.tone(
+                    label: _urgencyLabel(elapsed, urgencyTone),
+                    semanticTone: urgencyTone,
+                    icon: _urgencyIcon(urgencyTone),
                   ),
                 ),
               ),
@@ -654,7 +669,7 @@ class _OrderCard extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                   constraints: const BoxConstraints(
-                    minWidth: 40,
+                    minWidth: 48,
                     minHeight: 48,
                   ),
                   tooltip: 'طباعة تذكرة المطبخ',
@@ -716,7 +731,7 @@ class _OrderCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints(
-                      minWidth: 40,
+                      minWidth: 48,
                       minHeight: 48,
                     ),
                     tooltip: AppConstants.kdsRevertTooltip,

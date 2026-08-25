@@ -161,10 +161,10 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
   }
 
   String _ratingLabel(double score) {
-    if (score >= 5) return 'ممتاز جداً ⭐⭐⭐⭐⭐';
-    if (score >= 4) return 'جيد جداً ⭐⭐⭐⭐';
-    if (score >= 3) return 'جيد ⭐⭐⭐';
-    if (score >= 2) return 'مقبول ⭐⭐';
-    return 'يحتاج إلى تحسين ⭐';
+    if (score >= 5) return 'ممتاز جداً';
+    if (score >= 4) return 'جيد جداً';
+    if (score >= 3) return 'جيد';
+    if (score >= 2) return 'مقبول';
+    return 'يحتاج إلى تحسين';
   }
 }

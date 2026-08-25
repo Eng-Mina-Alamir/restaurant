@@ -6,6 +6,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/status_badge.dart';
 import '../../../inventory/domain/entities/inventory_item_entity.dart';
 import '../../../inventory/presentation/controllers/inventory_controller.dart';
 import '../../data/services/report_export_service.dart';
@@ -62,17 +63,17 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             onSelected: (val) => setState(() => _filterStatus = val),
             itemBuilder: (_) => [
               const PopupMenuItem(value: null, child: Text('الكل')),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: StockStatus.outOfStock,
-                child: Text('🔴 منتهي'),
+                child: StatusBadge.stock(StockStatus.outOfStock),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: StockStatus.low,
-                child: Text('🟡 منخفض'),
+                child: StatusBadge.stock(StockStatus.low),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: StockStatus.sufficient,
-                child: Text('🟢 كافٍ'),
+                child: StatusBadge.stock(StockStatus.sufficient),
               ),
             ],
           ),
