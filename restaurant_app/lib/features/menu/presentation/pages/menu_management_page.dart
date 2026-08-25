@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -26,6 +27,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
     final menuAsync = ref.watch(menuControllerProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final brightness = theme.brightness;
 
     return Scaffold(
       appBar: AppBar(
@@ -168,28 +170,38 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                                   ),
                                                 ),
                                                 if (item.isVegetarian)
-                                                  const Padding(
+                                                  Padding(
                                                     padding:
-                                                        EdgeInsets.symmetric(
+                                                        const EdgeInsets
+                                                            .symmetric(
                                                           horizontal: 4,
                                                         ),
                                                     child: Icon(
                                                       Icons.eco,
                                                       size: 16,
-                                                      color: Colors.green,
+                                                      color:
+                                                          StatusColors.tone(
+                                                        SemanticTone.success,
+                                                        brightness,
+                                                      ),
                                                     ),
                                                   ),
                                                 if (item.isSpicy)
-                                                  const Padding(
+                                                  Padding(
                                                     padding:
-                                                        EdgeInsets.symmetric(
+                                                        const EdgeInsets
+                                                            .symmetric(
                                                           horizontal: 4,
                                                         ),
                                                     child: Icon(
                                                       Icons
                                                           .local_fire_department,
                                                       size: 16,
-                                                      color: Colors.red,
+                                                      color:
+                                                          StatusColors.tone(
+                                                        SemanticTone.danger,
+                                                        brightness,
+                                                      ),
                                                     ),
                                                   ),
                                               ],
@@ -244,9 +256,12 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                                 : 'غير متوفر',
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                                  color: item.isAvailable
-                                                      ? Colors.green
-                                                      : Colors.red,
+                                                  color: StatusColors.tone(
+                                                    item.isAvailable
+                                                        ? SemanticTone.success
+                                                        : SemanticTone.danger,
+                                                    brightness,
+                                                  ),
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                           ),
@@ -267,10 +282,13 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                                           ),
                                           IconButton(
                                             tooltip: AppConstants.delete,
-                                            icon: const Icon(
+                                            icon: Icon(
                                               Icons.delete_outline,
                                               size: 20,
-                                              color: Colors.red,
+                                              color: StatusColors.tone(
+                                                SemanticTone.danger,
+                                                brightness,
+                                              ),
                                             ),
                                             onPressed: () =>
                                                 _confirmDelete(context, item),
@@ -547,7 +565,9 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
             child: const Text(AppConstants.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () {
               ref.read(menuControllerProvider.notifier).deleteItem(item.id);
               Navigator.pop(ctx);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -76,7 +77,7 @@ class LoyaltyPage extends ConsumerWidget {
                       children: [
                         Icon(
                           Icons.stars_rounded,
-                          color: Colors.amber.shade700,
+                          color: StatusColors.starRating(theme.brightness),
                           size: 20,
                         ),
                         const SizedBox(width: 4),
@@ -137,17 +138,21 @@ class LoyaltyPage extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final tx = account.transactions[index];
                         final isPositive = tx.points > 0;
+                        final txColor = StatusColors.tone(
+                          isPositive
+                              ? SemanticTone.success
+                              : SemanticTone.danger,
+                          theme.brightness,
+                        );
 
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: isPositive
-                                ? Colors.green.withValues(alpha: 0.15)
-                                : Colors.red.withValues(alpha: 0.15),
+                            backgroundColor: txColor.withValues(alpha: 0.15),
                             child: Icon(
                               isPositive
                                   ? Icons.add_circle_outline
                                   : Icons.remove_circle_outline,
-                              color: isPositive ? Colors.green : Colors.red,
+                              color: txColor,
                             ),
                           ),
                           title: Text(tx.description),
@@ -160,7 +165,7 @@ class LoyaltyPage extends ConsumerWidget {
                           trailing: Text(
                             '${isPositive ? '+' : ''}${tx.points} نقطة',
                             style: TextStyle(
-                              color: isPositive ? Colors.green : Colors.red,
+                              color: txColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -205,7 +210,7 @@ class LoyaltyPage extends ConsumerWidget {
                   SnackBar(
                     content: Text(
                       ok
-                          ? '🎉 تم استبدال المكافأة بنجاح وتمت إضافة القسيمة لحسابك!'
+                          ? 'تم استبدال المكافأة بنجاح وتمت إضافة القسيمة لحسابك!'
                           : 'عفواً، رصيد نقاطك غير كافٍ',
                     ),
                   ),
@@ -236,6 +241,7 @@ class _TierBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final tier = account.tier;
 
     return Container(
@@ -274,23 +280,25 @@ class _TierBanner extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.25),
+                      // Scrim veil keeps the tier pill legible over any of the
+                      // bright metallic tier gradients (bronze → platinum).
+                      color: colorScheme.scrim.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.workspace_premium,
-                          color: Colors.white,
+                          color: colorScheme.onPrimary,
                           size: 16,
                         ),
 
                         const SizedBox(width: 4),
                         Text(
                           'المستوى ${tier.labelAr}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -303,15 +311,15 @@ class _TierBanner extends StatelessWidget {
                     '${account.currentPoints}',
                     style: theme.textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w900,
-                      color: Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'نقطة ولاء صالحة للاستخدام',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -321,15 +329,15 @@ class _TierBanner extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.4),
+                  color: colorScheme.onPrimary.withValues(alpha: 0.4),
                 ),
                 child: Center(
                   child: Text(
                     '${tier.multiplier}x',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 20,
-                      color: Colors.black87,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -343,18 +351,18 @@ class _TierBanner extends StatelessWidget {
               children: [
                 Text(
                   'المستوى القادم: ${nextTier!.labelAr}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   '${nextTierPoints - account.lifetimePoints} نقطة متبقية',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -365,19 +373,19 @@ class _TierBanner extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 8,
-                backgroundColor: Colors.white.withValues(alpha: 0.5),
+                backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.5),
                 valueColor: AlwaysStoppedAnimation<Color>(
                   theme.colorScheme.primary,
                 ),
               ),
             ),
           ] else
-            const Text(
-              '👑 وصلت لأعلى مستوى في برنامج الولاء (VIP النخبة)!',
+            Text(
+              'وصلت لأعلى مستوى في برنامج الولاء (VIP النخبة)!',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: colorScheme.onSurface,
               ),
             ),
         ],
@@ -446,7 +454,7 @@ class _RewardCard extends StatelessWidget {
                       Icon(
                         Icons.stars_rounded,
                         size: 16,
-                        color: Colors.amber.shade700,
+                        color: StatusColors.starRating(theme.brightness),
                       ),
                       const SizedBox(width: 4),
                       Text(

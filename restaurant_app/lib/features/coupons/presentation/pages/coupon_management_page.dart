@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -17,6 +18,7 @@ class CouponManagementPage extends ConsumerWidget {
     final couponsAsync = ref.watch(couponManagementControllerProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final brightness = theme.brightness;
 
     return Scaffold(
       appBar: AppBar(
@@ -109,13 +111,19 @@ class CouponManagementPage extends ConsumerWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.12),
+                                    color: StatusColors.tone(
+                                      SemanticTone.danger,
+                                      brightness,
+                                    ).withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'معطل',
                                     style: TextStyle(
-                                      color: Colors.red,
+                                      color: StatusColors.tone(
+                                        SemanticTone.danger,
+                                        brightness,
+                                      ),
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -128,15 +136,19 @@ class CouponManagementPage extends ConsumerWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withValues(
-                                      alpha: 0.12,
-                                    ),
+                                    color: StatusColors.tone(
+                                      SemanticTone.warning,
+                                      brightness,
+                                    ).withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'منتهي',
                                     style: TextStyle(
-                                      color: Colors.orange,
+                                      color: StatusColors.tone(
+                                        SemanticTone.warning,
+                                        brightness,
+                                      ),
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -149,13 +161,19 @@ class CouponManagementPage extends ConsumerWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green.withValues(alpha: 0.12),
+                                    color: StatusColors.tone(
+                                      SemanticTone.success,
+                                      brightness,
+                                    ).withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'نشط',
                                     style: TextStyle(
-                                      color: Colors.green,
+                                      color: StatusColors.tone(
+                                        SemanticTone.success,
+                                        brightness,
+                                      ),
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -193,9 +211,12 @@ class CouponManagementPage extends ConsumerWidget {
                                           ? Icons.block
                                           : Icons.check_circle_outline,
                                       size: 18,
-                                      color: coupon.isActive
-                                          ? Colors.orange
-                                          : Colors.green,
+                                      color: StatusColors.tone(
+                                        coupon.isActive
+                                            ? SemanticTone.warning
+                                            : SemanticTone.success,
+                                        brightness,
+                                      ),
                                     ),
                                     const SizedBox(width: 8),
                                     Text(coupon.isActive ? 'تعطيل' : 'تفعيل'),
@@ -212,19 +233,27 @@ class CouponManagementPage extends ConsumerWidget {
                                   ],
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.delete_outline,
                                       size: 18,
-                                      color: Colors.red,
+                                      color: StatusColors.tone(
+                                        SemanticTone.danger,
+                                        brightness,
+                                      ),
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       AppConstants.delete,
-                                      style: TextStyle(color: Colors.red),
+                                      style: TextStyle(
+                                        color: StatusColors.tone(
+                                          SemanticTone.danger,
+                                          brightness,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -315,6 +344,7 @@ class CouponManagementPage extends ConsumerWidget {
     WidgetRef ref, {
     CouponEntity? coupon,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final codeCtrl = TextEditingController(text: coupon?.code ?? '');
     final titleCtrl = TextEditingController(text: coupon?.title ?? '');
     final valueCtrl = TextEditingController(
@@ -488,8 +518,11 @@ class CouponManagementPage extends ConsumerWidget {
                     if (err != null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(err),
-                          backgroundColor: Colors.red.shade700,
+                          content: Text(
+                            err,
+                            style: TextStyle(color: colorScheme.onError),
+                          ),
+                          backgroundColor: colorScheme.error,
                         ),
                       );
                     }
@@ -520,7 +553,9 @@ class CouponManagementPage extends ConsumerWidget {
             child: const Text(AppConstants.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () {
               ref
                   .read(couponManagementControllerProvider.notifier)
