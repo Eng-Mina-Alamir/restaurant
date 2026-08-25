@@ -13,69 +13,78 @@ class PrivacyPolicyPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('سياسة الخصوصية')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          Container(
+      // Keep the AppBar full-bleed while capping the reading measure so
+      // long-form legal text stays scannable on tablets/desktop.
+      // 720 is a deliberate content-width cap; AppBreakpoints only models
+      // layout breakpoints, not readable line lengths.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.shield_outlined,
-                  color: colorScheme.primary,
-                  size: 28,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'نحن نلتزم بحماية بياناتك الشخصية ومعاملاتك المالية بأعلى معايير الأمان والتشفير.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.shield_outlined,
+                      color: colorScheme.primary,
+                      size: 28,
                     ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'نحن نلتزم بحماية بياناتك الشخصية ومعاملاتك المالية بأعلى معايير الأمان والتشفير.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const _PolicySection(
+                icon: Icons.person_search_outlined,
+                title: '1. البيانات التي نجمعها',
+                content:
+                    'نقوم بجمع البيانات الضرورية لتقديم خدمة الطلب والتوصيل بكفاءة، وتشمل: الاسم، رقم الهاتف، الموقع الجغرافي للتوصيل، وسجل الطلبات وتفضيلات الوجبات.',
+              ),
+              const _PolicySection(
+                icon: Icons.lock_outline,
+                title: '2. أمان المدفوعات والمعاملات',
+                content:
+                    'تتم معالجة جميع عمليات الدفع الإلكتروني (مدى، آبل باي، البطاقات الائتمانية) عبر بوابات دفع معتمدة ومطابقة لمعايير PCI-DSS دون حفظ أرقام البطاقات في خوادمنا.',
+              ),
+              const _PolicySection(
+                icon: Icons.location_on_outlined,
+                title: '3. استخدام الموقع الجغرافي',
+                content:
+                    'يتم استخدام إحداثيات الموقع الجغرافي لغرض تتبع مسار توصيل الطلب بالوقت الفعلي وتحديد أقرب فرع مطعم للعميل.',
+              ),
+              const _PolicySection(
+                icon: Icons.verified_user_outlined,
+                title: '4. حقوق المستخدم',
+                content:
+                    'يحق للمستخدم طلب تعديل أو حذف بياناته الشخصية في أي وقت من خلال التواصل مع إدارة الدعم الفني للمطعم.',
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Center(
+                child: Text(
+                  'آخر تحديث: 2026',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const _PolicySection(
-            icon: Icons.person_search_outlined,
-            title: '1. البيانات التي نجمعها',
-            content:
-                'نقوم بجمع البيانات الضرورية لتقديم خدمة الطلب والتوصيل بكفاءة، وتشمل: الاسم، رقم الهاتف، الموقع الجغرافي للتوصيل، وسجل الطلبات وتفضيلات الوجبات.',
-          ),
-          const _PolicySection(
-            icon: Icons.lock_outline,
-            title: '2. أمان المدفوعات والمعاملات',
-            content:
-                'تتم معالجة جميع عمليات الدفع الإلكتروني (مدى، آبل باي، البطاقات الائتمانية) عبر بوابات دفع معتمدة ومطابقة لمعايير PCI-DSS دون حفظ أرقام البطاقات في خوادمنا.',
-          ),
-          const _PolicySection(
-            icon: Icons.location_on_outlined,
-            title: '3. استخدام الموقع الجغرافي',
-            content:
-                'يتم استخدام إحداثيات الموقع الجغرافي لغرض تتبع مسار توصيل الطلب بالوقت الفعلي وتحديد أقرب فرع مطعم للعميل.',
-          ),
-          const _PolicySection(
-            icon: Icons.verified_user_outlined,
-            title: '4. حقوق المستخدم',
-            content:
-                'يحق للمستخدم طلب تعديل أو حذف بياناته الشخصية في أي وقت من خلال التواصل مع إدارة الدعم الفني للمطعم.',
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Center(
-            child: Text(
-              'آخر تحديث: 2026',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
