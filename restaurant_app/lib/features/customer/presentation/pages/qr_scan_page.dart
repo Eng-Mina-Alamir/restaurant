@@ -4,7 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+
+// Camera-viewfinder chrome deliberately ignores the app theme: a scanner
+// viewport must stay pure black/white for camera contrast regardless of
+// light/dark mode (documented exception to StatusColors tokenization).
+const Color _viewfinderBlack = Color(0xFF000000);
+const Color _viewfinderWhite = Color(0xFFFFFFFF);
+const Color _viewfinderWhite70 = Color(0xB3FFFFFF); // white @ 70% opacity
 
 /// The expected QR code format is a plain table ID string, e.g. `table-3`.
 /// When a valid code is detected the user is navigated to the customer home
@@ -49,7 +57,10 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('تم التعرف على الطاولة: $raw'),
-        backgroundColor: Colors.green,
+        backgroundColor: StatusColors.tone(
+          SemanticTone.success,
+          Theme.of(context).brightness,
+        ),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -63,10 +74,10 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: _viewfinderBlack,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: _viewfinderBlack,
+        foregroundColor: _viewfinderWhite,
         title: const Text('مسح رمز QR الطاولة'),
         actions: [
           IconButton(
@@ -116,7 +127,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
               children: [
                 const Icon(
                   Icons.qr_code_scanner,
-                  color: Colors.white70,
+                  color: _viewfinderWhite70,
                   size: 32,
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -124,7 +135,7 @@ class _QrScanPageState extends ConsumerState<QrScanPage> {
                   'وجّه الكاميرا نحو رمز QR الموجود على الطاولة',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
+                    color: _viewfinderWhite70,
                   ),
                 ),
               ],

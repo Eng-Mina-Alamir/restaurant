@@ -12,6 +12,7 @@ import '../../../delivery/presentation/widgets/live_tracking_map.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -106,15 +107,16 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   void _updateMapMarkers() {
     final ctrl = _mapController;
     if (ctrl == null) return;
+    final brightness = Theme.of(context).brightness;
 
     ctrl.clearMarkers();
 
     // 1. Restaurant Pin
     ctrl.addCustomMarker(
       position: _restaurantLatLng,
-      child: const _PinMarker(
+      child: _PinMarker(
         icon: Icons.restaurant,
-        color: Colors.orange,
+        color: StatusColors.tone(SemanticTone.warning, brightness),
         label: 'المطعم',
       ),
     );
@@ -122,9 +124,9 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     // 2. Customer Pin
     ctrl.addCustomMarker(
       position: _customerLatLng,
-      child: const _PinMarker(
+      child: _PinMarker(
         icon: Icons.home,
-        color: Colors.green,
+        color: StatusColors.tone(SemanticTone.success, brightness),
         label: 'موقعك',
       ),
     );
@@ -220,7 +222,11 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
           if (assignment.driverRating != null)
             Row(
               children: [
-                const Icon(Icons.star, size: 16, color: Colors.amber),
+                Icon(
+                  Icons.star,
+                  size: 16,
+                  color: StatusColors.starRating(theme.brightness),
+                ),
                 const SizedBox(width: 2),
                 Text(
                   'تقييم المندوب: ${assignment.driverRating!.toStringAsFixed(1)}',
@@ -259,7 +265,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                       'حالة الطلب: ${order.status.labelAr}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: _statusColor(order.status),
+                        color: StatusColors.order(order.status, theme.brightness),
                       ),
                     ),
                     Text(
@@ -422,7 +428,9 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   /// controller (persisted + broadcast), shows success feedback and leaves
   /// the tracking page.
   Future<void> _confirmCancellation() async {
-    final errorColor = Theme.of(context).colorScheme.error;
+    final colorScheme = Theme.of(context).colorScheme;
+    final errorColor = colorScheme.error;
+    final onErrorColor = colorScheme.onError;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -438,7 +446,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: errorColor,
-              foregroundColor: Colors.white,
+              foregroundColor: onErrorColor,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('نعم، إلغاء'),
@@ -476,24 +484,6 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
         return 4;
       case OrderStatus.cancelled:
         return 0;
-    }
-  }
-
-  Color _statusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Colors.orange;
-      case OrderStatus.confirmed:
-        return Colors.blue;
-      case OrderStatus.preparing:
-        return Colors.amber.shade800;
-      case OrderStatus.ready:
-      case OrderStatus.served:
-        return Colors.teal;
-      case OrderStatus.completed:
-        return Colors.green;
-      case OrderStatus.cancelled:
-        return Colors.red;
     }
   }
 }
@@ -535,7 +525,9 @@ class _OrderStepper extends StatelessWidget {
                     backgroundColor: i <= currentStep
                         ? colorScheme.primary
                         : colorScheme.outlineVariant,
-                    foregroundColor: Colors.white,
+                    foregroundColor: i <= currentStep
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurfaceVariant,
                     child: i < currentStep
                         ? const Icon(Icons.check, size: 14)
                         : Text(
@@ -579,6 +571,23 @@ class _OrderStepper extends StatelessWidget {
   }
 }
 
+// ── Map-marker chrome ─────────────────────────────────────────────────────────
+// Custom pins float above arbitrary map imagery instead of themed app
+// surfaces, so their chrome keeps fixed high-contrast values rather than
+// theme-derived colors (same rationale as the QR scanner viewfinder staying
+// pure black). Only the pin FILL colors come from [StatusColors].
+const Color _markerChrome = Color(0xFFFFFFFF); // white plate/border/halo ink
+const Color _markerInk = Color(0xDD000000); // black87 label text
+const Color _markerHalo = Color(0x42000000); // black26 drop shadow
+const Color _markerHairline = Color(0x1A000000); // black12 soft shadow
+
+/// Readable icon ink for a marker fill: light ink on deep audited tone steps
+/// (light mode), dark ink on pale dark-mode tone steps.
+Color _iconInkFor(Color fill) =>
+    ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
+        ? _markerChrome
+        : _markerInk;
+
 class _PinMarker extends StatelessWidget {
   const _PinMarker({
     required this.icon,
@@ -600,23 +609,25 @@ class _PinMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+            boxShadow: const [
+              BoxShadow(color: _markerHalo, blurRadius: 4),
+            ],
           ),
-          child: Icon(icon, color: Colors.white, size: 16),
+          child: Icon(icon, color: _iconInkFor(color), size: 16),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: _markerChrome,
             borderRadius: BorderRadius.circular(4),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+            boxShadow: const [BoxShadow(color: _markerHairline, blurRadius: 2)],
           ),
           child: Text(
             label,
             style: const TextStyle(
               fontSize: 8,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: _markerInk,
             ),
           ),
         ),
@@ -636,7 +647,7 @@ class _DriverMarker extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: _markerChrome, width: 2),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.5),
@@ -645,7 +656,7 @@ class _DriverMarker extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(Icons.delivery_dining, color: Colors.white, size: 24),
+      child: Icon(Icons.delivery_dining, color: _iconInkFor(color), size: 24),
     );
   }
 }

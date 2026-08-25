@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../cart/domain/entities/cart_item.dart';
@@ -208,7 +209,11 @@ class _OrderHistoryCard extends ConsumerWidget {
                     ),
                   ),
                   if (assignment.driverRating != null) ...[
-                    const Icon(Icons.star, size: 16, color: Colors.amber),
+                    Icon(
+                      Icons.star,
+                      size: 16,
+                      color: StatusColors.starRating(theme.brightness),
+                    ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       assignment.driverRating!.toStringAsFixed(1),

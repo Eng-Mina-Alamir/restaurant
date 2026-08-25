@@ -122,4 +122,15 @@ abstract final class StatusColors {
       SemanticTone.neutral => isDark ? _neutralDark : _neutralLight,
     };
   }
+
+  // ── Rating stars ───────────────────────────────────────────────────────────
+
+  /// Canonical accent for star-rating icons across customer surfaces (order
+  /// tracking, order history, item detail sheet).
+  ///
+  /// Stars deliberately reuse [SemanticTone.warning]'s audited amber /
+  /// deep-orange steps so the rating hue stays consistent app-wide and keeps
+  /// its >= 4.5:1 contrast bar in both brightness modes.
+  static Color starRating(Brightness brightness) =>
+      tone(SemanticTone.warning, brightness);
 }

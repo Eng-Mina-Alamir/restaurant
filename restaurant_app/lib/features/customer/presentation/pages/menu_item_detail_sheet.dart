@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
@@ -113,7 +114,11 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                     ),
                   ),
                   TextButton.icon(
-                    icon: const Icon(Icons.star, color: Colors.amber, size: 20),
+                    icon: Icon(
+                      Icons.star,
+                      color: StatusColors.starRating(theme.brightness),
+                      size: 20,
+                    ),
                     label: Text(
                       '${item.rating ?? 4.8} (تقييم الوجبة)',
                       style: theme.textTheme.labelMedium?.copyWith(
