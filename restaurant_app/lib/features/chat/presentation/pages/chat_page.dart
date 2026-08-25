@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
@@ -12,8 +14,9 @@ import '../controllers/unread_chat_controller.dart';
 
 /// Order-scoped customer ↔ driver conversation.
 ///
-/// Minimal slice: history-first bubbles (own messages right-aligned in the
-/// primary color, others left) plus a validated send field. Failures surface
+/// History-first bubbles (own messages hug the directional end edge in the
+/// primary color, others the start edge), skeleton bubbles while history
+/// loads, and a shared [EmptyState] for fresh threads. Failures surface
 /// as snack bars; the thread refreshes live through [ChatController].
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key, required this.orderId});
@@ -26,6 +29,7 @@ class ChatPage extends ConsumerStatefulWidget {
 
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _inputController = TextEditingController();
+  final FocusNode _inputFocus = FocusNode();
 
   /// Badge counter for this order, resolved once so [dispose] can clear it
   /// without touching `ref` (Riverpod forbids ref reads after unmount).
@@ -61,6 +65,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     // provider is forbidden.
     scheduleMicrotask(_unreadBadge.markRead);
     _inputController.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
@@ -103,7 +108,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         children: [
           Expanded(
             child: messagesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const _ChatMessagesSkeleton(),
               error: (err, _) => ErrorState(
                 message: 'تعذر تحميل المحادثة',
                 errorDetail: err,
@@ -112,13 +117,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     .retry(),
               ),
               data: (messages) => messages.isEmpty
-                  ? Center(
-                      child: Text(
-                        'لا توجد رسائل بعد — ابدأ المحادثة',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                  ? EmptyState(
+                      icon: Icons.chat_bubble_outline,
+                      message: 'لا توجد رسائل بعد',
+                      actionLabel: 'ابدأ المحادثة',
+                      onAction: _inputFocus.requestFocus,
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(
@@ -148,6 +151,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   Expanded(
                     child: TextField(
                       controller: _inputController,
+                      focusNode: _inputFocus,
                       decoration: const InputDecoration(
                         hintText: 'اكتب رسالة…',
                         border: OutlineInputBorder(),
@@ -198,9 +202,12 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isLtr = Directionality.of(context) == TextDirection.ltr;
 
     return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMine
+          ? AlignmentDirectional.centerEnd
+          : AlignmentDirectional.centerStart,
       // One complete announcement per bubble; excludeSemantics stops the
       // body/timestamp Texts from being read again as separate nodes.
       child: Semantics(
@@ -222,12 +229,22 @@ class _MessageBubble extends StatelessWidget {
             color: isMine
                 ? colorScheme.primary
                 : colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            // Chat-tail look: only the top corner on the sender's side is
+            // tightened; everything else keeps the standard radius.
+            borderRadius: BorderRadiusDirectional.only(
+              topStart: Radius.circular(isMine ? AppRadius.md : AppRadius.sm),
+              topEnd: Radius.circular(isMine ? AppRadius.sm : AppRadius.md),
+              bottomStart: const Radius.circular(AppRadius.md),
+              bottomEnd: const Radius.circular(AppRadius.md),
+            ),
           ),
           child: Column(
+            // CrossAxisAlignment.end/start are absolute (left/right), so map
+            // "own messages hug their trailing edge" through the ambient
+            // Directionality instead of hard-coding a side.
             crossAxisAlignment: isMine
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+                ? (isLtr ? CrossAxisAlignment.end : CrossAxisAlignment.start)
+                : (isLtr ? CrossAxisAlignment.start : CrossAxisAlignment.end),
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -251,6 +268,45 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Skeleton thread shown while history loads.
+///
+/// Alternates bubbles between the directional start/end edges with varied
+/// widths so the shimmer mirrors the geometry of a real conversation.
+class _ChatMessagesSkeleton extends StatelessWidget {
+  const _ChatMessagesSkeleton();
+
+  /// Widths echo varied message lengths (kept under the 72% bubble cap).
+  static const List<double> _bubbleWidths = <double>[210, 140, 250, 120, 190];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      itemCount: _bubbleWidths.length,
+      itemBuilder: (context, index) {
+        // Odd indices sit on the "mine" side, echoing a two-party thread.
+        final isMine = index.isOdd;
+        return Align(
+          alignment: isMine
+              ? AlignmentDirectional.centerEnd
+              : AlignmentDirectional.centerStart,
+          child: Container(
+            margin: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: SkeletonBox(
+              width: _bubbleWidths[index],
+              height: 48,
+              borderRadius: AppRadius.sm,
+            ),
+          ),
+        );
+      },
     );
   }
 }
