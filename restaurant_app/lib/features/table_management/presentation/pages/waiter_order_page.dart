@@ -6,6 +6,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../cart/domain/cart_totals.dart';
@@ -109,7 +110,7 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
         ),
       ),
       body: menu.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _MenuSkeleton(),
         error: (e, _) => ErrorState(
           message: AppConstants.errorLoadingData,
           errorDetail: e,
@@ -176,6 +177,27 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// Shimmer placeholder list mirroring the menu item tiles while they load.
+class _MenuSkeleton extends StatelessWidget {
+  const _MenuSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      itemCount: 6,
+      itemBuilder: (context, index) => const Padding(
+        padding: EdgeInsets.only(bottom: AppSpacing.sm),
+        child: SkeletonBox(
+          width: double.infinity,
+          height: 90,
+          borderRadius: AppRadius.md,
+        ),
       ),
     );
   }

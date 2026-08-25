@@ -29,7 +29,7 @@ class WaiterTableCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = tableStatusColor(table.status);
+    final accent = tableStatusColor(table.status, theme.brightness);
     final statusLabel = table.status.labelAr;
 
     return AnimatedPressCard(

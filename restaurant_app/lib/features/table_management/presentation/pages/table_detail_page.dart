@@ -146,7 +146,7 @@ class _TableInfoRow extends StatelessWidget {
                 Text(
                   table.status.labelAr,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: tableStatusColor(table.status),
+                    color: tableStatusColor(table.status, theme.brightness),
                   ),
                 ),
               ],

@@ -8,8 +8,10 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/waiter_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/animations/animated_counter.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
@@ -74,7 +76,7 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
         ],
       ),
       body: tables.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const _TablesSkeleton()
           : Column(
               children: [
                 Padding(
@@ -157,6 +159,7 @@ class _OrdersSummary extends StatelessWidget {
 
     if (total == 0) return const SizedBox.shrink();
 
+    final brightness = Theme.of(context).brightness;
     return FadeSlideTransitionWidget(
       child: Card(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -181,17 +184,23 @@ class _OrdersSummary extends StatelessWidget {
                     _CountChip(
                       label: AppConstants.waiterPendingCount,
                       count: pending,
-                      color: Colors.orange,
+                      color: StatusColors.tone(
+                        SemanticTone.warning,
+                        brightness,
+                      ),
                     ),
                     _CountChip(
                       label: AppConstants.waiterPreparingCount,
                       count: preparing,
-                      color: Colors.blue,
+                      color: StatusColors.tone(SemanticTone.info, brightness),
                     ),
                     _CountChip(
                       label: AppConstants.waiterReadyCount,
                       count: ready,
-                      color: Colors.green,
+                      color: StatusColors.tone(
+                        SemanticTone.success,
+                        brightness,
+                      ),
                     ),
                   ],
                 ),
@@ -241,14 +250,13 @@ class _CountChip extends StatelessWidget {
 }
 
 /// Helper to return appropriate color for each table status.
-Color tableStatusColor(TableStatus status) {
-  return switch (status) {
-    TableStatus.available => Colors.green,
-    TableStatus.occupied => Colors.red,
-    TableStatus.reserved => Colors.orange,
-    TableStatus.needsCleaning => Colors.blueGrey,
-  };
-}
+///
+/// Delegates to [StatusColors.table] so callers get the audited palette;
+/// pass `Theme.of(context).brightness` to pick up light/dark variants.
+Color tableStatusColor(
+  TableStatus status, [
+  Brightness brightness = Brightness.light,
+]) => StatusColors.table(status, brightness);
 
 /// Helper to return appropriate icon for each table status.
 IconData tableStatusIcon(TableStatus status) {
@@ -258,4 +266,40 @@ IconData tableStatusIcon(TableStatus status) {
     TableStatus.reserved => Icons.bookmark_outline,
     TableStatus.needsCleaning => Icons.cleaning_services_outlined,
   };
+}
+
+/// Shimmer placeholder mirroring the table-card grid while tables load:
+/// same responsive column count, aspect ratio and spacing as the real grid.
+class _TablesSkeleton extends StatelessWidget {
+  const _TablesSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ResponsiveBuilder(
+      builder: (context, screenType, constraints) {
+        final cols = AppBreakpoints.gridColumnsForWidth(
+          constraints.maxWidth,
+          minColumns: 2,
+          maxColumns: 5,
+        );
+        final ratio = screenType == ScreenType.mobile ? 1.15 : 1.25;
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            childAspectRatio: ratio,
+            crossAxisSpacing: AppSpacing.md,
+            mainAxisSpacing: AppSpacing.md,
+          ),
+          itemCount: cols * 3,
+          itemBuilder: (context, index) => const SkeletonBox(
+            width: double.infinity,
+            height: double.infinity,
+            borderRadius: AppRadius.md,
+          ),
+        );
+      },
+    );
+  }
 }
