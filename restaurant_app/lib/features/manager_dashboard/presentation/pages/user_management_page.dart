@@ -194,7 +194,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                 const SizedBox(width: AppSpacing.xs),
                 for (final role in UserRole.values)
                   Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.xs),
+                    padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text(
                         '${role.labelAr} (${users.where((u) => u.role == role).length})',

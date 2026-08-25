@@ -79,7 +79,7 @@ class AlertsPage extends ConsumerWidget {
               children: AlertCategory.values.map((cat) {
                 final isSelected = selectedCategory == cat;
                 return Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.xs),
+                  padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                   child: ChoiceChip(
                     label: Text(cat.displayName),
                     selected: isSelected,

@@ -66,7 +66,7 @@ class _TableManagementCrudPageState
                 const SizedBox(width: AppSpacing.xs),
                 for (final status in TableStatus.values)
                   Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.xs),
+                    padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text(
                         '${status.labelAr} (${tables.where((t) => t.status == status).length})',

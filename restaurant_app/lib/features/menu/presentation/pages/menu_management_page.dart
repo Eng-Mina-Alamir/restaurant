@@ -103,7 +103,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                     const SizedBox(width: AppSpacing.xs),
                     for (final category in menu.categories)
                       Padding(
-                        padding: const EdgeInsets.only(left: AppSpacing.xs),
+                        padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                         child: ChoiceChip(
                           label: Text(
                             '$category (${menu.itemsIn(category).length})',

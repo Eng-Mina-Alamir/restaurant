@@ -104,7 +104,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
           actions: [
             if (badge > 0)
               Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.md),
+                padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
                 child: Center(
                   child: Badge(
                     label: Text('$badge'),

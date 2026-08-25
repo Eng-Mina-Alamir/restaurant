@@ -59,7 +59,7 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
         actions: [
           if (readyPickupCount > 0)
             Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
               child: Center(
                 child: Tooltip(
                   message: AppConstants.waiterReadyForPickupBadge,

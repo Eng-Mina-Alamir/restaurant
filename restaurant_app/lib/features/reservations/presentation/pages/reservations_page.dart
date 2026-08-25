@@ -63,7 +63,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                 const SizedBox(width: AppSpacing.xs),
                 for (final status in ReservationStatus.values)
                   Padding(
-                    padding: const EdgeInsets.only(left: AppSpacing.xs),
+                    padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                     child: ChoiceChip(
                       label: Text(status.labelAr),
                       selected: _filterStatus == status,

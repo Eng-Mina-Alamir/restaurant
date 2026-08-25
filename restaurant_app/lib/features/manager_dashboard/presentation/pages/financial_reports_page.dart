@@ -62,7 +62,7 @@ class FinancialReportsPage extends ConsumerWidget {
                 children: [
                   for (final period in FinancialPeriod.values)
                     Padding(
-                      padding: const EdgeInsets.only(left: AppSpacing.xs),
+                      padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
                       child: ChoiceChip(
                         label: Text(period.labelAr),
                         selected: state.selectedPeriod == period,
@@ -362,7 +362,7 @@ class _FinancialRow extends StatelessWidget {
             children: [
               if (percentage != null)
                 Container(
-                  margin: const EdgeInsets.only(left: 8),
+                  margin: const EdgeInsetsDirectional.only(start: 8),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 6,
                     vertical: 2,

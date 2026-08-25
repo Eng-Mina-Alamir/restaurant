@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -82,7 +83,7 @@ class _StatusFilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
             child: ChoiceChip(
               label: const Text(AppConstants.filterAll),
               selected: selected == null,
@@ -91,7 +92,7 @@ class _StatusFilterBar extends StatelessWidget {
           ),
           for (final status in statuses)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
               child: ChoiceChip(
                 label: Text(status.labelAr),
                 selected: selected == status,
