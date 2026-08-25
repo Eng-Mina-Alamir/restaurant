@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/coupon_entity.dart';
@@ -37,7 +38,7 @@ class CouponManagementPage extends ConsumerWidget {
         label: const Text('إنشاء كوبون'),
       ),
       body: couponsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _CouponManagementSkeleton(),
         error: (err, _) => ErrorState(
           message: AppConstants.errorLoadingData,
           errorDetail: err,
@@ -570,6 +571,76 @@ class CouponManagementPage extends ConsumerWidget {
             child: const Text(AppConstants.delete),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+
+/// Shimmer placeholder mirroring the coupons list while codes load: stacked
+/// banner-style cards with code/status pills, title and detail lines.
+class _CouponManagementSkeleton extends StatelessWidget {
+  const _CouponManagementSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        80,
+      ),
+      itemCount: 5,
+      itemBuilder: (context, index) => const _CouponCardSkeleton(),
+    );
+  }
+}
+
+/// Shimmer stand-in for one coupon card: code pill + status badge and popup
+/// menu circle on the header row, then title/discount/limits detail lines.
+class _CouponCardSkeleton extends StatelessWidget {
+  const _CouponCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      margin: EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    SkeletonBox(width: 88, height: 28, borderRadius: AppRadius.sm),
+                    SizedBox(width: AppSpacing.xs),
+                    SkeletonBox(width: 42, height: 18, borderRadius: AppRadius.xs),
+                  ],
+                ),
+                SkeletonCircle(size: 24),
+              ],
+            ),
+            SizedBox(height: AppSpacing.xs),
+            SkeletonBox(width: 190, height: 15, borderRadius: AppRadius.xs),
+            SizedBox(height: 2),
+            SkeletonBox(width: 160, height: 12, borderRadius: AppRadius.xs),
+            SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                SkeletonBox(width: 150, height: 11, borderRadius: AppRadius.xs),
+                SizedBox(width: AppSpacing.md),
+                SkeletonBox(width: 120, height: 11, borderRadius: AppRadius.xs),
+              ],
+            ),
+            SizedBox(height: AppSpacing.xs),
+            SkeletonBox(width: 100, height: 11, borderRadius: AppRadius.xs),
+          ],
+        ),
       ),
     );
   }

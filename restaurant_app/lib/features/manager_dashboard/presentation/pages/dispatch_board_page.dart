@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -35,7 +36,7 @@ class DispatchBoardPage extends ConsumerWidget {
         ],
       ),
       body: asyncBoard.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _DispatchBoardSkeleton(),
         error: (error, _) => ErrorState(
           message: 'حدث خطأ في تحميل لوحة التوصيل',
           errorDetail: error,
@@ -118,6 +119,96 @@ class _SectionHeader extends StatelessWidget {
           padding: EdgeInsets.zero,
         ),
       ],
+    );
+  }
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+
+/// Shimmer placeholder mirroring the board while orders load: section header
+/// rows with stacked order-card placeholders (title + status pill, address
+/// line, trailing assign button).
+class _DispatchBoardSkeleton extends StatelessWidget {
+  const _DispatchBoardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        // ── Undispatched orders ──
+        const _SectionHeaderSkeleton(),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < 3; i++) const _OrderCardSkeleton(),
+
+        const SizedBox(height: AppSpacing.lg),
+
+        // ── Failed assignments ──
+        const _SectionHeaderSkeleton(),
+        const SizedBox(height: AppSpacing.sm),
+        for (var i = 0; i < 2; i++) const _OrderCardSkeleton(),
+      ],
+    );
+  }
+}
+
+/// Shimmer stand-in for a `_SectionHeader`: title bar plus count chip.
+class _SectionHeaderSkeleton extends StatelessWidget {
+  const _SectionHeaderSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        SkeletonBox(width: 150, height: 18, borderRadius: AppRadius.sm),
+        SizedBox(width: AppSpacing.xs),
+        SkeletonBox(width: 36, height: 26, borderRadius: AppRadius.full),
+      ],
+    );
+  }
+}
+
+/// Shimmer stand-in for one `_OrderDispatchCard`.
+class _OrderCardSkeleton extends StatelessWidget {
+  const _OrderCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      margin: EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: SkeletonBox(
+                    width: double.infinity,
+                    height: 14,
+                    borderRadius: AppRadius.xs,
+                  ),
+                ),
+                SizedBox(width: AppSpacing.sm),
+                SkeletonBox(width: 64, height: 24, borderRadius: AppRadius.full),
+              ],
+            ),
+            SizedBox(height: AppSpacing.xs),
+            SkeletonBox(width: 200, height: 12, borderRadius: AppRadius.xs),
+            SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: SkeletonBox(
+                width: 120,
+                height: 40,
+                borderRadius: AppRadius.full,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

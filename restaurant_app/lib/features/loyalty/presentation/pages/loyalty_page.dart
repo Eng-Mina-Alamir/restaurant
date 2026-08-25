@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/loyalty_entity.dart';
@@ -33,7 +34,7 @@ class LoyaltyPage extends ConsumerWidget {
         ],
       ),
       body: accountAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _LoyaltySkeleton(),
         error: (err, _) => ErrorState(
           message: AppConstants.errorLoadingData,
           errorDetail: err,
@@ -96,11 +97,11 @@ class LoyaltyPage extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.sm),
 
                 rewardsAsync.when(
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(AppSpacing.md),
-                      child: CircularProgressIndicator(),
-                    ),
+                  loading: () => const Column(
+                    children: [
+                      _RewardCardSkeleton(),
+                      _RewardCardSkeleton(),
+                    ],
                   ),
                   error: (_, _) => const Text('تعذر تحميل المكافآت حالياً'),
                   data: (rewards) => Column(
@@ -469,6 +470,173 @@ class _RewardCard extends StatelessWidget {
               onPressed: canAfford ? onRedeem : null,
               child: const Text('استبدال'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+
+/// Shimmer placeholder mirroring the loyalty layout while the account loads:
+/// tier banner with multiplier badge, next-tier progress bar and points
+/// history rows.
+class _LoyaltySkeleton extends StatelessWidget {
+  const _LoyaltySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Tier banner ──
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonBox(
+                            width: 96,
+                            height: 20,
+                            borderRadius: AppRadius.full,
+                          ),
+                          SizedBox(height: AppSpacing.xs),
+                          SkeletonBox(width: 150, height: 32),
+                          SizedBox(height: AppSpacing.xs),
+                          SkeletonBox(width: 130, height: 12, borderRadius: AppRadius.xs),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    SkeletonCircle(size: 64),
+                  ],
+                ),
+                SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SkeletonBox(width: 110, height: 10, borderRadius: AppRadius.full),
+                    SkeletonBox(width: 80, height: 10, borderRadius: AppRadius.full),
+                  ],
+                ),
+                SizedBox(height: 6),
+                // Progress bar.
+                SkeletonBox(
+                  width: double.infinity,
+                  height: 8,
+                  borderRadius: AppRadius.full,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // ── Points history ──
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: SkeletonBox(width: 180, height: 18, borderRadius: AppRadius.sm),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Card(
+            child: Column(
+              children: [
+                for (var i = 0; i < 4; i++) ...[
+                  if (i > 0) const Divider(height: 1),
+                  const _HistoryRowSkeleton(),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shimmer stand-in for one points-history list tile: avatar circle,
+/// description/date lines and a trailing points pill.
+class _HistoryRowSkeleton extends StatelessWidget {
+  const _HistoryRowSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          SkeletonCircle(size: 40),
+          SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBox(width: double.infinity, height: 14),
+                SizedBox(height: AppSpacing.xs),
+                SkeletonBox(width: 120, height: 10, borderRadius: AppRadius.xs),
+              ],
+            ),
+          ),
+          SizedBox(width: AppSpacing.sm),
+          SkeletonBox(width: 56, height: 12, borderRadius: AppRadius.xs),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shimmer stand-in for one reward catalog card: icon circle, title/description
+/// lines and a redeem button block.
+class _RewardCardSkeleton extends StatelessWidget {
+  const _RewardCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      margin: EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            SkeletonCircle(size: 44),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SkeletonBox(width: 140, height: 14, borderRadius: AppRadius.xs),
+                  SizedBox(height: AppSpacing.xs),
+                  SkeletonBox(
+                    width: double.infinity,
+                    height: 11,
+                    borderRadius: AppRadius.xs,
+                  ),
+                  SizedBox(height: AppSpacing.xs),
+                  SkeletonBox(width: 80, height: 11, borderRadius: AppRadius.xs),
+                ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.sm),
+            SkeletonBox(width: 76, height: 40, borderRadius: AppRadius.full),
           ],
         ),
       ),

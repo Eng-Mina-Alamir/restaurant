@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/menu_item.dart';
@@ -51,7 +52,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
         label: const Text('إضافة صنف'),
       ),
       body: menuAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _MenuManagementSkeleton(),
         error: (error, _) => ErrorState(
           message: AppConstants.errorLoadingData,
           errorDetail: error,
@@ -576,6 +577,140 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
             child: const Text(AppConstants.delete),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Loading skeleton ─────────────────────────────────────────────────────────
+
+/// Shimmer placeholder mirroring the management layout while the menu loads:
+/// search field, category chip strip and item-card placeholders with
+/// title/description lines beside the price plus availability footer controls.
+class _MenuManagementSkeleton extends StatelessWidget {
+  const _MenuManagementSkeleton();
+
+  /// Varied widths echo category chip label lengths.
+  static const List<double> _chipWidths = <double>[92, 76, 104, 68];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Search & summary bar.
+        const Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+            0,
+          ),
+          child: SkeletonBox(
+            width: double.infinity,
+            height: 44,
+            borderRadius: AppRadius.md,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Categories row.
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            children: [
+              for (var i = 0; i < _chipWidths.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.xs),
+                SkeletonBox(
+                  width: _chipWidths[i],
+                  height: 32,
+                  borderRadius: AppRadius.full,
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Items list.
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.md,
+              80,
+            ),
+            itemCount: 5,
+            itemBuilder: (context, index) => const _MenuItemCardSkeleton(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Shimmer stand-in for one menu item card: title/description lines beside the
+/// price, then availability switch and edit/delete icon circles.
+class _MenuItemCardSkeleton extends StatelessWidget {
+  const _MenuItemCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      margin: EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBox(
+                        width: double.infinity,
+                        height: 16,
+                        borderRadius: AppRadius.sm,
+                      ),
+                      SizedBox(height: 2),
+                      SkeletonBox(width: 200, height: 11, borderRadius: AppRadius.xs),
+                    ],
+                  ),
+                ),
+                SizedBox(width: AppSpacing.sm),
+                SkeletonBox(width: 64, height: 16, borderRadius: AppRadius.sm),
+              ],
+            ),
+            SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    SkeletonBox(
+                      width: 34,
+                      height: 20,
+                      borderRadius: AppRadius.full,
+                    ),
+                    SizedBox(width: AppSpacing.sm),
+                    SkeletonBox(width: 52, height: 12, borderRadius: AppRadius.xs),
+                  ],
+                ),
+                Row(
+                  children: [
+                    SkeletonCircle(size: 24),
+                    SizedBox(width: AppSpacing.sm),
+                    SkeletonCircle(size: 24),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
