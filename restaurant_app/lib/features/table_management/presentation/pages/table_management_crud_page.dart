@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../controllers/table_controller.dart';
 import '../../domain/entities/restaurant_table.dart';
@@ -103,7 +104,10 @@ class _TableManagementCrudPageState
                     itemCount: filteredTables.length,
                     itemBuilder: (context, index) {
                       final table = filteredTables[index];
-                      final statusColor = _statusColor(table.status);
+                      final statusColor = StatusColors.table(
+                        table.status,
+                        theme.brightness,
+                      );
 
                       return Card(
                         elevation: 1,
@@ -157,20 +161,20 @@ class _TableManagementCrudPageState
                                           ],
                                         ),
                                       ),
-                                      const PopupMenuItem(
+                                      PopupMenuItem(
                                         value: 'delete',
                                         child: Row(
                                           children: [
                                             Icon(
                                               Icons.delete_outline,
                                               size: 18,
-                                              color: Colors.red,
+                                              color: colorScheme.error,
                                             ),
-                                            SizedBox(width: 8),
+                                            const SizedBox(width: 8),
                                             Text(
                                               'حذف الطاولة',
                                               style: TextStyle(
-                                                color: Colors.red,
+                                                color: colorScheme.error,
                                               ),
                                             ),
                                           ],
@@ -265,19 +269,6 @@ class _TableManagementCrudPageState
         ],
       ),
     );
-  }
-
-  Color _statusColor(TableStatus status) {
-    switch (status) {
-      case TableStatus.available:
-        return Colors.green;
-      case TableStatus.occupied:
-        return Colors.red;
-      case TableStatus.reserved:
-        return Colors.purple;
-      case TableStatus.needsCleaning:
-        return Colors.orange;
-    }
   }
 
   void _showAddTableDialog(BuildContext context) {
@@ -439,7 +430,9 @@ class _TableManagementCrudPageState
             child: const Text(AppConstants.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () {
               ref.read(tableControllerProvider.notifier).deleteTable(table.id);
               Navigator.pop(ctx);

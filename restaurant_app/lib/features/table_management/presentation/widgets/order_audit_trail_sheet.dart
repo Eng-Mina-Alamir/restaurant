@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_status_log_entry.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -213,23 +214,24 @@ class _StatusChip extends StatelessWidget {
   }
 }
 
-/// Orange/red tonal badge marking a guarded backward move (تراجع).
+/// Warning-tonal badge marking a guarded backward move (تراجع).
 class _RevertBadge extends StatelessWidget {
   const _RevertBadge();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final warning = StatusColors.tone(SemanticTone.warning, theme.brightness);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: .15),
+        color: warning.withValues(alpha: .15),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         AppConstants.orderAuditTrailRevertBadge,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: Colors.deepOrange,
+          color: warning,
           fontWeight: FontWeight.bold,
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -115,6 +116,7 @@ class _OrderStatusCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final next = _nextStatus(order.status);
     final isTerminal = order.status.isTerminal;
+    final statusColor = StatusColors.order(order.status, theme.brightness);
 
     return Card(
       child: Padding(
@@ -146,15 +148,13 @@ class _OrderStatusCard extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _statusColor(
-                          order.status,
-                        ).withValues(alpha: .15),
+                        color: statusColor.withValues(alpha: .15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         order.status.labelAr,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: _statusColor(order.status),
+                          color: statusColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -225,24 +225,5 @@ class _OrderStatusCard extends ConsumerWidget {
     final index = flow.indexOf(current);
     if (index == -1 || index == flow.length - 1) return null;
     return flow[index + 1];
-  }
-
-  Color _statusColor(OrderStatus status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Colors.amber;
-      case OrderStatus.confirmed:
-        return Colors.blueGrey;
-      case OrderStatus.preparing:
-        return Colors.orange;
-      case OrderStatus.ready:
-        return Colors.green;
-      case OrderStatus.served:
-        return Colors.teal;
-      case OrderStatus.completed:
-        return Colors.blueGrey;
-      case OrderStatus.cancelled:
-        return Colors.red;
-    }
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/notifications/push_notification_service.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
 
@@ -89,6 +90,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                     itemBuilder: (context, index) {
                       final item = filtered[index];
                       final isUnread = !item.isRead;
+                      final categoryColor = _categoryColor(
+                        item.category,
+                        theme.brightness,
+                      );
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -99,12 +104,12 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                             : null,
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: _categoryColor(
-                              item.category,
-                            ).withValues(alpha: 0.15),
+                            backgroundColor: categoryColor.withValues(
+                              alpha: 0.15,
+                            ),
                             child: Icon(
                               _categoryIcon(item.category),
-                              color: _categoryColor(item.category),
+                              color: categoryColor,
                             ),
                           ),
                           title: Text(
@@ -165,19 +170,34 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     }
   }
 
-  Color _categoryColor(NotificationCategory category) {
-    switch (category) {
-      case NotificationCategory.orderStatus:
-        return Colors.blue;
-      case NotificationCategory.newOrder:
-        return Colors.green;
-      case NotificationCategory.tableAlert:
-        return Colors.orange;
-      case NotificationCategory.deliveryJob:
-        return Colors.teal;
-      case NotificationCategory.system:
-        return Colors.purple;
-    }
+  /// Notification categories resolved onto audited [SemanticTone] steps.
+  ///
+  /// `deliveryJob` shares the info tone (the palette exposes no dedicated
+  /// teal tone) and `system` uses neutral, keeping every hue inside the
+  /// contrast-audited registry.
+  Color _categoryColor(NotificationCategory category, Brightness brightness) {
+    return switch (category) {
+      NotificationCategory.orderStatus => StatusColors.tone(
+        SemanticTone.info,
+        brightness,
+      ),
+      NotificationCategory.newOrder => StatusColors.tone(
+        SemanticTone.success,
+        brightness,
+      ),
+      NotificationCategory.tableAlert => StatusColors.tone(
+        SemanticTone.warning,
+        brightness,
+      ),
+      NotificationCategory.deliveryJob => StatusColors.tone(
+        SemanticTone.info,
+        brightness,
+      ),
+      NotificationCategory.system => StatusColors.tone(
+        SemanticTone.neutral,
+        brightness,
+      ),
+    };
   }
 
   IconData _categoryIcon(NotificationCategory category) {

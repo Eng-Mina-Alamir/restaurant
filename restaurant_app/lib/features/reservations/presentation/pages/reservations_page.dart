@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -125,7 +126,19 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final res = filtered[index];
-                      final statusColor = _statusColor(res.status);
+                      final statusColor = _statusColor(
+                        res.status,
+                        theme.brightness,
+                      );
+                      // Accents for the confirmed-only action row below.
+                      final actionDanger = StatusColors.tone(
+                        SemanticTone.danger,
+                        theme.brightness,
+                      );
+                      final actionSuccess = StatusColors.tone(
+                        SemanticTone.success,
+                        theme.brightness,
+                      );
                       final timeFormatted = DateFormat(
                         'hh:mm a - yyyy/MM/dd',
                         'ar',
@@ -258,10 +271,8 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                   children: [
                                     OutlinedButton.icon(
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.red,
-                                        side: const BorderSide(
-                                          color: Colors.red,
-                                        ),
+                                        foregroundColor: actionDanger,
+                                        side: BorderSide(color: actionDanger),
                                         visualDensity: VisualDensity.compact,
                                       ),
                                       icon: const Icon(
@@ -281,7 +292,9 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                     const SizedBox(width: AppSpacing.sm),
                                     FilledButton.icon(
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: actionSuccess,
+                                        foregroundColor:
+                                            colorScheme.onPrimary,
                                         visualDensity: VisualDensity.compact,
                                       ),
                                       icon: const Icon(Icons.chair, size: 16),
@@ -322,19 +335,31 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
     );
   }
 
-  Color _statusColor(ReservationStatus status) {
-    switch (status) {
-      case ReservationStatus.confirmed:
-        return Colors.blue;
-      case ReservationStatus.seated:
-        return Colors.green;
-      case ReservationStatus.cancelled:
-        return Colors.red;
-      case ReservationStatus.pending:
-        return Colors.orange;
-      case ReservationStatus.completed:
-        return Colors.teal;
-    }
+  /// Reservation statuses resolved onto audited [SemanticTone] steps so both
+  /// brightness modes keep >= 4.5:1 contrast (see [StatusColors.tone]).
+  Color _statusColor(ReservationStatus status, Brightness brightness) {
+    return switch (status) {
+      ReservationStatus.confirmed => StatusColors.tone(
+        SemanticTone.info,
+        brightness,
+      ),
+      ReservationStatus.seated => StatusColors.tone(
+        SemanticTone.success,
+        brightness,
+      ),
+      ReservationStatus.cancelled => StatusColors.tone(
+        SemanticTone.danger,
+        brightness,
+      ),
+      ReservationStatus.pending => StatusColors.tone(
+        SemanticTone.warning,
+        brightness,
+      ),
+      ReservationStatus.completed => StatusColors.tone(
+        SemanticTone.neutral,
+        brightness,
+      ),
+    };
   }
 
   void _showAddReservationDialog(BuildContext context) {
