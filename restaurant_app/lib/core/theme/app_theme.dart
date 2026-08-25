@@ -219,6 +219,185 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
+
+      // ── Badges & selection controls ──────────────────────────────────────────
+      badgeTheme: BadgeThemeData(
+        backgroundColor: colorScheme.primary,
+        textColor: colorScheme.onPrimary,
+        // Mirrors AnimatedStatusBadge defaults: 10h/4v padding.
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: AppSpacing.xs,
+        ),
+        alignment: AlignmentDirectional.topStart,
+        offset: const Offset(-AppSpacing.xs, AppSpacing.xs),
+        textStyle: textTheme.labelSmall?.copyWith(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll<Size>(
+            Size(AppSpacing.lg, 48),
+          ),
+          side: WidgetStatePropertyAll(
+            BorderSide(color: colorScheme.outline),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+          textStyle: WidgetStatePropertyAll(
+            textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? colorScheme.primaryContainer
+                : null,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? colorScheme.onPrimaryContainer
+                : colorScheme.onSurface,
+          ),
+        ),
+      ),
+
+      // ── Date & time pickers (reservations / staff scheduling) ────────────────
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        elevation: AppElevation.lg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        headerBackgroundColor: colorScheme.primaryContainer,
+        headerForegroundColor: colorScheme.onPrimaryContainer,
+        headerHeadlineStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        headerHelpStyle: textTheme.labelLarge?.copyWith(
+          color: colorScheme.onPrimaryContainer,
+        ),
+        weekdayStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+        dayStyle: textTheme.bodyMedium,
+      ),
+
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        elevation: AppElevation.lg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        hourMinuteShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        hourMinuteColor: colorScheme.surfaceContainerHighest,
+        hourMinuteTextColor: colorScheme.onSurface,
+        hourMinuteTextStyle: textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        dayPeriodColor: colorScheme.primaryContainer,
+        dayPeriodTextColor: colorScheme.onPrimaryContainer,
+        dialHandColor: colorScheme.primary,
+        dialBackgroundColor: colorScheme.surfaceContainerHighest,
+        dialTextColor: colorScheme.onSurface,
+        dialTextStyle: textTheme.labelMedium,
+        helpTextStyle: textTheme.labelLarge?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+
+      // ── Navigation surfaces (tablet POS layouts) ─────────────────────────────
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: colorScheme.surfaceContainer,
+        surfaceTintColor: Colors.transparent,
+        elevation: AppElevation.none,
+        indicatorColor: colorScheme.secondaryContainer,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.onSurfaceVariant,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => textTheme.labelMedium?.copyWith(
+            color: states.contains(WidgetState.selected)
+                ? colorScheme.onSecondaryContainer
+                : colorScheme.onSurfaceVariant,
+            fontWeight:
+                states.contains(WidgetState.selected)
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+          ),
+        ),
+      ),
+
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        elevation: AppElevation.none,
+        indicatorColor: colorScheme.primaryContainer,
+        useIndicator: true,
+        labelType: NavigationRailLabelType.all,
+        selectedIconTheme: IconThemeData(color: colorScheme.onPrimaryContainer),
+        unselectedIconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
+        selectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+
+      // ── Overlays & menus (manager CRUD pages) ────────────────────────────────
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        textStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
+      ),
+
+      popupMenuTheme: PopupMenuThemeData(
+        color: colorScheme.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        elevation: AppElevation.md,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        textStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
+      ),
+
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(
+            colorScheme.surfaceContainerHigh,
+          ),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(AppElevation.md),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
