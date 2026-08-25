@@ -37,9 +37,9 @@ class _CartPageState extends ConsumerState<CartPage> {
     if (orderType == OrderType.delivery &&
         (deliveryAddress == null || deliveryAddress.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('من فضلك أدخل عنوان التوصيل أولاً'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('من فضلك أدخل عنوان التوصيل أولاً'),
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -308,17 +308,17 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(failure.message),
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       },
       onRight: (coupon) {
         ref.read(appliedCouponProvider.notifier).apply(coupon);
         _couponController.clear();
+        // Themed default background: snackBarTheme handles the styling.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🎉 تم تطبيق كود الخصم "${coupon.code}" بنجاح!'),
-            backgroundColor: Colors.green.shade700,
+            content: Text('تم تطبيق كود الخصم "${coupon.code}" بنجاح!'),
           ),
         );
       },
@@ -327,6 +327,8 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -341,13 +343,11 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                     child: TextField(
                       controller: _couponController,
                       textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
+                      // Inherits inputDecorationTheme from app_theme.dart.
+                      decoration: const InputDecoration(
                         hintText: 'أدخل كود الخصم (مثال: WELCOME50)',
-                        prefixIcon: const Icon(Icons.local_offer_outlined),
+                        prefixIcon: Icon(Icons.local_offer_outlined),
                         isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
                       ),
                     ),
                   ),
@@ -371,35 +371,32 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.12),
+                  color: colorScheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: Colors.green.withValues(alpha: 0.4),
-                  ),
+                  border: Border.all(color: colorScheme.tertiary),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.check_circle,
-                      color: Colors.green,
+                      color: colorScheme.onTertiaryContainer,
                       size: 20,
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         'كوبون: ${widget.appliedCoupon!.code} (${widget.appliedCoupon!.title})',
-                        style: const TextStyle(
-                          color: Colors.green,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onTertiaryContainer,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close,
                         size: 18,
-                        color: Colors.red,
+                        color: colorScheme.error,
                       ),
                       tooltip: 'إلغاء الكوبون',
                       onPressed: () {
@@ -454,10 +451,9 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                           children: [
                             Text(
                               'موقع التوصيل على الخريطة',
-                              style: TextStyle(
-                                fontSize: 11,
+                              style: theme.textTheme.labelSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: colorScheme.primary,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -466,7 +462,7 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
                                   'انقر لتحديد العنوان على الخريطة',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12),
+                              style: theme.textTheme.bodySmall,
                             ),
                           ],
                         ),
@@ -492,7 +488,7 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
               _Row(
                 label: 'خصم الكوبون',
                 value: '- ${Formatters.formatCurrency(widget.discountAmount)}',
-                valueColor: Colors.green,
+                valueColor: colorScheme.tertiary,
               ),
             ],
             const SizedBox(height: AppSpacing.xs),
@@ -557,11 +553,10 @@ class _OrderTypeSelector extends StatelessWidget {
                 selected: orderType == OrderType.dineIn,
                 onSelected: (_) => onChanged(OrderType.dineIn),
                 selectedColor: colorScheme.primary,
-                labelStyle: TextStyle(
+                labelStyle: theme.textTheme.labelSmall?.copyWith(
                   color: orderType == OrderType.dineIn
                       ? colorScheme.onPrimary
                       : colorScheme.onSurface,
-                  fontSize: 11,
                   fontWeight: orderType == OrderType.dineIn
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -576,11 +571,10 @@ class _OrderTypeSelector extends StatelessWidget {
                 selected: orderType == OrderType.takeaway,
                 onSelected: (_) => onChanged(OrderType.takeaway),
                 selectedColor: colorScheme.primary,
-                labelStyle: TextStyle(
+                labelStyle: theme.textTheme.labelSmall?.copyWith(
                   color: orderType == OrderType.takeaway
                       ? colorScheme.onPrimary
                       : colorScheme.onSurface,
-                  fontSize: 11,
                   fontWeight: orderType == OrderType.takeaway
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -595,11 +589,10 @@ class _OrderTypeSelector extends StatelessWidget {
                 selected: orderType == OrderType.delivery,
                 onSelected: (_) => onChanged(OrderType.delivery),
                 selectedColor: colorScheme.primary,
-                labelStyle: TextStyle(
+                labelStyle: theme.textTheme.labelSmall?.copyWith(
                   color: orderType == OrderType.delivery
                       ? colorScheme.onPrimary
                       : colorScheme.onSurface,
-                  fontSize: 11,
                   fontWeight: orderType == OrderType.delivery
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -707,10 +700,9 @@ class _PaymentChip extends StatelessWidget {
       selected: isSelected,
       onSelected: (_) => onTap(),
       selectedColor: colorScheme.primary,
-      labelStyle: TextStyle(
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(
         color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        fontSize: 13,
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:mhj_maps/mhj_maps.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../delivery/presentation/widgets/live_tracking_map.dart';
 
 /// Result returned from the interactive address map picker.
@@ -240,6 +241,11 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    // Approved warm amber/orange step from the audited StatusColors palette.
+    final warningColor = StatusColors.tone(
+      SemanticTone.warning,
+      theme.brightness,
+    );
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
@@ -339,11 +345,11 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     decoration: BoxDecoration(
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
+                      boxShadow: [
                         BoxShadow(
-                          color: Colors.black26,
+                          color: colorScheme.shadow.withValues(alpha: 0.26),
                           blurRadius: 8,
-                          offset: Offset(0, 4),
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
@@ -368,7 +374,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                             item.displayName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11),
+                            style: theme.textTheme.labelSmall,
                           ),
                           onTap: () => _selectAutocompleteSuggestion(item),
                         );
@@ -414,19 +420,21 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade700,
+                              color: colorScheme.primary,
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.5),
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.5,
+                                  ),
                                   blurRadius: 12,
                                   spreadRadius: 3,
                                 ),
                               ],
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.location_pin,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                               size: 26,
                             ),
                           ),
@@ -434,7 +442,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                             width: 8,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.black45,
+                              color: colorScheme.shadow.withValues(alpha: 0.45),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -500,11 +508,11 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(20),
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black12,
+                  color: colorScheme.shadow.withValues(alpha: 0.12),
                   blurRadius: 10,
-                  offset: Offset(0, -2),
+                  offset: const Offset(0, -2),
                 ),
               ],
             ),
@@ -518,7 +526,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                       Icons.place,
                       color: _isWithinRange
                           ? colorScheme.primary
-                          : Colors.orange,
+                          : warningColor,
                       size: 24,
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -574,7 +582,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                   decoration: BoxDecoration(
                     color: _isWithinRange
                         ? colorScheme.primaryContainer.withValues(alpha: 0.5)
-                        : Colors.orange.withValues(alpha: 0.15),
+                        : warningColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -589,19 +597,18 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                             size: 16,
                             color: _isWithinRange
                                 ? colorScheme.primary
-                                : Colors.orange.shade800,
+                                : warningColor,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             _isWithinRange
                                 ? 'ضمن نطاق التوصيل المتاح (${_distanceKm.toStringAsFixed(1)} كم عن المطعم)'
                                 : 'خارج نطاق التوصيل الأساسي (${_distanceKm.toStringAsFixed(1)} كم)',
-                            style: TextStyle(
-                              fontSize: 11,
+                            style: theme.textTheme.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: _isWithinRange
                                   ? colorScheme.primary
-                                  : Colors.orange.shade900,
+                                  : warningColor,
                             ),
                           ),
                         ],

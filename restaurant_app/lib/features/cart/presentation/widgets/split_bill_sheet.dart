@@ -190,8 +190,7 @@ class _SplitBillSheetState extends ConsumerState<SplitBillSheet> {
                             backgroundColor: colorScheme.primaryContainer,
                             child: Text(
                               '${i + 1}',
-                              style: TextStyle(
-                                fontSize: 12,
+                              style: theme.textTheme.labelMedium?.copyWith(
                                 color: colorScheme.onPrimaryContainer,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -251,8 +250,9 @@ class _CounterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: onTap != null ? color : Colors.grey.shade300,
+      color: onTap != null ? color : colorScheme.outlineVariant,
       borderRadius: BorderRadius.circular(50),
       child: InkWell(
         onTap: onTap,
@@ -261,7 +261,9 @@ class _CounterButton extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Icon(
             icon,
-            color: onTap != null ? Colors.white : Colors.grey.shade500,
+            color: onTap != null
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant,
             size: 24,
           ),
         ),

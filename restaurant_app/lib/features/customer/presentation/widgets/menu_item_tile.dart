@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/animated_press_card.dart';
@@ -52,11 +53,14 @@ class MenuItemTile extends StatelessWidget {
                       if (item.isVegetarian)
                         const _Badge(AppConstants.dietVegetarian),
                       if (item.isSpicy)
-                        const _Badge(AppConstants.dietSpicy, color: Colors.red),
+                        const _Badge(
+                          AppConstants.dietSpicy,
+                          tone: SemanticTone.danger,
+                        ),
                       if (!item.isAvailable)
                         const _Badge(
                           AppConstants.itemUnavailable,
-                          color: Colors.grey,
+                          tone: SemanticTone.neutral,
                         ),
                     ],
                   ),
@@ -85,10 +89,15 @@ class MenuItemTile extends StatelessWidget {
                       ),
                       if (item.rating != null) ...[
                         const SizedBox(width: AppSpacing.sm),
+                        // Warm amber from the audited StatusColors palette
+                        // (SemanticTone.warning is the approved amber step).
                         Icon(
                           Icons.star_rounded,
                           size: 16,
-                          color: Colors.amber.shade700,
+                          color: StatusColors.tone(
+                            SemanticTone.warning,
+                            theme.brightness,
+                          ),
                         ),
                         const SizedBox(width: 2),
                         Text(
@@ -119,13 +128,15 @@ class MenuItemTile extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge(this.label, {this.color = Colors.green});
+  const _Badge(this.label, {this.tone = SemanticTone.success});
 
   final String label;
-  final Color color;
+  final SemanticTone tone;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = StatusColors.tone(tone, theme.brightness);
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: AppSpacing.xs),
       child: Container(
@@ -139,7 +150,7 @@ class _Badge extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+          style: theme.textTheme.labelSmall?.copyWith(color: color),
         ),
       ),
     );

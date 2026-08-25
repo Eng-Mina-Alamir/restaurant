@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -64,7 +65,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           IconButton(
             icon: const Icon(Icons.stars_rounded),
             tooltip: 'برنامج الولاء والمكافآت',
-            color: Colors.amber.shade700,
+            // Warm amber from the audited StatusColors palette.
+            color: StatusColors.tone(
+              SemanticTone.warning,
+              Theme.of(context).brightness,
+            ),
             onPressed: () => context.push('/customer/loyalty'),
           ),
           IconButton(
@@ -126,12 +131,10 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
                 child: TextField(
                   onChanged: (value) =>
                       ref.read(menuSearchQueryProvider.notifier).state = value,
-                  decoration: InputDecoration(
+                  // Inherits inputDecorationTheme from app_theme.dart.
+                  decoration: const InputDecoration(
                     hintText: AppConstants.searchMenuHint,
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
+                    prefixIcon: Icon(Icons.search),
                     isDense: true,
                   ),
                 ),
