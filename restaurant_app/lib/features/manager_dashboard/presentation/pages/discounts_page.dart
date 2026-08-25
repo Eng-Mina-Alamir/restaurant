@@ -134,17 +134,17 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
         label: const Text('خصم جديد'),
       ),
       body: discounts.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.local_offer_outlined,
                     size: 64,
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  SizedBox(height: AppSpacing.md),
-                  Text('لا توجد خصومات بعد'),
+                  const SizedBox(height: AppSpacing.md),
+                  const Text('لا توجد خصومات بعد'),
                 ],
               ),
             )

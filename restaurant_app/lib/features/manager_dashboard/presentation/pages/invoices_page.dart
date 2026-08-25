@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -166,13 +167,19 @@ class _InvoiceCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.15),
+                      color: StatusColors.tone(
+                        SemanticTone.success,
+                        theme.brightness,
+                      ).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       'مكتمل',
                       style: TextStyle(
-                        color: Colors.green.shade700,
+                        color: StatusColors.tone(
+                          SemanticTone.success,
+                          theme.brightness,
+                        ),
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -280,7 +287,10 @@ class _InvoiceDialog extends StatelessWidget {
               _TotalRow(
                 label: 'الخصم',
                 value: '- ${Formatters.formatCurrency(order.discountAmount)}',
-                color: Colors.green,
+                color: StatusColors.tone(
+                  SemanticTone.success,
+                  theme.brightness,
+                ),
               ),
 
             const Divider(),

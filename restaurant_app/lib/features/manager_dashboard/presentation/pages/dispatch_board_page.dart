@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
@@ -225,13 +226,16 @@ class _OrderDispatchCard extends ConsumerWidget {
                     ListTile(
                       leading: const Icon(Icons.delivery_dining),
                       title: Text(driver.name),
-                      subtitle: Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 16,
-                            color: Colors.amber,
-                          ),
+                       subtitle: Row(
+                         children: [
+                           Icon(
+                             Icons.star_rounded,
+                             size: 16,
+                             color: StatusColors.tone(
+                               SemanticTone.warning,
+                               Theme.of(sheetContext).brightness,
+                             ),
+                           ),
                           const SizedBox(width: AppSpacing.xs),
                           Text(driver.rating.toStringAsFixed(1)),
                         ],
@@ -260,7 +264,10 @@ class _OrderDispatchCard extends ConsumerWidget {
           ok ? 'تم تعيين السائق بنجاح' : 'فشل تعيين السائق، حاول مرة أخرى',
         ),
         backgroundColor: ok
-            ? Colors.green.shade700
+            ? StatusColors.tone(
+                SemanticTone.success,
+                Theme.of(context).brightness,
+              )
             : Theme.of(context).colorScheme.error,
       ),
     );
@@ -319,7 +326,10 @@ class _OrderDispatchCard extends ConsumerWidget {
                   Icon(
                     Icons.warning_amber_rounded,
                     size: 16,
-                    color: Colors.orange.shade800,
+                    color: StatusColors.tone(
+                      SemanticTone.warning,
+                      Theme.of(context).brightness,
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(

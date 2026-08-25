@@ -66,22 +66,22 @@ class PeakHoursChart extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.deepOrange.withValues(alpha: 0.12),
+                    color: colorScheme.secondary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.access_time_filled,
                         size: 14,
-                        color: Colors.deepOrange,
+                        color: colorScheme.secondary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'الذروة: $peakInt:00',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.deepOrange,
+                          color: colorScheme.secondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -107,7 +107,7 @@ class PeakHoursChart extends StatelessWidget {
                           'الساعة $hour:00\n${rod.toY.toInt()} طلب',
                           TextStyle(
                             color: hour == peakInt
-                                ? Colors.deepOrange
+                                ? colorScheme.secondary
                                 : colorScheme.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
@@ -159,7 +159,7 @@ class PeakHoursChart extends StatelessWidget {
                                   '$h:00',
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color: h == peakInt
-                                        ? Colors.deepOrange
+                                        ? colorScheme.secondary
                                         : colorScheme.onSurfaceVariant,
                                     fontWeight: h == peakInt
                                         ? FontWeight.bold
@@ -203,7 +203,12 @@ class PeakHoursChart extends StatelessWidget {
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: isPeak
-                                    ? [Colors.deepOrange, Colors.orangeAccent]
+                                    ? [
+                                        colorScheme.secondary,
+                                        colorScheme.secondary.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ]
                                     : [
                                         colorScheme.primary.withValues(
                                           alpha: 0.7,

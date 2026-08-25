@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 
@@ -225,7 +226,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
                       final user = filteredUsers[index];
-                      final roleColor = _roleColor(user.role);
+                      final roleColor = _roleColor(user.role, colorScheme);
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -251,13 +252,15 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                     vertical: 1,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.12),
+                                    color: colorScheme.error.withValues(
+                                      alpha: 0.12,
+                                    ),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'معطل',
                                     style: TextStyle(
-                                      color: Colors.red,
+                                      color: colorScheme.error,
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -303,8 +306,14 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                           : Icons.check_circle_outline,
                                       size: 18,
                                       color: user.isActive
-                                          ? Colors.orange
-                                          : Colors.green,
+                                          ? StatusColors.tone(
+                                              SemanticTone.warning,
+                                              theme.brightness,
+                                            )
+                                          : StatusColors.tone(
+                                              SemanticTone.success,
+                                              theme.brightness,
+                                            ),
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -325,19 +334,19 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                   ],
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: Row(
                                   children: [
                                     Icon(
                                       Icons.delete_outline,
                                       size: 18,
-                                      color: Colors.red,
+                                      color: colorScheme.error,
                                     ),
-                                    SizedBox(width: 8),
+                                    const SizedBox(width: 8),
                                     Text(
                                       'حذف الحساب',
-                                      style: TextStyle(color: Colors.red),
+                                      style: TextStyle(color: colorScheme.error),
                                     ),
                                   ],
                                 ),
@@ -354,20 +363,20 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
     );
   }
 
-  Color _roleColor(UserRole role) {
+  Color _roleColor(UserRole role, ColorScheme colorScheme) {
     switch (role) {
       case UserRole.customer:
-        return Colors.blue;
+        return StatusColors.tone(SemanticTone.info, colorScheme.brightness);
       case UserRole.waiter:
-        return Colors.teal;
+        return colorScheme.secondary;
       case UserRole.kitchen:
-        return Colors.deepOrange;
+        return StatusColors.tone(SemanticTone.warning, colorScheme.brightness);
       case UserRole.manager:
-        return Colors.indigo;
+        return colorScheme.primary;
       case UserRole.admin:
-        return Colors.purple;
+        return colorScheme.tertiary;
       case UserRole.driver:
-        return Colors.green;
+        return StatusColors.tone(SemanticTone.success, colorScheme.brightness);
     }
   }
 
@@ -624,7 +633,9 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
             child: const Text(AppConstants.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () {
               ref
                   .read(userManagementControllerProvider.notifier)

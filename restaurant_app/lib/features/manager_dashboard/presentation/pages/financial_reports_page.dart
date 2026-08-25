@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../data/services/report_export_service.dart';
 import '../controllers/financial_reports_controller.dart';
@@ -91,7 +92,10 @@ class FinancialReportsPage extends ConsumerWidget {
                     value: Formatters.formatCurrency(metrics.grossRevenue),
                     subtitle: '${metrics.completedOrders} طلب مكتمل',
                     icon: Icons.account_balance_wallet_outlined,
-                    color: Colors.blue,
+                    color: StatusColors.tone(
+                      SemanticTone.info,
+                      theme.brightness,
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -102,7 +106,10 @@ class FinancialReportsPage extends ConsumerWidget {
                     subtitle:
                         'هامش صافي: ${metrics.netMarginPercentage.toStringAsFixed(1)}%',
                     icon: Icons.trending_up,
-                    color: Colors.green,
+                    color: StatusColors.tone(
+                      SemanticTone.success,
+                      theme.brightness,
+                    ),
                   ),
                 ),
               ],
@@ -117,7 +124,10 @@ class FinancialReportsPage extends ConsumerWidget {
                     value: Formatters.formatCurrency(metrics.cogs),
                     subtitle: '30% من المبيعات',
                     icon: Icons.inventory_2_outlined,
-                    color: Colors.deepOrange,
+                    color: StatusColors.tone(
+                      SemanticTone.warning,
+                      theme.brightness,
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -127,7 +137,7 @@ class FinancialReportsPage extends ConsumerWidget {
                     value: Formatters.formatCurrency(metrics.averageOrderValue),
                     subtitle: 'لكل طلب مكتمل',
                     icon: Icons.receipt_long_outlined,
-                    color: Colors.purple,
+                    color: colorScheme.secondary,
                   ),
                 ),
               ],
@@ -208,11 +218,17 @@ class FinancialReportsPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.star_rounded, color: Colors.amber),
-                        SizedBox(width: 8),
-                        Text(
+                        Icon(
+                          Icons.star_rounded,
+                          color: StatusColors.tone(
+                            SemanticTone.warning,
+                            theme.brightness,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
                           'الأصناف الأكثر مساهمة في الأرباح',
                           style: TextStyle(
                             fontSize: 16,
@@ -247,9 +263,12 @@ class FinancialReportsPage extends ConsumerWidget {
                             children: [
                               Text(
                                 Formatters.formatCurrency(item.profit),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: StatusColors.tone(
+                                    SemanticTone.success,
+                                    theme.brightness,
+                                  ),
                                 ),
                               ),
                               Text(
@@ -356,11 +375,14 @@ class _FinancialRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     final textStyle = TextStyle(
       fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
       fontSize: highlight ? 15 : 13,
       color: highlight
-          ? (isPositive ? Colors.green.shade800 : Colors.red.shade800)
+          ? (isPositive
+              ? StatusColors.tone(SemanticTone.success, brightness)
+              : StatusColors.tone(SemanticTone.danger, brightness))
           : null,
     );
 
@@ -380,15 +402,18 @@ class _FinancialRow extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
+                    color: StatusColors.tone(
+                      SemanticTone.success,
+                      brightness,
+                    ).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     '${percentage!.toStringAsFixed(1)}%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: StatusColors.tone(SemanticTone.success, brightness),
                     ),
                   ),
                 ),

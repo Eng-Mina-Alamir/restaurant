@@ -178,8 +178,10 @@ class TopItemsBarChart extends StatelessWidget {
                               end: Alignment.topCenter,
                               colors: i == 0
                                   ? [
-                                      Colors.amber.shade700,
-                                      Colors.amber.shade400,
+                                      colorScheme.tertiary,
+                                      colorScheme.tertiary.withValues(
+                                        alpha: 0.7,
+                                      ),
                                     ]
                                   : [
                                       colorScheme.primary,

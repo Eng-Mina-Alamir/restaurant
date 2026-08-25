@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/animated_press_card.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
@@ -50,7 +52,7 @@ class ManagerDashboardPage extends ConsumerWidget {
         ],
       ),
       body: metrics.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const _DashboardSkeleton(),
         error: (e, _) => ErrorState(
           message: AppConstants.errorLoadingData,
           errorDetail: e,
@@ -79,7 +81,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsSalesTitle,
                               value: Formatters.formatCurrency(data.totalSales),
                               icon: Icons.payments_outlined,
-                              color: Colors.green,
+                              color: _toneOf(context, SemanticTone.success),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -88,7 +90,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsOrdersTitle,
                               value: '${data.totalOrders}',
                               icon: Icons.receipt_long_outlined,
-                              color: Colors.blue,
+                              color: _toneOf(context, SemanticTone.info),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -99,7 +101,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                                 data.averageOrderValue,
                               ),
                               icon: Icons.percent_outlined,
-                              color: Colors.orange,
+                              color: _toneOf(context, SemanticTone.warning),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -108,7 +110,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsActiveTitle,
                               value: _activeOrders(ref),
                               icon: Icons.pending_actions_outlined,
-                              color: Colors.purple,
+                              color: Theme.of(context).colorScheme.secondary,
                             ),
                           ),
                         ],
@@ -121,7 +123,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsSalesTitle,
                               value: Formatters.formatCurrency(data.totalSales),
                               icon: Icons.payments_outlined,
-                              color: Colors.green,
+                              color: _toneOf(context, SemanticTone.success),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -130,7 +132,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsOrdersTitle,
                               value: '${data.totalOrders}',
                               icon: Icons.receipt_long_outlined,
-                              color: Colors.blue,
+                              color: _toneOf(context, SemanticTone.info),
                             ),
                           ),
                         ],
@@ -145,7 +147,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                                 data.averageOrderValue,
                               ),
                               icon: Icons.percent_outlined,
-                              color: Colors.orange,
+                              color: _toneOf(context, SemanticTone.warning),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -154,7 +156,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                               title: AppConstants.metricsActiveTitle,
                               value: _activeOrders(ref),
                               icon: Icons.pending_actions_outlined,
-                              color: Colors.purple,
+                              color: Theme.of(context).colorScheme.secondary,
                             ),
                           ),
                         ],
@@ -192,70 +194,70 @@ class ManagerDashboardPage extends ConsumerWidget {
                         _QuickAction(
                           icon: Icons.restaurant_menu_rounded,
                           label: 'القائمة',
-                          color: Colors.amber.shade800,
+                          color: _toneOf(context, SemanticTone.warning),
                           onTap: () => context.push('/manager/menu'),
                         ),
 
                         _QuickAction(
                           icon: Icons.table_restaurant_rounded,
                           label: 'الطاولات',
-                          color: Colors.cyan.shade800,
+                          color: _toneOf(context, SemanticTone.info),
                           onTap: () => context.push('/manager/tables'),
                         ),
                         _QuickAction(
                           icon: Icons.event_seat_rounded,
                           label: 'الحجوزات',
-                          color: Colors.purple.shade700,
+                          color: Theme.of(context).colorScheme.secondary,
                           onTap: () => context.push('/manager/reservations'),
                         ),
                         _QuickAction(
                           icon: Icons.local_offer_rounded,
                           label: 'الخصومات',
-                          color: Colors.deepOrange,
+                          color: _toneOf(context, SemanticTone.warning),
                           onTap: () => context.push('/manager/discounts'),
                         ),
                         _QuickAction(
                           icon: Icons.confirmation_number_rounded,
                           label: 'الكوبونات',
-                          color: Colors.amber.shade800,
+                          color: _toneOf(context, SemanticTone.warning),
                           onTap: () => context.push('/manager/coupons'),
                         ),
 
                         _QuickAction(
                           icon: Icons.inventory_2_outlined,
                           label: 'المخزون',
-                          color: Colors.teal,
+                          color: Theme.of(context).colorScheme.secondary,
                           onTap: () => context.push('/manager/inventory'),
                         ),
                         _QuickAction(
                           icon: Icons.people_alt_rounded,
                           label: 'الموظفون',
-                          color: Colors.indigo,
+                          color: Theme.of(context).colorScheme.primary,
                           onTap: () => context.push('/manager/staff'),
                         ),
                         _QuickAction(
                           icon: Icons.manage_accounts_rounded,
                           label: 'المستخدمون',
-                          color: Colors.blueGrey.shade700,
+                          color: _toneOf(context, SemanticTone.neutral),
                           onTap: () => context.push('/manager/users'),
                         ),
 
                         _QuickAction(
                           icon: Icons.local_shipping_rounded,
                           label: 'التوصيل',
-                          color: Colors.deepPurple,
+                          color: Theme.of(context).colorScheme.secondary,
                           onTap: () => context.push('/manager/dispatch'),
                         ),
                         _QuickAction(
                           icon: Icons.receipt_long_rounded,
                           label: 'الفواتير',
-                          color: Colors.brown,
+                          color: _toneOf(context, SemanticTone.neutral),
                           onTap: () => context.push('/manager/invoices'),
                         ),
                         _QuickAction(
                           icon: Icons.analytics_outlined,
                           label: 'الأرباح و P&L',
-                          color: Colors.green.shade800,
+                          color: _toneOf(context, SemanticTone.success),
                           onTap: () =>
                               context.push('/manager/financial-reports'),
                         ),
@@ -263,13 +265,13 @@ class ManagerDashboardPage extends ConsumerWidget {
                         _QuickAction(
                           icon: Icons.qr_code_2,
                           label: 'رموز QR',
-                          color: Colors.blueGrey,
+                          color: _toneOf(context, SemanticTone.neutral),
                           onTap: () => context.push('/manager/qr-codes'),
                         ),
                         _QuickAction(
                           icon: Icons.receipt_long,
                           label: 'الطلبات',
-                          color: Colors.blue,
+                          color: _toneOf(context, SemanticTone.info),
                           onTap: () => context.push('/manager/orders'),
                         ),
                       ],
@@ -346,151 +348,31 @@ class ManagerDashboardPage extends ConsumerWidget {
                     ],
 
                     const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      AppConstants.metricsItemsSold,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    _BreakdownSection(
+                      title: AppConstants.metricsItemsSold,
+                      icon: Icons.shopping_bag_outlined,
+                      data: data.itemsSold,
+                      tone: SemanticTone.success,
+                      formatValue: (value) => '$value',
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (data.itemsSold.isEmpty)
-                      const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.md),
-                          child: Text(AppConstants.metricsNoData),
-                        ),
-                      )
-                    else
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            children: [
-                              for (final entry
-                                  in data.itemsSold.entries.toList()..sort(
-                                    (a, b) => b.value.compareTo(a.value),
-                                  ))
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xs,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(child: Text(entry.key)),
-                                      Text(
-                                        '${entry.value}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      AppConstants.metricsByCategory,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    _BreakdownSection(
+                      title: AppConstants.metricsByCategory,
+                      icon: Icons.category_outlined,
+                      data: data.categoryRevenue,
+                      tone: SemanticTone.info,
+                      formatValue: (value) =>
+                          Formatters.formatCurrency(value.toDouble()),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (data.categoryRevenue.isEmpty)
-                      const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.md),
-                          child: Text(AppConstants.metricsNoData),
-                        ),
-                      )
-                    else
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            children: [
-                              for (final entry
-                                  in data.categoryRevenue.entries.toList()
-                                    ..sort(
-                                      (a, b) => b.value.compareTo(a.value),
-                                    ))
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xs,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(child: Text(entry.key)),
-                                      Text(
-                                        Formatters.formatCurrency(entry.value),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      AppConstants.metricsByPayment,
-                      style: Theme.of(context).textTheme.titleLarge,
+                    _BreakdownSection(
+                      title: AppConstants.metricsByPayment,
+                      icon: Icons.payments_outlined,
+                      data: data.paymentMethodRevenue,
+                      tone: SemanticTone.neutral,
+                      formatValue: (value) =>
+                          Formatters.formatCurrency(value.toDouble()),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (data.paymentMethodRevenue.isEmpty)
-                      const Card(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.md),
-                          child: Text(AppConstants.metricsNoData),
-                        ),
-                      )
-                    else
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Column(
-                            children: [
-                              for (final entry
-                                  in data.paymentMethodRevenue.entries.toList()
-                                    ..sort(
-                                      (a, b) => b.value.compareTo(a.value),
-                                    ))
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xs,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(child: Text(entry.key)),
-                                      Text(
-                                        Formatters.formatCurrency(entry.value),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -533,7 +415,7 @@ class _MetricCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -609,7 +491,7 @@ class _DispatchHealthCard extends ConsumerWidget {
                 child: _DispatchHealthStat(
                   label: AppConstants.dispatchHealthPendingOrders,
                   value: '${state.undispatchedOrders.length}',
-                  color: Colors.orange.shade800,
+                  color: _toneOf(context, SemanticTone.warning),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -625,7 +507,7 @@ class _DispatchHealthCard extends ConsumerWidget {
                 child: _DispatchHealthStat(
                   label: AppConstants.dispatchHealthAvailableDrivers,
                   value: '${state.availableDrivers.length}',
-                  color: Colors.green.shade700,
+                  color: _toneOf(context, SemanticTone.success),
                 ),
               ),
             ],
@@ -732,32 +614,181 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 1,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+    final theme = Theme.of(context);
+    return AnimatedPressCard(
+      onTap: onTap,
+      borderRadius: AppRadius.md,
+      elevation: AppElevation.sm,
+      // Matches the default Card margin this tile previously relied on so the
+      // grid metrics stay identical.
+      margin: const EdgeInsets.all(AppSpacing.xs),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One labeled key/value breakdown card (items sold, revenue by category,
+/// revenue by payment method) sharing a single layout.
+class _BreakdownSection extends StatelessWidget {
+  const _BreakdownSection({
+    required this.title,
+    required this.icon,
+    required this.data,
+    required this.tone,
+    required this.formatValue,
+  });
+
+  final String title;
+  final IconData icon;
+
+  /// Accepts the raw metric maps (`Map<String, int>` / `Map<String, double>`);
+  /// only read here, never written to.
+  final Map<String, num> data;
+  final SemanticTone tone;
+  final String Function(num value) formatValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = StatusColors.tone(tone, theme.brightness);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(icon, color: color, size: 26),
+              child: Icon(icon, color: color, size: 18),
             ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Text(title, style: theme.textTheme.titleLarge),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (data.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Text(AppConstants.metricsNoData),
+            ),
+          )
+        else
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                children: [
+                  for (final entry
+                      in data.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value)))
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(child: Text(entry.key)),
+                          Text(
+                            formatValue(entry.value),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+
+/// Shimmer placeholder mirroring the dashboard layout while metrics load:
+/// title bar, KPI-card grid, dispatch strip and analytics chart.
+class _DashboardSkeleton extends StatelessWidget {
+  const _DashboardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide = MediaQuery.sizeOf(context).width > 600;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: ListView(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            const SkeletonBox(
+              width: double.infinity,
+              height: AppSpacing.xl,
+              borderRadius: AppRadius.sm,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (isWide)
+              Row(
+                children: [
+                  for (var i = 0; i < 4; i++) ...[
+                    if (i > 0) const SizedBox(width: AppSpacing.sm),
+                    const Expanded(child: _SkeletonCard()),
+                  ],
+                ],
+              )
+            else ...[
+              const Row(
+                children: [
+                  Expanded(child: _SkeletonCard()),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _SkeletonCard()),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              const Row(
+                children: [
+                  Expanded(child: _SkeletonCard()),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _SkeletonCard()),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            const _SkeletonCard(height: 72),
+            const SizedBox(height: AppSpacing.lg),
+            const SkeletonBox(
+              width: double.infinity,
+              height: 240,
+              borderRadius: AppRadius.md,
             ),
           ],
         ),
@@ -765,3 +796,23 @@ class _QuickAction extends StatelessWidget {
     );
   }
 }
+
+/// Rounded shimmer block standing in for one card on the dashboard.
+class _SkeletonCard extends StatelessWidget {
+  const _SkeletonCard({this.height = 124});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonBox(
+      width: double.infinity,
+      height: height,
+      borderRadius: AppRadius.md,
+    );
+  }
+}
+
+/// Resolves a semantic status tone against the current theme brightness.
+Color _toneOf(BuildContext context, SemanticTone tone) =>
+    StatusColors.tone(tone, Theme.of(context).brightness);

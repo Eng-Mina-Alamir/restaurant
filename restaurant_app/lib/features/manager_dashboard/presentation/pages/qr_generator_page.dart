@@ -143,7 +143,8 @@ class _QrCard extends StatelessWidget {
                 data: tableId,
                 version: QrVersions.auto,
                 size: 130,
-                backgroundColor: Colors.white,
+                // QR scanners need a light quiet zone regardless of app theme.
+                backgroundColor: const Color(0xFFFFFFFF),
                 eyeStyle: QrEyeStyle(
                   eyeShape: QrEyeShape.square,
                   color: colorScheme.primary,

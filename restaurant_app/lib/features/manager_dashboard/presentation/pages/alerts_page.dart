@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/alert_entity.dart';
 import '../controllers/alerts_controller.dart';
@@ -45,19 +46,19 @@ class AlertsPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'clear_all',
                   child: Row(
                     children: [
                       Icon(
                         Icons.delete_sweep_outlined,
                         size: 18,
-                        color: Colors.red,
+                        color: colorScheme.error,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
                         'مسح كل التنبيهات',
-                        style: TextStyle(color: Colors.red),
+                        style: TextStyle(color: colorScheme.error),
                       ),
                     ],
                   ),
@@ -161,9 +162,18 @@ class _AlertCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final (color, icon) = switch (alert.severity) {
-      AlertSeverity.critical => (Colors.red, Icons.error_outline),
-      AlertSeverity.warning => (Colors.orange, Icons.warning_amber_rounded),
-      AlertSeverity.info => (Colors.blue, Icons.info_outline),
+      AlertSeverity.critical => (
+        StatusColors.tone(SemanticTone.danger, theme.brightness),
+        Icons.error_outline,
+      ),
+      AlertSeverity.warning => (
+        StatusColors.tone(SemanticTone.warning, theme.brightness),
+        Icons.warning_amber_rounded,
+      ),
+      AlertSeverity.info => (
+        StatusColors.tone(SemanticTone.info, theme.brightness),
+        Icons.info_outline,
+      ),
     };
 
     return Card(

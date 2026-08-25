@@ -78,22 +78,22 @@ class SalesLineChart extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.12),
+                    color: colorScheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.trending_up,
                         size: 16,
-                        color: Colors.green,
+                        color: colorScheme.primary,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'مباشر',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.green,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

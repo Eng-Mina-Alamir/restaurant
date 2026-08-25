@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 
 /// Performance record for a single staff member.
 class StaffPerformance {
@@ -26,8 +27,12 @@ class StaffPerformance {
   String get ratingDisplay => rating.toStringAsFixed(1);
 
   Color ratingColor(ColorScheme cs) {
-    if (rating >= 4.5) return Colors.green;
-    if (rating >= 3.5) return Colors.orange;
+    if (rating >= 4.5) {
+      return StatusColors.tone(SemanticTone.success, cs.brightness);
+    }
+    if (rating >= 3.5) {
+      return StatusColors.tone(SemanticTone.warning, cs.brightness);
+    }
     return cs.error;
   }
 }
@@ -165,7 +170,11 @@ class _TopPerformerBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.emoji_events_rounded, color: Colors.amber, size: 40),
+          Icon(
+            Icons.emoji_events_rounded,
+            color: colorScheme.onPrimary,
+            size: 40,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -174,19 +183,21 @@ class _TopPerformerBanner extends StatelessWidget {
                 Text(
                   'أفضل موظف اليوم',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.white70,
+                    color: colorScheme.onPrimary.withValues(alpha: 0.7),
                   ),
                 ),
                 Text(
                   performer.name,
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
+                    color: colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   performer.role,
-                  style: const TextStyle(color: Colors.white70),
+                  style: TextStyle(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -196,7 +207,7 @@ class _TopPerformerBanner extends StatelessWidget {
               Text(
                 performer.ratingDisplay,
                 style: theme.textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
+                  color: colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -207,7 +218,7 @@ class _TopPerformerBanner extends StatelessWidget {
                     i < performer.rating.round()
                         ? Icons.star
                         : Icons.star_outline,
-                    color: Colors.amber,
+                    color: colorScheme.onPrimary,
                     size: 14,
                   ),
                 ),

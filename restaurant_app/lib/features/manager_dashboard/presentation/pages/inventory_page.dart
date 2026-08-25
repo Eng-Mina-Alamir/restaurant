@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -144,7 +145,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       _SummaryChip(
                         label: 'منخفضة',
                         count: '$low',
-                        color: Colors.orange,
+                        color: StatusColors.tone(
+                          SemanticTone.warning,
+                          theme.brightness,
+                        ),
                         onTap: () => setState(
                           () =>
                               _filterStatus = low > 0 ? StockStatus.low : null,
@@ -256,11 +260,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.add_box_outlined, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('إضافة صنف مخزون جديد'),
+            Icon(
+              Icons.add_box_outlined,
+              color: Theme.of(ctx).colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            const Text('إضافة صنف مخزون جديد'),
           ],
         ),
         content: SingleChildScrollView(
@@ -541,7 +548,9 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
             child: const Text(AppConstants.cancel),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
               await ref
@@ -651,19 +660,21 @@ class _InventoryCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'delete',
                       child: Row(
                         children: [
                           Icon(
                             Icons.delete_outline,
-                            color: Colors.red,
+                            color: Theme.of(context).colorScheme.error,
                             size: 18,
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Text(
                             AppConstants.delete,
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
                           ),
                         ],
                       ),
