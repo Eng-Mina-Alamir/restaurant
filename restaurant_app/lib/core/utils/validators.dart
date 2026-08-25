@@ -105,6 +105,22 @@ abstract final class Validators {
     return null;
   }
 
+  /// Number of strength criteria satisfied by [password], from 0 to 3:
+  /// 1. Length of at least [kMinPasswordLength] characters.
+  /// 2. Contains at least one letter (any script).
+  /// 3. Contains at least one digit.
+  ///
+  /// Shared scoring helper used by [isStrongPassword], [validatePassword] and
+  /// the UI password-strength indicator, so their criteria can never diverge.
+  static int passwordStrengthScore(String? password) {
+    if (password == null || password.isEmpty) return 0;
+    var met = 0;
+    if (password.length >= kMinPasswordLength) met++;
+    if (_letterRegex.hasMatch(password)) met++;
+    if (_digitRegex.hasMatch(password)) met++;
+    return met;
+  }
+
   /// Returns `true` when [password] meets the minimum strength bar:
   /// * At least [kMinPasswordLength] characters.
   /// * Contains at least one letter (any script).
@@ -112,13 +128,8 @@ abstract final class Validators {
   ///
   /// This is intentionally kept simple — Supabase may enforce its own server-
   /// side rules on top.
-  static bool isStrongPassword(String? password) {
-    if (password == null) return false;
-    if (password.length < kMinPasswordLength) return false;
-    if (!_letterRegex.hasMatch(password)) return false;
-    if (!_digitRegex.hasMatch(password)) return false;
-    return true;
-  }
+  static bool isStrongPassword(String? password) =>
+      passwordStrengthScore(password) == 3;
 
   /// Returns a localized error message describing what's wrong with [password],
   /// or `null` when the password passes all strength checks.

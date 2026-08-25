@@ -88,48 +88,58 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  TextFormField(
-                    controller: _identifierController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: AppConstants.emailLabel,
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? AppConstants.requiredField
-                        : null,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    decoration: InputDecoration(
-                      labelText: AppConstants.passwordLabel,
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        // Tooltip mirrors the action so screen readers hear
-                        // what pressing will do, not just the current state.
-                        tooltip: _obscurePassword
-                            ? 'إظهار كلمة المرور'
-                            : 'إخفاء كلمة المرور',
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                  // One AutofillGroup spans both credential fields so password
+                  // managers can save/fill them as a single unit.
+                  AutofillGroup(
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _identifierController,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.email],
+                          decoration: const InputDecoration(
+                            labelText: AppConstants.emailLabel,
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (value) =>
+                              (value == null || value.trim().isEmpty)
+                              ? AppConstants.requiredField
+                              : null,
                         ),
-                        onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                        const SizedBox(height: AppSpacing.md),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.password],
+                          onFieldSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            labelText: AppConstants.passwordLabel,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              // Tooltip mirrors the action so screen readers hear
+                              // what pressing will do, not just the current state.
+                              tooltip: _obscurePassword
+                                  ? 'إظهار كلمة المرور'
+                                  : 'إخفاء كلمة المرور',
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          validator: (value) =>
+                              (value == null || value.trim().isEmpty)
+                              ? AppConstants.requiredField
+                              : null,
                         ),
-                      ),
+                      ],
                     ),
-                    validator: (value) =>
-                        (value == null || value.trim().isEmpty)
-                        ? AppConstants.requiredField
-                        : null,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _DemoAccounts(
