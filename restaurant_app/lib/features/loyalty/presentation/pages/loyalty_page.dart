@@ -164,10 +164,9 @@ class LoyaltyPage extends ConsumerWidget {
                           ),
                           trailing: Text(
                             '${isPositive ? '+' : ''}${tx.points} نقطة',
-                            style: TextStyle(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: txColor,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
                             ),
                           ),
                         );
@@ -297,10 +296,9 @@ class _TierBanner extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'المستوى ${tier.labelAr}',
-                          style: TextStyle(
+                          style: theme.textTheme.labelMedium?.copyWith(
                             color: colorScheme.onPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -316,9 +314,7 @@ class _TierBanner extends StatelessWidget {
                   ),
                   Text(
                     'نقطة ولاء صالحة للاستخدام',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurface,
                     ),
                   ),
@@ -334,9 +330,8 @@ class _TierBanner extends StatelessWidget {
                 child: Center(
                   child: Text(
                     '${tier.multiplier}x',
-                    style: TextStyle(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w900,
-                      fontSize: 20,
                       color: colorScheme.onSurface,
                     ),
                   ),
@@ -351,16 +346,14 @@ class _TierBanner extends StatelessWidget {
               children: [
                 Text(
                   'المستوى القادم: ${nextTier!.labelAr}',
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   '${nextTierPoints - account.lifetimePoints} نقطة متبقية',
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
                   ),
@@ -382,8 +375,7 @@ class _TierBanner extends StatelessWidget {
           ] else
             Text(
               'وصلت لأعلى مستوى في برنامج الولاء (VIP النخبة)!',
-              style: TextStyle(
-                fontSize: 12,
+              style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: colorScheme.onSurface,
               ),
@@ -459,8 +451,7 @@ class _RewardCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${reward.pointsCost} نقطة',
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: canAfford
                               ? colorScheme.primary

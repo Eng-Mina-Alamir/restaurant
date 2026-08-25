@@ -650,7 +650,7 @@ class _NavigationHudCard extends StatelessWidget {
     return Card(
       elevation: 6,
       shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,
@@ -794,7 +794,7 @@ class _TurnByTurnSheet extends StatelessWidget {
 
     return Card(
       elevation: 10,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       child: Column(
         children: [
           Container(
@@ -851,8 +851,7 @@ class _TurnByTurnSheet extends StatelessWidget {
                   ),
                   title: Text(
                     m.instruction,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: index == 0
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -980,7 +979,7 @@ class _MapMarker extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.black87,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     badgeText!,
@@ -999,7 +998,7 @@ class _MapMarker extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
             boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
           ),
           child: Text(

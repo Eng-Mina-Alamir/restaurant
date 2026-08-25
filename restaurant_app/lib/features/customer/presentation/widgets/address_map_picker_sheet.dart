@@ -330,7 +330,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                       vertical: 10,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -344,7 +344,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     constraints: const BoxConstraints(maxHeight: 180),
                     decoration: BoxDecoration(
                       color: theme.cardColor,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       boxShadow: [
                         BoxShadow(
                           color: colorScheme.shadow.withValues(alpha: 0.26),
@@ -443,7 +443,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                             height: 4,
                             decoration: BoxDecoration(
                               color: colorScheme.shadow.withValues(alpha: 0.45),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(AppRadius.xs),
                             ),
                           ),
                         ],
@@ -583,7 +583,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     color: _isWithinRange
                         ? colorScheme.primaryContainer.withValues(alpha: 0.5)
                         : warningColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

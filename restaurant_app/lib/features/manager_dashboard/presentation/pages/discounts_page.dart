@@ -228,7 +228,7 @@ class _DiscountCard extends ConsumerWidget {
                 ),
                 decoration: BoxDecoration(
                   color: colorScheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Text(
                   discount.couponCode!,

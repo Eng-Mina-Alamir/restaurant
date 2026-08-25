@@ -88,9 +88,8 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
                 ),
                 child: Text(
                   'ESC/POS Thermal 80mm',
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     fontFamily: 'Courier',
-                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -99,11 +98,9 @@ class _TicketPrintDialogState extends ConsumerState<TicketPrintDialog> {
               const SizedBox(height: 8),
               SelectableText(
                 ticketText,
-                style: TextStyle(
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontFamily: 'Courier',
-                  fontSize: 12,
                   height: 1.4,
-                  fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
                 ),
               ),

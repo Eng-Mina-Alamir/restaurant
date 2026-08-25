@@ -95,11 +95,10 @@ class CouponManagementPage extends ConsumerWidget {
                                 ),
                                 child: Text(
                                   coupon.code,
-                                  style: TextStyle(
+                                  style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 1.2,
                                     color: colorScheme.primary,
-                                    fontSize: 14,
                                   ),
                                 ),
                               ),
@@ -115,18 +114,20 @@ class CouponManagementPage extends ConsumerWidget {
                                       SemanticTone.danger,
                                       brightness,
                                     ).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xs,
+                                    ),
                                   ),
                                   child: Text(
                                     'معطل',
-                                    style: TextStyle(
-                                      color: StatusColors.tone(
-                                        SemanticTone.danger,
-                                        brightness,
-                                      ),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                          color: StatusColors.tone(
+                                            SemanticTone.danger,
+                                            brightness,
+                                          ),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 )
                               else if (isExpired)
@@ -140,18 +141,20 @@ class CouponManagementPage extends ConsumerWidget {
                                       SemanticTone.warning,
                                       brightness,
                                     ).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xs,
+                                    ),
                                   ),
                                   child: Text(
                                     'منتهي',
-                                    style: TextStyle(
-                                      color: StatusColors.tone(
-                                        SemanticTone.warning,
-                                        brightness,
-                                      ),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                          color: StatusColors.tone(
+                                            SemanticTone.warning,
+                                            brightness,
+                                          ),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 )
                               else
@@ -165,18 +168,20 @@ class CouponManagementPage extends ConsumerWidget {
                                       SemanticTone.success,
                                       brightness,
                                     ).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.xs,
+                                    ),
                                   ),
                                   child: Text(
                                     'نشط',
-                                    style: TextStyle(
-                                      color: StatusColors.tone(
-                                        SemanticTone.success,
-                                        brightness,
-                                      ),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                          color: StatusColors.tone(
+                                            SemanticTone.success,
+                                            brightness,
+                                          ),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 ),
                             ],
@@ -265,9 +270,8 @@ class CouponManagementPage extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         coupon.title,
-                        style: const TextStyle(
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 2),

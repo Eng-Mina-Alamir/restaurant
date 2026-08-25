@@ -149,7 +149,7 @@ class _OrderStatusCard extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: .15),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Text(
                         order.status.labelAr,

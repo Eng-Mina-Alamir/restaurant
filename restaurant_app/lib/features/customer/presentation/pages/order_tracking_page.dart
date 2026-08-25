@@ -532,18 +532,15 @@ class _OrderStepper extends StatelessWidget {
                         ? const Icon(Icons.check, size: 14)
                         : Text(
                             '${i + 1}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _stages[i],
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: i <= currentStep
                           ? FontWeight.bold
                           : FontWeight.normal,
@@ -619,7 +616,7 @@ class _PinMarker extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
           decoration: BoxDecoration(
             color: _markerChrome,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
             boxShadow: const [BoxShadow(color: _markerHairline, blurRadius: 2)],
           ),
           child: Text(

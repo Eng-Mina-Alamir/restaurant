@@ -135,10 +135,12 @@ class _TableManagementCrudPageState
                                     foregroundColor: statusColor,
                                     child: Text(
                                       '${table.tableNumber}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ),
                                   PopupMenuButton<String>(

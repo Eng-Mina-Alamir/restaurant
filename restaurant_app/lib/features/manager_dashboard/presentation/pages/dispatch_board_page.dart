@@ -163,7 +163,7 @@ class _ErrorBanner extends StatelessWidget {
       excludeSemantics: true,
       child: Material(
         color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.sm),
           child: Row(

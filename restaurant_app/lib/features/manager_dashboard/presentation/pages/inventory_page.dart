@@ -177,7 +177,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       prefixIcon: const Icon(Icons.search),
                       isDense: true,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     onChanged: (q) => setState(() => _searchQuery = q),
@@ -629,17 +629,15 @@ class _InventoryCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(
                       color: statusColor.withValues(alpha: 0.5),
                     ),
                   ),
                   child: Text(
                     item.statusLabel,
-                    style: TextStyle(
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -704,7 +702,7 @@ class _InventoryCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: colorScheme.surfaceContainerHighest,
@@ -766,7 +764,7 @@ class _SummaryChip extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Row(
@@ -780,10 +778,8 @@ class _SummaryChip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '$count $label',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
               ),
             ),
           ],

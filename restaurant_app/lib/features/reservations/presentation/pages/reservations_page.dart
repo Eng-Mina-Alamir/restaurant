@@ -203,11 +203,11 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                                     ),
                                     child: Text(
                                       res.status.labelAr,
-                                      style: TextStyle(
-                                        color: statusColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
+                                      style: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: statusColor,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                     ),
                                   ),
                                 ],

@@ -92,10 +92,9 @@ class TopItemsBarChart extends StatelessWidget {
                         final item = topList[group.x.toInt()];
                         return BarTooltipItem(
                           '${item.key}\n${rod.toY.toInt()} طلب',
-                          TextStyle(
+                          theme.textTheme.labelMedium!.copyWith(
                             color: colorScheme.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
                           ),
                         );
                       },

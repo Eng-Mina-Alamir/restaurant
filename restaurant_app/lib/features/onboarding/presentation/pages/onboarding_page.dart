@@ -72,7 +72,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: () => context.go('/customer'),
-                child: const Text('تخطي', style: TextStyle(fontSize: 16)),
+                child: Text('تخطي', style: theme.textTheme.bodyLarge),
               ),
             ),
             Expanded(
@@ -151,7 +151,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           color: _currentPage == idx
                               ? theme.colorScheme.primary
                               : theme.colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                       ),
                     ),

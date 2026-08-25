@@ -228,10 +228,9 @@ class FinancialReportsPage extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Text(
+                        Text(
                           'الأصناف الأكثر مساهمة في الأرباح',
-                          style: TextStyle(
-                            fontSize: 16,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -410,8 +409,7 @@ class _FinancialRow extends StatelessWidget {
                   ),
                   child: Text(
                     '${percentage!.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: StatusColors.tone(SemanticTone.success, brightness),
                     ),

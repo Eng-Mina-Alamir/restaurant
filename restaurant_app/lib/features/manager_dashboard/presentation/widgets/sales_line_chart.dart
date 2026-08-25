@@ -186,10 +186,9 @@ class SalesLineChart extends StatelessWidget {
                               : '';
                           return LineTooltipItem(
                             '$label\n${Formatters.formatCurrency(spot.y)}',
-                            TextStyle(
+                            theme.textTheme.labelMedium!.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
                             ),
                           );
                         }).toList();

@@ -692,11 +692,10 @@ class _OrderCard extends StatelessWidget {
                         ),
                       ),
                       onPressed: () => onClaim(order),
-                      child: const Text(
+                      child: Text(
                         AppConstants.kdsClaimOrder,
-                        style: TextStyle(
+                        style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -717,9 +716,8 @@ class _OrderCard extends StatelessWidget {
                     onPressed: () => onAdvance(order),
                     child: Text(
                       buttonLabel,
-                      style: const TextStyle(
+                      style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),

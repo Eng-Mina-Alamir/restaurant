@@ -48,7 +48,7 @@ class _SplitBillSheetState extends ConsumerState<SplitBillSheet> {
                   margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: colorScheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
               ),
@@ -253,10 +253,10 @@ class _CounterButton extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Material(
       color: onTap != null ? color : colorScheme.outlineVariant,
-      borderRadius: BorderRadius.circular(50),
+      borderRadius: BorderRadius.circular(AppRadius.full),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Icon(

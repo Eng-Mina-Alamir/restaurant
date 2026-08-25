@@ -105,12 +105,11 @@ class PeakHoursChart extends StatelessWidget {
                         final hour = hours[group.x.toInt()];
                         return BarTooltipItem(
                           'الساعة $hour:00\n${rod.toY.toInt()} طلب',
-                          TextStyle(
+                          theme.textTheme.labelMedium!.copyWith(
                             color: hour == peakInt
                                 ? colorScheme.secondary
                                 : colorScheme.primary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
                           ),
                         );
                       },

@@ -224,8 +224,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                   Expanded(
                     child: Text(
                       assignment.deliveryLocation,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                       overflow: TextOverflow.ellipsis,

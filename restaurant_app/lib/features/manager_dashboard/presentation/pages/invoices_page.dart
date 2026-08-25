@@ -109,7 +109,7 @@ class _InvoiceCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
@@ -171,16 +171,15 @@ class _InvoiceCard extends StatelessWidget {
                         SemanticTone.success,
                         theme.brightness,
                       ).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Text(
                       'مكتمل',
-                      style: TextStyle(
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: StatusColors.tone(
                           SemanticTone.success,
                           theme.brightness,
                         ),
-                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -218,7 +217,7 @@ class _InvoiceDialog extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(

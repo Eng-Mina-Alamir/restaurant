@@ -255,15 +255,15 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                                     color: colorScheme.error.withValues(
                                       alpha: 0.12,
                                     ),
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(AppRadius.xs),
                                   ),
                                   child: Text(
                                     'معطل',
-                                    style: TextStyle(
-                                      color: colorScheme.error,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                          color: colorScheme.error,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
                                 ),
                             ],

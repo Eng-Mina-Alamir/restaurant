@@ -239,8 +239,7 @@ class _CountChip extends StatelessWidget {
       child: AnimatedCounter(
         value: count,
         prefix: '$label: ',
-        style: TextStyle(
-          fontSize: 11,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
           color: color,
         ),

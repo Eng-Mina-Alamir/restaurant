@@ -293,7 +293,7 @@ class _StaffCard extends StatelessWidget {
                     color: performer
                         .ratingColor(colorScheme)
                         .withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -383,12 +383,13 @@ class _StatChip extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
