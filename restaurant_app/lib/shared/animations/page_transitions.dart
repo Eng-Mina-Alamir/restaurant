@@ -19,6 +19,15 @@ class AppPageTransitions {
       transitionDuration: duration,
       reverseTransitionDuration: duration,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the OS reduce-motion setting: show the page immediately at
+        // full opacity with no slide offset.
+        if (MediaQuery.disableAnimationsOf(context)) {
+          return FadeTransition(
+            opacity: const AlwaysStoppedAnimation<double>(1.0),
+            child: child,
+          );
+        }
+
         final fadeAnim = CurvedAnimation(parent: animation, curve: curve);
         final slideAnim = Tween<Offset>(
           begin: beginOffset,
@@ -47,6 +56,15 @@ class AppPageTransitions {
       transitionDuration: duration,
       reverseTransitionDuration: duration,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Respect the OS reduce-motion setting: show the page immediately at
+        // full opacity with no scaling.
+        if (MediaQuery.disableAnimationsOf(context)) {
+          return FadeTransition(
+            opacity: const AlwaysStoppedAnimation<double>(1.0),
+            child: child,
+          );
+        }
+
         final fadeAnim = CurvedAnimation(parent: animation, curve: curve);
         final scaleAnim = Tween<double>(
           begin: beginScale,

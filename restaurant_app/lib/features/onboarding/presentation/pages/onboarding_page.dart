@@ -45,10 +45,16 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _next() {
     if (_currentPage < _slides.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOutCubic,
-      );
+      // Honor the OS reduce-motion setting by switching pages instantly
+      // instead of animating between them.
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _pageController.jumpToPage(_currentPage + 1);
+      } else {
+        _pageController.nextPage(
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
+        );
+      }
     } else {
       context.go('/customer');
     }
