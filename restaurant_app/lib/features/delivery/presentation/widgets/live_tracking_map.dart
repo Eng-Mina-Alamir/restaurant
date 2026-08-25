@@ -391,6 +391,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'إغلاق',
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(ctx),
                 ),
@@ -824,6 +825,7 @@ class _TurnByTurnSheet extends StatelessWidget {
                   ],
                 ),
                 IconButton(
+                  tooltip: 'إغلاق',
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: onClose,
                 ),

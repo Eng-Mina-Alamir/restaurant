@@ -45,14 +45,14 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             builder: (context, ref, _) {
               final activeTable = ref.watch(activeTableIdProvider);
               return IconButton(
+                tooltip: activeTable != null
+                    ? 'طاولة $activeTable'
+                    : 'مسح QR الطاولة',
                 icon: Icon(
                   activeTable != null
                       ? Icons.table_restaurant
                       : Icons.qr_code_scanner,
                 ),
-                tooltip: activeTable != null
-                    ? 'طاولة $activeTable'
-                    : 'مسح QR الطاولة',
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -84,6 +84,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           ),
 
           IconButton(
+            tooltip: AppConstants.cartTitle,
             icon: Badge(
               isLabelVisible: ref.watch(
                 cartControllerProvider.select((c) => c.isNotEmpty),
@@ -93,7 +94,6 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
               ),
               child: const Icon(Icons.shopping_cart_outlined),
             ),
-            tooltip: AppConstants.cartTitle,
             onPressed: () => _openCart(context),
           ),
           const LogoutActionButton(),

@@ -111,6 +111,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       labelText: AppConstants.passwordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
+                        // Tooltip mirrors the action so screen readers hear
+                        // what pressing will do, not just the current state.
+                        tooltip: _obscurePassword
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_off

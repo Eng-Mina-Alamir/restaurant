@@ -249,6 +249,7 @@ class _InvoiceDialog extends StatelessWidget {
                   ),
                 ),
                 IconButton(
+                  tooltip: 'إغلاق',
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),

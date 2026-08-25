@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:restaurant_app/features/auth/presentation/pages/login_page.dart';
 import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
 import 'package:restaurant_app/features/chat/domain/entities/chat_message.dart';
 import 'package:restaurant_app/features/chat/presentation/controllers/chat_controller.dart';
@@ -11,6 +12,8 @@ import 'package:restaurant_app/features/chat/presentation/pages/chat_page.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
+import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
+import 'package:restaurant_app/features/ratings/presentation/widgets/rating_dialog.dart';
 import 'package:restaurant_app/shared/widgets/empty_state.dart';
 import 'package:restaurant_app/shared/widgets/language_switcher.dart';
 import 'package:restaurant_app/shared/widgets/theme_mode_switch_button.dart';
@@ -206,6 +209,83 @@ void main() {
         final box = tester.renderObject<RenderBox>(closeButton);
         expect(box.size.width, greaterThanOrEqualTo(48.0));
         expect(box.size.height, greaterThanOrEqualTo(48.0));
+      } finally {
+        semantics.dispose();
+      }
+    });
+  });
+
+  // ── Icon-only accessibility sweep additions ─────────────────────────────
+  //
+  // Every icon-only control must expose an Arabic accessible name through
+  // either `tooltip:` (surfaces as SemanticsProperties.tooltip) or an
+  // explicit `Semantics(label:)` wrapper.
+  group('Icon-only sweep semantics fixes', () {
+    testWidgets('login password toggle announces show/hide action', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: LoginPage())),
+      );
+      await tester.pump();
+
+      try {
+        final toggle = find.byType(IconButton);
+        expect(toggle, findsOneWidget);
+
+        // Initially obscured → the offered action is to reveal the password.
+        expect(
+          tester.getSemantics(toggle).getSemanticsData().tooltip,
+          'إظهار كلمة المرور',
+        );
+
+        // The tooltip must flip meaning together with the icon state.
+        await tester.tap(toggle);
+        await tester.pump();
+        expect(
+          tester.getSemantics(toggle).getSemanticsData().tooltip,
+          'إخفاء كلمة المرور',
+        );
+
+        // Minimum logical touch target (design-system/MASTER.md §3).
+        final box = tester.renderObject<RenderBox>(toggle);
+        expect(box.size.width, greaterThanOrEqualTo(48.0));
+        expect(box.size.height, greaterThanOrEqualTo(48.0));
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('rating stars expose per-star Semantics labels', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: RatingDialog(
+                targetId: 'item-1',
+                targetType: RatingTargetType.menuItem,
+                title: 'قيّم تجربتك',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      try {
+        for (var star = 1; star <= 5; star++) {
+          expect(
+            find.bySemanticsLabel('قيّم $star من 5'),
+            findsOneWidget,
+            reason: 'star $star must expose its own label',
+          );
+        }
       } finally {
         semantics.dispose();
       }

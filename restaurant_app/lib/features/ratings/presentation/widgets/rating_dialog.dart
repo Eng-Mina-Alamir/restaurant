@@ -78,19 +78,27 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
               const SizedBox(height: AppSpacing.md),
             ],
 
-            // Star Rating Row
+            // Star Rating Row — each star exposes a per-star semantics label
+            // (tooltips are inappropriate here: five identical visual glyphs
+            // would read as duplicates to screen readers).
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(5, (index) {
                 final starValue = index + 1;
-                return IconButton(
-                  icon: Icon(
-                    starValue <= _score ? Icons.star : Icons.star_border,
-                    color: StatusColors.starRating(theme.brightness),
-                    size: 36,
+                return Semantics(
+                  label: 'قيّم $starValue من 5',
+                  button: true,
+                  child: IconButton(
+                    // Accessible name comes from the enclosing Semantics
+                    // widget; a visual tooltip would duplicate five times.
+                    icon: Icon(
+                      starValue <= _score ? Icons.star : Icons.star_border,
+                      color: StatusColors.starRating(theme.brightness),
+                      size: 36,
+                    ),
+                    onPressed: () =>
+                        setState(() => _score = starValue.toDouble()),
                   ),
-                  onPressed: () =>
-                      setState(() => _score = starValue.toDouble()),
                 );
               }),
             ),

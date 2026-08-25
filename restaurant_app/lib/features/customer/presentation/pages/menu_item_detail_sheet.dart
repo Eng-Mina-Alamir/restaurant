@@ -325,6 +325,7 @@ class _QuantityStepper extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton.outlined(
+          tooltip: 'تقليل الكمية',
           icon: const Icon(Icons.remove),
           onPressed: quantity <= 1 ? null : onDecrement,
         ),
@@ -336,6 +337,7 @@ class _QuantityStepper extends StatelessWidget {
           ),
         ),
         IconButton.outlined(
+          tooltip: 'زيادة الكمية',
           icon: const Icon(Icons.add),
           onPressed: onIncrement,
         ),

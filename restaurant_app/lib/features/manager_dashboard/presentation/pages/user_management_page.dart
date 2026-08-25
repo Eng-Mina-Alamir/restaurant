@@ -430,6 +430,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'إغلاق',
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
                     ),
@@ -544,6 +545,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'إغلاق',
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
                     ),

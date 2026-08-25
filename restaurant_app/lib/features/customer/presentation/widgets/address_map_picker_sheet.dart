@@ -286,6 +286,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                   ),
                 ),
                 IconButton(
+                  tooltip: 'إغلاق',
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -305,6 +306,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchCtrl.text.isNotEmpty
                         ? IconButton(
+                            tooltip: 'مسح البحث',
                             icon: const Icon(Icons.clear, size: 18),
                             onPressed: () {
                               _searchCtrl.clear();

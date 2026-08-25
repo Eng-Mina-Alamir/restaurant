@@ -219,6 +219,7 @@ class _CartLine extends StatelessWidget {
                 ScaleButton(
                   onTap: onDecrement,
                   child: IconButton.outlined(
+                    tooltip: 'تقليل الكمية',
                     icon: const Icon(Icons.remove),
                     onPressed: onDecrement,
                   ),
@@ -235,6 +236,7 @@ class _CartLine extends StatelessWidget {
                 ScaleButton(
                   onTap: onIncrement,
                   child: IconButton.outlined(
+                    tooltip: 'زيادة الكمية',
                     icon: const Icon(Icons.add),
                     onPressed: onIncrement,
                   ),

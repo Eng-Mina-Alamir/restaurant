@@ -85,6 +85,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       appBar: AppBar(
         title: const Text('إنشاء حساب جديد'),
         leading: IconButton(
+          tooltip: 'رجوع',
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
         ),
@@ -179,6 +180,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       labelText: AppConstants.passwordLabel,
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
+                        tooltip: _obscurePassword
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_off
@@ -203,6 +207,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       labelText: 'تأكيد كلمة المرور',
                       prefixIcon: const Icon(Icons.lock_reset),
                       suffixIcon: IconButton(
+                        tooltip: _obscureConfirmPassword
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
                         icon: Icon(
                           _obscureConfirmPassword
                               ? Icons.visibility_off

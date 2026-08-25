@@ -393,6 +393,7 @@ class CouponManagementPage extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'إغلاق',
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
                     ),

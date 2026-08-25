@@ -25,6 +25,7 @@ class LoyaltyPage extends ConsumerWidget {
         title: const Text('برنامج الولاء والمكافآت'),
         actions: [
           IconButton(
+            tooltip: 'تحديث',
             icon: const Icon(Icons.refresh),
             onPressed: () =>
                 ref.read(loyaltyControllerProvider.notifier).loadAccount(),

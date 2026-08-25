@@ -401,6 +401,7 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'إغلاق',
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
                     ),

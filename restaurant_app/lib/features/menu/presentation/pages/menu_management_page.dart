@@ -399,6 +399,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: 'إغلاق',
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(ctx),
                     ),
