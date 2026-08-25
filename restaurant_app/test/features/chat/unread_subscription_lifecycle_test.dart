@@ -90,23 +90,26 @@ void main() {
       },
     );
 
-    test('repeated watches of the same order share a single live stream', () async {
-      final repo = _SpyChatRepository();
-      final container = _container(repo);
+    test(
+      'repeated watches of the same order share a single live stream',
+      () async {
+        final repo = _SpyChatRepository();
+        final container = _container(repo);
 
-      // Two watchers on the SAME order id (e.g. DriverHomePage card + ChatPage
-      // notifier read) resolve to ONE family element → one channel total.
-      final badge = unreadChatCountProvider('ORD-A');
-      container.listen(badge, (_, _) {});
-      container.listen(badge, (_, _) {});
-      await pumpEventQueue();
+        // Two watchers on the SAME order id (e.g. DriverHomePage card + ChatPage
+        // notifier read) resolve to ONE family element → one channel total.
+        final badge = unreadChatCountProvider('ORD-A');
+        container.listen(badge, (_, _) {});
+        container.listen(badge, (_, _) {});
+        await pumpEventQueue();
 
-      expect(repo.watchedOrders, const <String>['ORD-A']);
-      expect(repo.liveWatchStreams, 1);
+        expect(repo.watchedOrders, const <String>['ORD-A']);
+        expect(repo.liveWatchStreams, 1);
 
-      container.dispose();
-      await pumpEventQueue();
-      expect(repo.liveWatchStreams, 0);
-    });
+        container.dispose();
+        await pumpEventQueue();
+        expect(repo.liveWatchStreams, 0);
+      },
+    );
   });
 }

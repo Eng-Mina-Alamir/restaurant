@@ -113,8 +113,10 @@ class RefreshSpyDispatchController extends DispatchController {
 /// Mirrors the production dispatch wiring (repository + realtime + orders
 /// listener) against a [RefreshSpyDispatchController].
 final spyDispatchControllerProvider =
-    StateNotifierProvider<RefreshSpyDispatchController,
-        AsyncValue<DispatchBoardState>>((ref) {
+    StateNotifierProvider<
+      RefreshSpyDispatchController,
+      AsyncValue<DispatchBoardState>
+    >((ref) {
       final controller = RefreshSpyDispatchController(
         ref.watch(deliveryRepositoryProvider),
         ref.watch(realtimeServiceProvider),
@@ -415,10 +417,7 @@ void main() {
           async.elapse(const Duration(milliseconds: 250));
           async.flushMicrotasks();
           board = container.read(dispatchControllerProvider).requireValue;
-          expect(board.undispatchedOrders.map((o) => o.id), [
-            'ORD-A',
-            'ORD-F',
-          ]);
+          expect(board.undispatchedOrders.map((o) => o.id), ['ORD-A', 'ORD-F']);
           expect(repo.bulkCalls, bulkCallsAfterCtorRefresh + 1);
 
           container.dispose();
@@ -426,40 +425,37 @@ void main() {
       },
     );
 
-    test(
-      'synthetic deliveryAssignmentCreated via realtime loopback triggers '
-      'a debounced refresh',
-      () {
-        fakeAsync((async) {
-          final realtime = LoopbackRealtimeService();
-          final repo = CountingBulkRepository(seed: const []);
-          final container = buildDispatchContainer(
-            orders: [buildOrder(id: 'ORD-A')],
-            repository: repo,
-            realtimeService: realtime,
-          );
+    test('synthetic deliveryAssignmentCreated via realtime loopback triggers '
+        'a debounced refresh', () {
+      fakeAsync((async) {
+        final realtime = LoopbackRealtimeService();
+        final repo = CountingBulkRepository(seed: const []);
+        final container = buildDispatchContainer(
+          orders: [buildOrder(id: 'ORD-A')],
+          repository: repo,
+          realtimeService: realtime,
+        );
 
-          container.read(dispatchControllerProvider.notifier);
-          async.flushMicrotasks(); // settle constructor refresh
-          final bulkCallsAfterCtorRefresh = repo.bulkCalls;
+        container.read(dispatchControllerProvider.notifier);
+        async.flushMicrotasks(); // settle constructor refresh
+        final bulkCallsAfterCtorRefresh = repo.bulkCalls;
 
-          // A remote assignment lands while this client never called
-          // assignDriver — the events subscription must still re-classify.
-          realtime.broadcastDeliveryAssignmentCreated({
-            'id': 'ASG-synthetic-1',
-            'orderId': 'ORD-A',
-            'driverId': 'driver-remote',
-          });
-
-          async.elapse(const Duration(milliseconds: 450));
-          async.flushMicrotasks();
-
-          expect(repo.bulkCalls, bulkCallsAfterCtorRefresh + 1);
-
-          container.dispose();
+        // A remote assignment lands while this client never called
+        // assignDriver — the events subscription must still re-classify.
+        realtime.broadcastDeliveryAssignmentCreated({
+          'id': 'ASG-synthetic-1',
+          'orderId': 'ORD-A',
+          'driverId': 'driver-remote',
         });
-      },
-    );
+
+        async.elapse(const Duration(milliseconds: 450));
+        async.flushMicrotasks();
+
+        expect(repo.bulkCalls, bulkCallsAfterCtorRefresh + 1);
+
+        container.dispose();
+      });
+    });
 
     test('a burst of 3 rapid order mutations collapses into EXACTLY one '
         'debounced refresh pass', () {

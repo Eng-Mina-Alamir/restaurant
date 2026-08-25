@@ -7,6 +7,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/theme_mode_switch_button.dart';
 import '../../../cart/domain/entities/cart_item.dart';
@@ -106,7 +107,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
             ),
           ),
         ),
-        error: (error, _) => Center(child: Text('$error')),
+        error: (error, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: error,
+          onRetry: () => ref.refresh(menuControllerProvider),
+        ),
         data: (menu) {
           final items = filterMenu(menu, selected, query, diet);
           return Column(

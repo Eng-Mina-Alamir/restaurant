@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/reservation_entity.dart';
 import '../controllers/reservation_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
@@ -74,214 +76,245 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
 
           // List View
           Expanded(
-            child: reservationsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) =>
-                  Center(child: Text(AppConstants.errorWithDetail(err))),
-              data: (list) {
-                final filtered = _filterStatus == null
-                    ? list
-                    : list.where((r) => r.status == _filterStatus).toList();
+            child: RefreshIndicator(
+              onRefresh: () async => ref.refresh(reservationControllerProvider),
+              child: reservationsAsync.when(
+                loading: () => const _ReservationSkeletonList(),
+                error: (err, _) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.5,
+                      child: ErrorState(
+                        message: AppConstants.errorLoadingData,
+                        errorDetail: err,
+                        onRetry: () =>
+                            ref.refresh(reservationControllerProvider),
+                      ),
+                    ),
+                  ],
+                ),
+                data: (list) {
+                  final filtered = _filterStatus == null
+                      ? list
+                      : list.where((r) => r.status == _filterStatus).toList();
 
-                if (filtered.isEmpty) {
-                  return const EmptyState(
-                    message: 'لا توجد حجوزات مسجلة',
-                    icon: Icons.event_busy_outlined,
-                  );
-                }
+                  if (filtered.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: const EmptyState(
+                            message: 'لا توجد حجوزات مسجلة',
+                            icon: Icons.event_busy_outlined,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.xs,
-                    AppSpacing.md,
-                    80,
-                  ),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final res = filtered[index];
-                    final statusColor = _statusColor(res.status);
-                    final timeFormatted = DateFormat(
-                      'hh:mm a - yyyy/MM/dd',
-                      'ar',
-                    ).format(res.reservationTime);
+                  return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.xs,
+                      AppSpacing.md,
+                      80,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final res = filtered[index];
+                      final statusColor = _statusColor(res.status);
+                      final timeFormatted = DateFormat(
+                        'hh:mm a - yyyy/MM/dd',
+                        'ar',
+                      ).format(res.reservationTime);
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor:
-                                          colorScheme.primaryContainer,
-                                      foregroundColor:
-                                          colorScheme.onPrimaryContainer,
-                                      child: const Icon(Icons.person),
-                                    ),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          res.customerName,
-                                          style: theme.textTheme.titleMedium
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                        Text(
-                                          res.customerPhone,
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor:
+                                            colorScheme.primaryContainer,
+                                        foregroundColor:
+                                            colorScheme.onPrimaryContainer,
+                                        child: const Icon(Icons.person),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            res.customerName,
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                          ),
+                                          Text(
+                                            res.customerPhone,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.full,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.full,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      res.status.labelAr,
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    res.status.labelAr,
-                                    style: TextStyle(
-                                      color: statusColor,
+                                ],
+                              ),
+                              const Divider(height: AppSpacing.md),
+                              Row(
+                                children: [
+                                  const Icon(Icons.table_restaurant, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'طاولة رقم: ${res.tableNumber}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 12,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: AppSpacing.md),
-                            Row(
-                              children: [
-                                const Icon(Icons.table_restaurant, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'طاولة رقم: ${res.tableNumber}',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
+                                  const SizedBox(width: AppSpacing.md),
+                                  const Icon(Icons.groups_outlined, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${res.guestCount} أفراد',
+                                    style: theme.textTheme.bodyMedium,
                                   ),
-                                ),
-                                const SizedBox(width: AppSpacing.md),
-                                const Icon(Icons.groups_outlined, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${res.guestCount} أفراد',
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.access_time, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'الموعد: $timeFormatted',
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                            if (res.notes != null &&
-                                res.notes!.trim().isNotEmpty) ...[
+                                ],
+                              ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(Icons.notes, size: 16),
+                                  const Icon(Icons.access_time, size: 16),
                                   const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      'ملاحظات: ${res.notes}',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
+                                  Text(
+                                    'الموعد: $timeFormatted',
+                                    style: theme.textTheme.bodySmall,
                                   ),
                                 ],
                               ),
-                            ],
-                            if (res.status == ReservationStatus.confirmed) ...[
-                              const SizedBox(height: AppSpacing.sm),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.red,
-                                      side: const BorderSide(color: Colors.red),
-                                      visualDensity: VisualDensity.compact,
+                              if (res.notes != null &&
+                                  res.notes!.trim().isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.notes, size: 16),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'ملاحظات: ${res.notes}',
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
                                     ),
-                                    icon: const Icon(
-                                      Icons.cancel_outlined,
-                                      size: 16,
-                                    ),
-                                    label: const Text('إلغاء الحجز'),
-                                    onPressed: () {
-                                      ref
-                                          .read(
-                                            reservationControllerProvider
-                                                .notifier,
-                                          )
-                                          .cancelReservation(res);
-                                    },
-                                  ),
-                                  const SizedBox(width: AppSpacing.sm),
-                                  FilledButton.icon(
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                    icon: const Icon(Icons.chair, size: 16),
-                                    label: const Text('إجلاس الضيوف'),
-                                    onPressed: () {
-                                      ref
-                                          .read(
-                                            reservationControllerProvider
-                                                .notifier,
-                                          )
-                                          .seatCustomer(res);
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'تم إجلاس ${res.customerName} على طاولة ${res.tableNumber}',
-                                          ),
+                                  ],
+                                ),
+                              ],
+                              if (res.status ==
+                                  ReservationStatus.confirmed) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                        side: const BorderSide(
+                                          color: Colors.red,
                                         ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.cancel_outlined,
+                                        size: 16,
+                                      ),
+                                      label: const Text('إلغاء الحجز'),
+                                      onPressed: () {
+                                        ref
+                                            .read(
+                                              reservationControllerProvider
+                                                  .notifier,
+                                            )
+                                            .cancelReservation(res);
+                                      },
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    FilledButton.icon(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                      icon: const Icon(Icons.chair, size: 16),
+                                      label: const Text('إجلاس الضيوف'),
+                                      onPressed: () {
+                                        ref
+                                            .read(
+                                              reservationControllerProvider
+                                                  .notifier,
+                                            )
+                                            .seatCustomer(res);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'تم إجلاس ${res.customerName} على طاولة ${res.tableNumber}',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -496,6 +529,67 @@ class _ReservationsPageState extends ConsumerState<ReservationsPage> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReservationSkeletonList extends StatelessWidget {
+  const _ReservationSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        80,
+      ),
+      itemCount: 4,
+      itemBuilder: (_, _) => const Card(
+        margin: EdgeInsets.only(bottom: AppSpacing.sm),
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      SkeletonCircle(size: 40),
+                      SizedBox(width: AppSpacing.sm),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SkeletonBox(width: 120, height: 16),
+                          SizedBox(height: AppSpacing.xs),
+                          SkeletonBox(width: 80, height: 12),
+                        ],
+                      ),
+                    ],
+                  ),
+                  SkeletonBox(
+                    width: 70,
+                    height: 24,
+                    borderRadius: AppRadius.full,
+                  ),
+                ],
+              ),
+              Divider(height: AppSpacing.lg),
+              Row(
+                children: [
+                  SkeletonBox(width: 140, height: 14),
+                  SizedBox(width: AppSpacing.md),
+                  SkeletonBox(width: 60, height: 14),
+                ],
+              ),
+            ],
           ),
         ),
       ),

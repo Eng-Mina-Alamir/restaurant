@@ -1,7 +1,13 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../../config/app_config.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/financial_calculator.dart';
+import '../../data/repositories/supabase_cart_repository.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
 
@@ -10,8 +16,26 @@ import '../../domain/entities/cart_item.dart';
 /// Items are merged by [CartItem.configKey]: adding the same product
 /// configuration again increments its quantity rather than appending a
 /// duplicate entry.
+///
+/// When a [SupabaseCartRepository] is supplied the controller also mirrors
+/// every mutation to `cart_items` / `cart_item_modifiers` (debounced,
+/// fire-and-forget) and can [restoreFromCloud] on session start. Both cloud
+/// dependencies are optional so offline/demo mode and existing tests keep
+/// working unchanged.
 class CartController extends StateNotifier<List<CartItem>> {
-  CartController() : super(const []);
+  CartController({
+    SupabaseCartRepository? cloudRepository,
+    String? Function()? currentUserId,
+  }) : _cloud = cloudRepository,
+       _currentUserId = currentUserId,
+       super(const []);
+
+  final SupabaseCartRepository? _cloud;
+  final String? Function()? _currentUserId;
+  Timer? _syncDebounce;
+
+  /// Debounce window coalescing rapid mutations into one server write.
+  static const Duration kCloudSyncDebounce = Duration(milliseconds: 600);
 
   /// Upper bound for a single cart line. Protects money math and the UI from
   /// runaway quantities (fat-finger taps or hostile `copyWith` input).
@@ -61,6 +85,7 @@ class CartController extends StateNotifier<List<CartItem>> {
       );
       state = [...state]..[index] = merged;
     }
+    _scheduleCloudSync();
   }
 
   /// Increases the quantity of the matching line item, capped at
@@ -70,6 +95,7 @@ class CartController extends StateNotifier<List<CartItem>> {
       if (item.quantity >= kMaxQuantityPerLine) return item;
       return item.copyWith(quantity: item.quantity + 1);
     });
+    _scheduleCloudSync();
   }
 
   /// Decreases the quantity of the matching line, removing it at zero.
@@ -88,12 +114,47 @@ class CartController extends StateNotifier<List<CartItem>> {
   /// Removes the line matching [configKey].
   void removeItem(String configKey) {
     state = state.where((e) => e.configKey != configKey).toList();
+    _scheduleCloudSync();
   }
 
   /// Empties the cart and clears the linked table.
   void clear() {
     state = const [];
     _tableId = null;
+    _scheduleCloudSync();
+  }
+
+  /// Replaces local state with the persisted cloud cart (if any).
+  ///
+  /// Called once when a logged-in customer session starts; a no-op for
+  /// anonymous users, offline mode, or when the cloud already matches.
+  Future<void> restoreFromCloud() async {
+    final repo = _cloud;
+    final userId = _currentUserId?.call();
+    if (repo == null || userId == null || userId.isEmpty) return;
+    if (state.isNotEmpty) return;
+    final result = await repo.loadCart(userId);
+    result.when(
+      onLeft: (_) {},
+      onRight: (items) {
+        if (items.isNotEmpty && state.isEmpty && mounted) {
+          state = items;
+        }
+      },
+    );
+  }
+
+  /// Coalesces mutations into a single debounced server write.
+  void _scheduleCloudSync() {
+    final repo = _cloud;
+    final userId = _currentUserId?.call();
+    if (repo == null || userId == null || userId.isEmpty) return;
+    _syncDebounce?.cancel();
+    _syncDebounce = Timer(kCloudSyncDebounce, () {
+      final snapshot = List<CartItem>.of(state);
+      // Fire-and-forget: persistence failures must never break the UX.
+      repo.saveCart(userId, snapshot);
+    });
   }
 
   /// Returns the per-person amount when splitting the total evenly across
@@ -116,14 +177,43 @@ class CartController extends StateNotifier<List<CartItem>> {
     if (index == -1) return;
     final updated = transform(state[index]);
     state = [...state]..[index] = updated;
+    _scheduleCloudSync();
+  }
+
+  @override
+  void dispose() {
+    _syncDebounce?.cancel();
+    super.dispose();
   }
 }
 
 /// Provider for [CartController].
+///
+/// When Supabase mode is active *and* the SDK was actually initialized
+/// (production app), the controller is wired to the cloud cart repository and
+/// restores the persisted cart for the signed-in customer. In tests / offline
+/// runs the SDK is uninitialized, the wiring degrades to the plain
+/// in-memory controller, and nothing touches the network.
 final cartControllerProvider =
     StateNotifierProvider<CartController, List<CartItem>>((ref) {
-      return CartController();
+      final controller = CartController(
+        cloudRepository: _resolveCloudRepository(),
+        currentUserId: () => ref.read(supabaseCurrentUserProvider)?.id,
+      );
+      unawaited(controller.restoreFromCloud());
+      return controller;
     });
+
+SupabaseCartRepository? _resolveCloudRepository() {
+  if (!AppConfig.useSupabase) return null;
+  try {
+    // Throws when Supabase.initialize was never called (tests/offline).
+    final client = Supabase.instance.client;
+    return SupabaseCartRepository(client);
+  } catch (_) {
+    return null;
+  }
+}
 
 /// The payment method the customer has selected at checkout.
 final selectedPaymentMethodProvider = StateProvider<PaymentMethod>(

@@ -1,4 +1,11 @@
 -- ==============================================================================
+-- ⛔ DEPRECATED — ARCHIVED REFERENCE ONLY (2026-08-24)
+-- ------------------------------------------------------------------------------
+-- This content HAS BEEN APPLIED to the live project as the tracked migration
+-- `apply_schema_v3_dispatch_and_status_log`. Do NOT run this file manually.
+-- New schema changes must go through `supabase migration new` + `db push`.
+-- See DEPLOYMENT.md §3b for the migration workflow.
+-- ==============================================================================
 -- 🚀 MIGRATION V3 — DELIVERY DISPATCH & ORDER STATUS AUDIT
 -- ==============================================================================
 -- HOW TO APPLY:

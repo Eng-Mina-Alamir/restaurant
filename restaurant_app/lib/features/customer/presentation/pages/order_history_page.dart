@@ -51,37 +51,51 @@ class _OrderHistoryPageState extends ConsumerState<OrderHistoryPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.orderHistoryTitle)),
-      body: orders.isEmpty
-          ? EmptyOrdersState(onAction: () => context.go('/customer'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              // +1 reserves the trailing slot for "عرض المزيد" while orders
-              // remain hidden behind the display window.
-              itemCount: visibleOrders.length + (hasMore ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index >= visibleOrders.length) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
+      body: RefreshIndicator(
+        onRefresh: () async => ref.refresh(ordersControllerProvider),
+        child: orders.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: EmptyOrdersState(
+                      onAction: () => context.go('/customer'),
                     ),
-                    child: Center(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () => setState(() {
-                          _visibleCount += AppConstants.orderHistoryPageSize;
-                        }),
-                        icon: const Icon(Icons.unfold_more),
-                        label: const Text(AppConstants.orderHistoryLoadMore),
+                  ),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                // +1 reserves the trailing slot for "عرض المزيد" while orders
+                // remain hidden behind the display window.
+                itemCount: visibleOrders.length + (hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index >= visibleOrders.length) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
                       ),
-                    ),
+                      child: Center(
+                        child: FilledButton.tonalIcon(
+                          onPressed: () => setState(() {
+                            _visibleCount += AppConstants.orderHistoryPageSize;
+                          }),
+                          icon: const Icon(Icons.unfold_more),
+                          label: const Text(AppConstants.orderHistoryLoadMore),
+                        ),
+                      ),
+                    );
+                  }
+                  final order = visibleOrders[index];
+                  return _OrderHistoryCard(
+                    order: order,
+                    onReorder: () => _reorder(order, context),
                   );
-                }
-                final order = visibleOrders[index];
-                return _OrderHistoryCard(
-                  order: order,
-                  onReorder: () => _reorder(order, context),
-                );
-              },
-            ),
+                },
+              ),
+      ),
     );
   }
 

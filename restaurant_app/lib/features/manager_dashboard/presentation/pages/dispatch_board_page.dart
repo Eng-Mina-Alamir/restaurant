@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../controllers/dispatch_controller.dart';
@@ -35,19 +35,11 @@ class DispatchBoardPage extends ConsumerWidget {
       ),
       body: asyncBoard.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('حدث خطأ في تحميل اللوحة: $error'),
-              const SizedBox(height: AppSpacing.sm),
-              FilledButton(
-                onPressed: () =>
-                    ref.read(dispatchControllerProvider.notifier).refresh(),
-                child: const Text(AppConstants.orderAuditTrailRetryAction),
-              ),
-            ],
-          ),
+        error: (error, _) => ErrorState(
+          message: 'حدث خطأ في تحميل لوحة التوصيل',
+          errorDetail: error,
+          onRetry: () =>
+              ref.read(dispatchControllerProvider.notifier).refresh(),
         ),
         data: (board) => RefreshIndicator(
           onRefresh: ref.read(dispatchControllerProvider.notifier).refresh,

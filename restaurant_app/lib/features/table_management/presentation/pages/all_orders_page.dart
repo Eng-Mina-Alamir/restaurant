@@ -38,15 +38,27 @@ class _AllOrdersPageState extends ConsumerState<AllOrdersPage> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: filtered.isEmpty
-                ? const EmptyOrdersState()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) =>
-                        _OrderStatusCard(order: filtered[index]),
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () async => ref.refresh(ordersControllerProvider),
+              child: filtered.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: const EmptyOrdersState(),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(12),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) =>
+                          _OrderStatusCard(order: filtered[index]),
+                    ),
+            ),
           ),
         ],
       ),

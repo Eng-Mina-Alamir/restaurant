@@ -6,21 +6,22 @@ architecture map of the delivery dispatch pipeline.
 
 ---
 
-## 1. Apply `supabase_migration_v3.sql` (REQUIRED)
+## 1. Schema v3 — dispatch & status log (✅ APPLIED 2026-08-24)
 
-The migration file lives at the repository root: [`supabase_migration_v3.sql`](supabase_migration_v3.sql).
+> 🎉 **Already applied to the live project** as tracked migrations
+> (`apply_schema_v3_dispatch_and_status_log` and follow-ups). The manual
+> SQL-Editor workflow below is **deprecated** — see §1b for the current
+> workflow. The root file [`supabase_migration_v3.sql`](supabase_migration_v3.sql)
+> is archived reference material only.
 
-### Steps
+<details><summary>Historical manual steps (do NOT use)</summary>
 
 1. Open the **Supabase Dashboard** → select your project.
-2. In the left sidebar, open **SQL Editor**.
-3. Click **New query**.
-4. Copy the **entire** contents of `supabase_migration_v3.sql` and paste it into the editor.
-5. Click **Run** and wait for "Success. No rows returned".
-6. Done — no further action needed.
+2. In the left sidebar, open **SQL Editor** → **New query**.
+3. Copy the **entire** contents of `supabase_migration_v3.sql` and paste it into the editor.
+4. Click **Run** and wait for "Success. No rows returned".
 
-> ✅ **Idempotent:** every statement uses `IF NOT EXISTS`, so re-running the
-> whole file is safe (e.g. to verify or after restoring a branch).
+</details>
 
 > ⚠️ **Do not skip this step.** Without the new `orders` columns
 > (`assigned_kitchen_id` / `driver_id`) every order insert that touches them
@@ -56,22 +57,12 @@ v3 mirrors its "SCHEMA V3" section.
 
 ---
 
-## 2. Apply `supabase_migration_v4.sql` (chat) (REQUIRED)
+## 2. Schema v4 — chat (✅ APPLIED 2026-08-24)
 
-The migration file lives at the repository root: [`supabase_migration_v4.sql`](supabase_migration_v4.sql).
-
-### Steps
-
-1. Open the **Supabase Dashboard** → select your project.
-2. In the left sidebar, open **SQL Editor**.
-3. Click **New query**.
-4. Copy the **entire** contents of `supabase_migration_v4.sql` and paste it into the editor.
-5. Click **Run** and wait for "Success. No rows returned".
-6. Done — no further action needed.
-
-> ✅ **Idempotent:** the table and index use `IF NOT EXISTS`, and every policy
-> is preceded by a `DROP POLICY IF EXISTS` guard, so re-running the whole file
-> is safe (e.g. to verify or after restoring a branch).
+> 🎉 **Already applied to the live project** as tracked migration
+> `apply_schema_v4_chat_messages` (+ composite index in
+> `missing_relations_and_indexes`). [`supabase_migration_v4.sql`](supabase_migration_v4.sql)
+> is archived reference material only.
 
 > ⚠️ **Do not skip this step.** Without the `chat_messages` table every chat
 > send fails with a **Postgres error** (*relation "public.chat_messages" does
@@ -128,6 +119,72 @@ await primeMenuForCheckout(container); // warm menu before checkout flows
 Every repository (menu, orders, delivery, tables, coupons, reservations,
 ratings, inventory, loyalty) is swapped for its `InMemory*Repository`, so the
 full suite runs offline regardless of the `AppConfig.useSupabase` flag.
+
+---
+
+## 3b. Database Migration Workflow (single source of truth)
+
+**Never paste schema SQL into the Dashboard SQL Editor again.** Manual pasting
+is what caused the original v3/v4 drift (repo files existed but the live
+database never received them, silently breaking chat, status logs, and
+dispatch).
+
+All schema changes go through tracked migrations:
+
+```bash
+supabase migration new descriptive_name   # creates supabase/migrations/<ts>_descriptive_name.sql
+supabase db push                           # apply pending migrations to the remote project
+supabase migration list                    # confirm local history == remote history
+supabase db pull descriptive_name          # pull out-of-band changes back into a migration file
+```
+
+### Applied migration log (2026-08-24 hardening pass)
+
+| Migration | Contents |
+|-----------|----------|
+| `recursion_safe_role_helpers` | SECURITY DEFINER role helpers (`get_my_role`, `is_staff`, `is_manager_or_admin`, `has_role`, fixed `is_admin_for_restaurant` → `profiles`) with `SET search_path = ''`; EXECUTE revoked from `anon`/`PUBLIC` |
+| `apply_schema_v3_dispatch_and_status_log` | `orders.assigned_kitchen_id/driver_id`, driver profile fields, `order_status_log`, delivery assignment policies |
+| `apply_schema_v4_chat_messages` | `chat_messages` table + participant-only RLS |
+| `rls_policies_for_unprotected_tables` | Policies for the 15 tables that had RLS but zero policies + storage policy modernization |
+| `modernize_legacy_policies_initplan` | All legacy policies rewritten: `(SELECT auth.uid())` InitPlan form, `TO authenticated/anon` clauses (no more deprecated `auth.role()`), `WITH CHECK` on every UPDATE |
+| `missing_relations_and_indexes` | FKs for `orders.discount_id`, `reservations.customer_id`, `tables/restaurant_tables.current_order_id`; backing indexes; loyalty partial-unique fix |
+| `integrity_constraints_cleanup` | Junction-table composite UNIQUEs, enum CHECK constraints matching Dart enums, timestamp NOT NULL hygiene, mojibake default repairs |
+| `revoke_anon_from_remaining_helpers` | Completed the anon lockdown (`is_admin`, loyalty RPCs) |
+
+### RLS performance & recursion rules (must-follow for new policies)
+
+1. **Always write `(SELECT auth.uid()) = user_id`, never `auth.uid() = user_id`.**
+   Wrapping the call in a scalar subquery lets Postgres evaluate it **once per
+   statement** (InitPlan) instead of once per row — this is the single biggest
+   RLS performance lever.
+2. Same applies to helper calls inside policies: write `(SELECT public.is_staff())`,
+   not bare `public.is_staff()`.
+3. **Never subquery `profiles` directly inside a policy** — that causes infinite
+   recursion (`42P17`). Always go through the SECURITY DEFINER helpers, which
+   read `profiles` as the table owner and therefore terminate.
+4. Every UPDATE policy needs both `USING` and `WITH CHECK`.
+5. Use explicit `TO authenticated` / `TO anon, authenticated` clauses instead of
+   the deprecated `auth.role()`.
+
+---
+
+## 3c. Security Checklist (Dashboard settings)
+
+These cannot be set via SQL migrations — verify in **Dashboard → Authentication**
+before going live:
+
+- [ ] **Leaked password protection: ENABLED** (Auth → Settings → "Prevent use
+      of compromised passwords"). Currently **OFF** — flagged by Supabase advisors.
+- [ ] Email confirmation required for new sign-ups.
+- [ ] JWT expiry reviewed (default 1h is fine); refresh-token rotation enabled.
+- [ ] Sessions revoked when deleting a user (deleting does not invalidate tokens).
+- [ ] No `service_role` / secret keys anywhere in the repo or client builds;
+      only the publishable key ships in `lib/config/supabase_config.dart`.
+
+> ℹ️ The remaining advisor WARNs about `authenticated` being able to execute
+> SECURITY DEFINER helpers (`is_staff`, `get_my_role`, loyalty RPCs, …) are
+> **intentional**: RLS policy expressions run under the caller's role, so
+> revoking EXECUTE from `authenticated` would break every guarded query.
 
 ---
 

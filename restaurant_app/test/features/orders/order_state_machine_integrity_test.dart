@@ -398,23 +398,25 @@ void main() {
       );
     });
 
-    test('fresh but illegal-shape revert (canRevertTo false) is ignored',
-        () async {
-      const orderId = 'ORD-9104';
-      final lastApplied = await seedAdvancedToReady(orderId);
+    test(
+      'fresh but illegal-shape revert (canRevertTo false) is ignored',
+      () async {
+        const orderId = 'ORD-9104';
+        final lastApplied = await seedAdvancedToReady(orderId);
 
-      // Multi-step backward jump (ready→confirmed) violates the single-step
-      // revert rule; even a fresh stamp must not apply it.
-      final fresh = lastApplied.add(const Duration(milliseconds: 1));
-      emitRevert(orderId, 'ready', 'confirmed', fresh);
-      await pump();
+        // Multi-step backward jump (ready→confirmed) violates the single-step
+        // revert rule; even a fresh stamp must not apply it.
+        final fresh = lastApplied.add(const Duration(milliseconds: 1));
+        emitRevert(orderId, 'ready', 'confirmed', fresh);
+        await pump();
 
-      expect(
-        controller.state.single.status,
-        OrderStatus.ready,
-        reason: 'canRevertTo(ready → confirmed) is false; nothing may change',
-      );
-    });
+        expect(
+          controller.state.single.status,
+          OrderStatus.ready,
+          reason: 'canRevertTo(ready → confirmed) is false; nothing may change',
+        );
+      },
+    );
   });
 
   group('Outgoing pickup-broadcast contract (updateStatus → ready)', () {
@@ -465,11 +467,7 @@ void main() {
         realtime.send(
           jsonEncode({
             'type': 'orderCreated',
-            'data': _orderJson(
-              'ORD-9201',
-              orderType: 'dineIn',
-              tableId: 't7',
-            ),
+            'data': _orderJson('ORD-9201', orderType: 'dineIn', tableId: 't7'),
           }),
         );
         await pump();
@@ -509,7 +507,8 @@ void main() {
       expect(
         pickupEvents(),
         isEmpty,
-        reason: 'Takeaway orders are collected at the counter — waiters must '
+        reason:
+            'Takeaway orders are collected at the counter — waiters must '
             'never be paged for them',
       );
     });

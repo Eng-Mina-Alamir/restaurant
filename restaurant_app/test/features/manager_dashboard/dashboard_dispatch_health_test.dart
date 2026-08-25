@@ -29,8 +29,11 @@ class OrdersControllerMock extends StateNotifier<List<OrderEntity>>
 /// dashboard's dispatch-health card keeps rendering its loading shell.
 class _StalledDispatchController extends DispatchController {
   _StalledDispatchController()
-    : super(InMemoryDeliveryRepository(), RealtimeService(),
-        ordersSource: () => const []);
+    : super(
+        InMemoryDeliveryRepository(),
+        RealtimeService(),
+        ordersSource: () => const [],
+      );
 
   @override
   Future<void> refresh() async {}

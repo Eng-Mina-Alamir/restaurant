@@ -57,6 +57,7 @@ class WaiterTableCard extends StatelessWidget {
                 AnimatedStatusBadge(
                   label: statusLabel,
                   color: accent,
+                  icon: tableStatusIcon(table.status),
                   fontSize: 11,
                   borderRadius: AppRadius.full,
                 ),
@@ -96,7 +97,9 @@ class WaiterTableCard extends StatelessWidget {
                     onTap: onTakeOrder,
                     child: FilledButton.tonal(
                       style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 48),
                         padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
                           vertical: AppSpacing.xs,
                         ),
                       ),
@@ -105,9 +108,14 @@ class WaiterTableCard extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 ScaleButton(
                   onTap: onReserve,
                   child: IconButton(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     tooltip: AppConstants.tableActionReserve,
                     icon: const Icon(Icons.event_available),
                     onPressed: onReserve,
@@ -116,6 +124,10 @@ class WaiterTableCard extends StatelessWidget {
                 ScaleButton(
                   onTap: onRelease,
                   child: IconButton(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     tooltip: AppConstants.tableActionRelease,
                     icon: const Icon(Icons.fullscreen_exit),
                     onPressed: onRelease,

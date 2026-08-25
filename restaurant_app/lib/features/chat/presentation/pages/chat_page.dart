@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../controllers/unread_chat_controller.dart';
@@ -104,22 +104,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           Expanded(
             child: messagesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('تعذر تحميل المحادثة'),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextButton(
-                      onPressed: () => ref
-                          .read(chatControllerProvider(widget.orderId).notifier)
-                          .retry(),
-                      child: const Text(
-                        AppConstants.orderAuditTrailRetryAction,
-                      ),
-                    ),
-                  ],
-                ),
+              error: (err, _) => ErrorState(
+                message: 'تعذر تحميل المحادثة',
+                errorDetail: err,
+                onRetry: () => ref
+                    .read(chatControllerProvider(widget.orderId).notifier)
+                    .retry(),
               ),
               data: (messages) => messages.isEmpty
                   ? Center(

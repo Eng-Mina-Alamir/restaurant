@@ -249,3 +249,13 @@ Color tableStatusColor(TableStatus status) {
     TableStatus.needsCleaning => Colors.blueGrey,
   };
 }
+
+/// Helper to return appropriate icon for each table status.
+IconData tableStatusIcon(TableStatus status) {
+  return switch (status) {
+    TableStatus.available => Icons.check_circle_outline,
+    TableStatus.occupied => Icons.people_outline,
+    TableStatus.reserved => Icons.bookmark_outline,
+    TableStatus.needsCleaning => Icons.cleaning_services_outlined,
+  };
+}

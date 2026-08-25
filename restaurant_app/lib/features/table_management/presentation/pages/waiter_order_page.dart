@@ -7,6 +7,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../cart/domain/cart_totals.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
@@ -109,7 +110,11 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
       ),
       body: menu.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: e,
+          onRetry: () => ref.refresh(menuControllerProvider),
+        ),
         data: (data) {
           final items = filterMenu(data, selectedCategory, _query);
           return Column(

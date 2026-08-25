@@ -7,6 +7,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/animated_press_card.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -50,7 +51,11 @@ class ManagerDashboardPage extends ConsumerWidget {
       ),
       body: metrics.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
+        error: (e, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: e,
+          onRetry: () => ref.refresh(metricsControllerProvider),
+        ),
         data: (data) => ResponsiveBuilder(
           builder: (context, screenType, constraints) {
             final isWide = screenType != ScreenType.mobile;

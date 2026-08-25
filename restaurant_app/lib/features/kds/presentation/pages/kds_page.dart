@@ -7,6 +7,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/notifications/kds_alert_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
@@ -131,102 +132,126 @@ class _KdsPageState extends ConsumerState<KdsPage> {
         ),
         body: active.isEmpty
             ? const EmptyOrdersState()
-            : ResponsiveLayout(
-                mobile: TabBarView(
-                  children: [
-                    _KdsColumn(
-                      title: AppConstants.kdsPending,
-                      color: Colors.orange,
-                      orders: pendingList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                      isExpanded: false,
+            : Builder(
+                builder: (context) {
+                  final theme = Theme.of(context);
+                  final pendingColor = KdsColors.statusColor(
+                    OrderStatus.pending,
+                    theme.brightness,
+                  );
+                  final preparingColor = KdsColors.statusColor(
+                    OrderStatus.preparing,
+                    theme.brightness,
+                  );
+                  final readyColor = KdsColors.statusColor(
+                    OrderStatus.ready,
+                    theme.brightness,
+                  );
+
+                  return ResponsiveLayout(
+                    mobile: TabBarView(
+                      children: [
+                        _KdsColumn(
+                          title: AppConstants.kdsPending,
+                          color: pendingColor,
+                          icon: Icons.schedule,
+                          orders: pendingList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                          isExpanded: false,
+                        ),
+                        _KdsColumn(
+                          title: AppConstants.kdsPreparing,
+                          color: preparingColor,
+                          icon: Icons.soup_kitchen_outlined,
+                          orders: preparingList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                          isExpanded: false,
+                        ),
+                        _KdsColumn(
+                          title: AppConstants.kdsReady,
+                          color: readyColor,
+                          icon: Icons.check_circle_outline,
+                          orders: readyList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                          isExpanded: false,
+                        ),
+                      ],
                     ),
-                    _KdsColumn(
-                      title: AppConstants.kdsPreparing,
-                      color: Colors.blue,
-                      orders: preparingList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                      isExpanded: false,
+                    tablet: Row(
+                      children: [
+                        _KdsColumn(
+                          title: AppConstants.kdsPending,
+                          color: pendingColor,
+                          icon: Icons.schedule,
+                          orders: pendingList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                        ),
+                        _KdsColumn(
+                          title: AppConstants.kdsPreparing,
+                          color: preparingColor,
+                          icon: Icons.soup_kitchen_outlined,
+                          orders: preparingList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                        ),
+                        _KdsColumn(
+                          title: AppConstants.kdsReady,
+                          color: readyColor,
+                          icon: Icons.check_circle_outline,
+                          orders: readyList,
+                          onAdvance: (order) => _advance(context, ref, order),
+                          onClaim: (order) => _claim(order, currentUserId),
+                          onRevert: (order, target) => _confirmAndRevert(
+                            context,
+                            order,
+                            target,
+                            currentUserId ?? '',
+                          ),
+                          tableNumberById: tableNumberById,
+                        ),
+                      ],
                     ),
-                    _KdsColumn(
-                      title: AppConstants.kdsReady,
-                      color: Colors.green,
-                      orders: readyList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                      isExpanded: false,
-                    ),
-                  ],
-                ),
-                tablet: Row(
-                  children: [
-                    _KdsColumn(
-                      title: AppConstants.kdsPending,
-                      color: Colors.orange,
-                      orders: pendingList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                    ),
-                    _KdsColumn(
-                      title: AppConstants.kdsPreparing,
-                      color: Colors.blue,
-                      orders: preparingList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                    ),
-                    _KdsColumn(
-                      title: AppConstants.kdsReady,
-                      color: Colors.green,
-                      orders: readyList,
-                      onAdvance: (order) => _advance(context, ref, order),
-                      onClaim: (order) => _claim(order, currentUserId),
-                      onRevert: (order, target) => _confirmAndRevert(
-                        context,
-                        order,
-                        target,
-                        currentUserId ?? '',
-                      ),
-                      tableNumberById: tableNumberById,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
       ),
     );
@@ -306,6 +331,7 @@ class _KdsColumn extends StatelessWidget {
   const _KdsColumn({
     required this.title,
     required this.color,
+    required this.icon,
     required this.orders,
     required this.onAdvance,
     required this.onClaim,
@@ -316,6 +342,7 @@ class _KdsColumn extends StatelessWidget {
 
   final String title;
   final Color color;
+  final IconData icon;
   final List<OrderEntity> orders;
   final ValueChanged<OrderEntity> onAdvance;
 
@@ -334,17 +361,41 @@ class _KdsColumn extends StatelessWidget {
       margin: const EdgeInsets.all(AppSpacing.xs),
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            '$title (${orders.length})',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleSmall?.copyWith(color: color),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  child: Text(
+                    '$title (${orders.length})',
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
@@ -600,6 +651,12 @@ class _OrderCard extends StatelessWidget {
             Row(
               children: [
                 IconButton.outlined(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 48,
+                  ),
                   tooltip: 'طباعة تذكرة المطبخ',
                   icon: const Icon(Icons.print_outlined, size: 18),
                   onPressed: () => TicketPrintDialog.show(
@@ -613,12 +670,21 @@ class _OrderCard extends StatelessWidget {
                   Expanded(
                     child: FilledButton.tonal(
                       style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 48),
                         padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.xs,
+                          horizontal: 4,
+                          vertical: 4,
                         ),
                       ),
                       onPressed: () => onClaim(order),
-                      child: const Text(AppConstants.kdsClaimOrder),
+                      child: const Text(
+                        AppConstants.kdsClaimOrder,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xs),
@@ -627,17 +693,32 @@ class _OrderCard extends StatelessWidget {
                   child: FilledButton.tonal(
                     key: actionKey,
                     style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 48),
                       padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.xs,
+                        horizontal: 4,
+                        vertical: 4,
                       ),
                     ),
                     onPressed: () => onAdvance(order),
-                    child: Text(buttonLabel),
+                    child: Text(
+                      buttonLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
                 if (canUndo) ...[
                   const SizedBox(width: AppSpacing.xs),
                   IconButton(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 48,
+                    ),
                     tooltip: AppConstants.kdsRevertTooltip,
                     icon: const Icon(Icons.undo, size: 18),
                     onPressed: () => onRevert(order, revertTarget),

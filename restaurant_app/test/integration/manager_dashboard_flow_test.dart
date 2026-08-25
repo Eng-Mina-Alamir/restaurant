@@ -63,7 +63,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppConstants.managerTitle), findsOneWidget);
 
-    // Navigate to Discounts
+    // Navigate to Discounts (tile sits below the fold on the 800x600 test
+    // surface, so scroll it into view before tapping).
+    await tester.ensureVisible(find.text('الخصومات'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('الخصومات'));
     await tester.pumpAndSettle();
     expect(find.text('الخصومات والعروض'), findsOneWidget);
@@ -72,7 +75,9 @@ void main() {
     router.go('/manager');
     await tester.pumpAndSettle();
 
-    // Navigate to Inventory
+    // Navigate to Inventory (same below-the-fold tile).
+    await tester.ensureVisible(find.text('المخزون'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('المخزون'));
     await tester.pumpAndSettle();
     expect(find.text('إدارة المخزون والتوريد'), findsOneWidget);

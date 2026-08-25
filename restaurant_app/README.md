@@ -65,6 +65,8 @@ The app runs fully offline with demo accounts (one-tap role chips on the login s
 | `driver@demo.com`     | `123456` | Driver  |
 
 Sessions persist across restarts; use the logout action in any role home to switch users.
+Signed-in customers additionally get their cart restored from the cloud (`cart_items` /
+`cart_item_modifiers`) when a session starts — offline, the cart simply keeps working locally.
 
 ## Environment
 
@@ -84,8 +86,8 @@ lib/
 │   ├── utils/                    # validators, formatters, logger
 │   └── errors/                   # failures, exceptions, Either
 ├── features/                     # 19 modules
-│   ├── auth/                     # login, OTP, session
-│   ├── cart/                     # cart state
+│   ├── auth/                       # login, OTP, session
+│   ├── cart/                       # cart state — cloud-persisted via Supabase (debounced sync), local fallback offline
 │   ├── chat/                     # customer ↔ driver realtime order chat
 │   ├── coupons/                  # coupon codes & discounts
 │   ├── customer/                 # dine-in flow, live tracking, cancellation
@@ -101,15 +103,21 @@ lib/
 │   ├── ratings/                  # service ratings
 │   ├── reservations/             # table reservations
 │   ├── restaurant/               # restaurant profile & info
-│   ├── settings/                 # app settings
-│   └── table_management/         # waiter tables
-└── shared/                       # widgets, animations, extensions
+│   ├── settings/                   # app settings
+│   └── table_management/          # waiter tables
+└── shared/                         # widgets, animations, extensions
+
+supabase/
+└── migrations/                     # versioned SQL migrations — source of truth (DEPLOYMENT.md §3b)
+
+integration_tests/                  # end-to-end flows + DB smoke SQL
 ```
 
 ## Feature matrix
 
 | Capability | Where |
 |------------|-------|
+| Cloud-persisted cart (debounced Supabase sync, restore on sign-in, offline fallback) | `features/cart` |
 | Delivery auto-dispatch (weighted driver scoring, 30 s retry) + manual dispatch board | `/manager/dispatch` |
 | KDS multi-chef claim/revert with max-2 concurrent claims per chef | `features/kds` |
 | Order audit trail viewer (`order_status_log`) | `features/orders` |

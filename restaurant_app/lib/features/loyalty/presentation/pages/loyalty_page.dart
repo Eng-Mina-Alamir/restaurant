@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/loyalty_entity.dart';
 import '../controllers/loyalty_controller.dart';
 
@@ -31,7 +32,12 @@ class LoyaltyPage extends ConsumerWidget {
       ),
       body: accountAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(AppConstants.errorWithDetail(err))),
+        error: (err, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: err,
+          onRetry: () =>
+              ref.read(loyaltyControllerProvider.notifier).loadAccount(),
+        ),
         data: (account) {
           final nextTier = account.tier.nextTier;
           final nextTierPoints = nextTier?.minPoints ?? account.lifetimePoints;

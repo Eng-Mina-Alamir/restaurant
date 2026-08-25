@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/menu_item.dart';
 import '../controllers/menu_controller.dart';
 
@@ -49,8 +50,11 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
       ),
       body: menuAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) =>
-            Center(child: Text(AppConstants.errorWithDetail(error))),
+        error: (error, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: error,
+          onRetry: () => ref.refresh(menuControllerProvider),
+        ),
         data: (menu) {
           final items = filterMenu(
             menu,

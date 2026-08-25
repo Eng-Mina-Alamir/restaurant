@@ -32,9 +32,13 @@ class SupabaseChatRepository implements ChatRepository {
 
   @override
   Future<Either<Failure, ChatMessage>> send(ChatMessage message) async {
-    final orderId = _sanitizeUuid(message.orderId);
+    // order_id is TEXT in Postgres and app-generated order ids are NOT UUIDs
+    // (e.g. 'ORD-0001'), so only require a non-empty value here — the FK to
+    // orders(id) enforces existence server-side. sender_id must be a real
+    // profiles uuid, though.
+    final orderId = message.orderId.trim();
     final senderId = _sanitizeUuid(message.senderId);
-    if (orderId == null || senderId == null) {
+    if (orderId.isEmpty || senderId == null) {
       return const Left<Failure, ChatMessage>(
         ValidationFailure('معرّفات المحادثة غير صالحة للإرسال للسيرفر'),
       );
@@ -79,9 +83,9 @@ class SupabaseChatRepository implements ChatRepository {
   @override
   Future<Either<Failure, List<ChatMessage>>> history(String orderId) async {
     try {
-      // order_id is a UUID column; a non-UUID id can never match a row.
-      final sanitized = _sanitizeUuid(orderId);
-      if (sanitized == null) {
+      // order_id is TEXT; any non-empty id is queryable (see send()).
+      final sanitized = orderId.trim();
+      if (sanitized.isEmpty) {
         return const Right<Failure, List<ChatMessage>>([]);
       }
       final response = await _supabase

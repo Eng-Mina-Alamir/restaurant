@@ -204,6 +204,9 @@ abstract final class AppConstants {
   static const String errorInvalidToken = 'رمز غير صالح';
   static const String errorInvalidResponse = 'استجابة غير صالحة';
 
+  static const String errorLoadingData = 'تعذر تحميل البيانات';
+  static const String retryAction = 'إعادة المحاولة';
+
   /// Renders a UI error line with the exception detail appended, e.g.
   /// `خطأ: <err>`. Used by `.when(error: ...)` branches in pages.
   static String errorWithDetail(Object err) => 'خطأ: $err';

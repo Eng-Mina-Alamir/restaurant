@@ -62,29 +62,41 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
             onChanged: (s) => setState(() => _filter = s),
           ),
           Expanded(
-            child: visible.isEmpty
-                ? EmptyState(
-                    message: _filter == null
-                        ? AppConstants.noDeliveryJobs
-                        : '${_filter!.labelAr} — '
-                              '${AppConstants.noDeliveryJobs}',
-                    icon: Icons.local_shipping_outlined,
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    itemCount: visible.length,
-                    itemBuilder: (context, index) {
-                      final assignment = visible[index];
-                      return _DeliveryCard(
-                        assignment: assignment,
-                        onAction: () => _handleAction(ref, assignment),
-                        onOpenMap: () =>
-                            _showTrackingMap(context, ref, assignment),
-                        onOpenChat: () =>
-                            context.push('/chat/${assignment.orderId}'),
-                      );
-                    },
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () async => ref.refresh(deliveryControllerProvider),
+              child: visible.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          child: EmptyState(
+                            message: _filter == null
+                                ? AppConstants.noDeliveryJobs
+                                : '${_filter!.labelAr} — '
+                                      '${AppConstants.noDeliveryJobs}',
+                            icon: Icons.local_shipping_outlined,
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      itemCount: visible.length,
+                      itemBuilder: (context, index) {
+                        final assignment = visible[index];
+                        return _DeliveryCard(
+                          assignment: assignment,
+                          onAction: () => _handleAction(ref, assignment),
+                          onOpenMap: () =>
+                              _showTrackingMap(context, ref, assignment),
+                          onOpenChat: () =>
+                              context.push('/chat/${assignment.orderId}'),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),
@@ -416,14 +428,22 @@ class _DeliveryCard extends ConsumerWidget {
             Row(
               children: [
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 48),
+                  ),
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: const Text('الخريطة والتتبع'),
                   onPressed: onOpenMap,
                 ),
+                const SizedBox(width: AppSpacing.xs),
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
                     IconButton(
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
                       tooltip: 'محادثة العميل',
                       icon: const Icon(Icons.chat_bubble_outline, size: 20),
                       onPressed: onOpenChat,
@@ -468,6 +488,9 @@ class _DeliveryCard extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
                       onPressed: onAction,
                       child: Text(actionLabel),
                     ),
@@ -498,6 +521,7 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = status.labelAr;
     final color = _statusColor(status);
+    final icon = _statusIcon(status);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
@@ -506,12 +530,40 @@ class _StatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  IconData _statusIcon(DeliveryStatus status) {
+    switch (status) {
+      case DeliveryStatus.pending:
+        return Icons.schedule;
+      case DeliveryStatus.accepted:
+        return Icons.thumb_up_alt_outlined;
+      case DeliveryStatus.pickedUp:
+        return Icons.shopping_bag_outlined;
+      case DeliveryStatus.inTransit:
+        return Icons.delivery_dining;
+      case DeliveryStatus.delivered:
+        return Icons.check_circle_outline;
+      case DeliveryStatus.failed:
+        return Icons.cancel_outlined;
+    }
   }
 
   Color _statusColor(DeliveryStatus status) {

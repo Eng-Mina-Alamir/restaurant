@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../../inventory/domain/entities/inventory_item_entity.dart';
 import '../../../inventory/presentation/controllers/inventory_controller.dart';
 import '../../data/services/report_export_service.dart';
@@ -76,146 +78,162 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ),
         ],
       ),
-      body: inventoryAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: RefreshIndicator(
+        onRefresh: () async =>
+            ref.read(inventoryControllerProvider.notifier).load(),
+        child: inventoryAsync.when(
+          loading: () => const _InventorySkeletonList(),
+          error: (err, _) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: AppSpacing.md),
-              Text(AppConstants.errorWithDetail(err)),
-              const SizedBox(height: AppSpacing.sm),
-              FilledButton(
-                onPressed: () =>
-                    ref.read(inventoryControllerProvider.notifier).load(),
-                child: const Text(AppConstants.orderAuditTrailRetryAction),
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: ErrorState(
+                  message: AppConstants.errorLoadingData,
+                  errorDetail: err,
+                  onRetry: () =>
+                      ref.read(inventoryControllerProvider.notifier).load(),
+                ),
               ),
             ],
           ),
-        ),
-        data: (allItems) {
-          final filtered = allItems.where((item) {
-            final matchesSearch =
-                item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                item.category.toLowerCase().contains(
-                  _searchQuery.toLowerCase(),
-                );
-            final matchesStatus =
-                _filterStatus == null || item.status == _filterStatus;
-            return matchesSearch && matchesStatus;
-          }).toList();
+          data: (allItems) {
+            final filtered = allItems.where((item) {
+              final matchesSearch =
+                  item.name.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  ) ||
+                  item.category.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  );
+              final matchesStatus =
+                  _filterStatus == null || item.status == _filterStatus;
+              return matchesSearch && matchesStatus;
+            }).toList();
 
-          final outOfStock = allItems
-              .where((i) => i.status == StockStatus.outOfStock)
-              .length;
-          final low = allItems.where((i) => i.status == StockStatus.low).length;
-          final totalValue = allItems.fold<double>(
-            0,
-            (sum, i) => sum + i.totalValue,
-          );
+            final outOfStock = allItems
+                .where((i) => i.status == StockStatus.outOfStock)
+                .length;
+            final low = allItems
+                .where((i) => i.status == StockStatus.low)
+                .length;
+            final totalValue = allItems.fold<double>(
+              0,
+              (sum, i) => sum + i.totalValue,
+            );
 
-          return Column(
-            children: [
-              // Summary cards
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Row(
-                  children: [
-                    _SummaryChip(
-                      label: 'منتهية',
-                      count: '$outOfStock',
-                      color: colorScheme.error,
-                      onTap: () => setState(
-                        () => _filterStatus = outOfStock > 0
-                            ? StockStatus.outOfStock
-                            : null,
+            return Column(
+              children: [
+                // Summary cards
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      _SummaryChip(
+                        label: 'منتهية',
+                        count: '$outOfStock',
+                        color: colorScheme.error,
+                        onTap: () => setState(
+                          () => _filterStatus = outOfStock > 0
+                              ? StockStatus.outOfStock
+                              : null,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    _SummaryChip(
-                      label: 'منخفضة',
-                      count: '$low',
-                      color: Colors.orange,
-                      onTap: () => setState(
-                        () => _filterStatus = low > 0 ? StockStatus.low : null,
+                      const SizedBox(width: AppSpacing.sm),
+                      _SummaryChip(
+                        label: 'منخفضة',
+                        count: '$low',
+                        color: Colors.orange,
+                        onTap: () => setState(
+                          () =>
+                              _filterStatus = low > 0 ? StockStatus.low : null,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      'إجمالي القيمة: ${Formatters.formatCurrency(totalValue)}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.primary,
+                      const Spacer(),
+                      Text(
+                        'إجمالي القيمة: ${Formatters.formatCurrency(totalValue)}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.primary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Search bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'بحث في أصناف المخزون والفئات...',
-                    prefixIcon: const Icon(Icons.search),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    ],
                   ),
-                  onChanged: (q) => setState(() => _searchQuery = q),
                 ),
-              ),
 
-              const SizedBox(height: AppSpacing.md),
+                // Search bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'بحث في أصناف المخزون والفئات...',
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: (q) => setState(() => _searchQuery = q),
+                  ),
+                ),
 
-              // Items list
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(height: AppSpacing.md),
+
+                // Items list
+                Expanded(
+                  child: filtered.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
                           children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 56,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              'لا توجد أصناف مطابقة للبحث أو التصفية',
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.4,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 56,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Text(
+                                    'لا توجد أصناف مطابقة للبحث أو التصفية',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.md,
+                            0,
+                            AppSpacing.md,
+                            AppSpacing.xl * 2,
+                          ),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, i) => _InventoryCard(
+                            item: filtered[i],
+                            onRestock: () =>
+                                _showRestockDialog(context, filtered[i]),
+                            onEdit: () => _showEditDialog(context, filtered[i]),
+                            onDelete: () =>
+                                _showDeleteDialog(context, filtered[i]),
+                          ),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.md,
-                          0,
-                          AppSpacing.md,
-                          AppSpacing.xl * 2,
-                        ),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, i) => _InventoryCard(
-                          item: filtered[i],
-                          onRestock: () =>
-                              _showRestockDialog(context, filtered[i]),
-                          onEdit: () => _showEditDialog(context, filtered[i]),
-                          onDelete: () =>
-                              _showDeleteDialog(context, filtered[i]),
-                        ),
-                      ),
-              ),
-            ],
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddItemDialog(context),
@@ -642,8 +660,10 @@ class _InventoryCard extends StatelessWidget {
                             size: 18,
                           ),
                           SizedBox(width: 8),
-                          Text(AppConstants.delete,
-                              style: TextStyle(color: Colors.red)),
+                          Text(
+                            AppConstants.delete,
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ],
                       ),
                     ),
@@ -755,6 +775,56 @@ class _SummaryChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InventorySkeletonList extends StatelessWidget {
+  const _InventorySkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xl * 2,
+      ),
+      itemCount: 5,
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (_, _) => const Card(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SkeletonBox(width: 140, height: 18),
+                  SkeletonBox(
+                    width: 65,
+                    height: 22,
+                    borderRadius: AppRadius.full,
+                  ),
+                ],
+              ),
+              SizedBox(height: AppSpacing.xs),
+              SkeletonBox(width: 80, height: 12),
+              SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  SkeletonBox(width: 100, height: 14),
+                  SkeletonBox(width: 90, height: 14),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

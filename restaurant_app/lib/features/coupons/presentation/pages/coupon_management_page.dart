@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/coupon_entity.dart';
 import '../controllers/coupon_controller.dart';
 
@@ -35,7 +36,11 @@ class CouponManagementPage extends ConsumerWidget {
       ),
       body: couponsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text(AppConstants.errorWithDetail(err))),
+        error: (err, _) => ErrorState(
+          message: AppConstants.errorLoadingData,
+          errorDetail: err,
+          onRetry: () => ref.refresh(couponManagementControllerProvider),
+        ),
         data: (coupons) {
           if (coupons.isEmpty) {
             return const EmptyState(

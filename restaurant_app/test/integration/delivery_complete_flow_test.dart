@@ -112,73 +112,67 @@ void main() {
       },
     );
 
-    test(
-      'wired controller: completing a delivery completes the parent order '
-      'and frees the driver capacity slot',
-      () async {
-        // ── Seed: ORD-555 is ready (kitchen done) and assigned for delivery.
-        final orderRepo = await _seedReadyOrder();
-        final deliveryRepo = InMemoryDeliveryRepository(seed: const []);
-        await deliveryRepo.updateAssignment(_assignment('del-wired-1'));
+    test('wired controller: completing a delivery completes the parent order '
+        'and frees the driver capacity slot', () async {
+      // ── Seed: ORD-555 is ready (kitchen done) and assigned for delivery.
+      final orderRepo = await _seedReadyOrder();
+      final deliveryRepo = InMemoryDeliveryRepository(seed: const []);
+      await deliveryRepo.updateAssignment(_assignment('del-wired-1'));
 
-        final container = createTestContainer(
-          additionalOverrides: [
-            orderRepositoryProvider.overrideWithValue(orderRepo),
-            deliveryRepositoryProvider.overrideWithValue(deliveryRepo),
-          ],
-        );
-        addTearDown(container.dispose);
+      final container = createTestContainer(
+        additionalOverrides: [
+          orderRepositoryProvider.overrideWithValue(orderRepo),
+          deliveryRepositoryProvider.overrideWithValue(deliveryRepo),
+        ],
+      );
+      addTearDown(container.dispose);
 
-        // Sanity: the pending assignment keeps driver-demo busy (1 active run).
-        expect(await _activeRunsForDemo(deliveryRepo), 1);
+      // Sanity: the pending assignment keeps driver-demo busy (1 active run).
+      expect(await _activeRunsForDemo(deliveryRepo), 1);
 
-        // ── Run: assign -> accept -> start -> complete through the wired
-        // deliveryControllerProvider (its onDelivered hook advances the
-        // parent order).
-        final controller = container.read(deliveryControllerProvider.notifier);
-        await Future<void>.delayed(Duration.zero);
+      // ── Run: assign -> accept -> start -> complete through the wired
+      // deliveryControllerProvider (its onDelivered hook advances the
+      // parent order).
+      final controller = container.read(deliveryControllerProvider.notifier);
+      await Future<void>.delayed(Duration.zero);
 
-        await controller.accept('del-wired-1');
-        await controller.start('del-wired-1');
-        await controller.complete('del-wired-1');
+      await controller.accept('del-wired-1');
+      await controller.start('del-wired-1');
+      await controller.complete('del-wired-1');
 
-        // (a) The repository reports ORD-555 completed (ready → completed).
-        final orders = (await orderRepo.getOrders()).when(
-          onLeft: (_) => <OrderEntity>[],
-          onRight: (list) => list,
-        );
-        expect(orders, hasLength(1));
-        expect(orders.first.id, 'ORD-555');
-        expect(orders.first.status, OrderStatus.completed);
+      // (a) The repository reports ORD-555 completed (ready → completed).
+      final orders = (await orderRepo.getOrders()).when(
+        onLeft: (_) => <OrderEntity>[],
+        onRight: (list) => list,
+      );
+      expect(orders, hasLength(1));
+      expect(orders.first.id, 'ORD-555');
+      expect(orders.first.status, OrderStatus.completed);
 
-        // (b) The terminal assignment freed driver-demo's capacity slot.
-        expect(await _activeRunsForDemo(deliveryRepo), 0);
-      },
-    );
+      // (b) The terminal assignment freed driver-demo's capacity slot.
+      expect(await _activeRunsForDemo(deliveryRepo), 0);
+    });
 
-    test(
-      'unwired controller (null onDelivered): completing leaves the parent '
-      'order untouched',
-      () async {
-        final orderRepo = await _seedReadyOrder();
-        final deliveryRepo = InMemoryDeliveryRepository(seed: const []);
-        await deliveryRepo.updateAssignment(_assignment('del-unwired-1'));
+    test('unwired controller (null onDelivered): completing leaves the parent '
+        'order untouched', () async {
+      final orderRepo = await _seedReadyOrder();
+      final deliveryRepo = InMemoryDeliveryRepository(seed: const []);
+      await deliveryRepo.updateAssignment(_assignment('del-unwired-1'));
 
-        // Direct construction WITHOUT the hook: assignment-only behaviour.
-        final controller = DeliveryController(deliveryRepo, 'driver-demo');
-        addTearDown(controller.dispose);
-        await Future<void>.delayed(Duration.zero);
+      // Direct construction WITHOUT the hook: assignment-only behaviour.
+      final controller = DeliveryController(deliveryRepo, 'driver-demo');
+      addTearDown(controller.dispose);
+      await Future<void>.delayed(Duration.zero);
 
-        await controller.accept('del-unwired-1');
-        await controller.start('del-unwired-1');
-        await controller.complete('del-unwired-1');
+      await controller.accept('del-unwired-1');
+      await controller.start('del-unwired-1');
+      await controller.complete('del-unwired-1');
 
-        final orders = (await orderRepo.getOrders()).when(
-          onLeft: (_) => <OrderEntity>[],
-          onRight: (list) => list,
-        );
-        expect(orders.first.status, OrderStatus.ready);
-      },
-    );
+      final orders = (await orderRepo.getOrders()).when(
+        onLeft: (_) => <OrderEntity>[],
+        onRight: (list) => list,
+      );
+      expect(orders.first.status, OrderStatus.ready);
+    });
   });
 }
