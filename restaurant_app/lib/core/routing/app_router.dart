@@ -112,22 +112,40 @@ GoRouter createAppRouter({required WidgetRef ref}) {
     },
     routes: [
       GoRoute(path: '/', redirect: (context, state) => '/login'),
-      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const LoginPage(),
+        ),
+      ),
       GoRoute(
         path: '/register',
-        builder: (context, state) => const RegisterPage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const RegisterPage(),
+        ),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (context, state) => const NotificationsPage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const NotificationsPage(),
+        ),
       ),
       GoRoute(
         path: '/onboarding',
-        builder: (context, state) => const OnboardingPage(),
+        pageBuilder: (context, state) => AppPageTransitions.scaleFade(
+          key: state.pageKey,
+          child: const OnboardingPage(),
+        ),
       ),
       GoRoute(
         path: '/customer',
-        builder: (context, state) => const CustomerHomePage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const CustomerHomePage(),
+        ),
         routes: [
           GoRoute(
             path: 'orders',
@@ -180,7 +198,10 @@ GoRouter createAppRouter({required WidgetRef ref}) {
 
       GoRoute(
         path: '/waiter',
-        builder: (context, state) => const WaiterDashboardPage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const WaiterDashboardPage(),
+        ),
         routes: [
           GoRoute(
             path: 'table/:tableId',
@@ -198,84 +219,150 @@ GoRouter createAppRouter({required WidgetRef ref}) {
           ),
         ],
       ),
-      GoRoute(path: '/kds', builder: (context, state) => const KdsPage()),
+      GoRoute(
+        path: '/kds',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const KdsPage(),
+        ),
+      ),
       GoRoute(
         path: '/chat/:orderId',
-        builder: (context, state) =>
-            ChatPage(orderId: state.pathParameters['orderId'] ?? ''),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child:
+              ChatPage(orderId: state.pathParameters['orderId'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/manager',
-        builder: (context, state) => const ManagerDashboardPage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const ManagerDashboardPage(),
+        ),
         routes: [
           GoRoute(
             path: 'orders',
-            builder: (context, state) => const AllOrdersPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const AllOrdersPage(),
+            ),
           ),
           GoRoute(
             path: 'discounts',
-            builder: (context, state) => const DiscountsPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const DiscountsPage(),
+            ),
           ),
           GoRoute(
             path: 'inventory',
-            builder: (context, state) => const InventoryPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const InventoryPage(),
+            ),
           ),
           GoRoute(
             path: 'staff',
-            builder: (context, state) => const StaffPerformancePage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const StaffPerformancePage(),
+            ),
           ),
           GoRoute(
             path: 'invoices',
-            builder: (context, state) => const InvoicesPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const InvoicesPage(),
+            ),
           ),
           GoRoute(
             path: 'qr-codes',
-            builder: (context, state) => const QrGeneratorPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const QrGeneratorPage(),
+            ),
           ),
           GoRoute(
             path: 'alerts',
-            builder: (context, state) => const AlertsPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const AlertsPage(),
+            ),
           ),
           GoRoute(
             path: 'menu',
-            builder: (context, state) => const MenuManagementPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const MenuManagementPage(),
+            ),
           ),
           GoRoute(
             path: 'tables',
-            builder: (context, state) => const TableManagementCrudPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const TableManagementCrudPage(),
+            ),
           ),
           GoRoute(
             path: 'reservations',
-            builder: (context, state) => const ReservationsPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const ReservationsPage(),
+            ),
           ),
           GoRoute(
             path: 'users',
-            builder: (context, state) => const UserManagementPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const UserManagementPage(),
+            ),
           ),
           GoRoute(
             path: 'coupons',
-            builder: (context, state) => const CouponManagementPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const CouponManagementPage(),
+            ),
           ),
           GoRoute(
             path: 'dispatch',
-            builder: (context, state) => const DispatchBoardPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const DispatchBoardPage(),
+            ),
           ),
           GoRoute(
             path: 'financial-reports',
-            builder: (context, state) => const FinancialReportsPage(),
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const FinancialReportsPage(),
+            ),
           ),
         ],
       ),
 
       GoRoute(
         path: '/driver',
-        builder: (context, state) => const DriverHomePage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const DriverHomePage(),
+        ),
       ),
       GoRoute(
         path: '/privacy-policy',
-        builder: (context, state) => const PrivacyPolicyPage(),
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const PrivacyPolicyPage(),
+        ),
       ),
-      GoRoute(path: '/terms', builder: (context, state) => const TermsPage()),
+      GoRoute(
+        path: '/terms',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const TermsPage(),
+        ),
+      ),
       GoRoute(
         path: '/:page',
         builder: (context, state) => const NotFoundPage(),
