@@ -5,6 +5,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -61,7 +62,10 @@ class DispatchBoardPage extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               if (board.undispatchedOrders.isEmpty)
-                const _EmptyState(text: 'لا توجد طلبات بانتظار سواق')
+                const EmptyState(
+                  message: 'لا توجد طلبات بانتظار سواق',
+                  icon: Icons.inbox_outlined,
+                )
               else
                 for (final order in board.undispatchedOrders)
                   _OrderDispatchCard(
@@ -78,7 +82,10 @@ class DispatchBoardPage extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               if (board.failedAssignments.isEmpty)
-                const _EmptyState(text: 'لا توجد تكليفات فاشلة')
+                const EmptyState(
+                  message: 'لا توجد تكليفات فاشلة',
+                  icon: Icons.inbox_outlined,
+                )
               else
                 for (final entry in board.failedAssignments)
                   _OrderDispatchCard(
@@ -206,31 +213,6 @@ class _OrderCardSkeleton extends StatelessWidget {
                 borderRadius: AppRadius.full,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(child: Text(text)),
           ],
         ),
       ),

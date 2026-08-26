@@ -6,6 +6,7 @@ import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_item.dart';
 import 'package:restaurant_app/features/orders/presentation/pages/order_confirmation_page.dart';
+import 'package:restaurant_app/shared/widgets/status_badge.dart';
 
 void main() {
   const burger = MenuItem(
@@ -73,5 +74,39 @@ void main() {
       MaterialApp(home: OrderConfirmationPage(order: order)),
     );
     expect(find.text('الدفع'), findsNothing);
+  });
+
+  testWidgets('renders order status as a shared StatusBadge', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(home: OrderConfirmationPage(order: order)),
+    );
+    await tester.pumpAndSettle();
+
+    // The status row sits near the bottom of the scroll view; bring the
+    // badge into the lazy-built viewport.
+    await tester.scrollUntilVisible(find.byType(StatusBadge), 200);
+
+    // The badge is built from order.status and labeled with its Arabic label,
+    // matching the styling used on KDS / all-orders screens.
+    expect(find.text('الحالة'), findsOneWidget);
+    expect(find.byType(StatusBadge), findsOneWidget);
+    final badge = tester.widget<StatusBadge>(find.byType(StatusBadge));
+    expect(badge.label, OrderStatus.confirmed.labelAr);
+    expect(find.text(OrderStatus.confirmed.labelAr), findsOneWidget);
+  });
+
+  testWidgets('status badge reflects a different order status', (
+    tester,
+  ) async {
+    final preparing = order.copyWith(status: OrderStatus.preparing);
+
+    await tester.pumpWidget(
+      MaterialApp(home: OrderConfirmationPage(order: preparing)),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byType(StatusBadge), 200);
+
+    final badge = tester.widget<StatusBadge>(find.byType(StatusBadge));
+    expect(badge.label, OrderStatus.preparing.labelAr);
   });
 }

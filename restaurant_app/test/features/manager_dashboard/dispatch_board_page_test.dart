@@ -10,6 +10,7 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/controlle
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/dispatch_board_page.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:restaurant_app/shared/widgets/empty_state.dart';
 
 import '../../helpers/test_container.dart';
 
@@ -136,6 +137,16 @@ void main() {
 
     expect(find.text('لا توجد طلبات بانتظار سواق'), findsOneWidget);
     expect(find.text('لا توجد تكليفات فاشلة'), findsOneWidget);
+    // Both sections use the shared EmptyState widget (one per section).
+    expect(find.byType(EmptyState), findsNWidgets(2));
+    // The shared empty state keeps the inbox icon.
+    final icons = tester.widgetList<Icon>(
+      find.descendant(
+        of: find.byType(EmptyState),
+        matching: find.byIcon(Icons.inbox_outlined),
+      ),
+    );
+    expect(icons.length, 2);
     expect(find.text('تعيين سواق'), findsNothing);
   });
 

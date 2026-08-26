@@ -7,6 +7,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/animated_success_checkmark.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
 import '../../../../shared/animations/scale_button.dart';
+import '../../../../shared/widgets/status_badge.dart';
 import '../../domain/entities/order_entity.dart';
 
 /// Confirmation screen shown after a customer places an order.
@@ -119,9 +120,18 @@ class OrderConfirmationPage extends StatelessWidget {
             delay: const Duration(milliseconds: 500),
             child: Column(
               children: [
-                _Row(
-                  label: AppConstants.statusLabel,
-                  value: order.status.labelAr,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        AppConstants.statusLabel,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      StatusBadge.order(order.status),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ScaleButton(
