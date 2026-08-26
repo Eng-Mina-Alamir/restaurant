@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/scale_button.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
@@ -317,6 +318,8 @@ class _TotalsFooterState extends ConsumerState<_TotalsFooter> {
       onRight: (coupon) {
         ref.read(appliedCouponProvider.notifier).apply(coupon);
         _couponController.clear();
+        // Success confirmation only — never on the failure branch.
+        AppHaptics.actionSuccess();
         // Themed default background: snackBarTheme handles the styling.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

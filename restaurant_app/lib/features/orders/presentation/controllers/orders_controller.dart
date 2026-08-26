@@ -12,6 +12,7 @@ import '../../../../core/network/realtime_service.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
@@ -412,6 +413,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _cart.clear();
           _newOrderNotifier.notifyNewOrder();
           _realtimeService?.broadcastOrderCreated(value.toJson());
+          // Milestone confirmation only — never on error/offline paths.
+          AppHaptics.milestoneSuccess();
           return value;
       }
     } finally {
@@ -479,6 +482,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _cart.clear();
           _newOrderNotifier.notifyNewOrder();
           _realtimeService?.broadcastOrderCreated(value.toJson());
+          // Milestone confirmation only — never on error/offline paths.
+          AppHaptics.milestoneSuccess();
           return value;
       }
     } finally {

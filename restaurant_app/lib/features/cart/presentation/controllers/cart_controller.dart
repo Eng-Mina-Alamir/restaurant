@@ -7,6 +7,7 @@ import '../../../../config/app_config.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/financial_calculator.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../data/repositories/supabase_cart_repository.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
@@ -85,6 +86,8 @@ class CartController extends StateNotifier<List<CartItem>> {
       );
       state = [...state]..[index] = merged;
     }
+    // Success confirmation only — never fires on rejected items.
+    AppHaptics.selectionTap();
     _scheduleCloudSync();
   }
 
