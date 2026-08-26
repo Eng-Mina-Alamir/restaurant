@@ -21,21 +21,21 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   final List<_OnboardingItem> _slides = const [
     _OnboardingItem(
-      title: 'طلب ذكي ومباشر من طاولتك 🍽️',
+      title: 'طلب ذكي ومباشر من طاولتك',
       description:
           'امسح رمز QR على طاولتك، تصفح المنيو المصور مع خيارات التخصيص الكاملة، وأرسل طلبك للمطبخ بلمسة واحدة.',
       icon: Icons.qr_code_scanner_rounded,
       tone: SemanticTone.warning,
     ),
     _OnboardingItem(
-      title: 'متابعة حية لحظة بلحظة ⏱️',
+      title: 'متابعة حية لحظة بلحظة',
       description:
           'شاهد مراحل تحضير طعامك في شاشة المطبخ KDS وتتبع مسار سائق التوصيل على الخريطة المباشرة بدقة.',
       icon: Icons.timer_outlined,
       tone: SemanticTone.success,
     ),
     _OnboardingItem(
-      title: 'دفع متعدد ونقاط ولاء ومكافآت 🎁',
+      title: 'دفع متعدد ونقاط ولاء ومكافآت',
       description:
           'ادفع بالطريقة التي تفضلها (نقدي، بطاقة، محفظة، دفع إلكتروني) واكسب نقاط ولاء مع كل طلب لاستبدالها بوجبات مجانية.',
       icon: Icons.card_giftcard_rounded,
@@ -70,6 +70,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isLastPage = _currentPage == _slides.length - 1;
 
     return Scaffold(
       body: SafeArea(
@@ -152,37 +153,51 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: List.generate(
-                      _slides.length,
-                      (idx) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == idx ? 28 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: _currentPage == idx
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                  // Screen readers hear page changes: the row is a live
+                  // region whose label tracks the current page, while the
+                  // decorative dots themselves are excluded from semantics.
+                  Semantics(
+                    container: true,
+                    liveRegion: true,
+                    label: 'الصفحة ${_currentPage + 1} من ${_slides.length}',
+                    child: ExcludeSemantics(
+                      child: Row(
+                        children: List.generate(
+                          _slides.length,
+                          (idx) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: _currentPage == idx ? 28 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: _currentPage == idx
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.outlineVariant,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.xs),
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                   ScaleButton(
                     onTap: _next,
-                    child: FilledButton.icon(
-                      onPressed: _next,
-                      icon: Icon(
-                        _currentPage == _slides.length - 1
-                            ? Icons.check
-                            : Icons.arrow_forward,
-                      ),
-                      label: Text(
-                        _currentPage == _slides.length - 1
-                            ? 'ابدأ الآن'
-                            : 'التالي',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                    child: Semantics(
+                      container: true,
+                      button: true,
+                      onTap: _next,
+                      excludeSemantics: true,
+                      label: isLastPage ? 'ابدأ الآن' : 'التالي',
+                      child: FilledButton.icon(
+                        onPressed: _next,
+                        icon: Icon(
+                          isLastPage ? Icons.check : Icons.arrow_forward,
+                        ),
+                        label: Text(
+                          isLastPage ? 'ابدأ الآن' : 'التالي',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ),
