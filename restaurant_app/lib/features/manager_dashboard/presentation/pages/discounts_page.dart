@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 
 /// Types of discount that can be configured.
 enum DiscountType {
@@ -134,19 +135,9 @@ class _DiscountsPageState extends ConsumerState<DiscountsPage> {
         label: const Text('خصم جديد'),
       ),
       body: discounts.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.local_offer_outlined,
-                    size: 64,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const Text('لا توجد خصومات بعد'),
-                ],
-              ),
+          ? const EmptyState(
+              message: 'لا توجد خصومات بعد',
+              icon: Icons.local_offer_outlined,
             )
           : ListView.separated(
               padding: const EdgeInsets.fromLTRB(

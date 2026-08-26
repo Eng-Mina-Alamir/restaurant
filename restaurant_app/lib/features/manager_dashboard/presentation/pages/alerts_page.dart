@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../domain/entities/alert_entity.dart';
 import '../controllers/alerts_controller.dart';
 
@@ -13,8 +14,7 @@ class AlertsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final allAlerts = ref.watch(alertsControllerProvider);
     final selectedCategory = ref.watch(selectedAlertCategoryProvider);
 
@@ -97,24 +97,9 @@ class AlertsPage extends ConsumerWidget {
           // ── Alerts List ───────────────────────────────────────────────
           Expanded(
             child: filteredAlerts.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.notifications_off_outlined,
-                          size: 64,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          'لا توجد تنبيهات حالياً',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+                ? const EmptyState(
+                    message: 'لا توجد تنبيهات حالياً',
+                    icon: Icons.notifications_off_outlined,
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.all(AppSpacing.md),

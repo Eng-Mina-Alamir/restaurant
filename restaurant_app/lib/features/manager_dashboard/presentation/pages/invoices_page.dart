@@ -6,6 +6,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/widgets/constrained_content_view.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../data/services/report_export_service.dart';
@@ -16,8 +17,6 @@ class InvoicesPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final orders = ref.watch(ordersControllerProvider);
     final completedOrders =
         orders.where((o) => o.status == OrderStatus.completed).toList()
@@ -56,24 +55,9 @@ class InvoicesPage extends ConsumerWidget {
       ),
       body: ConstrainedContentView(
         child: completedOrders.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 64,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    'لا توجد فواتير بعد',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+          ? const EmptyState(
+              message: 'لا توجد فواتير بعد',
+              icon: Icons.receipt_long_outlined,
             )
           : ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),

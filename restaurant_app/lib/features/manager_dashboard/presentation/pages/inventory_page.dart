@@ -7,6 +7,7 @@ import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/constrained_content_view.dart';
+import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../inventory/domain/entities/inventory_item_entity.dart';
@@ -197,23 +198,12 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           children: [
                             SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.4,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.inventory_2_outlined,
-                                    size: 56,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Text(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.4,
+                              child: const EmptyState(
+                                message:
                                     'لا توجد أصناف مطابقة للبحث أو التصفية',
-                                    style: TextStyle(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
+                                icon: Icons.inventory_2_outlined,
                               ),
                             ),
                           ],
