@@ -103,7 +103,11 @@ class LoyaltyPage extends ConsumerWidget {
                       _RewardCardSkeleton(),
                     ],
                   ),
-                  error: (_, _) => const Text('تعذر تحميل المكافآت حالياً'),
+                  error: (err, _) => ErrorState(
+                    message: AppConstants.errorLoadingData,
+                    errorDetail: err,
+                    onRetry: () => ref.invalidate(availableRewardsProvider),
+                  ),
                   data: (rewards) => Column(
                     children: [
                       for (final reward in rewards)
