@@ -7,6 +7,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../orders/domain/entities/order_status_log_entry.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 
@@ -83,12 +84,7 @@ class OrderAuditTrailSheet extends ConsumerWidget {
             ),
             Flexible(
               child: trailAsync.when(
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpacing.lg),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                loading: () => const _AuditTrailSkeleton(),
                 error: (_, _) => _ErrorRow(
                   onRetry: () =>
                       ref.invalidate(orderAuditTrailProvider(orderId)),
@@ -234,6 +230,33 @@ class _RevertBadge extends StatelessWidget {
           color: warning,
           fontWeight: FontWeight.bold,
         ),
+      ),
+    );
+  }
+}
+
+/// Shimmer placeholder shown while the audit trail fetches: four rows
+/// echoing the timeline tiles below.
+class _AuditTrailSkeleton extends StatelessWidget {
+  const _AuditTrailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < 4; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpacing.sm),
+            const SkeletonBox(
+              width: double.infinity,
+              height: 48,
+              borderRadius: AppRadius.sm,
+            ),
+          ],
+        ],
       ),
     );
   }
