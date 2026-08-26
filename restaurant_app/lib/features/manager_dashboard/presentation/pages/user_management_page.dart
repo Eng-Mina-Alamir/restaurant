@@ -5,6 +5,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 
@@ -157,7 +158,10 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         icon: const Icon(Icons.person_add),
         label: const Text('إضافة موظف'),
       ),
-      body: Column(
+      // Center search, filters and the staff list within a readable max
+      // width on tablets/desktop; no effect at mobile sizes.
+      body: ConstrainedContentView(
+        child: Column(
         children: [
           // Search & Filter
           Padding(
@@ -359,6 +363,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                   ),
           ),
         ],
+        ),
       ),
     );
   }

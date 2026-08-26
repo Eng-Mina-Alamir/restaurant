@@ -6,6 +6,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../inventory/domain/entities/inventory_item_entity.dart';
@@ -83,7 +84,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
       body: RefreshIndicator(
         onRefresh: () async =>
             ref.read(inventoryControllerProvider.notifier).load(),
-        child: inventoryAsync.when(
+        // Constrained inside the RefreshIndicator so pull-to-refresh keeps
+        // its full-screen feel while the list stays readable on wide screens.
+        child: ConstrainedContentView(
+          child: inventoryAsync.when(
           loading: () => const _InventorySkeletonList(),
           error: (err, _) => ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -238,6 +242,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               ],
             );
           },
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(

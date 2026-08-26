@@ -5,6 +5,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../data/services/report_export_service.dart';
@@ -53,7 +54,8 @@ class InvoicesPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: completedOrders.isEmpty
+      body: ConstrainedContentView(
+        child: completedOrders.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -82,6 +84,7 @@ class InvoicesPage extends ConsumerWidget {
                 onTap: () => _showInvoiceDetail(context, completedOrders[i]),
               ),
             ),
+        ),
     );
   }
 

@@ -6,6 +6,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -32,7 +33,8 @@ class _AllOrdersPageState extends ConsumerState<AllOrdersPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppConstants.allOrdersTitle)),
-      body: Column(
+      body: ConstrainedContentView(
+        child: Column(
         children: [
           _StatusFilterBar(
             selected: _filter,
@@ -63,6 +65,7 @@ class _AllOrdersPageState extends ConsumerState<AllOrdersPage> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

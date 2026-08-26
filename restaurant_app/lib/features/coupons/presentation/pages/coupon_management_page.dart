@@ -6,6 +6,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
 import '../../domain/entities/coupon_entity.dart';
@@ -37,7 +38,8 @@ class CouponManagementPage extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('إنشاء كوبون'),
       ),
-      body: couponsAsync.when(
+      body: ConstrainedContentView(
+        child: couponsAsync.when(
         loading: () => const _CouponManagementSkeleton(),
         error: (err, _) => ErrorState(
           message: AppConstants.errorLoadingData,
@@ -340,6 +342,7 @@ class CouponManagementPage extends ConsumerWidget {
             },
           );
         },
+        ),
       ),
     );
   }

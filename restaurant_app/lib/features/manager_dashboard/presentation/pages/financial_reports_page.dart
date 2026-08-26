@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../data/services/report_export_service.dart';
 import '../controllers/financial_reports_controller.dart';
 
@@ -51,7 +52,8 @@ class FinancialReportsPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ConstrainedContentView(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -284,6 +286,7 @@ class FinancialReportsPage extends ConsumerWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
