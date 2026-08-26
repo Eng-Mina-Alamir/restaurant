@@ -124,19 +124,35 @@ class _AnimatedPressCardState extends State<AnimatedPressCard>
       );
     }
 
-    return GestureDetector(
+    final scaleAnimatedCard = AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
+      },
+      child: cardWidget,
+    );
+
+    final gestureDetector = GestureDetector(
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
       onLongPress: widget.onLongPress,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(scale: _scaleAnimation.value, child: child);
-        },
-        child: cardWidget,
-      ),
+      child: scaleAnimatedCard,
+    );
+
+    // The reduced-motion InkWell fallback above announces a button role
+    // implicitly; mirror that for the animated path so screen readers treat
+    // interactive cards as buttons too.
+    if (widget.onTap == null && widget.onLongPress == null) {
+      return gestureDetector;
+    }
+
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: widget.onTap != null,
+      child: gestureDetector,
     );
   }
 }

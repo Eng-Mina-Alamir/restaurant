@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/shared/animations/animated_press_card.dart';
@@ -93,6 +95,82 @@ void main() {
       await tester.tap(find.text('Accessible Card'));
       await tester.pumpAndSettle();
       expect(tapped, isTrue);
+    });
+  });
+
+  group('AnimatedPressCard button semantics', () {
+    // The button flags live on the card's own Semantics node; child content
+    // (labels, nested controls) stays independently reachable beneath it.
+    Finder cardNodeOf(String label) => find.ancestor(
+          of: find.text(label),
+          matching: find.byType(AnimatedPressCard),
+        );
+
+    testWidgets('announces button role when onTap is provided', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AnimatedPressCard(
+              onTap: () {},
+              child: const Text('Tappable Card'),
+            ),
+          ),
+        ),
+      );
+
+      final node = tester.getSemantics(cardNodeOf('Tappable Card'));
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.flagsCollection.isEnabled, Tristate.isTrue);
+
+      semantics.dispose();
+    });
+
+    testWidgets('is not flagged as a button without callbacks', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: AnimatedPressCard(child: Text('Static Card')),
+          ),
+        ),
+      );
+
+      final node = tester.getSemantics(cardNodeOf('Static Card'));
+      expect(node.flagsCollection.isButton, isFalse);
+
+      semantics.dispose();
+    });
+
+    testWidgets('reports disabled when only onLongPress is provided', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AnimatedPressCard(
+              onLongPress: () {},
+              child: const Text('Long Press Only Card'),
+            ),
+          ),
+        ),
+      );
+
+      // Still interactive (wrapped), but with no tap action the button
+      // announces itself as disabled.
+      final node = tester.getSemantics(cardNodeOf('Long Press Only Card'));
+      expect(node.flagsCollection.isButton, isTrue);
+      expect(node.flagsCollection.isEnabled, Tristate.isFalse);
+
+      semantics.dispose();
     });
   });
 }
