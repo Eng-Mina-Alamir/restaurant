@@ -27,7 +27,7 @@ class LanguageSwitcherButton extends ConsumerWidget {
     return OutlinedButton.icon(
       icon: const Icon(Icons.language_rounded, size: 18),
       label: Text(
-        lang == AppLanguage.arabic ? 'English 🇺🇸' : 'العربية 🇸🇦',
+        lang == AppLanguage.arabic ? 'English' : 'العربية',
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       onPressed: () {

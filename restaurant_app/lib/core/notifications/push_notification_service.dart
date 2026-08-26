@@ -121,7 +121,7 @@ class PushNotificationService {
     required String destination,
   }) {
     showNotification(
-      title: 'طلب توصيل جديد 🛵',
+      title: 'طلب توصيل جديد',
       body: 'وجهة التوصيل: $destination',
       category: NotificationCategory.deliveryJob,
       data: {'deliveryId': deliveryId, 'type': 'delivery'},
@@ -134,7 +134,7 @@ class PushNotificationService {
     required String orderId,
   }) {
     showNotification(
-      title: 'طلب جديد - طاولة $tableNumber 🍽️',
+      title: 'طلب جديد - طاولة $tableNumber',
       body: 'تم استلام طلب جديد #$orderId للطاولة رقم $tableNumber',
       category: NotificationCategory.newOrder,
       data: {'tableNumber': tableNumber, 'orderId': orderId, 'role': 'waiter'},
@@ -144,7 +144,7 @@ class PushNotificationService {
   /// Dispatches an order cancellation alert for Kitchen staff.
   void notifyKitchenCancelledOrder({required String orderId, String? reason}) {
     showNotification(
-      title: '⚠️ تنبيه: إلغاء طلب #$orderId',
+      title: 'تنبيه: إلغاء طلب #$orderId',
       body: reason != null
           ? 'سبب الإلغاء: $reason'
           : 'يرجى إيقاف تحضير هذا الطلب فوراً',
@@ -159,7 +159,7 @@ class PushNotificationService {
     required int totalPoints,
   }) {
     showNotification(
-      title: '🎉 كسبت $pointsEarned نقطة ولاء جديدة!',
+      title: 'كسبت $pointsEarned نقطة ولاء جديدة!',
       body:
           'رصيد نقاطك الحالي أصبح $totalPoints نقطة. يمكنك استبدالها بمكافآت قيّمة.',
       category: NotificationCategory.system,

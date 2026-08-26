@@ -143,7 +143,7 @@ abstract final class MenuSeedData {
             ),
             MenuModifierOption(
               id: 'opt-spicy',
-              name: 'حراق ومولع 🔥',
+              name: 'حراق ومولع',
               extraPrice: 0,
             ),
           ],

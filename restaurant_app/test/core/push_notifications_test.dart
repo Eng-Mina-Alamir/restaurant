@@ -52,6 +52,39 @@ void main() {
       expect(service.history.first.body, contains('حي العليا - الرياض'));
     });
 
+    test('all notify* methods dispatch emoji-free titles and bodies', () async {
+      final service = PushNotificationService();
+      addTearDown(service.dispose);
+
+      service.notifyOrderStatus(orderId: 'ORD-E1', statusAr: 'قيد التحضير');
+      service.notifyDeliveryJob(
+        deliveryId: 'DEL-E2',
+        destination: 'حي الملقا - جدة',
+      );
+      service.notifyNewTableOrder(tableNumber: 7, orderId: 'ORD-E3');
+      service.notifyKitchenCancelledOrder(orderId: 'ORD-E4', reason: 'طلب العميل');
+      service.notifyLoyaltyPointsEarned(pointsEarned: 25, totalPoints: 120);
+
+      final emojiPattern = RegExp(
+        r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]',
+        unicode: true,
+      );
+
+      expect(service.history.length, 5);
+      for (final notification in service.history) {
+        expect(
+          emojiPattern.hasMatch(notification.title),
+          isFalse,
+          reason: 'title contains an emoji: ${notification.title}',
+        );
+        expect(
+          emojiPattern.hasMatch(notification.body),
+          isFalse,
+          reason: 'body contains an emoji: ${notification.body}',
+        );
+      }
+    });
+
     test('markAsRead and clearAll work correctly', () async {
       final service = PushNotificationService();
       addTearDown(service.dispose);
