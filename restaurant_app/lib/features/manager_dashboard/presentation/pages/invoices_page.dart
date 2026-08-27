@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/printing/ticket_printer_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/zatca_qr_codec.dart';
 import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -287,6 +290,42 @@ class _InvoiceDialog extends StatelessWidget {
               bold: true,
             ),
 
+            const SizedBox(height: AppSpacing.md),
+
+            // ZATCA e-Invoicing QR Code
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: QrImageView(
+                      data: ZatcaQrCodec.generateBase64Qr(
+                        sellerName: 'مطعم الأصالة والنكهة',
+                        vatNumber: '300123456700003',
+                        invoiceTimestamp: order.createdAt,
+                        totalWithVat: order.totalAmount,
+                        vatAmount: order.taxAmount,
+                      ),
+                      version: QrVersions.auto,
+                      size: 130,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'فاتورة ضريبية مبسطة (ZATCA QR)',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: AppSpacing.lg),
 
             // Actions
@@ -301,18 +340,25 @@ class _InvoiceDialog extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.print_outlined),
-                    label: const Text('طباعة'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('جاري إرسال للطابعة...'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+                  child: Consumer(
+                    builder: (context, ref, _) => FilledButton.icon(
+                      icon: const Icon(Icons.print_outlined),
+                      label: const Text('طباعة'),
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        await ref
+                            .read(ticketPrinterServiceProvider)
+                            .printCustomerInvoice(order);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('تم إرسال الفاتورة للطابعة بنجاح! 🖨️'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
                 ),
               ],

@@ -11,7 +11,7 @@ void main() {
     late OrderEntity dummyOrder;
 
     setUp(() {
-      printerService = TicketPrinterService();
+      printerService = const TicketPrinterService();
 
       const burger = MenuItem(
         id: 'item-1',

@@ -16,6 +16,8 @@ enum RealtimeEventType {
   orderStatusReverted,
   orderReadyForPickup,
   tableStatusChanged,
+  tableServiceRequested,
+  tableServiceHandled,
   driverLocationUpdated,
   deliveryAssignmentCreated,
   unknown,
@@ -71,6 +73,12 @@ class RealtimeEvent {
       case 'tableStatusChanged':
       case 'table_status_changed':
         return RealtimeEventType.tableStatusChanged;
+      case 'tableServiceRequested':
+      case 'table_service_requested':
+        return RealtimeEventType.tableServiceRequested;
+      case 'tableServiceHandled':
+      case 'table_service_handled':
+        return RealtimeEventType.tableServiceHandled;
       case 'driverLocationUpdated':
       case 'driver_location_updated':
         return RealtimeEventType.driverLocationUpdated;
@@ -231,6 +239,8 @@ class RealtimeService {
       case RealtimeEventType.deliveryAssignmentCreated:
         return (event.payload['orderId'] ?? event.payload['id'])?.toString();
       case RealtimeEventType.tableStatusChanged:
+      case RealtimeEventType.tableServiceRequested:
+      case RealtimeEventType.tableServiceHandled:
       case RealtimeEventType.driverLocationUpdated:
       case RealtimeEventType.unknown:
         return null;
@@ -293,6 +303,25 @@ class RealtimeService {
   /// Broadcasts an updated table status.
   void broadcastTableStatusChanged(Map<String, dynamic> tableJson) {
     sendEvent('tableStatusChanged', tableJson);
+  }
+
+  /// Broadcasts a table assistance/service request (e.g. Call Waiter, Request Bill).
+  void broadcastTableServiceRequested(Map<String, dynamic> requestJson) {
+    sendEvent('tableServiceRequested', requestJson);
+  }
+
+  /// Broadcasts when a table assistance request has been handled by a waiter.
+  void broadcastTableServiceHandled(
+    String requestId, {
+    String? waiterId,
+    DateTime? handledAt,
+  }) {
+    sendEvent('tableServiceHandled', {
+      'requestId': requestId,
+      'id': requestId,
+      'waiterId': ?waiterId,
+      'handledAt': (handledAt ?? DateTime.now()).toIso8601String(),
+    });
   }
 
   /// Broadcasts a "ready for pickup" alert for a dine-in [orderId].

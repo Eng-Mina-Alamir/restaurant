@@ -21,6 +21,7 @@ import '../../../delivery/domain/entities/delivery_assignment.dart';
 import '../../../delivery/domain/services/delivery_fee_calculator.dart';
 import '../../../delivery/domain/services/driver_assignment_service.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
+import '../../../inventory/presentation/controllers/inventory_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
@@ -66,12 +67,14 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     CartDiscountResolver? discountResolver,
     MenuItem? Function(String menuItemId)? menuLookup,
     Future<void> Function(OrderEntity order)? onDeliveryOrderReady,
+    Future<void> Function(OrderEntity order)? onOrderCompleted,
   }) : _realtimeService = realtimeService,
        _connectivityService = connectivityService,
        _offlineQueueService = offlineQueueService,
        _discountResolver = discountResolver,
        _menuLookup = menuLookup,
        _onDeliveryOrderReady = onDeliveryOrderReady,
+       _onOrderCompleted = onOrderCompleted,
        super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -93,6 +96,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// delivery order on [OrderStatus.ready] (auto-assign wiring lives in
   /// [ordersControllerProvider]). Null disables auto-dispatch.
   final Future<void> Function(OrderEntity order)? _onDeliveryOrderReady;
+
+  /// Optional hook fired when an order lands on [OrderStatus.completed]
+  /// to automatically deduct stock from inventory.
+  final Future<void> Function(OrderEntity order)? _onOrderCompleted;
 
   /// Human-readable reason the last [placeOrder]/[placeOrderForTable] call
   /// returned null (checkout-time revalidation failure). Null when the last
@@ -491,6 +498,107 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     }
   }
 
+  /// Appends additional items to an open [existingOrderId] (e.g. for a dine-in
+  /// table adding more food or drinks).
+  Future<OrderEntity?> addItemsToExistingOrder(
+    String existingOrderId,
+    List<CartItem> newCartItems,
+  ) async {
+    if (newCartItems.isEmpty) return null;
+    final index = state.indexWhere((o) => o.id == existingOrderId);
+    if (index == -1) return null;
+
+    final existingOrder = state[index];
+    final rejection = _checkoutRejection(newCartItems);
+    if (rejection != null) {
+      AppLogger.warning('addItemsToExistingOrder rejected: $rejection');
+      _lastPlaceOrderError = rejection;
+      return null;
+    }
+    _lastPlaceOrderError = null;
+
+    final now = DateTime.now();
+    var updated = OrderMapper.appendItems(
+      existingOrder: existingOrder,
+      newCartItems: newCartItems,
+      timestamp: now,
+    );
+
+    // If order was already served/ready, set it back to preparing so kitchen receives the append ticket
+    if (updated.status == OrderStatus.ready ||
+        updated.status == OrderStatus.served) {
+      updated = updated.copyWith(status: OrderStatus.preparing);
+    }
+
+    state = [...state]..[index] = updated;
+    _cart.clear();
+    _newOrderNotifier.notifyNewOrder();
+
+    // Persist and broadcast
+    final isOffline = _connectivityService?.isOnline == false;
+    if (isOffline) {
+      await _persistOfflineOrder(updated);
+      _offlineQueue.add(updated);
+    } else {
+      await _repository.updateOrderStatus(existingOrderId, updated.status);
+      _realtimeService?.broadcastOrderStatusChanged(
+        existingOrderId,
+        updated.status.name,
+        updatedAt: now,
+      );
+    }
+
+    AppHaptics.milestoneSuccess();
+    return updated;
+  }
+
+  /// Completes and marks an order as paid, recording the payment method and timestamp.
+  Future<OrderEntity?> completeAndPayOrder(
+    String orderId, {
+    required PaymentMethod paymentMethod,
+    double? discountAmount,
+  }) async {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return null;
+
+    var order = state[index];
+    if (discountAmount != null && discountAmount > 0) {
+      final newSubtotal = order.subtotal;
+      final taxable = (newSubtotal - discountAmount).clamp(0.0, double.infinity);
+      final taxAmount = taxable * 0.15;
+      final totalAmount = taxable + taxAmount;
+      order = order.copyWith(
+        discountAmount: discountAmount,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+      );
+    }
+
+    final updated = order.copyWith(
+      status: OrderStatus.completed,
+      paymentMethod: paymentMethod,
+      completedAt: DateTime.now(),
+    );
+
+    state = [...state]..[index] = updated;
+
+    final stampedAt = DateTime.now();
+    _statusEventAt[orderId] = stampedAt;
+
+    _realtimeService?.broadcastOrderStatusChanged(
+      orderId,
+      OrderStatus.completed.name,
+      updatedAt: stampedAt,
+    );
+
+    await _repository.updateOrderStatus(orderId, OrderStatus.completed);
+    if (_onOrderCompleted != null) {
+      unawaited(_onOrderCompleted(updated));
+    }
+    AppHaptics.milestoneSuccess();
+    return updated;
+  }
+
   /// Advances the status of the order with [orderId] to [status].
   ///
   /// When the order is completed/cancelled it is kept in state but no longer
@@ -528,6 +636,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
     // Persist the updated order status through the repository.
     final result = await _repository.updateOrderStatus(orderId, status);
+
+    // Auto-deduct inventory on order completion
+    if (result.isRight &&
+        status == OrderStatus.completed &&
+        _onOrderCompleted != null) {
+      unawaited(_onOrderCompleted(updated));
+    }
 
     // Auto-dispatch: once a delivery order is PERSISTED on "ready", hand it
     // to the dispatch hook. The hook must never break the status-update path
@@ -885,6 +1000,18 @@ ordersControllerProvider = StateNotifierProvider((ref) {
       return null;
     },
     onDeliveryOrderReady: autoDispatchDeliveryOrder,
+    onOrderCompleted: (order) async {
+      try {
+        final invRepo = ref.read(inventoryRepositoryProvider);
+        await invRepo.deductStockForOrder(order);
+      } catch (e, st) {
+        AppLogger.warning(
+          'Failed to deduct inventory for order ${order.id}: $e',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    },
   );
 
   wiredController = controller;

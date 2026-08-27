@@ -169,7 +169,8 @@ enum UserRole {
   kitchen,
   manager,
   admin,
-  driver;
+  driver,
+  cashier;
 
   String get labelAr {
     switch (this) {
@@ -185,6 +186,8 @@ enum UserRole {
         return AppConstants.roleAdmin;
       case UserRole.driver:
         return AppConstants.roleDriver;
+      case UserRole.cashier:
+        return AppConstants.roleCashier;
     }
   }
 
@@ -202,6 +205,8 @@ enum UserRole {
         return '/manager';
       case UserRole.driver:
         return '/driver';
+      case UserRole.cashier:
+        return '/manager/shifts';
     }
   }
 
@@ -220,6 +225,8 @@ enum UserRole {
         return UserRole.admin;
       case 'driver':
         return UserRole.driver;
+      case 'cashier':
+        return UserRole.cashier;
       default:
         return UserRole.customer;
     }

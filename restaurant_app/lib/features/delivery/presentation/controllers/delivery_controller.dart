@@ -8,6 +8,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/repositories/delivery_repository.dart';
@@ -227,12 +228,18 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
 /// logged inside [DeliveryController], never surfaced to the driver UI.
 final deliveryControllerProvider =
     StateNotifierProvider<DeliveryController, List<DeliveryAssignment>>(
-      (ref) => DeliveryController(
-        ref.watch(deliveryRepositoryProvider),
-        'driver-demo',
-        realtimeService: ref.watch(realtimeServiceProvider),
-        onDelivered: (orderId) => _completeParentOrder(ref, orderId),
-      ),
+      (ref) {
+        final authUser = ref.watch(authControllerProvider).user;
+        final supabaseUser = ref.watch(supabaseCurrentUserProvider);
+        final driverId = authUser?.id ?? supabaseUser?.id ?? 'driver-demo';
+
+        return DeliveryController(
+          ref.watch(deliveryRepositoryProvider),
+          driverId,
+          realtimeService: ref.watch(realtimeServiceProvider),
+          onDelivered: (orderId) => _completeParentOrder(ref, orderId),
+        );
+      },
     );
 
 /// Advances [orderId] to [OrderStatus.completed] after a successful delivery

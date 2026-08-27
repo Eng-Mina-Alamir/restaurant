@@ -4,6 +4,7 @@ import '../../../../config/supabase_config.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
+import '../../../orders/domain/entities/order_entity.dart';
 import '../../domain/entities/inventory_item_entity.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
@@ -241,6 +242,67 @@ class SupabaseInventoryRepository implements InventoryRepository {
         return Left(ServerFailure('فشل إعادة تزويد المخزون: $e'));
       }
     }
+  }
+
+  @override
+  Future<Either<Failure, void>> deductStockForOrder(OrderEntity order) async {
+    final itemsResult = await getInventoryItems();
+    final items = itemsResult.when(
+      onLeft: (_) => _cachedItems ?? _initialSeedItems,
+      onRight: (list) => list,
+    );
+
+    for (final orderItem in order.items) {
+      final name = orderItem.menuItem.name.toLowerCase();
+      final qty = orderItem.quantity.toDouble();
+
+      for (var i = 0; i < items.length; i++) {
+        final inv = items[i];
+        final invName = inv.name.toLowerCase();
+
+        double deduction = 0.0;
+        if (invName.contains('لحم') &&
+            (name.contains('لحم') ||
+                name.contains('كباب') ||
+                name.contains('طاجن') ||
+                name.contains('برجر') ||
+                name.contains('كفتة'))) {
+          deduction = 0.25 * qty;
+        } else if (invName.contains('دجاج') &&
+            (name.contains('دجاج') ||
+                name.contains('فراخ') ||
+                name.contains('شاورما') ||
+                name.contains('شيش'))) {
+          deduction = 0.3 * qty;
+        } else if (invName.contains('أرز') &&
+            (name.contains('أرز') ||
+                name.contains('فتة') ||
+                name.contains('وجبة') ||
+                name.contains('برياني'))) {
+          deduction = 0.2 * qty;
+        } else if (invName.contains('زيت') &&
+            (name.contains('مقلي') ||
+                name.contains('بطاطس') ||
+                name.contains('فراخ') ||
+                name.contains('برجر'))) {
+          deduction = 0.05 * qty;
+        } else if (invName.contains('جبن') &&
+            (name.contains('جبن') ||
+                name.contains('برجر') ||
+                name.contains('بيتزا'))) {
+          deduction = 0.05 * qty;
+        }
+
+        if (deduction > 0) {
+          final newStock = (inv.currentStock - deduction).clamp(0.0, 999999.0);
+          final updated = inv.copyWith(currentStock: newStock);
+          try {
+            await updateItem(updated);
+          } catch (_) {}
+        }
+      }
+    }
+    return const Right(null);
   }
 
   InventoryItemEntity _mapToInventoryItemEntity(Map<String, dynamic> map) {

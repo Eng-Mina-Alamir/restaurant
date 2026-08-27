@@ -18,6 +18,8 @@ import '../../../../shared/widgets/responsive_layout.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/table_controller.dart';
+import '../controllers/table_service_controller.dart';
+import '../../domain/entities/table_service_request.dart';
 import 'waiter_table_card.dart';
 
 /// Waiter / captain dashboard: a grid of restaurant tables with status-aware
@@ -40,6 +42,9 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
   Widget build(BuildContext context) {
     final tables = ref.watch(tableControllerProvider);
     final orders = ref.watch(ordersControllerProvider);
+    final serviceRequests = ref.watch(tableServiceControllerProvider);
+    final activeServiceRequests =
+        serviceRequests.where((r) => !r.isHandled).toList();
 
     // Ready-for-pickup: kitchen finished a dine-in ticket and the waiter must
     // collect it. Alert on every INCREASE of this count, mirroring how the
@@ -59,6 +64,20 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
       appBar: AppBar(
         title: const Text(AppConstants.tablesTitle),
         actions: [
+          if (activeServiceRequests.isNotEmpty)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+              child: Center(
+                child: Tooltip(
+                  message: 'نداءات مساعدة من الطاولات (${activeServiceRequests.length})',
+                  child: Badge(
+                    backgroundColor: Colors.amber.shade800,
+                    label: Text('${activeServiceRequests.length}'),
+                    child: const Icon(Icons.notifications_active, color: Colors.amber),
+                  ),
+                ),
+              ),
+            ),
           if (readyPickupCount > 0)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
@@ -79,6 +98,40 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
           ? const _TablesSkeleton()
           : Column(
               children: [
+                if (activeServiceRequests.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: Colors.amber.shade700),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.notifications_active, color: Colors.amber, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'طاولة ${activeServiceRequests.first.tableNumber} تطلب: ${activeServiceRequests.first.type.labelAr}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            ref
+                                .read(tableServiceControllerProvider.notifier)
+                                .acknowledgeService(activeServiceRequests.first.id);
+                          },
+                          child: const Text('تمت التلبية'),
+                        ),
+                      ],
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.md,
@@ -111,12 +164,30 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
                         itemCount: tables.length,
                         itemBuilder: (context, index) {
                           final table = tables[index];
+                          final activeReq = activeServiceRequests
+                              .cast<TableServiceRequest?>()
+                              .firstWhere(
+                                (r) => r?.tableId == table.id,
+                                orElse: () => null,
+                              );
+
                           return AnimatedListItem(
                             index: index,
                             staggerDuration: const Duration(milliseconds: 35),
                             duration: const Duration(milliseconds: 350),
                             child: WaiterTableCard(
                               table: table,
+                              activeServiceRequest: activeReq,
+                              onAcknowledgeService: activeReq == null
+                                  ? null
+                                  : () {
+                                      ref
+                                          .read(
+                                            tableServiceControllerProvider
+                                                .notifier,
+                                          )
+                                          .acknowledgeService(activeReq.id);
+                                    },
                               onTap: () {
                                 context.push('/waiter/table/${table.id}');
                               },

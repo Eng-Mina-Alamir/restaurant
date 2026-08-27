@@ -1,17 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../config/app_config.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
+import '../../../../core/utils/logger.dart';
 import '../../../../shared/widgets/constrained_content_view.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 
 /// State notifier managing employee and user list for the restaurant.
 class UserManagementController extends StateNotifier<List<UserEntity>> {
-  UserManagementController() : super([]) {
+  final SupabaseClient? _supabase;
+
+  UserManagementController(this._supabase) : super([]) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    if (AppConfig.useSupabase && _supabase != null) {
+      try {
+        final res = await _supabase.from('profiles').select().order('created_at');
+        if (res.isNotEmpty) {
+          final users = (res as List).map((row) {
+            final map = Map<String, dynamic>.from(row as Map);
+            return UserEntity(
+              id: map['id']?.toString() ?? '',
+              name: map['name']?.toString() ?? '',
+              email: map['email']?.toString() ?? '',
+              phone: map['phone']?.toString() ?? '',
+              role: UserRole.fromName(map['role']?.toString()),
+              restaurantId: map['restaurant_id']?.toString() ?? 'rest-1',
+              createdAt:
+                  DateTime.tryParse(map['created_at']?.toString() ?? '') ??
+                  DateTime.now(),
+              isActive: true,
+            );
+          }).toList();
+          state = users;
+          return;
+        }
+      } catch (e, st) {
+        AppLogger.warning(
+          'UserManagementController load fallback: $e',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
     _seed();
   }
 
@@ -71,12 +111,12 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
     ];
   }
 
-  void addUser({
+  Future<void> addUser({
     required String name,
     required String email,
     required String phone,
     required UserRole role,
-  }) {
+  }) async {
     final newUser = UserEntity(
       id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
       name: name,
@@ -88,10 +128,37 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
       isActive: true,
     );
     state = [...state, newUser];
+
+    if (AppConfig.useSupabase && _supabase != null) {
+      try {
+        await _supabase.from('profiles').insert({
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'role': role.name,
+          'restaurant_id': 'rest-1',
+        });
+      } catch (e, st) {
+        AppLogger.warning('addUser persistence error: $e', error: e, stackTrace: st);
+      }
+    }
   }
 
-  void updateUser(UserEntity user) {
+  Future<void> updateUser(UserEntity user) async {
     state = state.map((u) => u.id == user.id ? user : u).toList();
+
+    if (AppConfig.useSupabase && _supabase != null) {
+      try {
+        await _supabase.from('profiles').update({
+          'name': user.name,
+          'email': user.email,
+          'phone': user.phone,
+          'role': user.role.name,
+        }).eq('id', user.id);
+      } catch (e, st) {
+        AppLogger.warning('updateUser persistence error: $e', error: e, stackTrace: st);
+      }
+    }
   }
 
   void toggleStatus(String userId) {
@@ -103,14 +170,24 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
     }).toList();
   }
 
-  void deleteUser(String userId) {
+  Future<void> deleteUser(String userId) async {
     state = state.where((u) => u.id != userId).toList();
+    if (AppConfig.useSupabase && _supabase != null) {
+      try {
+        await _supabase.from('profiles').delete().eq('id', userId);
+      } catch (e, st) {
+        AppLogger.warning('deleteUser persistence error: $e', error: e, stackTrace: st);
+      }
+    }
   }
 }
 
 final userManagementControllerProvider =
     StateNotifierProvider<UserManagementController, List<UserEntity>>((ref) {
-      return UserManagementController();
+      final supabase = AppConfig.useSupabase
+          ? ref.watch(supabaseClientProvider)
+          : null;
+      return UserManagementController(supabase);
     });
 
 /// Staff and user CRUD management page for restaurant manager.
@@ -382,6 +459,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         return colorScheme.tertiary;
       case UserRole.driver:
         return StatusColors.tone(SemanticTone.success, colorScheme.brightness);
+      case UserRole.cashier:
+        return StatusColors.tone(SemanticTone.warning, colorScheme.brightness);
     }
   }
 
@@ -399,6 +478,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         return Icons.admin_panel_settings;
       case UserRole.driver:
         return Icons.delivery_dining;
+      case UserRole.cashier:
+        return Icons.point_of_sale;
     }
   }
 

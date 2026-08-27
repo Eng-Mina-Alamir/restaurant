@@ -1,3 +1,4 @@
+import '../../../orders/domain/entities/order_entity.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/inventory_item_entity.dart';
@@ -132,5 +133,71 @@ class InMemoryInventoryRepository implements InventoryRepository {
     );
     _items = [..._items]..[index] = updated;
     return Right(updated);
+  }
+
+  @override
+  Future<Either<Failure, void>> deductStockForOrder(OrderEntity order) async {
+    for (final orderItem in order.items) {
+      final name = orderItem.menuItem.name.toLowerCase();
+      final qty = orderItem.quantity.toDouble();
+
+      for (var i = 0; i < _items.length; i++) {
+        final inv = _items[i];
+        final invName = inv.name.toLowerCase();
+
+        double deduction = 0.0;
+        if (invName.contains('لحم') &&
+            (name.contains('لحم') ||
+                name.contains('كباب') ||
+                name.contains('طاجن') ||
+                name.contains('برجر') ||
+                name.contains('كفتة'))) {
+          deduction = 0.25 * qty;
+        } else if (invName.contains('دجاج') &&
+            (name.contains('دجاج') ||
+                name.contains('فراخ') ||
+                name.contains('شاورما') ||
+                name.contains('شيش'))) {
+          deduction = 0.3 * qty;
+        } else if (invName.contains('أرز') &&
+            (name.contains('أرز') ||
+                name.contains('فتة') ||
+                name.contains('وجبة') ||
+                name.contains('برياني'))) {
+          deduction = 0.2 * qty;
+        } else if (invName.contains('عيش') &&
+            (name.contains('حواوشي') ||
+                name.contains('ساندوتش') ||
+                name.contains('فتة') ||
+                name.contains('خبز'))) {
+          deduction = 2.0 * qty;
+        } else if (invName.contains('سمن') &&
+            (name.contains('طاجن') ||
+                name.contains('ملوخية') ||
+                name.contains('فتة') ||
+                name.contains('كوارع'))) {
+          deduction = 0.05 * qty;
+        } else if (invName.contains('ملوخية') && name.contains('ملوخية')) {
+          deduction = 0.3 * qty;
+        } else if (invName.contains('طحينة') &&
+            (name.contains('سلطة') ||
+                name.contains('مشاوي') ||
+                name.contains('كباب') ||
+                name.contains('شاورما'))) {
+          deduction = 0.05 * qty;
+        } else if (invName.contains('مانجو') &&
+            (name.contains('مانجو') ||
+                name.contains('عصير') ||
+                name.contains('مشروب'))) {
+          deduction = 0.25 * qty;
+        }
+
+        if (deduction > 0) {
+          final newStock = (inv.currentStock - deduction).clamp(0.0, 999999.0);
+          _items[i] = inv.copyWith(currentStock: newStock);
+        }
+      }
+    }
+    return const Right(null);
   }
 }

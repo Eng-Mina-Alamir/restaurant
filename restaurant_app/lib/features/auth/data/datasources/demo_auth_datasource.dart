@@ -16,6 +16,7 @@ abstract final class DemoAuthDataSource {
     UserRole.manager: 'manager@demo.com',
     UserRole.admin: 'admin@demo.com',
     UserRole.driver: 'driver@demo.com',
+    UserRole.cashier: 'cashier@demo.com',
   };
 
   /// The login identifiers users type in (routed to the matching role).
@@ -26,6 +27,7 @@ abstract final class DemoAuthDataSource {
     UserRole.manager,
     UserRole.admin,
     UserRole.driver,
+    UserRole.cashier,
   ];
 
   /// Returns the demo user for [identifier] when credentials match, else null.
@@ -70,6 +72,8 @@ abstract final class DemoAuthDataSource {
         return 'إدارة سلسلة مطاعم المحروسة';
       case UserRole.driver:
         return 'الكابتن طارق الدسوقي (مندوب التوصيل)';
+      case UserRole.cashier:
+        return 'حسام علي (كاشير النقطة)';
     }
   }
 
@@ -87,6 +91,8 @@ abstract final class DemoAuthDataSource {
         return '01555555555';
       case UserRole.driver:
         return '01066778899';
+      case UserRole.cashier:
+        return '01044332211';
     }
   }
 }

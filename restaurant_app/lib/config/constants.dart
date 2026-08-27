@@ -106,6 +106,7 @@ abstract final class AppConstants {
   static const String roleManager = 'مدير';
   static const String roleAdmin = 'مسؤول';
   static const String roleDriver = 'سائق';
+  static const String roleCashier = 'كاشير';
   static const String cartEmptySend = 'أضف أصنافاً أولاً';
   static const String metricsByCategory = 'الإيرادات حسب الفئة';
   static const String deliveryEtaLabel = 'الوقت المتوقع للوصول';

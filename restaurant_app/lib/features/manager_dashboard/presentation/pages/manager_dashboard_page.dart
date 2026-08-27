@@ -261,6 +261,12 @@ class ManagerDashboardPage extends ConsumerWidget {
                           onTap: () =>
                               context.push('/manager/financial-reports'),
                         ),
+                        _QuickAction(
+                          icon: Icons.lock_clock,
+                          label: 'الورديات Z-Report',
+                          color: Theme.of(context).colorScheme.primary,
+                          onTap: () => context.push('/manager/shifts'),
+                        ),
 
                         _QuickAction(
                           icon: Icons.qr_code_2,

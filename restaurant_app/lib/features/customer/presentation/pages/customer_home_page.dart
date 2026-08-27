@@ -15,6 +15,8 @@ import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
+import '../../../table_management/domain/entities/table_service_request.dart';
+import '../../../table_management/presentation/controllers/table_service_controller.dart';
 import '../pages/menu_item_detail_sheet.dart';
 import '../pages/qr_scan_page.dart';
 import '../widgets/category_chips.dart';
@@ -121,6 +123,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage> {
           final items = filterMenu(menu, selected, query, diet);
           return Column(
             children: [
+              const _TableServiceBanner(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.md,
@@ -240,4 +243,156 @@ class _DietChips extends StatelessWidget {
     MenuDietFilter.vegetarian => AppConstants.dietVegetarian,
     MenuDietFilter.spicy => AppConstants.dietSpicy,
   };
+}
+
+/// Quick action banner for dine-in customers with an active table (Call Waiter / Request Bill).
+class _TableServiceBanner extends ConsumerWidget {
+  const _TableServiceBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeTable = ref.watch(activeTableIdProvider);
+    if (activeTable == null) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final tableNum =
+        int.tryParse(activeTable.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
+    final requests = ref.watch(tableServiceControllerProvider);
+    final activeForThisTable =
+        requests.where((r) => r.tableId == activeTable && !r.isHandled).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        0,
+      ),
+      child: Card(
+        color: colorScheme.surfaceContainerHighest,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.table_restaurant,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'أنت جالس على طاولة $activeTable',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (activeForThisTable.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: StatusColors.tone(
+                          SemanticTone.warning,
+                          theme.brightness,
+                        ).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Text(
+                        'طلبك قيد المتابعة...',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: StatusColors.tone(
+                            SemanticTone.warning,
+                            theme.brightness,
+                          ),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(
+                        Icons.notifications_active_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('طلب النادل'),
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(tableServiceControllerProvider.notifier)
+                            .requestService(
+                              tableId: activeTable,
+                              tableNumber: tableNum,
+                              type: TableServiceType.callWaiter,
+                            );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'تم إرسال طلب استدعاء النادل لطاولتك 🔔',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      icon: const Icon(
+                        Icons.receipt_long_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('طلب الحساب'),
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(tableServiceControllerProvider.notifier)
+                            .requestService(
+                              tableId: activeTable,
+                              tableNumber: tableNum,
+                              type: TableServiceType.requestBill,
+                            );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'تم إرسال طلب الفاتورة للنادل 🧾',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

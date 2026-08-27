@@ -1,3 +1,4 @@
+import '../../../orders/domain/entities/order_entity.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/inventory_item_entity.dart';
@@ -20,4 +21,7 @@ abstract class InventoryRepository {
     String id,
     double amount,
   );
+
+  /// Deducts recipe ingredients and stock units when an order is completed.
+  Future<Either<Failure, void>> deductStockForOrder(OrderEntity order);
 }

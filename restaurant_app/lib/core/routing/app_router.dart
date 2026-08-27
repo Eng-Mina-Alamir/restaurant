@@ -26,6 +26,7 @@ import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/manager_dashboard/presentation/pages/financial_reports_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
+import '../../features/manager_dashboard/presentation/pages/shift_management_page.dart';
 import '../../features/manager_dashboard/presentation/pages/staff_performance_page.dart';
 import '../../features/manager_dashboard/presentation/pages/user_management_page.dart';
 import '../../features/menu/presentation/pages/menu_management_page.dart';
@@ -55,8 +56,11 @@ import '../../shared/widgets/not_found_page.dart';
 /// The customer area (`/customer/**`) stays open to every authenticated role:
 /// it grants no privileges, and managers/waiters legitimately preview it.
 const Map<String, Set<UserRole>> _roleProtectedPrefixes = {
+  '/manager/shifts': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
+  '/manager/invoices': {UserRole.cashier, UserRole.manager, UserRole.admin},
+  '/manager/orders': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
   '/manager': {UserRole.manager, UserRole.admin},
-  '/waiter': {UserRole.waiter, UserRole.manager, UserRole.admin},
+  '/waiter': {UserRole.waiter, UserRole.cashier, UserRole.manager, UserRole.admin},
   '/kds': {UserRole.kitchen, UserRole.manager, UserRole.admin},
   '/driver': {UserRole.driver, UserRole.manager, UserRole.admin},
 };
@@ -337,6 +341,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
               key: state.pageKey,
               child: const FinancialReportsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'shifts',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const ShiftManagementPage(),
             ),
           ),
         ],

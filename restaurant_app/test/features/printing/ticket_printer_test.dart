@@ -11,7 +11,7 @@ void main() {
     late OrderEntity testOrder;
 
     setUp(() {
-      printerService = TicketPrinterService();
+      printerService = const TicketPrinterService();
       testOrder = OrderEntity(
         id: 'ord-9988',
         restaurantId: 'rest-1',

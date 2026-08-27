@@ -7,6 +7,7 @@ import '../../../../shared/animations/animated_press_card.dart';
 import '../../../../shared/animations/animated_status_badge.dart';
 import '../../../../shared/animations/scale_button.dart';
 import '../../domain/entities/restaurant_table.dart';
+import '../../domain/entities/table_service_request.dart';
 import 'waiter_dashboard_page.dart';
 
 /// A single table tile shown in the waiter dashboard grid with smooth animations.
@@ -18,6 +19,8 @@ class WaiterTableCard extends StatelessWidget {
     required this.onTakeOrder,
     required this.onRelease,
     required this.onReserve,
+    this.activeServiceRequest,
+    this.onAcknowledgeService,
   });
 
   final RestaurantTable table;
@@ -25,6 +28,8 @@ class WaiterTableCard extends StatelessWidget {
   final VoidCallback onTakeOrder;
   final VoidCallback onRelease;
   final VoidCallback onReserve;
+  final TableServiceRequest? activeServiceRequest;
+  final VoidCallback? onAcknowledgeService;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +92,41 @@ class WaiterTableCard extends StatelessWidget {
                 Formatters.formatOrderId(table.currentOrderId!),
                 style: theme.textTheme.labelSmall,
                 overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (activeServiceRequest != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(color: Colors.amber.shade700, width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_active, size: 14, color: Colors.amber),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        activeServiceRequest!.type.labelAr,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: Colors.amber.shade900,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (onAcknowledgeService != null)
+                      InkWell(
+                        onTap: onAcknowledgeService,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 2),
+                          child: Icon(Icons.check_circle, size: 16, color: Colors.green),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
             const SizedBox(height: AppSpacing.sm),

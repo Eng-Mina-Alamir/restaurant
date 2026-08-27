@@ -248,6 +248,8 @@ class _DemoAccounts extends StatelessWidget {
         return Icons.admin_panel_settings;
       case UserRole.driver:
         return Icons.delivery_dining;
+      case UserRole.cashier:
+        return Icons.point_of_sale;
     }
   }
 }

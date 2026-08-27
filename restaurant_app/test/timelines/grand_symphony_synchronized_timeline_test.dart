@@ -109,7 +109,7 @@ void main() {
             .firstWhere((o) => o.id == order.id);
         expect(currentOrder.status, equals(OrderStatus.preparing));
 
-        final printer = TicketPrinterService();
+        const printer = TicketPrinterService();
         final ticketText = printer.generateTicketText(
           currentOrder,
           tableDisplay: 'طاولة ${targetTable.tableNumber}',

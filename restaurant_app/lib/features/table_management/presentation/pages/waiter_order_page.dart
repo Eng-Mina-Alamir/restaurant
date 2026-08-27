@@ -64,31 +64,63 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
     setState(() => _sending = true);
 
     final orders = ref.read(ordersControllerProvider.notifier);
-    final order = await orders.placeOrderForTable(
-      widget.tableId,
-      paymentMethod: payment,
-    );
-    if (order != null) {
-      await ref
-          .read(tableControllerProvider.notifier)
-          .occupy(widget.tableId, orderId: order.id);
-      // KDS picks up new orders automatically; return to the floor.
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${Formatters.formatOrderId(order.id)} '
-            '${AppConstants.sentToKitchen}',
+    final tables = ref.read(tableControllerProvider);
+    final tableList = tables.where((t) => t.id == widget.tableId);
+    final matchingTable = tableList.isEmpty ? null : tableList.first;
+    final isAppending = matchingTable?.status == TableStatus.occupied &&
+        matchingTable?.currentOrderId != null;
+
+    if (isAppending) {
+      final cartItems = List<CartItem>.of(ref.read(cartControllerProvider));
+      final updated = await orders.addItemsToExistingOrder(
+        matchingTable!.currentOrderId!,
+        cartItems,
+      );
+      if (updated != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم إرسال الأصناف الإضافية للمطبخ لطاولة ${matchingTable.tableNumber}!',
+            ),
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-      );
-      context.go('/waiter');
+        );
+        context.go('/waiter');
+      } else {
+        if (!mounted) return;
+        setState(() => _sending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppConstants.errorCartEmpty)),
+        );
+      }
     } else {
-      if (!mounted) return;
-      setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AppConstants.errorCartEmpty)),
+      final order = await orders.placeOrderForTable(
+        widget.tableId,
+        paymentMethod: payment,
       );
+      if (order != null) {
+        await ref
+            .read(tableControllerProvider.notifier)
+            .occupy(widget.tableId, orderId: order.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${Formatters.formatOrderId(order.id)} '
+              '${AppConstants.sentToKitchen}',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/waiter');
+      } else {
+        if (!mounted) return;
+        setState(() => _sending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppConstants.errorCartEmpty)),
+        );
+      }
     }
   }
 
@@ -100,13 +132,18 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
     final table = ref
         .watch(tableControllerProvider)
         .where((t) => t.id == widget.tableId);
-    final tableLabel = table.isEmpty ? '' : '${table.first.tableNumber}';
+    final matchingTable = table.isEmpty ? null : table.first;
+    final tableLabel = matchingTable == null ? '' : '${matchingTable.tableNumber}';
+    final isAppending = matchingTable?.status == TableStatus.occupied &&
+        matchingTable?.currentOrderId != null;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${AppConstants.tableActionTakeOrder} — '
-          '${AppConstants.seats} $tableLabel',
+          isAppending
+              ? 'إضافة أصناف — طاولة $tableLabel'
+              : '${AppConstants.tableActionTakeOrder} — '
+                  '${AppConstants.seats} $tableLabel',
         ),
       ),
       body: menu.when(

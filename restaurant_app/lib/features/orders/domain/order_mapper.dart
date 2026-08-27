@@ -157,4 +157,33 @@ abstract final class OrderMapper {
       estimatedMinutes: 20,
     );
   }
+
+  /// Appends new [newCartItems] to an [existingOrder], recalculating financial totals.
+  static OrderEntity appendItems({
+    required OrderEntity existingOrder,
+    required List<CartItem> newCartItems,
+    required DateTime timestamp,
+  }) {
+    final newOrderItems = newCartItems
+        .map((cart) => toOrderItem(cart, timestamp: timestamp))
+        .toList();
+    final combinedItems = [...existingOrder.items, ...newOrderItems];
+
+    // Recompute financials from combined items
+    final subtotal = combinedItems.fold<double>(
+      0.0,
+      (sum, item) => sum + item.itemTotal,
+    );
+    final discount = existingOrder.discountAmount;
+    final taxable = (subtotal - discount).clamp(0.0, double.infinity);
+    final taxAmount = taxable * 0.15; // 15% standard VAT
+    final totalAmount = taxable + taxAmount;
+
+    return existingOrder.copyWith(
+      items: combinedItems,
+      subtotal: subtotal,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+    );
+  }
 }
