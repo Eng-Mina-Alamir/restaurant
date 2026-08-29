@@ -10,7 +10,8 @@ import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../delivery/presentation/widgets/live_tracking_map.dart';
 
 import '../../../../core/domain/enums.dart';
-import '../../../../core/network/realtime_service.dart';
+import '../../../../core/network/realtime_event.dart';
+import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
@@ -28,11 +29,11 @@ bool driverLocationTargetsOrder({
   required String orderId,
   String? assignedDriverId,
 }) {
-  final payloadOrderId = payload['orderId']?.toString();
+  final payloadOrderId = (payload['order_id'] ?? payload['orderId'])?.toString();
   if (payloadOrderId != null && payloadOrderId.isNotEmpty) {
     return payloadOrderId == orderId;
   }
-  final payloadDriverId = payload['driverId']?.toString();
+  final payloadDriverId = (payload['driver_id'] ?? payload['driverId'])?.toString();
   if (payloadDriverId == null ||
       payloadDriverId.isEmpty ||
       assignedDriverId == null) {
@@ -77,7 +78,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
   }
 
   void _initRealtime() {
-    final realtime = ref.read(realtimeServiceProvider);
+    final realtime = ref.read(supabaseRealtimeServiceProvider);
     _realtimeSub = realtime.events.listen((event) {
       if (event.type == RealtimeEventType.driverLocationUpdated) {
         // Only react to updates belonging to THIS order; events carrying an

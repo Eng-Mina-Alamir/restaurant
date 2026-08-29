@@ -8,9 +8,10 @@ import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/network/connectivity_service.dart';
-import '../../../../core/network/realtime_service.dart';
+import '../../../../core/network/realtime_event.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/logger.dart';
@@ -61,7 +62,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     this._repository,
     this._cart,
     this._newOrderNotifier, {
-    RealtimeService? realtimeService,
+    SupabaseRealtimeService? realtimeService,
     ConnectivityService? connectivityService,
     OfflineQueueService? offlineQueueService,
     CartDiscountResolver? discountResolver,
@@ -83,7 +84,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final OrderRepository _repository;
   final CartController _cart;
   final NewOrderNotifier _newOrderNotifier;
-  final RealtimeService? _realtimeService;
+  final SupabaseRealtimeService? _realtimeService;
   final ConnectivityService? _connectivityService;
   final OfflineQueueService? _offlineQueueService;
   final CartDiscountResolver? _discountResolver;
@@ -169,7 +170,6 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
             final order = OrderEntity.fromJson(payload);
             final result = await _repository.createOrder(order);
             if (result.isRight) {
-              _realtimeService?.broadcastOrderCreated(payload);
               // Keep the UI mirror consistent with the persistent queue.
               _offlineQueue.removeWhere((o) => o.id == order.id);
               return true;
@@ -199,7 +199,6 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       for (final order in toSync) {
         final result = await _repository.createOrder(order);
         if (result.isRight) {
-          _realtimeService?.broadcastOrderCreated(order.toJson());
           _offlineQueue.removeWhere((o) => o.id == order.id);
         }
       }
@@ -413,13 +412,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _cart.clear();
           _offlineQueue.add(order);
           _newOrderNotifier.notifyNewOrder();
-          _realtimeService?.broadcastOrderCreated(order.toJson());
           return order;
         case Right(:final value):
           state = [...state, value];
           _cart.clear();
           _newOrderNotifier.notifyNewOrder();
-          _realtimeService?.broadcastOrderCreated(value.toJson());
           // Milestone confirmation only — never on error/offline paths.
           AppHaptics.milestoneSuccess();
           return value;
@@ -482,13 +479,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _cart.clear();
           _offlineQueue.add(order);
           _newOrderNotifier.notifyNewOrder();
-          _realtimeService?.broadcastOrderCreated(order.toJson());
           return order;
         case Right(:final value):
           state = [...state, value];
           _cart.clear();
           _newOrderNotifier.notifyNewOrder();
-          _realtimeService?.broadcastOrderCreated(value.toJson());
           // Milestone confirmation only — never on error/offline paths.
           AppHaptics.milestoneSuccess();
           return value;
@@ -534,18 +529,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _cart.clear();
     _newOrderNotifier.notifyNewOrder();
 
-    // Persist and broadcast
+    // Persist and update
     final isOffline = _connectivityService?.isOnline == false;
     if (isOffline) {
       await _persistOfflineOrder(updated);
       _offlineQueue.add(updated);
     } else {
       await _repository.updateOrderStatus(existingOrderId, updated.status);
-      _realtimeService?.broadcastOrderStatusChanged(
-        existingOrderId,
-        updated.status.name,
-        updatedAt: now,
-      );
     }
 
     AppHaptics.milestoneSuccess();
@@ -585,12 +575,6 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final stampedAt = DateTime.now();
     _statusEventAt[orderId] = stampedAt;
 
-    _realtimeService?.broadcastOrderStatusChanged(
-      orderId,
-      OrderStatus.completed.name,
-      updatedAt: stampedAt,
-    );
-
     await _repository.updateOrderStatus(orderId, OrderStatus.completed);
     if (_onOrderCompleted != null) {
       unawaited(_onOrderCompleted(updated));
@@ -616,22 +600,6 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final lastApplied = _statusEventAt[orderId];
     if (lastApplied == null || stampedAt.isAfter(lastApplied)) {
       _statusEventAt[orderId] = stampedAt;
-    }
-
-    _realtimeService?.broadcastOrderStatusChanged(
-      orderId,
-      status.name,
-      updatedAt: stampedAt,
-    );
-
-    // Waiter pickup alert: when a dine-in order reaches "ready", emit the
-    // dedicated event so waiter dashboards can chime + badge it (Gap 11).
-    if (status == OrderStatus.ready && updated.orderType == OrderType.dineIn) {
-      _realtimeService?.broadcastOrderReadyForPickup(
-        orderId,
-        tableId: updated.tableId,
-        updatedAt: stampedAt,
-      );
     }
 
     // Persist the updated order status through the repository.
@@ -711,15 +679,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final updated = current.copyWith(status: toStatus);
     state = [...state]..[index] = updated;
 
-    // Stamp BEFORE broadcasting so our own echo is recognized as stale.
-    final stampedAt = _stampStatusEvent(orderId);
-
-    _realtimeService?.broadcastOrderStatusReverted(
-      orderId,
-      current.status.name,
-      toStatus.name,
-      updatedAt: stampedAt,
-    );
+    // Stamp transition so any incoming event older than this is dropped.
+    _stampStatusEvent(orderId);
 
     final result = await _repository.revertStatus(
       orderId,
@@ -845,7 +806,6 @@ ordersControllerProvider = StateNotifierProvider((ref) {
     );
     try {
       final deliveryRepo = ref.read(deliveryRepositoryProvider);
-      final realtime = ref.read(realtimeServiceProvider);
 
       final driversResult = await deliveryRepo.getAvailableDrivers();
       final drivers = driversResult.when(
@@ -894,16 +854,10 @@ ordersControllerProvider = StateNotifierProvider((ref) {
               'reason=${failure.message}',
             ),
             onRight: (created) {
-              realtime.broadcastDeliveryAssignmentCreated(created.toJson());
               dispatched = true;
               AppLogger.info(
                 '[Dispatch] outcome=assigned orderId=${order.id} '
                 'driverId=$driverId method=auto',
-              );
-              AppLogger.info(
-                '[Dispatch] outcome=broadcast-sent '
-                'orderId=${order.id} driverId=$driverId '
-                'assignmentId=${created.id}',
               );
             },
           );
@@ -977,7 +931,7 @@ ordersControllerProvider = StateNotifierProvider((ref) {
     ref.watch(orderRepositoryProvider),
     ref.watch(cartControllerProvider.notifier),
     ref.watch(newOrderNotifierProvider),
-    realtimeService: ref.watch(realtimeServiceProvider),
+    realtimeService: ref.watch(supabaseRealtimeServiceProvider),
     connectivityService: ref.watch(connectivityServiceProvider),
     offlineQueueService: ref.watch(offlineQueueServiceProvider),
     // Checkout integrity: persisted totals include the applied coupon so

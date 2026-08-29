@@ -1,12 +1,20 @@
 import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../config/app_config.dart';
 import '../../config/supabase_config.dart';
-import '../network/realtime_service.dart';
+import '../network/realtime_event.dart';
 import '../utils/logger.dart';
+import 'supabase_providers.dart';
 
-/// Connects to Supabase Realtime Postgres change streams (orders, tables, driver locations)
-/// and emits typed [RealtimeEvent]s.
+/// Connects to Supabase Realtime Postgres change streams:
+/// - orders (inserts, updates)
+/// - tables (inserts, updates, deletes)
+/// - driver_locations (inserts, updates)
+/// - table_service_requests (inserts, updates)
+/// - delivery_assignments (inserts, updates)
+/// and emits typed [RealtimeEvent]s to subscribers.
 class SupabaseRealtimeService {
   SupabaseRealtimeService(this._supabase);
 
@@ -14,6 +22,8 @@ class SupabaseRealtimeService {
   RealtimeChannel? _ordersChannel;
   RealtimeChannel? _tablesChannel;
   RealtimeChannel? _driverChannel;
+  RealtimeChannel? _tableServiceChannel;
+  RealtimeChannel? _deliveryAssignmentsChannel;
   StreamController<RealtimeEvent>? _controller;
   bool _isSubscribed = false;
 
@@ -62,6 +72,16 @@ class SupabaseRealtimeService {
                 payload: payload.newRecord,
               ),
             );
+            // If dineIn order reached ready, also emit orderReadyForPickup for waiter alerts
+            if (payload.newRecord['status'] == 'ready' &&
+                payload.newRecord['order_type'] == 'dineIn') {
+              _controller?.add(
+                RealtimeEvent(
+                  type: RealtimeEventType.orderReadyForPickup,
+                  payload: payload.newRecord,
+                ),
+              );
+            }
           },
         )
         ..subscribe();
@@ -102,77 +122,106 @@ class SupabaseRealtimeService {
               },
             )
             ..subscribe();
-    } catch (e) {
-      AppLogger.error('Failed to subscribe to Supabase Realtime channels: $e');
+
+      // 4. Table Service Requests Channel
+      _tableServiceChannel =
+          _supabase.channel('public:${SupabaseConfig.tableServiceRequestsTable}')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.insert,
+              schema: 'public',
+              table: SupabaseConfig.tableServiceRequestsTable,
+              callback: (payload) {
+                AppLogger.info(
+                  'Realtime Table Service Requested: ${payload.newRecord['id']} for table ${payload.newRecord['table_number']}',
+                );
+                _controller?.add(
+                  RealtimeEvent(
+                    type: RealtimeEventType.tableServiceRequested,
+                    payload: payload.newRecord,
+                  ),
+                );
+              },
+            )
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.update,
+              schema: 'public',
+              table: SupabaseConfig.tableServiceRequestsTable,
+              callback: (payload) {
+                AppLogger.info(
+                  'Realtime Table Service Updated: ${payload.newRecord['id']} (is_handled=${payload.newRecord['is_handled']})',
+                );
+                _controller?.add(
+                  RealtimeEvent(
+                    type: RealtimeEventType.tableServiceHandled,
+                    payload: payload.newRecord,
+                  ),
+                );
+              },
+            )
+            ..subscribe();
+
+      // 5. Delivery Assignments Channel
+      _deliveryAssignmentsChannel =
+          _supabase.channel('public:${SupabaseConfig.deliveryAssignmentsTable}')
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.insert,
+              schema: 'public',
+              table: SupabaseConfig.deliveryAssignmentsTable,
+              callback: (payload) {
+                AppLogger.info(
+                  'Realtime Delivery Assignment Inserted: ${payload.newRecord['id']}',
+                );
+                _controller?.add(
+                  RealtimeEvent(
+                    type: RealtimeEventType.deliveryAssignmentCreated,
+                    payload: payload.newRecord,
+                  ),
+                );
+              },
+            )
+            ..onPostgresChanges(
+              event: PostgresChangeEvent.update,
+              schema: 'public',
+              table: SupabaseConfig.deliveryAssignmentsTable,
+              callback: (payload) {
+                _controller?.add(
+                  RealtimeEvent(
+                    type: RealtimeEventType.deliveryAssignmentCreated,
+                    payload: payload.newRecord,
+                  ),
+                );
+              },
+            )
+            ..subscribe();
+    } catch (e, st) {
+      AppLogger.error('Failed to subscribe to Supabase Realtime channels: $e', error: e, stackTrace: st);
     }
   }
 
-  /// Broadcasts an order creation event
-  Future<void> broadcastOrderCreated(Map<String, dynamic> orderJson) async {
-    _controller?.add(
-      RealtimeEvent(type: RealtimeEventType.orderCreated, payload: orderJson),
-    );
-  }
-
-  /// Broadcasts an order status change.
-  ///
-  /// [updatedAt] stamps the event so receivers can discard stale/out-of-order
-  /// deliveries instead of regressing an order's state.
-  Future<void> broadcastOrderStatusChanged(
-    String orderId,
-    String statusName, {
-    DateTime? updatedAt,
-  }) async {
-    _controller?.add(
-      RealtimeEvent(
-        type: RealtimeEventType.orderStatusChanged,
-        payload: {
-          'id': orderId,
-          'status': statusName,
-          'updatedAt': (updatedAt ?? DateTime.now()).toIso8601String(),
-        },
-      ),
-    );
-  }
-
-  /// Broadcasts a table status change
-  Future<void> broadcastTableStatusChanged(
-    Map<String, dynamic> tableJson,
-  ) async {
-    _controller?.add(
-      RealtimeEvent(
-        type: RealtimeEventType.tableStatusChanged,
-        payload: tableJson,
-      ),
-    );
-  }
-
-  /// Broadcasts driver coordinates
-  Future<void> broadcastDriverLocation({
+  /// Updates driver location in the DB (which triggers Realtime to all clients)
+  Future<void> updateDriverLocation({
     required String driverId,
     required double latitude,
     required double longitude,
+    String? orderId,
   }) async {
     try {
       await _supabase.from(SupabaseConfig.driverLocationsTable).upsert({
         'driver_id': driverId,
         'latitude': latitude,
         'longitude': longitude,
+        'order_id': orderId,
         'updated_at': DateTime.now().toIso8601String(),
       });
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to update driver location: $e', error: e, stackTrace: st);
+    }
+  }
 
-    _controller?.add(
-      RealtimeEvent(
-        type: RealtimeEventType.driverLocationUpdated,
-        payload: {
-          'driverId': driverId,
-          'latitude': latitude,
-          'longitude': longitude,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      ),
-    );
+  /// Emits a [RealtimeEvent] onto the event stream (used for tests and internal feeds).
+  void emit(RealtimeEvent event) {
+    _controller ??= StreamController<RealtimeEvent>.broadcast();
+    _controller?.add(event);
   }
 
   void dispose() {
@@ -180,6 +229,18 @@ class SupabaseRealtimeService {
     _ordersChannel?.unsubscribe();
     _tablesChannel?.unsubscribe();
     _driverChannel?.unsubscribe();
+    _tableServiceChannel?.unsubscribe();
+    _deliveryAssignmentsChannel?.unsubscribe();
     _controller?.close();
   }
 }
+
+/// Shared provider for [SupabaseRealtimeService].
+final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((ref) {
+  final service = SupabaseRealtimeService(ref.watch(supabaseClientProvider));
+  if (AppConfig.useSupabase) {
+    service.subscribe();
+  }
+  ref.onDispose(service.dispose);
+  return service;
+});

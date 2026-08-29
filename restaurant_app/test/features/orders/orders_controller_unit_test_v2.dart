@@ -1,10 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
 import 'package:restaurant_app/core/network/connectivity_service.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
 import 'package:restaurant_app/core/notifications/new_order_notifier.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
@@ -12,6 +13,7 @@ import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart
 import 'package:restaurant_app/features/orders/domain/entities/order_status_log_entry.dart';
 import 'package:restaurant_app/features/orders/domain/repositories/order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _FakeOrderRepository implements OrderRepository {
   final List<OrderEntity> orders = [];
@@ -103,7 +105,7 @@ void main() {
     late _FakeOrderRepository repo;
     late CartController cart;
     late NewOrderNotifier notifier;
-    late RealtimeService realtime;
+    late SupabaseRealtimeService realtime;
     late ConnectivityService connectivity;
     late OrdersController controller;
 
@@ -119,7 +121,12 @@ void main() {
       repo = _FakeOrderRepository();
       cart = CartController();
       notifier = NewOrderNotifier();
-      realtime = RealtimeService();
+      final client = SupabaseClient(
+        SupabaseConfig.url,
+        SupabaseConfig.anonKey,
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+      );
+      realtime = SupabaseRealtimeService(client);
       connectivity = ConnectivityService(ConnectivityStatus.online);
 
       controller = OrdersController(
@@ -134,7 +141,7 @@ void main() {
     tearDown(() {
       controller.dispose();
       notifier.dispose();
-      realtime.disconnect();
+      realtime.dispose();
     });
 
     test('placeOrder with empty cart returns null', () async {

@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/table_management/domain/entities/restaurant_table.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'helpers/qa_test_helpers.dart';
 
 void main() {
@@ -13,7 +16,12 @@ void main() {
     test(
       'TC-NOTIF-01: Realtime event broadcast on order creation and status change',
       () async {
-        final realtime = RealtimeService();
+        final client = SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        );
+        final realtime = SupabaseRealtimeService(client);
         final container = createQaContainer(realtimeService: realtime);
         addTearDown(container.dispose);
 
@@ -21,9 +29,14 @@ void main() {
         final sub = realtime.events.listen(receivedEvents.add);
         addTearDown(sub.cancel);
 
-        realtime.broadcastOrderStatusChanged(
-          'ORD-1234',
-          OrderStatus.ready.name,
+        realtime.emit(
+          RealtimeEvent(
+            type: RealtimeEventType.orderStatusChanged,
+            payload: {
+              'id': 'ORD-1234',
+              'status': OrderStatus.ready.name,
+            },
+          ),
         );
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
@@ -52,7 +65,12 @@ void main() {
     test(
       'TC-NOTIF-03: Multiple listening controllers update state synchronously on broadcast events',
       () async {
-        final realtime = RealtimeService();
+        final client = SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        );
+        final realtime = SupabaseRealtimeService(client);
 
         final device1Container = createQaContainer(realtimeService: realtime);
         final device2Container = createQaContainer(realtimeService: realtime);
@@ -72,7 +90,12 @@ void main() {
           currentOrderId: 'ORD-LIVE-SYNC-777',
         );
 
-        realtime.broadcastTableStatusChanged(updatedTable.toJson());
+        realtime.emit(
+          RealtimeEvent(
+            type: RealtimeEventType.tableStatusChanged,
+            payload: updatedTable.toJson(),
+          ),
+        );
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Device 2 reflects the new state automatically

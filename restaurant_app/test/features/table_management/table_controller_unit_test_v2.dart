@@ -1,11 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/table_management/domain/entities/restaurant_table.dart';
 import 'package:restaurant_app/features/table_management/domain/repositories/table_repository.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _FakeTableRepository implements TableRepository {
   final List<RestaurantTable> tables = [];
@@ -30,23 +32,21 @@ class _FakeTableRepository implements TableRepository {
     final index = tables.indexWhere((t) => t.id == table.id);
     if (index != -1) {
       tables[index] = table;
-    } else {
-      tables.add(table);
     }
     return Right(table);
   }
 
   @override
-  Future<Either<Failure, void>> deleteTable(String tableId) async {
-    tables.removeWhere((t) => t.id == tableId);
+  Future<Either<Failure, void>> deleteTable(String id) async {
+    tables.removeWhere((t) => t.id == id);
     return const Right(null);
   }
 }
 
 void main() {
-  group('TableController Unit Tests (v2)', () {
+  group('TableController Unit Tests', () {
     late _FakeTableRepository repo;
-    late RealtimeService realtime;
+    late SupabaseRealtimeService realtime;
     late TableController controller;
 
     setUp(() async {
@@ -68,7 +68,12 @@ void main() {
         ),
       ]);
 
-      realtime = RealtimeService();
+      final client = SupabaseClient(
+        SupabaseConfig.url,
+        SupabaseConfig.anonKey,
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+      );
+      realtime = SupabaseRealtimeService(client);
       controller = TableController(repo, realtimeService: realtime);
       // Wait for initial load
       await Future<void>.delayed(Duration.zero);
@@ -76,7 +81,7 @@ void main() {
 
     tearDown(() {
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
     });
 
     test('tableById finds table by id or returns null', () {

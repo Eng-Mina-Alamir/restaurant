@@ -9,7 +9,7 @@ import 'package:hive/hive.dart';
 import 'package:restaurant_app/core/di/service_locator.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/network/connectivity_service.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:restaurant_app/features/auth/data/models/user_model.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
@@ -230,7 +230,7 @@ class QaSeedData {
 /// Pair with [primeMenuForCheckout] before placing orders.
 ProviderContainer createQaContainer({
   QaMockAuthRemoteDataSource? authDataSource,
-  RealtimeService? realtimeService,
+  SupabaseRealtimeService? realtimeService,
   ConnectivityService? connectivityService,
   List<Override> additionalOverrides = const [],
   bool seedCheckoutFixtures = false,
@@ -243,7 +243,7 @@ ProviderContainer createQaContainer({
       if (authDataSource != null)
         authRemoteDataSourceProvider.overrideWithValue(authDataSource),
       if (realtimeService != null)
-        realtimeServiceProvider.overrideWithValue(realtimeService),
+        supabaseRealtimeServiceProvider.overrideWithValue(realtimeService),
       if (connectivityService != null)
         connectivityServiceProvider.overrideWithValue(connectivityService),
       ...additionalOverrides,

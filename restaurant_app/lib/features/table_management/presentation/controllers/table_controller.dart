@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
-import '../../../../core/network/realtime_service.dart';
+import '../../../../core/network/realtime_event.dart';
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../data/repositories/hive_table_repository.dart';
 import '../../data/repositories/in_memory_table_repository.dart';
 import '../../data/repositories/supabase_table_repository.dart';
@@ -30,9 +31,9 @@ final tableRepositoryProvider = Provider<TableRepository>((ref) {
 ///
 /// Loads tables on first access and exposes mutators to update status / mark a
 /// table occupied with an active order. Changes flow back through the
-/// repository so a future remote impl stays consistent.
+/// repository and are synchronized via Supabase Realtime Postgres Changes.
 class TableController extends StateNotifier<List<RestaurantTable>> {
-  TableController(this._repository, {RealtimeService? realtimeService})
+  TableController(this._repository, {SupabaseRealtimeService? realtimeService})
     : _realtimeService = realtimeService,
       super(TableSeedData.buildTables()) {
     _load();
@@ -40,7 +41,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
   }
 
   final TableRepository _repository;
-  final RealtimeService? _realtimeService;
+  final SupabaseRealtimeService? _realtimeService;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   void _initRealtime() {
@@ -58,11 +59,14 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
 
           // Attempt full JSON deserialize or update status/orderId directly
           RestaurantTable updated;
-          if (event.payload.containsKey('tableNumber')) {
+          if (event.payload.containsKey('table_number') ||
+              event.payload.containsKey('tableNumber')) {
             updated = RestaurantTable.fromJson(event.payload);
           } else {
             final statusStr = event.payload['status']?.toString();
-            final orderId = event.payload['currentOrderId']?.toString();
+            final orderId = (event.payload['current_order_id'] ??
+                    event.payload['currentOrderId'])
+                ?.toString();
             updated = state[index].copyWith(
               status: statusStr != null
                   ? TableStatus.fromName(statusStr)
@@ -90,7 +94,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     return null;
   }
 
-  /// Applies [update] then persists through the repository and broadcasts live.
+  /// Applies [update] then persists through the repository.
   Future<void> _apply(
     String tableId,
     RestaurantTable Function(RestaurantTable) update,
@@ -99,7 +103,6 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     if (current == null) return;
     final updated = update(current);
     state = state.map((t) => t.id == tableId ? updated : t).toList();
-    _realtimeService?.broadcastTableStatusChanged(updated.toJson());
     await _repository.updateTable(updated);
   }
 
@@ -161,7 +164,6 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
       onRight: (saved) {
         state = [...state, saved]
           ..sort((a, b) => a.tableNumber.compareTo(b.tableNumber));
-        _realtimeService?.broadcastTableStatusChanged(saved.toJson());
       },
     );
   }
@@ -189,7 +191,6 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
       onRight: (saved) {
         state = state.map((t) => t.id == tableId ? saved : t).toList()
           ..sort((a, b) => a.tableNumber.compareTo(b.tableNumber));
-        _realtimeService?.broadcastTableStatusChanged(saved.toJson());
       },
     );
   }
@@ -217,6 +218,6 @@ final tableControllerProvider =
     StateNotifierProvider<TableController, List<RestaurantTable>>((ref) {
       return TableController(
         ref.watch(tableRepositoryProvider),
-        realtimeService: ref.watch(realtimeServiceProvider),
+        realtimeService: ref.watch(supabaseRealtimeServiceProvider),
       );
     });

@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
-import '../../../../core/network/realtime_service.dart';
+import '../../../../core/network/realtime_event.dart';
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
@@ -38,7 +39,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   DeliveryController(
     this._repository,
     this._driverId, {
-    RealtimeService? realtimeService,
+    SupabaseRealtimeService? realtimeService,
     Future<void> Function(String orderId)? onDelivered,
   }) : _realtimeService = realtimeService,
        _onDelivered = onDelivered,
@@ -49,7 +50,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
 
   final DeliveryRepository _repository;
   final String _driverId;
-  final RealtimeService? _realtimeService;
+  final SupabaseRealtimeService? _realtimeService;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   /// Optional hook fired after an assignment lands on
@@ -64,7 +65,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
     _realtimeSub = service.events.listen((event) {
       if (event.type == RealtimeEventType.driverLocationUpdated) {
         try {
-          final driverId = event.payload['driverId']?.toString();
+          final driverId = (event.payload['driver_id'] ?? event.payload['driverId'])?.toString();
           final lat = (event.payload['latitude'] as num?)?.toDouble();
           final lng = (event.payload['longitude'] as num?)?.toDouble();
           if (driverId == _driverId && lat != null && lng != null) {
@@ -80,7 +81,8 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
       } else if (event.type == RealtimeEventType.deliveryAssignmentCreated) {
         try {
           // Only accept dispatches addressed to this driver.
-          if (event.payload['driverId']?.toString() != _driverId) return;
+          final targetDriverId = (event.payload['driver_id'] ?? event.payload['driverId'])?.toString();
+          if (targetDriverId != _driverId) return;
           final assignment = DeliveryAssignment.fromJson(event.payload);
           if (state.any((a) => a.id == assignment.id)) return;
           // Appending grows the state list — the driver home page watches it
@@ -106,8 +108,8 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
 
   /// Persists a newly dispatched [assignment].
   ///
-  /// On success the assignment is appended to state and broadcast over
-  /// realtime so other clients (dispatch board, driver apps) stay in sync.
+  /// On success the assignment is appended to state and Supabase Realtime
+  /// delivers the event so other clients (dispatch board, driver apps) stay in sync.
   /// Returns false when the repository rejected it.
   Future<bool> createAssignment(DeliveryAssignment assignment) async {
     final result = await _repository.createAssignment(assignment);
@@ -127,7 +129,6 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
       return false;
     }
     state = [...state.where((a) => a.id != created.id), created];
-    _realtimeService?.broadcastDeliveryAssignmentCreated(created.toJson());
     return true;
   }
 
@@ -139,11 +140,10 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
     if (index == -1) return;
     final updated = transform(state[index]);
     state = [...state]..[index] = updated;
-    _realtimeService?.sendEvent('deliveryStatusChanged', updated.toJson());
     await _repository.updateAssignment(updated);
   }
 
-  /// Broadcasts live driver GPS location.
+  /// Updates live driver GPS location.
   ///
   /// When the driver has an in-transit assignment its orderId is attached to
   /// the payload so customer tracking pages can scope updates per order.
@@ -155,7 +155,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
         break;
       }
     }
-    _realtimeService?.broadcastDriverLocation(
+    _realtimeService?.updateDriverLocation(
       driverId: _driverId,
       latitude: latitude,
       longitude: longitude,
@@ -236,7 +236,7 @@ final deliveryControllerProvider =
         return DeliveryController(
           ref.watch(deliveryRepositoryProvider),
           driverId,
-          realtimeService: ref.watch(realtimeServiceProvider),
+          realtimeService: ref.watch(supabaseRealtimeServiceProvider),
           onDelivered: (orderId) => _completeParentOrder(ref, orderId),
         );
       },
@@ -259,15 +259,9 @@ Future<void> _completeParentOrder(Ref ref, String orderId) async {
     },
   );
   if (order == null || order.status.isTerminal) return;
-  final updated = await orderRepo.updateOrderStatus(
+  await orderRepo.updateOrderStatus(
     orderId,
     OrderStatus.completed,
-  );
-  updated.when(
-    onLeft: (_) {},
-    onRight: (_) => ref
-        .read(realtimeServiceProvider)
-        .broadcastOrderStatusChanged(orderId, OrderStatus.completed.name),
   );
 }
 

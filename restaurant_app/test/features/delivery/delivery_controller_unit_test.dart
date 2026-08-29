@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/driver_info.dart';
 import 'package:restaurant_app/features/delivery/domain/repositories/delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _FakeDeliveryRepository implements DeliveryRepository {
   final List<DeliveryAssignment> assignments = [];
@@ -45,35 +48,28 @@ class _FakeDeliveryRepository implements DeliveryRepository {
   }
 
   @override
-  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
-    String orderId,
-  ) async {
-    DeliveryAssignment? match;
-    for (final a in assignments) {
-      if (a.orderId == orderId) {
-        match = a;
-        break;
-      }
-    }
-    return Right(match);
-  }
-
-  @override
   Future<Either<Failure, List<DriverInfo>>> getAvailableDrivers() async {
     return const Right([]);
   }
 
   @override
-  Future<Either<Failure, List<DeliveryAssignment>>>
-  getActiveAssignments() async {
-    return const Right([]);
+  Future<Either<Failure, DeliveryAssignment?>> getAssignmentByOrderId(
+    String orderId,
+  ) async {
+    final matches = assignments.where((a) => a.orderId == orderId).toList();
+    return Right(matches.isEmpty ? null : matches.first);
+  }
+
+  @override
+  Future<Either<Failure, List<DeliveryAssignment>>> getActiveAssignments() async {
+    return Right(List.unmodifiable(assignments));
   }
 }
 
 void main() {
   group('DeliveryController Unit Tests', () {
     late _FakeDeliveryRepository repo;
-    late RealtimeService realtime;
+    late SupabaseRealtimeService realtime;
     late DeliveryController controller;
 
     setUp(() async {
@@ -89,7 +85,12 @@ void main() {
         ),
       );
 
-      realtime = RealtimeService();
+      final client = SupabaseClient(
+        SupabaseConfig.url,
+        SupabaseConfig.anonKey,
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+      );
+      realtime = SupabaseRealtimeService(client);
       controller = DeliveryController(
         repo,
         'drv-demo',
@@ -101,7 +102,7 @@ void main() {
 
     tearDown(() {
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
     });
 
     test('initial state loads driver assignments', () {
@@ -139,19 +140,25 @@ void main() {
       expect(controller.state.first.deliveryStatus, DeliveryStatus.failed);
     });
 
-    test('updateLocation broadcasts GPS coords', () {
-      expectLater(
-        realtime.events,
-        emits(
-          predicate<RealtimeEvent>((event) {
-            return event.type == RealtimeEventType.driverLocationUpdated &&
-                event.payload['driverId'] == 'drv-demo' &&
-                event.payload['latitude'] == 30.05;
-          }),
+    test('realtime deliveryAssignmentCreated appends assigned deliveries', () {
+      final assignment = DeliveryAssignment(
+        id: 'del-2',
+        orderId: 'ORD-2',
+        driverId: 'drv-demo',
+        pickupTime: DateTime.now(),
+        deliveryLocation: 'المعادي',
+        deliveryStatus: DeliveryStatus.pending,
+      );
+
+      realtime.emit(
+        RealtimeEvent(
+          type: RealtimeEventType.deliveryAssignmentCreated,
+          payload: assignment.toJson(),
         ),
       );
 
-      controller.updateLocation(latitude: 30.05, longitude: 31.35);
+      expect(controller.state, hasLength(2));
+      expect(controller.state.any((a) => a.id == 'del-2'), isTrue);
     });
   });
 }

@@ -36,20 +36,4 @@ abstract final class EnvironmentConfig {
         return '${SupabaseConfig.url}/rest/v1';
     }
   }
-
-  /// WebSocket base URL for the active environment (real-time KDS/orders).
-  static String get wsUrl {
-    switch (_current) {
-      case Environment.dev:
-        return 'wss://dev-api.restaurant.example.com';
-      case Environment.staging:
-        return 'wss://staging-api.restaurant.example.com';
-      case Environment.production:
-        final rawHost = SupabaseConfig.url.replaceAll(
-          RegExp(r'^https?:\/\/'),
-          '',
-        );
-        return 'wss://$rawHost/realtime/v1/websocket';
-    }
-  }
 }

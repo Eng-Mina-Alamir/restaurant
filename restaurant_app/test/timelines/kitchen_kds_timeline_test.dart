@@ -47,7 +47,7 @@ void main() {
         final ordersNotifier = container.read(
           ordersControllerProvider.notifier,
         );
-        final printerService = const TicketPrinterService();
+        const printerService = TicketPrinterService();
 
         // ── Step 1: New multi-item order arrives at Kitchen ────────────────────
         final createdOrder = await ordersNotifier.placeOrderForTable('TBL-07');

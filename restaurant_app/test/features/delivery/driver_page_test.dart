@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:restaurant_app/config/constants.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
 import 'package:restaurant_app/core/notifications/driver_alert_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
 import 'package:restaurant_app/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
@@ -206,17 +207,22 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
     expect(spy.notifyCalls, 0);
 
-    // Dispatch a new assignment over the shared realtime loopback.
+    // Dispatch a new assignment over the shared realtime service.
     container
-        .read(realtimeServiceProvider)
-        .sendEvent('deliveryAssignmentCreated', {
-          'id': 'assign-rt-9',
-          'orderId': 'ORD-0200',
-          'driverId': 'driver-demo',
-          'pickupTime': DateTime.now().toIso8601String(),
-          'deliveryLocation': 'الرياض - حي النرجس',
-          'deliveryStatus': 'pending',
-        });
+        .read(supabaseRealtimeServiceProvider)
+        .emit(
+          RealtimeEvent(
+            type: RealtimeEventType.deliveryAssignmentCreated,
+            payload: {
+              'id': 'assign-rt-9',
+              'orderId': 'ORD-0200',
+              'driverId': 'driver-demo',
+              'pickupTime': DateTime.now().toIso8601String(),
+              'deliveryLocation': 'الرياض - حي النرجس',
+              'deliveryStatus': 'pending',
+            },
+          ),
+        );
     await tester.pump(); // deliver the realtime event + rebuild
     await tester.pump(const Duration(milliseconds: 300)); // snackbar entrance
 
@@ -234,15 +240,20 @@ void main() {
     expect(spy.notifyCalls, 1);
 
     container
-        .read(realtimeServiceProvider)
-        .sendEvent('deliveryAssignmentCreated', {
-          'id': 'assign-rt-9',
-          'orderId': 'ORD-0200',
-          'driverId': 'driver-demo',
-          'pickupTime': DateTime.now().toIso8601String(),
-          'deliveryLocation': 'الرياض - حي النرجس',
-          'deliveryStatus': 'pending',
-        });
+        .read(supabaseRealtimeServiceProvider)
+        .emit(
+          RealtimeEvent(
+            type: RealtimeEventType.deliveryAssignmentCreated,
+            payload: {
+              'id': 'assign-rt-9',
+              'orderId': 'ORD-0200',
+              'driverId': 'driver-demo',
+              'pickupTime': DateTime.now().toIso8601String(),
+              'deliveryLocation': 'الرياض - حي النرجس',
+              'deliveryStatus': 'pending',
+            },
+          ),
+        );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(spy.notifyCalls, 1);

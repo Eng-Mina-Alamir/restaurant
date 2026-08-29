@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:restaurant_app/core/domain/enums.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/chat/data/repositories/in_memory_chat_repository.dart';
 import 'package:restaurant_app/features/chat/presentation/controllers/chat_controller.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
@@ -94,8 +95,11 @@ void main() {
     /// events stream, driving the exact path a live dispatch would take.
     Future<void> broadcastAssignment(Map<String, dynamic> json) async {
       container
-          .read(realtimeServiceProvider)
-          .sendEvent('deliveryAssignmentCreated', json);
+          .read(supabaseRealtimeServiceProvider)
+          .emit(RealtimeEvent(
+            type: RealtimeEventType.deliveryAssignmentCreated,
+            payload: json,
+          ));
       await Future<void>.delayed(Duration.zero);
     }
 

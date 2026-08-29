@@ -1,18 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('Realtime Sync & Broadcast Integration Flow', () {
     test(
-      'broadcasts order and driver events through real-time event bus stream',
+      'delivers order, driver, and table events through real-time event stream',
       () async {
-        // Demo/test mode: with no channel ever connected, every send()/broadcast*()
-        // loops the event straight back onto [RealtimeService.events].
-        final realtime = RealtimeService();
+        final client = SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        );
+        final realtime = SupabaseRealtimeService(client);
 
-        // Subscribe before broadcasting so delivery cannot race listener
-        // registration; assertions resolve purely on stream delivery, with no
-        // wall-clock delays.
         final expectation = expectLater(
           realtime.events,
           emitsInOrder(<Matcher>[
@@ -65,24 +68,33 @@ void main() {
           ]),
         );
 
-        realtime.broadcastOrderCreated(const {
-          'orderId': 'ORD-RT-1',
-          'status': 'pending',
-        });
-        realtime.broadcastDriverLocation(
-          driverId: 'DRV-7',
-          latitude: 30.05,
-          longitude: 31.24,
-          orderId: 'ORD-RT-1',
-        );
-        realtime.broadcastTableStatusChanged(const {
-          'tableId': 'TBL-4',
-          'status': 'occupied',
-        });
+        realtime.emit(const RealtimeEvent(
+          type: RealtimeEventType.orderCreated,
+          payload: {
+            'orderId': 'ORD-RT-1',
+            'status': 'pending',
+          },
+        ));
+        realtime.emit(const RealtimeEvent(
+          type: RealtimeEventType.driverLocationUpdated,
+          payload: {
+            'driverId': 'DRV-7',
+            'latitude': 30.05,
+            'longitude': 31.24,
+            'orderId': 'ORD-RT-1',
+          },
+        ));
+        realtime.emit(const RealtimeEvent(
+          type: RealtimeEventType.tableStatusChanged,
+          payload: {
+            'tableId': 'TBL-4',
+            'status': 'occupied',
+          },
+        ));
 
         await expectation;
 
-        realtime.disconnect();
+        realtime.dispose();
       },
     );
   });

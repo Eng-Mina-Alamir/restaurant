@@ -8,7 +8,6 @@ void main() {
       expect(EnvironmentConfig.isProduction, isTrue);
       expect(EnvironmentConfig.baseUrl, isNotEmpty);
       expect(EnvironmentConfig.baseUrl, startsWith('http'));
-      expect(EnvironmentConfig.wsUrl, startsWith('ws'));
     });
 
     test('Environment enum has all targets', () {

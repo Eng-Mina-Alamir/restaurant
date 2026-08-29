@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/coupons/data/repositories/in_memory_coupon_repository.dart';
 import 'package:restaurant_app/features/coupons/domain/entities/coupon_entity.dart';
 import 'package:restaurant_app/features/coupons/presentation/controllers/coupon_controller.dart';
@@ -133,7 +133,7 @@ void main() {
         dispatchControllerProvider.overrideWith(
           (ref) => _HangingDispatchController(
             ref.watch(deliveryRepositoryProvider),
-            ref.watch(realtimeServiceProvider),
+            ref.watch(supabaseRealtimeServiceProvider),
             ordersSource: () => const [],
           ),
         ),

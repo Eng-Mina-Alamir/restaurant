@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/core/utils/logger.dart';
 import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
@@ -15,6 +15,7 @@ import 'package:restaurant_app/features/delivery/domain/services/delivery_fee_ca
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
 import 'package:restaurant_app/features/menu/domain/entities/menu_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../helpers/test_container.dart';
 
@@ -58,17 +59,15 @@ class _ScriptedDriverPoolRepository extends InMemoryDeliveryRepository {
   }
 }
 
-/// Records assignment broadcasts; the base service is never connected here,
-/// so no other realtime method is exercised during the tests.
-class _SpyRealtimeService extends RealtimeService {
-  _SpyRealtimeService() : super(wsUrl: 'ws://localhost:1/test-socket');
-
-  final List<Map<String, dynamic>> assignmentBroadcasts = [];
-
-  @override
-  void broadcastDeliveryAssignmentCreated(Map<String, dynamic> assignmentJson) {
-    assignmentBroadcasts.add(assignmentJson);
-  }
+class _SpyRealtimeService extends SupabaseRealtimeService {
+  _SpyRealtimeService()
+    : super(
+        SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      );
 }
 
 void main() {
@@ -91,7 +90,7 @@ void main() {
       seedCheckoutFixtures: true,
       additionalOverrides: [
         deliveryRepositoryProvider.overrideWithValue(repo),
-        realtimeServiceProvider.overrideWithValue(realtime),
+        supabaseRealtimeServiceProvider.overrideWithValue(realtime),
       ],
     );
   }
@@ -127,9 +126,8 @@ void main() {
 
       final orderId = await placeReadyDeliveryOrder(container);
 
-      // First attempt found nobody available: nothing created or broadcast…
+      // First attempt found nobody available: nothing created
       expect(repo.createdAssignments, isEmpty);
-      expect(realtime.assignmentBroadcasts, isEmpty);
       expect(container.read(ordersControllerProvider).single.id, orderId);
 
       // …and even a later tick with a still-empty pool keeps it queued.
@@ -138,12 +136,8 @@ void main() {
       await tester.pump();
 
       expect(repo.createdAssignments, isEmpty);
-      expect(realtime.assignmentBroadcasts, isEmpty);
       expect(container.read(ordersControllerProvider).single.id, orderId);
 
-      // The retry timer is intentionally STILL ARMED here (the order remains
-      // queued), so disposal must happen inside the test body — teardown runs
-      // after flutter_test's pending-timer invariant check.
       container.dispose();
     },
   );
@@ -171,14 +165,10 @@ void main() {
     expect(assignment.assignmentMethod, 'auto');
     expect(assignment.deliveryStatus, DeliveryStatus.pending);
 
-    expect(realtime.assignmentBroadcasts, hasLength(1));
-    expect(realtime.assignmentBroadcasts.single['orderId'], orderId);
-
     // Success drained the queue: further ticks must NOT re-dispatch.
     await tester.pump(const Duration(seconds: 31));
     await tester.pump();
     expect(repo.createdAssignments, hasLength(1));
-    expect(realtime.assignmentBroadcasts, hasLength(1));
   });
 
   testWidgets('an order cancelled while waiting is dropped without dispatch', (
@@ -203,7 +193,6 @@ void main() {
 
     // Terminal orders are dropped silently — never dispatched.
     expect(repo.createdAssignments, isEmpty);
-    expect(realtime.assignmentBroadcasts, isEmpty);
   });
 
   testWidgets('disposing the container cancels the retry timer', (
@@ -216,9 +205,6 @@ void main() {
     await placeReadyDeliveryOrder(container);
     expect(repo.createdAssignments, isEmpty); // queued, timer armed
 
-    // ref.onDispose must cancel the periodic timer: pumping past several
-    // retry windows after disposal must not fire any further dispatch work
-    // (a leaked timer would also fail this test with a pending-timer error).
     container.dispose();
 
     repo.availableDrivers = [_nearbyDriver('drv-after-dispose')];
@@ -226,6 +212,5 @@ void main() {
     await tester.pump();
 
     expect(repo.createdAssignments, isEmpty);
-    expect(realtime.assignmentBroadcasts, isEmpty);
   });
 }

@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
-import '../../../../core/network/realtime_service.dart';
+import '../../../../core/network/realtime_event.dart';
+import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../delivery/domain/entities/delivery_assignment.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
@@ -77,8 +78,7 @@ class DispatchBoardState {
 /// undispatched when no driver is free or the repository rejects the write.
 /// This controller powers the manager's fallback board: it classifies those
 /// orders (never dispatched vs. failed-and-reassignable) and lets the manager
-/// assign/reassign a driver by hand, broadcasting each created assignment so
-/// driver clients stay in sync.
+/// assign/reassign a driver by hand.
 class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   DispatchController(
     this._repository,
@@ -86,8 +86,7 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     required List<OrderEntity> Function() ordersSource,
   }) : _ordersSource = ordersSource,
        super(const AsyncValue.loading()) {
-    // Realtime assignment broadcasts (including this device's own writes in
-    // demo-mode loopback) re-classify the board after the debounce window.
+    // Realtime assignment changes re-classify the board after the debounce window.
     _realtimeSubscription = _realtimeService.events.listen((event) {
       if (event.type == RealtimeEventType.deliveryAssignmentCreated) {
         scheduleRefresh();
@@ -97,155 +96,142 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   }
 
   final DeliveryRepository _repository;
-  final RealtimeService _realtimeService;
+  final SupabaseRealtimeService _realtimeService;
   final List<OrderEntity> Function() _ordersSource;
 
-  /// Quiet period a burst of upstream mutations must settle for before the
-  /// board re-classifies itself.
-  static const Duration _refreshDebounce = Duration(milliseconds: 400);
-
-  Timer? _refreshDebounceTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSubscription;
+  Timer? _debounceTimer;
 
-  /// True while [assignDriver]'s write+refresh sequence is awaiting; a
-  /// debounced refresh must never fire mid-assignment.
-  bool _assignInFlight = false;
+  /// Coalesces rapid triggers (multiple orders landing on ready in the same
+  /// second, or back-to-back realtime events) into ONE refresh pass.
+  static const Duration _debounceWindow = Duration(milliseconds: 300);
 
-  /// Schedules a debounced [refresh]: re-triggering cancels the pending timer
-  /// and restarts the window, so bursts of mutations (orders state changes,
-  /// realtime assignment events) collapse into ONE reclassify pass.
-  ///
-  /// Never fires while an [assignDriver] sequence is awaiting — its own
-  /// explicit [refresh] already reflects the post-write state.
+  /// Guard to prevent concurrent refresh passes from clobbering each other.
+  bool _refreshInFlight = false;
+
+  /// Queues a debounced refresh pass; safe to call rapidly from `ref.listen`
+  /// or realtime listeners.
   void scheduleRefresh() {
-    if (_assignInFlight) return;
-    _refreshDebounceTimer?.cancel();
-    _refreshDebounceTimer = Timer(_refreshDebounce, () {
-      if (_assignInFlight) return;
+    if (!mounted) return;
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceWindow, () {
+      if (!mounted) return;
       unawaited(refresh());
     });
   }
 
-  @override
-  void dispose() {
-    _refreshDebounceTimer?.cancel();
-    _realtimeSubscription?.cancel();
-    super.dispose();
-  }
-
-  /// Orders eligible for dispatch right now: delivery-type, non-terminal, and
-  /// already prepared (kitchen released them at "ready" or later).
-  List<OrderEntity> _dispatchCandidates() {
-    final orders = _ordersSource();
-    return orders
-        .where(
-          (o) =>
-              o.orderType == OrderType.delivery &&
-              !o.status.isTerminal &&
-              o.status.index >= OrderStatus.ready.index,
-        )
-        .toList();
-  }
-
-  /// Reclassifies every candidate order against the assignment store and
-  /// reloads the available drivers list.
+  /// Pulls the latest drivers and classifies delivery orders against the
+  /// repository assignments.
   ///
-  /// Never throws: failures are logged and surfaced via
-  /// [DispatchBoardState.errorMessage] so the board keeps showing stale data.
+  /// Safe to call concurrently: an in-flight pass causes subsequent calls to
+  /// early-return without re-fetching.
   Future<void> refresh() async {
+    if (_refreshInFlight) return;
+    _refreshInFlight = true;
+
     final previous = state.valueOrNull ?? const DispatchBoardState();
-    state = AsyncValue.data(previous.copyWith(isLoading: true));
+    state = AsyncValue.data(previous.copyWith(isLoading: true, errorMessage: null));
 
-    final issues = <String>[];
-    final undispatched = <OrderEntity>[];
-    final failed = <FailedAssignmentEntry>[];
+    try {
+      // 1. Fetch available drivers.
+      final driversResult = await _repository.getAvailableDrivers();
+      final drivers = driversResult.when(
+        onLeft: (failure) {
+          AppLogger.warning(
+            '[Dispatch] Failed to fetch drivers for board: ${failure.message}',
+          );
+          return <DriverInfo>[];
+        },
+        onRight: (list) => list,
+      );
 
-    // ONE bulk read instead of a per-order lookup per candidate (N+1 fix):
-    // classification runs locally against an orderId→assignment map.
-    final assignmentsResult = await _repository.getActiveAssignments();
-    final assignmentByOrderId = <String, DeliveryAssignment>{};
-    assignmentsResult.when(
-      onLeft: (failure) {
-        AppLogger.warning(
-          '[Dispatch] outcome=lookup-failed '
-          'source=board-refresh reason=${failure.message}; orders skipped',
+      // 2. Classify delivery orders that need driver attention.
+      final allOrders = _ordersSource();
+      final candidates = allOrders.where((o) {
+        // In-scope: ready delivery orders needing driver dispatch.
+        return o.status == OrderStatus.ready;
+      }).toList();
+
+      final undispatched = <OrderEntity>[];
+      final failed = <FailedAssignmentEntry>[];
+
+      for (final order in candidates) {
+        final assignmentResult = await _repository.getAssignmentByOrderId(order.id);
+        assignmentResult.when(
+          onLeft: (_) {
+            // Treat lookup failures gracefully as undispatched.
+            undispatched.add(order);
+          },
+          onRight: (assignment) {
+            if (assignment == null) {
+              undispatched.add(order);
+            } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
+              failed.add(FailedAssignmentEntry(order: order, assignment: assignment));
+            }
+            // active / accepted / delivering assignments are intentionally
+            // omitted from the manual board.
+          },
         );
-        if (!issues.contains(failure.message)) issues.add(failure.message);
-      },
-      onRight: (assignments) {
-        for (final assignment in assignments) {
-          // First match wins, mirroring per-order lookup semantics.
-          assignmentByOrderId.putIfAbsent(assignment.orderId, () => assignment);
-        }
-      },
-    );
-
-    for (final order in _dispatchCandidates()) {
-      final assignment = assignmentByOrderId[order.id];
-      if (assignment == null) {
-        undispatched.add(order);
-      } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
-        failed.add(FailedAssignmentEntry(order: order, assignment: assignment));
       }
-      // Any other status means the order is already on the road — skip.
-    }
 
-    var drivers = previous.availableDrivers;
-    final driversResult = await _repository.getAvailableDrivers();
-    driversResult.when(
-      onLeft: (failure) {
-        AppLogger.warning(
-          '[Dispatch] outcome=get-drivers-failed '
-          'source=board-refresh reason=${failure.message}',
-        );
-        if (!issues.contains(failure.message)) issues.add(failure.message);
-      },
-      onRight: (list) => drivers = list,
-    );
-
-    state = AsyncValue.data(
-      DispatchBoardState(
-        undispatchedOrders: undispatched,
-        failedAssignments: failed,
-        availableDrivers: drivers,
-        errorMessage: issues.isEmpty ? null : issues.join(' | '),
-      ),
-    );
-  }
-
-  /// Manually assigns [driverId] to the order with id [orderId].
-  ///
-  /// - Undispatched order → a fresh pending assignment is created
-  ///   (`ASG-<orderId>-<ms>` ids, matching the auto-dispatch format).
-  /// - Failed assignment → the SAME row is upserted with the new driver, reset
-  ///   to pending and stamped manual, keeping the original id.
-  ///
-  /// Returns true on success; on failure the message is surfaced in state
-  /// instead of throwing.
-  Future<bool> assignDriver(String orderId, String driverId) async {
-    OrderEntity? order;
-    for (final o in _ordersSource()) {
-      if (o.id == orderId) {
-        order = o;
-        break;
-      }
-    }
-    if (order == null) {
+      if (!mounted) return;
       state = AsyncValue.data(
-        (state.valueOrNull ?? const DispatchBoardState()).copyWith(
-          errorMessage: 'لم يتم العثور على الطلب $orderId',
+        DispatchBoardState(
+          undispatchedOrders: undispatched,
+          failedAssignments: failed,
+          availableDrivers: drivers,
+          isLoading: false,
         ),
       );
+    } catch (e, st) {
+      AppLogger.error('[Dispatch] Board refresh failed', error: e, stackTrace: st);
+      if (!mounted) return;
+      state = AsyncValue.data(
+        previous.copyWith(
+          isLoading: false,
+          errorMessage: 'تعذر تحديث لوحة التوزيع: $e',
+        ),
+      );
+    } finally {
+      _refreshInFlight = false;
+    }
+  }
+
+  /// Lock guarding manual assignments so two simultaneous button taps
+  /// cannot dispatch the same order twice.
+  bool _assignInFlight = false;
+
+  /// Manually assigns [driverId] to [orderId] (first dispatch or re-dispatch
+  /// after failure).
+  ///
+  /// On success the assignment is persisted in the repository; returns true
+  /// when the assignment landed, false when rejected.
+  Future<bool> assignDriver(
+    String orderId,
+    String driverId,
+  ) async {
+    if (_assignInFlight) return false;
+
+    // Fast-path: find the target order from the active snapshot.
+    final orders = _ordersSource();
+    final order = orders.cast<OrderEntity?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    if (order == null) {
+      AppLogger.warning('[Dispatch] Manual assign failed: order $orderId not found');
       return false;
     }
 
-    // Classify before building: reuse the existing row only when it FAILED.
-    final existingResult = await _repository.getAssignmentByOrderId(orderId);
-    DeliveryAssignment? existing;
+    // Inspect existing assignment (if any) to preserve id on re-dispatch.
+    final lookupResult = await _repository.getAssignmentByOrderId(orderId);
     String? lookupError;
-    existingResult.when(
-      onLeft: (failure) => lookupError = failure.message,
-      onRight: (assignment) => existing = assignment,
+    final existing = lookupResult.when(
+      onLeft: (failure) {
+        lookupError = failure.message;
+        return null;
+      },
+      onRight: (a) => a,
     );
     if (lookupError != null) {
       state = AsyncValue.data(
@@ -255,7 +241,7 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
       );
       return false;
     }
-    if (existing != null && existing!.deliveryStatus != DeliveryStatus.failed) {
+    if (existing != null && existing.deliveryStatus != DeliveryStatus.failed) {
       state = AsyncValue.data(
         (state.valueOrNull ?? const DispatchBoardState()).copyWith(
           errorMessage: 'الطلب $orderId مكلف بالفعل بسائق آخر',
@@ -280,7 +266,7 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     } else {
       // Upsert semantics: keep the SAME id so createAssignment overwrites the
       // failed row instead of forking a second one for the same order.
-      assignment = existing!.copyWith(
+      assignment = existing.copyWith(
         driverId: driverId,
         deliveryStatus: DeliveryStatus.pending,
         assignmentMethod: 'manual',
@@ -289,9 +275,6 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     }
 
     String? failureMessage;
-    // Guarded section: while this write+refresh sequence is awaiting, no
-    // debounced refresh may fire (its own explicit refresh below already
-    // reflects the post-write state).
     _assignInFlight = true;
     try {
       final result = await _repository.createAssignment(assignment);
@@ -315,7 +298,6 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
         return false;
       }
 
-      _realtimeService.broadcastDeliveryAssignmentCreated(created.toJson());
       AppLogger.info(
         '[Dispatch] outcome=assigned orderId=$orderId '
         'driverId=$driverId method=manual',
@@ -326,6 +308,13 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     }
     return true;
   }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _realtimeSubscription?.cancel();
+    super.dispose();
+  }
 }
 
 final dispatchControllerProvider =
@@ -334,7 +323,7 @@ final dispatchControllerProvider =
     ) {
       final controller = DispatchController(
         ref.watch(deliveryRepositoryProvider),
-        ref.watch(realtimeServiceProvider),
+        ref.watch(supabaseRealtimeServiceProvider),
         ordersSource: () => ref.read(ordersControllerProvider),
       );
       // Orders advancing (e.g. realtime lands an order on "ready") must

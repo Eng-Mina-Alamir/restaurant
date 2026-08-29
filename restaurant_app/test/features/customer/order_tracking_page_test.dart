@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_tracking_page.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
@@ -325,24 +326,34 @@ void main() {
 
       final context = tester.element(find.byType(OrderTrackingPage));
       final container = ProviderScope.containerOf(context);
-      final realtime = container.read(realtimeServiceProvider);
+      final realtime = container.read(supabaseRealtimeServiceProvider);
 
       // Events for OTHER orders / unknown legacy drivers must not crash or
       // corrupt the tracking page.
-      realtime.broadcastDriverLocation(
-        driverId: 'driver-x',
-        latitude: 99.0,
-        longitude: 99.0,
-        orderId: 'ORD-OTHER',
+      realtime.emit(
+        const RealtimeEvent(
+          type: RealtimeEventType.driverLocationUpdated,
+          payload: {
+            'driverId': 'driver-x',
+            'latitude': 99.0,
+            'longitude': 99.0,
+            'orderId': 'ORD-OTHER',
+          },
+        ),
       );
       await tester.pump(const Duration(milliseconds: 50));
 
       // An event scoped to THIS order flows through the filter cleanly.
-      realtime.broadcastDriverLocation(
-        driverId: 'driver-x',
-        latitude: 30.05,
-        longitude: 31.24,
-        orderId: orderId,
+      realtime.emit(
+        const RealtimeEvent(
+          type: RealtimeEventType.driverLocationUpdated,
+          payload: {
+            'driverId': 'driver-x',
+            'latitude': 30.05,
+            'longitude': 31.24,
+            'orderId': orderId,
+          },
+        ),
       );
       await tester.pump(const Duration(milliseconds: 50));
 

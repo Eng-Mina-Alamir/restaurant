@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:restaurant_app/config/constants.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
@@ -13,6 +14,7 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/controlle
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../helpers/test_container.dart';
 
@@ -31,7 +33,13 @@ class _StalledDispatchController extends DispatchController {
   _StalledDispatchController()
     : super(
         InMemoryDeliveryRepository(),
-        RealtimeService(),
+        SupabaseRealtimeService(
+          SupabaseClient(
+            SupabaseConfig.url,
+            SupabaseConfig.anonKey,
+            authOptions: const AuthClientOptions(autoRefreshToken: false),
+          ),
+        ),
         ordersSource: () => const [],
       );
 

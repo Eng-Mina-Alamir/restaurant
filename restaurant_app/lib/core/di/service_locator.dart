@@ -20,8 +20,10 @@ import '../network/dio_client.dart';
 import '../storage/in_memory_secure_storage_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../supabase/supabase_providers.dart';
-import '../supabase/supabase_realtime_service.dart';
 import '../supabase/supabase_storage_service.dart';
+
+export '../supabase/supabase_realtime_service.dart'
+    show supabaseRealtimeServiceProvider;
 
 /// Manual dependency locator used across the application.
 class ServiceLocator {
@@ -112,13 +114,4 @@ final menuRepositoryProvider = Provider<MenuRepository>((ref) {
 
 final supabaseStorageServiceProvider = Provider<SupabaseStorageService>((ref) {
   return SupabaseStorageService(ref.watch(supabaseClientProvider));
-});
-
-final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((
-  ref,
-) {
-  final service = SupabaseRealtimeService(ref.watch(supabaseClientProvider));
-  service.subscribe();
-  ref.onDispose(service.dispose);
-  return service;
 });

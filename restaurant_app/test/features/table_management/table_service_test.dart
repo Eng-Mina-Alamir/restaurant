@@ -1,17 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_service_repository.dart';
 import 'package:restaurant_app/features/table_management/domain/entities/table_service_request.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_service_controller.dart';
 
 void main() {
   group('TableServiceController', () {
-    test('requestService creates active request and acknowledgeService marks handled', () {
-      final realtime = RealtimeService();
-      final controller = TableServiceController(realtimeService: realtime);
+    test('requestService creates active request and acknowledgeService marks handled', () async {
+      final repo = InMemoryTableServiceRepository();
+      final controller = TableServiceController(repo);
 
       expect(controller.activeRequestsCount, equals(0));
 
-      final request = controller.requestService(
+      final request = await controller.requestService(
         tableId: 'tbl-5',
         tableNumber: 5,
         type: TableServiceType.callWaiter,
@@ -23,7 +23,7 @@ void main() {
       expect(request.tableNumber, equals(5));
       expect(request.isHandled, isFalse);
 
-      controller.acknowledgeService(request.id, waiterId: 'waiter-10');
+      await controller.acknowledgeService(request.id, waiterId: 'waiter-10');
 
       expect(controller.activeRequestsCount, equals(0));
       expect(controller.state.first.isHandled, isTrue);

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
 import 'package:restaurant_app/core/notifications/new_order_notifier.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/presentation/controllers/delivery_controller.dart';
@@ -11,6 +13,16 @@ import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_repository.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+SupabaseRealtimeService _createTestRealtime() {
+  final client = SupabaseClient(
+    SupabaseConfig.url,
+    SupabaseConfig.anonKey,
+    authOptions: const AuthClientOptions(autoRefreshToken: false),
+  );
+  return SupabaseRealtimeService(client);
+}
 
 void main() {
   group('RealtimeEvent Deserialization', () {
@@ -64,9 +76,9 @@ void main() {
     });
   });
 
-  group('OrdersController with RealtimeService', () {
+  group('OrdersController with SupabaseRealtimeService', () {
     test('updates state when orderCreated event arrives', () async {
-      final realtime = RealtimeService(wsUrl: 'ws://localhost:9999');
+      final realtime = _createTestRealtime();
       final notifier = NewOrderNotifier();
       final cart = CartController();
       final repo = InMemoryOrderRepository();
@@ -94,12 +106,12 @@ void main() {
       expect(parsed.type, RealtimeEventType.orderCreated);
 
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
       notifier.dispose();
     });
 
     test('updates status when orderStatusChanged event arrives', () async {
-      final realtime = RealtimeService(wsUrl: 'ws://localhost:9999');
+      final realtime = _createTestRealtime();
       final notifier = NewOrderNotifier();
       final cart = CartController();
       final repo = InMemoryOrderRepository();
@@ -111,14 +123,14 @@ void main() {
       );
 
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
       notifier.dispose();
     });
   });
 
-  group('TableController with RealtimeService', () {
+  group('TableController with SupabaseRealtimeService', () {
     test('initializes and can be disposed cleanly', () async {
-      final realtime = RealtimeService(wsUrl: 'ws://localhost:9999');
+      final realtime = _createTestRealtime();
       final repo = InMemoryTableRepository();
       final controller = TableController(repo, realtimeService: realtime);
 
@@ -126,13 +138,13 @@ void main() {
       expect(controller.state.isNotEmpty, isTrue);
 
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
     });
   });
 
-  group('DeliveryController with RealtimeService', () {
+  group('DeliveryController with SupabaseRealtimeService', () {
     test('initializes and can updateLocation', () async {
-      final realtime = RealtimeService(wsUrl: 'ws://localhost:9999');
+      final realtime = _createTestRealtime();
       final repo = InMemoryDeliveryRepository();
       final controller = DeliveryController(
         repo,
@@ -144,7 +156,7 @@ void main() {
       controller.updateLocation(latitude: 24.71, longitude: 46.67);
 
       controller.dispose();
-      realtime.disconnect();
+      realtime.dispose();
     });
   });
 }

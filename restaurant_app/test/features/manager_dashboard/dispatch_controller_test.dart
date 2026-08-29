@@ -2,10 +2,12 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/errors/either.dart';
 import 'package:restaurant_app/core/errors/failures.dart';
-import 'package:restaurant_app/core/network/realtime_service.dart';
+import 'package:restaurant_app/core/network/realtime_event.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
 import 'package:restaurant_app/features/delivery/domain/repositories/delivery_repository.dart';
@@ -13,6 +15,7 @@ import 'package:restaurant_app/features/delivery/presentation/controllers/delive
 import 'package:restaurant_app/features/manager_dashboard/presentation/controllers/dispatch_controller.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../helpers/test_container.dart';
 
@@ -26,26 +29,27 @@ class OrdersControllerMock extends StateNotifier<List<OrderEntity>>
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Records dispatch broadcasts without touching sockets. The base service is
-/// never connected here, so no other method is exercised during the tests.
-class SpyRealtimeService extends RealtimeService {
-  SpyRealtimeService() : super(wsUrl: 'ws://localhost:1/test-socket');
-
-  final List<Map<String, dynamic>> assignmentBroadcasts = [];
-
-  @override
-  void broadcastDeliveryAssignmentCreated(Map<String, dynamic> assignmentJson) {
-    assignmentBroadcasts.add(assignmentJson);
-  }
+/// Fake realtime service for dispatch controller unit tests.
+class SpyRealtimeService extends SupabaseRealtimeService {
+  SpyRealtimeService()
+    : super(
+        SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      );
 }
 
-/// Feeds broadcasts straight back onto [events], mirroring the demo-mode
-/// socket loopback in [RealtimeService.send] (no open channel → loop-back),
-/// so synthetic deliveryAssignmentCreated events reach subscribers.
+/// Feeds synthetic events straight onto [events].
 class LoopbackRealtimeService extends SpyRealtimeService {
-  @override
   void broadcastDeliveryAssignmentCreated(Map<String, dynamic> assignmentJson) {
-    sendEvent('deliveryAssignmentCreated', assignmentJson);
+    emit(
+      RealtimeEvent(
+        type: RealtimeEventType.deliveryAssignmentCreated,
+        payload: assignmentJson,
+      ),
+    );
   }
 }
 
@@ -119,7 +123,7 @@ final spyDispatchControllerProvider =
     >((ref) {
       final controller = RefreshSpyDispatchController(
         ref.watch(deliveryRepositoryProvider),
-        ref.watch(realtimeServiceProvider),
+        ref.watch(supabaseRealtimeServiceProvider),
         ordersSource: () => ref.read(ordersControllerProvider),
       );
       ref.listen(
@@ -174,7 +178,7 @@ ProviderContainer buildDispatchContainer({
       if (repository != null)
         deliveryRepositoryProvider.overrideWithValue(repository),
       if (realtimeService != null)
-        realtimeServiceProvider.overrideWithValue(realtimeService),
+        supabaseRealtimeServiceProvider.overrideWithValue(realtimeService),
       ordersControllerProvider.overrideWith(
         (ref) => OrdersControllerMock(orders),
       ),
@@ -257,12 +261,6 @@ void main() {
       expect(created.id, startsWith('ASG-ORD-A-'));
       expect(created.assignedAt, isNotNull);
 
-      expect(realtime.assignmentBroadcasts, hasLength(1));
-      final payload = realtime.assignmentBroadcasts.single;
-      expect(payload['id'], created.id);
-      expect(payload['orderId'], 'ORD-A');
-      expect(payload['driverId'], 'driver-9');
-
       // Refresh moved the order out of the undispatched bucket.
       final state = container.read(dispatchControllerProvider).requireValue;
       expect(state.undispatchedOrders, isEmpty);
@@ -291,8 +289,6 @@ void main() {
           state.errorMessage,
           FailingCreateAssignmentRepository.rejectionMessage,
         );
-        // No phantom broadcast for a rejected write; order stays undispatched.
-        expect(realtime.assignmentBroadcasts, isEmpty);
         expect(state.undispatchedOrders.map((o) => o.id), ['ORD-A']);
       },
     );

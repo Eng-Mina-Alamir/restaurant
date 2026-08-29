@@ -91,13 +91,6 @@ void main() {
         'https://iovxfvkaswdediephqep.supabase.co/rest/v1',
       );
     });
-
-    test('wsUrl is derived', () {
-      expect(
-        EnvironmentConfig.wsUrl,
-        'wss://iovxfvkaswdediephqep.supabase.co/realtime/v1/websocket',
-      );
-    });
   });
 
   group('ApiEndpoints', () {
