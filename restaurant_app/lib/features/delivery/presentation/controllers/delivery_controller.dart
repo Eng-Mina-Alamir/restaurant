@@ -53,6 +53,11 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   final SupabaseRealtimeService? _realtimeService;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
+  /// Minimum interval between successive driver-location DB writes to avoid
+  /// excessive Supabase usage during continuous urban driving.
+  static const Duration _locationWriteThrottle = Duration(seconds: 5);
+  DateTime? _lastLocationWrite;
+
   /// Optional hook fired after an assignment lands on
   /// [DeliveryStatus.delivered] so the PARENT order advances too (driver
   /// devices don't load every order, so the provider wiring writes via the
@@ -145,9 +150,18 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
 
   /// Updates live driver GPS location.
   ///
+  /// Writes are throttled to [_locationWriteThrottle] to avoid excessive
+  /// Supabase DB upserts and Realtime broadcasts during continuous driving.
   /// When the driver has an in-transit assignment its orderId is attached to
   /// the payload so customer tracking pages can scope updates per order.
   void updateLocation({required double latitude, required double longitude}) {
+    final now = DateTime.now();
+    if (_lastLocationWrite != null &&
+        now.difference(_lastLocationWrite!) < _locationWriteThrottle) {
+      return; // Throttled — too soon since last write.
+    }
+    _lastLocationWrite = now;
+
     String? activeOrderId;
     for (final a in state) {
       if (a.deliveryStatus == DeliveryStatus.inTransit) {
@@ -248,15 +262,10 @@ final deliveryControllerProvider =
 /// cancelled order.
 Future<void> _completeParentOrder(Ref ref, String orderId) async {
   final orderRepo = ref.read(orderRepositoryProvider);
-  final current = await orderRepo.getOrders();
-  final order = current.when(
+  final result = await orderRepo.getOrderById(orderId);
+  final order = result.when(
     onLeft: (_) => null,
-    onRight: (orders) {
-      for (final o in orders) {
-        if (o.id == orderId) return o;
-      }
-      return null;
-    },
+    onRight: (o) => o,
   );
   if (order == null || order.status.isTerminal) return;
   await orderRepo.updateOrderStatus(

@@ -106,8 +106,9 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   /// second, or back-to-back realtime events) into ONE refresh pass.
   static const Duration _debounceWindow = Duration(milliseconds: 300);
 
-  /// Guard to prevent concurrent refresh passes from clobbering each other.
-  bool _refreshInFlight = false;
+  /// Guard tracking an in-flight refresh pass so concurrent callers await the
+  /// same pass instead of dropping or clobbering.
+  Future<void>? _activeRefresh;
 
   /// Queues a debounced refresh pass; safe to call rapidly from `ref.listen`
   /// or realtime listeners.
@@ -123,78 +124,94 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   /// Pulls the latest drivers and classifies delivery orders against the
   /// repository assignments.
   ///
-  /// Safe to call concurrently: an in-flight pass causes subsequent calls to
-  /// early-return without re-fetching.
-  Future<void> refresh() async {
-    if (_refreshInFlight) return;
-    _refreshInFlight = true;
+  /// Safe to call concurrently: concurrent calls join the active in-flight pass.
+  Future<void> refresh() {
+    if (_activeRefresh != null) return _activeRefresh!;
+    final completer = Completer<void>();
+    _activeRefresh = completer.future;
 
     final previous = state.valueOrNull ?? const DispatchBoardState();
     state = AsyncValue.data(previous.copyWith(isLoading: true, errorMessage: null));
 
-    try {
-      // 1. Fetch available drivers.
-      final driversResult = await _repository.getAvailableDrivers();
-      final drivers = driversResult.when(
-        onLeft: (failure) {
-          AppLogger.warning(
-            '[Dispatch] Failed to fetch drivers for board: ${failure.message}',
-          );
-          return <DriverInfo>[];
-        },
-        onRight: (list) => list,
-      );
-
-      // 2. Classify delivery orders that need driver attention.
-      final allOrders = _ordersSource();
-      final candidates = allOrders.where((o) {
-        // In-scope: ready delivery orders needing driver dispatch.
-        return o.status == OrderStatus.ready;
-      }).toList();
-
-      final undispatched = <OrderEntity>[];
-      final failed = <FailedAssignmentEntry>[];
-
-      for (final order in candidates) {
-        final assignmentResult = await _repository.getAssignmentByOrderId(order.id);
-        assignmentResult.when(
-          onLeft: (_) {
-            // Treat lookup failures gracefully as undispatched.
-            undispatched.add(order);
+    () async {
+      try {
+        // 1. Fetch available drivers.
+        final driversResult = await _repository.getAvailableDrivers();
+        final drivers = driversResult.when(
+          onLeft: (failure) {
+            AppLogger.warning(
+              '[Dispatch] Failed to fetch drivers for board: ${failure.message}',
+            );
+            return <DriverInfo>[];
           },
-          onRight: (assignment) {
-            if (assignment == null) {
-              undispatched.add(order);
-            } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
-              failed.add(FailedAssignmentEntry(order: order, assignment: assignment));
+          onRight: (list) => list,
+        );
+
+        // 2. Bulk-fetch all active assignments in ONE query instead of
+        // per-order lookups (avoids N+1 DB reads during busy periods).
+        final assignmentsResult = await _repository.getActiveAssignments();
+        final assignmentsByOrder = <String, DeliveryAssignment>{};
+        assignmentsResult.when(
+          onLeft: (failure) {
+            AppLogger.warning(
+              '[Dispatch] Failed to fetch active assignments: ${failure.message}',
+            );
+          },
+          onRight: (list) {
+            for (final a in list) {
+              assignmentsByOrder.putIfAbsent(a.orderId, () => a);
             }
-            // active / accepted / delivering assignments are intentionally
-            // omitted from the manual board.
           },
         );
-      }
 
-      if (!mounted) return;
-      state = AsyncValue.data(
-        DispatchBoardState(
-          undispatchedOrders: undispatched,
-          failedAssignments: failed,
-          availableDrivers: drivers,
-          isLoading: false,
-        ),
-      );
-    } catch (e, st) {
-      AppLogger.error('[Dispatch] Board refresh failed', error: e, stackTrace: st);
-      if (!mounted) return;
-      state = AsyncValue.data(
-        previous.copyWith(
-          isLoading: false,
-          errorMessage: 'تعذر تحديث لوحة التوزيع: $e',
-        ),
-      );
-    } finally {
-      _refreshInFlight = false;
-    }
+        // 3. Classify delivery orders that need driver attention.
+        final allOrders = _ordersSource();
+        final candidates = allOrders.where((o) {
+          // In-scope: delivery orders that are ready or later, non-terminal.
+          return o.orderType == OrderType.delivery &&
+              !o.status.isTerminal &&
+              o.status.index >= OrderStatus.ready.index;
+        }).toList();
+
+        final undispatched = <OrderEntity>[];
+        final failed = <FailedAssignmentEntry>[];
+
+        for (final order in candidates) {
+          final assignment = assignmentsByOrder[order.id];
+          if (assignment == null) {
+            undispatched.add(order);
+          } else if (assignment.deliveryStatus == DeliveryStatus.failed) {
+            failed.add(FailedAssignmentEntry(order: order, assignment: assignment));
+          }
+          // active / accepted / delivering assignments are intentionally
+          // omitted from the manual board.
+        }
+
+        if (!mounted) return;
+        state = AsyncValue.data(
+          DispatchBoardState(
+            undispatchedOrders: undispatched,
+            failedAssignments: failed,
+            availableDrivers: drivers,
+            isLoading: false,
+          ),
+        );
+      } catch (e, st) {
+        AppLogger.error('[Dispatch] Board refresh failed', error: e, stackTrace: st);
+        if (!mounted) return;
+        state = AsyncValue.data(
+          previous.copyWith(
+            isLoading: false,
+            errorMessage: 'تعذر تحديث لوحة التوزيع: $e',
+          ),
+        );
+      } finally {
+        _activeRefresh = null;
+        completer.complete();
+      }
+    }();
+
+    return completer.future;
   }
 
   /// Lock guarding manual assignments so two simultaneous button taps

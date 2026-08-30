@@ -16,6 +16,9 @@ abstract class OrderRepository {
   /// Returns all orders placed in the current session, oldest first.
   Future<Either<Failure, List<OrderEntity>>> getOrders();
 
+  /// Returns a single order by [orderId], or null if not found.
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId);
+
   /// Updates the status of an existing order.
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,

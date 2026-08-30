@@ -28,10 +28,13 @@ class SupabaseRealtimeService {
   bool _isSubscribed = false;
 
   /// Stream of live real-time events.
-  Stream<RealtimeEvent> get events {
+  Stream<RealtimeEvent> get stream {
     _controller ??= StreamController<RealtimeEvent>.broadcast();
     return _controller!.stream;
   }
+
+  /// Alias for [stream].
+  Stream<RealtimeEvent> get events => stream;
 
   /// Subscribes to Supabase Realtime channels.
   void subscribe() {
@@ -184,9 +187,12 @@ class SupabaseRealtimeService {
               schema: 'public',
               table: SupabaseConfig.deliveryAssignmentsTable,
               callback: (payload) {
+                AppLogger.info(
+                  'Realtime Delivery Assignment Updated: ${payload.newRecord['id']}',
+                );
                 _controller?.add(
                   RealtimeEvent(
-                    type: RealtimeEventType.deliveryAssignmentCreated,
+                    type: RealtimeEventType.deliveryAssignmentUpdated,
                     payload: payload.newRecord,
                   ),
                 );
@@ -194,6 +200,7 @@ class SupabaseRealtimeService {
             )
             ..subscribe();
     } catch (e, st) {
+      _isSubscribed = false;
       AppLogger.error('Failed to subscribe to Supabase Realtime channels: $e', error: e, stackTrace: st);
     }
   }

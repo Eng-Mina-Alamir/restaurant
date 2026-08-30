@@ -120,6 +120,27 @@ void main() {
       expect(emittedEvents.first.payload['table_number'], 1);
     });
 
+    test('stream getter exposes events and stream aliases events', () async {
+      final streamEvents = <RealtimeEvent>[];
+      final eventsList = <RealtimeEvent>[];
+      final sub1 = service.stream.listen(streamEvents.add);
+      final sub2 = service.events.listen(eventsList.add);
+      addTearDown(sub1.cancel);
+      addTearDown(sub2.cancel);
+
+      const event = RealtimeEvent(
+        type: RealtimeEventType.deliveryAssignmentUpdated,
+        payload: {'id': 'DA-1', 'status': 'picked_up'},
+      );
+      service.emit(event);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(streamEvents.length, 1);
+      expect(streamEvents.first.type, RealtimeEventType.deliveryAssignmentUpdated);
+      expect(eventsList.length, 1);
+      expect(eventsList.first.type, RealtimeEventType.deliveryAssignmentUpdated);
+    });
+
     test('subscribe can be called safely without crashing', () {
       expect(() => service.subscribe(), returnsNormally);
       // Double subscription should be idempotent

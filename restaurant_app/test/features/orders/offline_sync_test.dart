@@ -34,6 +34,10 @@ class _RecordingOrderRepository implements OrderRepository {
   Future<Either<Failure, List<OrderEntity>>> getOrders() => _inner.getOrders();
 
   @override
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) =>
+      _inner.getOrderById(orderId);
+
+  @override
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
     OrderStatus status,
@@ -242,6 +246,10 @@ class _AlwaysFailingRepository implements OrderRepository {
   @override
   Future<Either<Failure, List<OrderEntity>>> getOrders() async =>
       const Right<Failure, List<OrderEntity>>(<OrderEntity>[]);
+
+  @override
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) async =>
+      const Right<Failure, OrderEntity?>(null);
 
   @override
   Future<Either<Failure, void>> updateOrderStatus(

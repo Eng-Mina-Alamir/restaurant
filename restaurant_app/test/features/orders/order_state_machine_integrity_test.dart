@@ -18,16 +18,16 @@ Map<String, dynamic> _orderJson(
   double subtotal = 100.0,
 }) => {
   'id': id,
-  'restaurant_id': 'rest-test',
-  'order_type': orderType,
+  'restaurantId': 'rest-test',
+  'orderType': orderType,
   'status': status,
-  'table_id': tableId ?? 't1',
+  'tableId': tableId ?? 't1',
   'subtotal': subtotal,
-  'tax_amount': subtotal * 0.15,
-  'discount_amount': 0.0,
-  'total_amount': subtotal * 1.15,
-  'items_json': const <dynamic>[],
-  'created_at': DateTime.now().toIso8601String(),
+  'taxAmount': subtotal * 0.15,
+  'discountAmount': 0.0,
+  'totalAmount': subtotal * 1.15,
+  'items': const <dynamic>[],
+  'createdAt': DateTime.now().toIso8601String(),
 };
 
 SupabaseRealtimeService _createTestRealtime() {

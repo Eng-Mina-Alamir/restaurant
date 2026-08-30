@@ -11,6 +11,7 @@ enum RealtimeEventType {
   tableServiceHandled,
   driverLocationUpdated,
   deliveryAssignmentCreated,
+  deliveryAssignmentUpdated,
   unknown,
 }
 
@@ -76,6 +77,9 @@ class RealtimeEvent {
       case 'deliveryAssignmentCreated':
       case 'delivery_assignment_created':
         return RealtimeEventType.deliveryAssignmentCreated;
+      case 'deliveryAssignmentUpdated':
+      case 'delivery_assignment_updated':
+        return RealtimeEventType.deliveryAssignmentUpdated;
       default:
         return RealtimeEventType.unknown;
     }

@@ -39,6 +39,15 @@ class _FakeOrderRepository implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) async {
+    final match = orders.cast<OrderEntity?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    return Right(match);
+  }
+
+  @override
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
     OrderStatus status,

@@ -285,7 +285,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
               accuracy: LocationAccuracy.high,
-              distanceFilter: 10,
+              distanceFilter: 50,
             ),
           ).listen((p) {
             if (!mounted) return;

@@ -161,6 +161,29 @@ class SupabaseOrderRepository implements OrderRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) async {
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .select()
+          .eq('id', orderId)
+          .limit(1);
+      final rows = response as List;
+      if (rows.isEmpty) {
+        return const Right<Failure, OrderEntity?>(null);
+      }
+      return Right<Failure, OrderEntity?>(
+        _orderFromRow(Map<String, dynamic>.from(rows.first as Map)),
+      );
+    } catch (e) {
+      AppLogger.error('Supabase getOrderById error: $e (orderId=$orderId)');
+      return Left<Failure, OrderEntity?>(
+        ServerFailure('فشل جلب الطلب: $e'),
+      );
+    }
+  }
+
   /// Maps a raw `orders` row (including `items_json`) into an [OrderEntity].
   ///
   /// Shared by [getOrders] and the claim/revert flows so assignment columns

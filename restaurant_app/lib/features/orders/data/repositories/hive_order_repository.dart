@@ -49,6 +49,23 @@ class HiveOrderRepository implements OrderRepository {
   }
 
   @override
+  Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) async {
+    try {
+      final all = await _loadAll();
+      final match = all.cast<OrderEntity?>().firstWhere(
+        (o) => o?.id == orderId,
+        orElse: () => null,
+      );
+      return Right<Failure, OrderEntity?>(match);
+    } catch (e) {
+      AppLogger.warning(
+        'HiveOrderRepository.getOrderById failed for order $orderId: $e',
+      );
+      return const Left<Failure, OrderEntity?>(CacheFailure());
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
     OrderStatus status,

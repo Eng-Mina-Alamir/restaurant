@@ -140,7 +140,7 @@ void main() {
       expect(controller.state.first.deliveryStatus, DeliveryStatus.failed);
     });
 
-    test('realtime deliveryAssignmentCreated appends assigned deliveries', () {
+    test('realtime deliveryAssignmentCreated appends assigned deliveries', () async {
       final assignment = DeliveryAssignment(
         id: 'del-2',
         orderId: 'ORD-2',
@@ -156,6 +156,7 @@ void main() {
           payload: assignment.toJson(),
         ),
       );
+      await Future<void>.delayed(Duration.zero);
 
       expect(controller.state, hasLength(2));
       expect(controller.state.any((a) => a.id == 'del-2'), isTrue);

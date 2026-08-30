@@ -70,6 +70,26 @@ void main() {
       expect(event.payload['latitude'], 24.7136);
     });
 
+    test('parses deliveryAssignmentCreated event', () {
+      final raw = jsonEncode({
+        'type': 'deliveryAssignmentCreated',
+        'data': {'id': 'da-1', 'driver_id': 'drv-1', 'order_id': 'ord-1'},
+      });
+      final event = RealtimeEvent.fromRaw(raw);
+      expect(event.type, RealtimeEventType.deliveryAssignmentCreated);
+      expect(event.payload['driver_id'], 'drv-1');
+    });
+
+    test('parses deliveryAssignmentUpdated event with snake_case', () {
+      final raw = jsonEncode({
+        'type': 'delivery_assignment_updated',
+        'data': {'id': 'da-1', 'status': 'completed'},
+      });
+      final event = RealtimeEvent.fromRaw(raw);
+      expect(event.type, RealtimeEventType.deliveryAssignmentUpdated);
+      expect(event.payload['status'], 'completed');
+    });
+
     test('handles invalid json gracefully', () {
       final event = RealtimeEvent.fromRaw('not valid json');
       expect(event.type, RealtimeEventType.unknown);
