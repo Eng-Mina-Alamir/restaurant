@@ -8,6 +8,7 @@ import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
 import '../../../customer/presentation/controllers/curbside_controller.dart';
 import '../../../customer/presentation/controllers/customer_wallet_controller.dart';
@@ -69,14 +70,24 @@ class _CartPageState extends ConsumerState<CartPage> {
         ? walletState.balance.clamp(0.0, totals.totalAmount)
         : 0.0;
 
-    setState(() => _placing = true);
-    final order = await ref
-        .read(ordersControllerProvider.notifier)
-        .placeOrder(
-          paymentMethod: payment,
-          orderType: orderType,
-          deliveryAddress: deliveryAddress,
-        );
+    final activeTable = ref.read(activeTableIdProvider);
+    final currentUserId = ref.read(authControllerProvider).user?.id;
+    final order = (orderType == OrderType.dineIn && activeTable != null)
+        ? await ref
+            .read(ordersControllerProvider.notifier)
+            .placeOrderForTable(
+              activeTable,
+              customerId: currentUserId,
+              paymentMethod: payment,
+            )
+        : await ref
+            .read(ordersControllerProvider.notifier)
+            .placeOrder(
+              customerId: currentUserId,
+              paymentMethod: payment,
+              orderType: orderType,
+              deliveryAddress: deliveryAddress,
+            );
 
     if (!mounted) return;
     setState(() => _placing = false);

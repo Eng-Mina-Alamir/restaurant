@@ -252,58 +252,67 @@ class _OrderHistoryCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: [
                 // Chat with the assigned driver (delivery orders only).
                 if (assignment != null)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      end: AppSpacing.sm,
-                    ),
-                    child: Semantics(
-                      label: 'محادثة السائق',
-                      button: true,
-                      child: IconButton(
-                        tooltip: 'محادثة السائق',
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                        onPressed: () => context.push('/chat/${order.id}'),
-                      ),
+                  Semantics(
+                    label: 'محادثة السائق',
+                    button: true,
+                    child: IconButton.filledTonal(
+                      tooltip: 'محادثة السائق',
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      onPressed: () => context.push('/chat/${order.id}'),
                     ),
                   ),
                 if (!order.status.isTerminal)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      end: AppSpacing.sm,
+                  FilledButton.tonalIcon(
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 4,
+                      ),
                     ),
-                    child: FilledButton.tonalIcon(
-                      onPressed: () =>
-                          context.push('/customer/track/${order.id}'),
-                      icon: const Icon(Icons.location_on, size: 16),
-                      label: const Text('تتبع'),
-                    ),
+                    onPressed: () =>
+                        context.push('/customer/track/${order.id}'),
+                    icon: const Icon(Icons.location_on, size: 16),
+                    label: const Text('تتبع'),
                   ),
                 // Rate the driver once the delivery is complete.
                 if (assignment != null &&
                     assignment.deliveryStatus == DeliveryStatus.delivered)
-                  Padding(
-                    padding: const EdgeInsetsDirectional.only(
-                      end: AppSpacing.sm,
-                    ),
-                    child: OutlinedButton.icon(
-                      onPressed: () => RatingDialog.show(
-                        context,
-                        targetId: assignment.driverId,
-                        targetType: RatingTargetType.driver,
-                        title: AppConstants.rateDriverDialogTitle,
-                        subtitle: AppConstants.rateDriverDialogSubtitle,
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: 4,
                       ),
-                      icon: const Icon(Icons.rate_review, size: 16),
-                      label: const Text(AppConstants.rateDriverAction),
                     ),
+                    onPressed: () => RatingDialog.show(
+                      context,
+                      targetId: assignment.driverId,
+                      targetType: RatingTargetType.driver,
+                      title: AppConstants.rateDriverDialogTitle,
+                      subtitle: AppConstants.rateDriverDialogSubtitle,
+                    ),
+                    icon: const Icon(Icons.rate_review, size: 16),
+                    label: const Text(AppConstants.rateDriverAction),
                   ),
                 OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: 4,
+                    ),
+                  ),
                   onPressed: onReorder,
                   icon: const Icon(Icons.replay, size: 16),
                   label: const Text(AppConstants.reorderAction),

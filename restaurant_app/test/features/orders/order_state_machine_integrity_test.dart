@@ -45,11 +45,12 @@ void main() {
       expect(OrderStatus.pending.canTransitionTo(OrderStatus.confirmed), isTrue);
       expect(OrderStatus.pending.canTransitionTo(OrderStatus.preparing), isTrue);
       expect(OrderStatus.pending.canTransitionTo(OrderStatus.ready), isFalse);
-      expect(OrderStatus.pending.canTransitionTo(OrderStatus.completed), isFalse);
+      expect(OrderStatus.pending.canTransitionTo(OrderStatus.completed), isTrue);
       expect(OrderStatus.pending.canTransitionTo(OrderStatus.cancelled), isTrue);
 
       expect(OrderStatus.confirmed.canTransitionTo(OrderStatus.preparing), isTrue);
       expect(OrderStatus.confirmed.canTransitionTo(OrderStatus.ready), isFalse);
+      expect(OrderStatus.confirmed.canTransitionTo(OrderStatus.completed), isTrue);
       expect(OrderStatus.confirmed.canTransitionTo(OrderStatus.cancelled), isTrue);
 
       expect(OrderStatus.preparing.canTransitionTo(OrderStatus.ready), isTrue);

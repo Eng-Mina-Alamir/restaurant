@@ -1,6 +1,7 @@
 import '../../cart/domain/entities/cart_item.dart';
 import '../../cart/domain/cart_totals.dart';
 import '../../../core/domain/enums.dart';
+import '../../../core/utils/financial_calculator.dart';
 import '../../../core/utils/logger.dart';
 import 'entities/order_entity.dart';
 import 'entities/order_item.dart';
@@ -50,6 +51,7 @@ abstract final class OrderMapper {
     required String restaurantId,
     required List<CartItem> cartItems,
     required DateTime createdAt,
+    String? customerId,
     PaymentMethod? paymentMethod,
     double discountAmount = 0.0,
     OrderType? orderType,
@@ -67,6 +69,7 @@ abstract final class OrderMapper {
     return OrderEntity(
       id: orderId,
       restaurantId: restaurantId,
+      customerId: customerId,
       orderType: orderType ?? OrderType.takeaway,
       status: OrderStatus.pending,
       paymentMethod: paymentMethod,
@@ -93,6 +96,7 @@ abstract final class OrderMapper {
     required String deliveryAddress,
     required List<CartItem> cartItems,
     required DateTime createdAt,
+    String? customerId,
     PaymentMethod? paymentMethod,
     double discountAmount = 0.0,
     String? deliveryNotes,
@@ -108,6 +112,7 @@ abstract final class OrderMapper {
     return OrderEntity(
       id: orderId,
       restaurantId: restaurantId,
+      customerId: customerId,
       orderType: OrderType.delivery,
       status: OrderStatus.pending,
       paymentMethod: paymentMethod,
@@ -130,6 +135,8 @@ abstract final class OrderMapper {
     required String tableId,
     required List<CartItem> cartItems,
     required DateTime createdAt,
+    String? customerId,
+    String? waiterId,
     PaymentMethod? paymentMethod,
     double discountAmount = 0.0,
   }) {
@@ -144,7 +151,9 @@ abstract final class OrderMapper {
     return OrderEntity(
       id: orderId,
       restaurantId: restaurantId,
+      customerId: customerId,
       tableId: tableId,
+      waiterId: waiterId,
       orderType: OrderType.dineIn,
       status: OrderStatus.pending,
       paymentMethod: paymentMethod,
@@ -175,9 +184,11 @@ abstract final class OrderMapper {
       (sum, item) => sum + item.itemTotal,
     );
     final discount = existingOrder.discountAmount;
-    final taxable = (subtotal - discount).clamp(0.0, double.infinity);
-    final taxAmount = taxable * 0.15; // 15% standard VAT
-    final totalAmount = taxable + taxAmount;
+    final taxable = FinancialCalculator.roundCurrency(
+      (subtotal - discount).clamp(0.0, double.infinity),
+    );
+    final taxAmount = FinancialCalculator.calculateVat(taxable);
+    final totalAmount = FinancialCalculator.roundCurrency(taxable + taxAmount);
 
     return existingOrder.copyWith(
       items: combinedItems,

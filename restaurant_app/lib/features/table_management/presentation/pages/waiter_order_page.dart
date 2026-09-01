@@ -9,6 +9,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../cart/domain/cart_totals.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
@@ -96,8 +97,10 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
         );
       }
     } else {
+      final currentStaffId = ref.read(authControllerProvider).user?.id;
       final order = await orders.placeOrderForTable(
         widget.tableId,
+        waiterId: currentStaffId,
         paymentMethod: payment,
       );
       if (order != null) {

@@ -218,6 +218,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                       deliveryLatLng: delivery,
                       pickupLabel: 'مطعم ليالي المحروسة',
                       deliveryLabel: assignment.deliveryLocation,
+                      trackDeviceGps: true,
                       showControls: true,
                       showNavigationHud: true,
                       showDeliveryRadius: true,

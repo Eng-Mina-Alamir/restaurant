@@ -304,23 +304,33 @@ class _GroupOrderRoomPageState extends ConsumerState<GroupOrderRoomPage> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
               children: [
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFC2410C),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 13,
+                    ),
                   ),
                   onPressed: _showCreateRoomDialog,
                   icon: const Icon(Icons.add_circle_outline_rounded),
-                  label: const Text('إنشاء غرفة جديدة', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'إنشاء غرفة جديدة',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                const SizedBox(width: AppSpacing.md),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 13,
+                    ),
                   ),
                   onPressed: _showJoinRoomDialog,
                   icon: const Icon(Icons.login_rounded),

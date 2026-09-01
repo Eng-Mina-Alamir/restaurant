@@ -69,17 +69,16 @@ class _CurbsidePickupSheetState extends ConsumerState<CurbsidePickupSheet> {
               const SizedBox(height: AppSpacing.md),
 
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.directions_car_rounded, color: Color(0xFFC2410C)),
-                      SizedBox(width: 8),
-                      Text(
-                        'بيانات استلام الوجبة من السيارة',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
+                  const Icon(Icons.directions_car_rounded, color: Color(0xFFC2410C)),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'بيانات استلام الوجبة من السيارة',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   if (curbsideInfo != null)
                     TextButton(

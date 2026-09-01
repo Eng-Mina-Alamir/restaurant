@@ -176,13 +176,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     // Phone Field
                     TextFormField(
                       controller: _phoneController,
+                      maxLength: 11,
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.telephoneNumber],
                       decoration: const InputDecoration(
                         labelText: 'رقم الهاتف',
                         prefixIcon: Icon(Icons.phone_outlined),
-                        hintText: '05xxxxxxxx أو 01xxxxxxxxx',
                       ),
                       validator: Validators.validatePhone,
                     ),

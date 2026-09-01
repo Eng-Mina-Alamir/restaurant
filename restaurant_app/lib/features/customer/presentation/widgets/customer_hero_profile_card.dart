@@ -77,67 +77,105 @@ class CustomerHeroProfileCard extends ConsumerWidget {
           // Top Row: Avatar + Greeting & Name + Dining/Delivery Location Pill
           Row(
             children: [
-              // Avatar with gradient border
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.tertiary,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(2),
-                child: CircleAvatar(
-                  backgroundColor: colorScheme.surface,
-                  child: Text(
-                    displayName.isNotEmpty ? displayName[0].toUpperCase() : '👤',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-
-              // Greeting & Customer Name
+              // Interactive Avatar + Greeting & Name
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      greeting,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      AppHaptics.selectionTap();
+                      _showAccountSummarySheet(context, ref, displayName, user?.email ?? 'customer@demo.local');
+                    },
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        children: [
+                          // Avatar with gradient border
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  colorScheme.primary,
+                                  colorScheme.tertiary,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.primary.withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(2),
+                            child: CircleAvatar(
+                              backgroundColor: colorScheme.surface,
+                              child: Text(
+                                displayName.isNotEmpty
+                                    ? displayName[0].toUpperCase()
+                                    : '👤',
+                                style: TextStyle(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+
+                          // Greeting & Customer Name
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        greeting,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelMedium?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Icon(
+                                      Icons.info_outline_rounded,
+                                      size: 13,
+                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.xs),
 
               // Dining / Delivery Service Mode Pill
               _ServiceModePill(
@@ -192,6 +230,149 @@ class CustomerHeroProfileCard extends ConsumerWidget {
     );
   }
 
+  void _showAccountSummarySheet(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+    String email,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: colorScheme.primaryContainer,
+                  child: Text(
+                    name.isNotEmpty ? name[0].toUpperCase() : '👤',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        email,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    'عميل مميز 👑',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 28),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.receipt_long_rounded),
+              title: const Text('سجل طلباتي'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/customer/orders');
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.health_and_safety_rounded),
+              title: const Text('الملف الصحي ومسببات الحساسية'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/customer/dietary-profile');
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.wallet_giftcard_rounded),
+              title: const Text('كروت الهدايا والمحفظة الرقمية'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/customer/gift-cards');
+              },
+            ),
+            const Divider(height: 16),
+            ListTile(
+              dense: true,
+              leading: Icon(Icons.logout_rounded, color: colorScheme.error),
+              title: Text(
+                'تسجيل الخروج',
+                style: TextStyle(
+                  color: colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref.read(authControllerProvider.notifier).logout();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _getGreetingMessage() {
     final hour = DateTime.now().hour;
     if (hour >= 5 && hour < 12) {
@@ -226,6 +407,7 @@ class _GlassStatPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
 
     return Semantics(
       button: true,
@@ -279,7 +461,9 @@ class _GlassStatPill extends StatelessWidget {
                     ),
                   ),
                   Icon(
-                    Icons.chevron_left_rounded,
+                    isRtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
                     size: 16,
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   ),

@@ -27,7 +27,10 @@ class CustomerDietaryProfilePage extends ConsumerWidget {
                 const SnackBar(content: Text('تمت إعادة ضبط التفضيلات الصحية')),
               );
             },
-            child: const Text('إعادة ضبط', style: TextStyle(color: Colors.redAccent)),
+            child: Text(
+              'إعادة ضبط',
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
           ),
         ],
       ),
@@ -118,14 +121,20 @@ class CustomerDietaryProfilePage extends ConsumerWidget {
                     ],
                   ),
                   selected: hasAllergy,
-                  selectedColor: Colors.red.shade100,
-                  checkmarkColor: Colors.red.shade900,
+                  selectedColor: theme.colorScheme.errorContainer,
+                  checkmarkColor: theme.colorScheme.onErrorContainer,
                   labelStyle: TextStyle(
-                    color: hasAllergy ? Colors.red.shade900 : theme.colorScheme.onSurface,
-                    fontWeight: hasAllergy ? FontWeight.bold : FontWeight.normal,
+                    color: hasAllergy
+                        ? theme.colorScheme.onErrorContainer
+                        : theme.colorScheme.onSurface,
+                    fontWeight:
+                        hasAllergy ? FontWeight.bold : FontWeight.normal,
                   ),
                   side: BorderSide(
-                    color: hasAllergy ? Colors.redAccent : theme.colorScheme.outlineVariant,
+                    color: hasAllergy
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.outlineVariant,
+                    width: hasAllergy ? 1.4 : 1.0,
                   ),
                   onSelected: (_) => controller.toggleAllergen(allergen),
                 );

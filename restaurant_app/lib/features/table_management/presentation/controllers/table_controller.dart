@@ -57,24 +57,30 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
           final index = state.indexWhere((t) => t.id == tableId);
           if (index == -1) return;
 
-          // Attempt full JSON deserialize or update status/orderId directly
-          RestaurantTable updated;
-          if (event.payload.containsKey('table_number') ||
-              event.payload.containsKey('tableNumber')) {
-            updated = RestaurantTable.fromJson(event.payload);
-          } else {
-            final statusStr = event.payload['status']?.toString();
-            final orderId = (event.payload['current_order_id'] ??
-                    event.payload['currentOrderId'])
-                ?.toString();
-            updated = state[index].copyWith(
-              status: statusStr != null
-                  ? TableStatus.fromName(statusStr)
-                  : state[index].status,
-              currentOrderId: orderId ?? state[index].currentOrderId,
-              lastUpdated: DateTime.now(),
-            );
-          }
+          final statusStr = event.payload['status']?.toString();
+          final orderId = (event.payload['current_order_id'] ??
+                  event.payload['currentOrderId'])
+              ?.toString();
+          final tableNum = ((event.payload['table_number'] ??
+                  event.payload['tableNumber']) as num?)
+              ?.toInt();
+          final capacity = (event.payload['capacity'] as num?)?.toInt();
+          final location = event.payload['location']?.toString();
+          final assignedWaiter = (event.payload['assigned_waiter_id'] ??
+                  event.payload['assignedWaiterId'])
+              ?.toString();
+
+          final updated = state[index].copyWith(
+            tableNumber: tableNum ?? state[index].tableNumber,
+            capacity: capacity ?? state[index].capacity,
+            location: location ?? state[index].location,
+            status: statusStr != null
+                ? TableStatus.fromName(statusStr)
+                : state[index].status,
+            currentOrderId: orderId ?? state[index].currentOrderId,
+            assignedWaiterId: assignedWaiter ?? state[index].assignedWaiterId,
+            lastUpdated: DateTime.now(),
+          );
           state = [...state]..[index] = updated;
         } catch (_) {}
       }

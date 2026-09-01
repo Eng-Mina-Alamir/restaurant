@@ -153,7 +153,10 @@ class MenuItemTile extends StatelessWidget {
                   const SizedBox(height: AppSpacing.sm),
 
                   // Metadata row: price + rating + prep time / popular tag
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xs,
                     children: [
                       Text(
                         Formatters.formatCurrency(item.price),
@@ -164,44 +167,52 @@ class MenuItemTile extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      if (item.rating != null) ...[
-                        Icon(
-                          Icons.star_rounded,
-                          size: 16,
-                          color: StatusColors.tone(
-                            SemanticTone.warning,
-                            theme.brightness,
-                          ),
+                      if (item.rating != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
+                              size: 16,
+                              color: StatusColors.tone(
+                                SemanticTone.warning,
+                                theme.brightness,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              item.rating!.toStringAsFixed(1),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 2),
-                        Text(
-                          item.rating!.toStringAsFixed(1),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      if (item.preparationTime != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 14,
+                              color: colorScheme.outline,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${item.preparationTime!.toInt()} دقيقة',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                      if (item.preparationTime != null) ...[
-                        const SizedBox(width: AppSpacing.sm),
-                        Icon(
-                          Icons.schedule_rounded,
-                          size: 14,
-                          color: colorScheme.outline,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${item.preparationTime!.toInt()} دقيقة',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                      if (isPopular) ...[
-                        const SizedBox(width: AppSpacing.xs),
+                      if (isPopular)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.deepOrange.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -215,7 +226,6 @@ class MenuItemTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ],

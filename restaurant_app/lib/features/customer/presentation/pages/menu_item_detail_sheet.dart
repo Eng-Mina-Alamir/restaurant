@@ -175,19 +175,19 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                           margin: const EdgeInsets.only(top: AppSpacing.sm),
                           padding: const EdgeInsets.all(AppSpacing.sm),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: colorScheme.errorContainer.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(AppRadius.md),
-                            border: Border.all(color: Colors.red.shade300),
+                            border: Border.all(color: colorScheme.error.withValues(alpha: 0.5)),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 22),
+                              Icon(Icons.warning_amber_rounded, color: colorScheme.error, size: 22),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   'تنبيه أمان: هذا الصنف يحتوي على (${conflicts.map((a) => a.labelAr).join("، ")}) المسجلة في ملفك الصحي!',
                                   style: TextStyle(
-                                    color: Colors.red.shade900,
+                                    color: colorScheme.onErrorContainer,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -512,6 +512,27 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
             final selectedMulti = _checkedOptionIds.contains(option.id);
             final isChosen = single ? selectedSingle : selectedMulti;
 
+            final priceBadge = option.extraPrice > 0
+                ? Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                    ),
+                    child: Text(
+                      '+${Formatters.formatCurrency(option.extraPrice)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : null;
+
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 2),
               decoration: BoxDecoration(
@@ -520,53 +541,59 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: CheckboxListTile(
-                dense: true,
-                value: isChosen,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                title: Text(
-                  option.name,
-                  style: TextStyle(
-                    fontWeight: isChosen ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                secondary: option.extraPrice > 0
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+              child: single
+                  ? ListTile(
+                      dense: true,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      leading: Icon(
+                        isChosen
+                            ? Icons.radio_button_checked_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        color: isChosen
+                            ? colorScheme.primary
+                            : colorScheme.outline,
+                        size: 20,
+                      ),
+                      title: Text(
+                        option.name,
+                        style: TextStyle(
+                          fontWeight:
+                              isChosen ? FontWeight.bold : FontWeight.normal,
                         ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                        child: Text(
-                          '+${Formatters.formatCurrency(option.extraPrice)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      )
-                    : null,
-                controlAffinity: ListTileControlAffinity.leading,
-                onChanged: single
-                    ? (_) => setState(() {
-                        _selectedOptionByGroup[group.id] = selectedSingle
-                            ? null
+                      ),
+                      trailing: priceBadge,
+                      onTap: () => setState(() {
+                        _selectedOptionByGroup[group.id] = isChosen
+                            ? (group.isRequired ? option.id : null)
                             : option.id;
-                      })
-                    : (_) => setState(() {
+                      }),
+                    )
+                  : CheckboxListTile(
+                      dense: true,
+                      value: isChosen,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      title: Text(
+                        option.name,
+                        style: TextStyle(
+                          fontWeight:
+                              isChosen ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                      secondary: priceBadge,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (_) => setState(() {
                         if (selectedMulti) {
                           _checkedOptionIds.remove(option.id);
-                        } else if (_checkedOptionIds.length < group.maxSelection) {
+                        } else if (_checkedOptionIds.length <
+                            group.maxSelection) {
                           _checkedOptionIds.add(option.id);
                         }
                       }),
-              ),
+                    ),
             );
           }),
         ],

@@ -193,10 +193,12 @@ class LiveTrackingMap extends StatefulWidget {
     super.key,
     required this.pickupLatLng,
     required this.deliveryLatLng,
+    this.driverLatLng,
+    this.trackDeviceGps = false,
     this.pickupLabel = 'المطعم',
     this.deliveryLabel = 'العميل',
     this.onLocationUpdate,
-    this.initialTheme = AppMapThemeOption.voyager,
+    this.initialTheme = AppMapThemeOption.standard,
     this.showControls = true,
     this.showNavigationHud = true,
     this.showDeliveryRadius = false,
@@ -206,6 +208,8 @@ class LiveTrackingMap extends StatefulWidget {
 
   final LatLng pickupLatLng;
   final LatLng deliveryLatLng;
+  final LatLng? driverLatLng;
+  final bool trackDeviceGps;
   final String pickupLabel;
   final String deliveryLabel;
   final ValueChanged<LatLng>? onLocationUpdate;
@@ -243,14 +247,25 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
     super.initState();
     _currentTheme = widget.initialTheme;
     _showRadiusCircle = widget.showDeliveryRadius;
-    _initLocation();
+    _driverPosition = widget.driverLatLng ?? widget.pickupLatLng;
+    if (widget.trackDeviceGps) {
+      _initLocation();
+    } else {
+      _calculateAndDrawRoute();
+    }
   }
 
   @override
   void didUpdateWidget(covariant LiveTrackingMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    var needsRecalc = false;
+    if (widget.driverLatLng != oldWidget.driverLatLng && widget.driverLatLng != null) {
+      _driverPosition = widget.driverLatLng;
+      needsRecalc = true;
+    }
     if (oldWidget.pickupLatLng != widget.pickupLatLng ||
-        oldWidget.deliveryLatLng != widget.deliveryLatLng) {
+        oldWidget.deliveryLatLng != widget.deliveryLatLng ||
+        needsRecalc) {
       _calculateAndDrawRoute();
     }
   }

@@ -134,22 +134,37 @@ class OrderConfirmationPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                ScaleButton(
-                  onTap: () => context.push('/customer/track/${order.id}'),
-                  child: FilledButton.icon(
-                    onPressed: () =>
-                        context.push('/customer/track/${order.id}'),
-                    icon: const Icon(Icons.location_on),
-                    label: const Text('تتبع الطلب مباشرة'),
+                SizedBox(
+                  width: double.infinity,
+                  child: ScaleButton(
+                    onTap: () => context.push('/customer/track/${order.id}'),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () =>
+                          context.push('/customer/track/${order.id}'),
+                      icon: const Icon(Icons.location_on),
+                      label: const Text(
+                        'تتبع الطلب مباشرة',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                ScaleButton(
-                  onTap: () => context.go('/customer'),
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.go('/customer'),
-                    icon: const Icon(Icons.restaurant),
-                    label: const Text(AppConstants.backToMenu),
+                SizedBox(
+                  width: double.infinity,
+                  child: ScaleButton(
+                    onTap: () => context.go('/customer'),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => context.go('/customer'),
+                      icon: const Icon(Icons.restaurant),
+                      label: const Text(AppConstants.backToMenu),
+                    ),
                   ),
                 ),
               ],

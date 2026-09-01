@@ -19,6 +19,7 @@ import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
+import '../widgets/kds_driver_assignment_sheet.dart';
 import '../widgets/ticket_print_dialog.dart';
 
 /// Kitchen Display System: live order columns (pending / preparing / ready).
@@ -235,11 +236,30 @@ class _KdsPageState extends ConsumerState<KdsPage> {
           actions: [
             if (badge > 0)
               Padding(
-                padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
+                padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
                 child: Center(
-                  child: Badge(
-                    label: Text('$badge'),
-                    child: const Icon(Icons.notifications_active),
+                  child: Tooltip(
+                    message: '$badge طلبات جديدة واردة للمطبخ',
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      onTap: () {
+                        ref.read(newOrderNotifierProvider).reset();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('تم تأكيد مراجعة $badge تنبيهات للطلبات الجديدة 🛎️'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Badge(
+                          label: Text('$badge'),
+                          child: const Icon(Icons.notifications_active, color: Color(0xFFF59E0B)),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -433,6 +453,14 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     OrderEntity order,
   ) async {
     ref.read(newOrderNotifierProvider).reset();
+
+    // When advancing a delivery order to ready or when ready without a driver,
+    // prompt the chef to select the delivery driver directly.
+    if (order.orderType == OrderType.delivery && order.driverId == null) {
+      final assigned = await KdsDriverAssignmentSheet.show(context, order: order);
+      if (assigned == true) return;
+    }
+
     final next = _nextStatus(order.status);
     if (next == null) return;
     ref.read(kdsAlertServiceProvider).alertOrderReady();
@@ -617,7 +645,9 @@ class _OrderCard extends StatelessWidget {
     final buttonLabel = switch (order.status) {
       OrderStatus.pending => AppConstants.kdsPreparing,
       OrderStatus.preparing => AppConstants.kdsReady,
-      OrderStatus.ready => AppConstants.kdsCompleting,
+      OrderStatus.ready => order.orderType == OrderType.delivery
+          ? (order.driverId == null ? 'تسليم للمندوب' : 'تم التسليم للمندوب')
+          : AppConstants.kdsCompleting,
       _ => AppConstants.ok,
     };
 
@@ -711,14 +741,25 @@ class _OrderCard extends StatelessWidget {
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
                     else if (order.orderType == OrderType.delivery)
-                      const Chip(
+                      ActionChip(
                         avatar: Icon(
-                          Icons.local_shipping_outlined,
-                          size: 18,
+                          order.driverId != null
+                              ? Icons.two_wheeler_rounded
+                              : Icons.person_add_alt_1_rounded,
+                          size: 16,
+                          color: order.driverId != null
+                              ? const Color(0xFF10B981)
+                              : theme.colorScheme.primary,
                         ),
-                        label: Text('توصيل'),
+                        label: Text(
+                          order.driverId != null
+                              ? 'المندوب معيّن 🛵'
+                              : 'تعيين مندوب',
+                        ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () =>
+                            KdsDriverAssignmentSheet.show(context, order: order),
                       ),
                   ],
                 ),

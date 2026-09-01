@@ -12,6 +12,7 @@ import '../../../../core/utils/logger.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
+import '../../domain/entities/driver_info.dart';
 import '../../domain/repositories/delivery_repository.dart';
 import '../../data/repositories/hive_delivery_repository.dart';
 import '../../data/repositories/in_memory_delivery_repository.dart';
@@ -31,6 +32,20 @@ final deliveryRepositoryProvider = Provider<DeliveryRepository>((ref) {
   }
   if (cache != null) return HiveDeliveryRepository(cache);
   return InMemoryDeliveryRepository();
+});
+
+/// List of drivers currently available for delivery dispatch.
+final availableDriversProvider =
+    FutureProvider.autoDispose<List<DriverInfo>>((ref) async {
+  final repo = ref.watch(deliveryRepositoryProvider);
+  final result = await repo.getAvailableDrivers();
+  return result.when(
+    onLeft: (failure) {
+      AppLogger.warning('Failed to fetch available drivers: ${failure.message}');
+      return const <DriverInfo>[];
+    },
+    onRight: (drivers) => drivers,
+  );
 });
 
 /// Manages the current driver's delivery assignments and their status
@@ -88,7 +103,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
           // Only accept dispatches addressed to this driver.
           final targetDriverId = (event.payload['driver_id'] ?? event.payload['driverId'])?.toString();
           if (targetDriverId != _driverId) return;
-          final assignment = DeliveryAssignment.fromJson(event.payload);
+          final assignment = SupabaseDeliveryRepository.fromRow(event.payload);
           if (state.any((a) => a.id == assignment.id)) return;
           // Appending grows the state list — the driver home page watches it
           // to raise the "new assignment" cue.

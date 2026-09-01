@@ -253,39 +253,48 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
     'assignment_method': a.assignmentMethod,
   };
 
-  DeliveryAssignment _assignmentFromRow(Map<String, dynamic> map) {
+  static DeliveryAssignment _assignmentFromRow(Map<String, dynamic> map) {
     final dynamic driverRaw = map['driver'];
     final driverMap = driverRaw is Map
         ? Map<String, dynamic>.from(driverRaw)
         : const <String, dynamic>{};
+
+    final rawPickupTime = map['pickup_time'] ?? map['pickupTime'];
+    final rawDeliveredTime = map['delivered_time'] ?? map['deliveredTime'];
+    final rawAssignedAt = map['assigned_at'] ?? map['assignedAt'];
+
     return DeliveryAssignment(
       id: map['id']?.toString() ?? '',
-      orderId: map['order_id']?.toString() ?? '',
-      driverId: map['driver_id']?.toString() ?? '',
-      pickupTime: map['pickup_time'] != null
-          ? DateTime.tryParse(map['pickup_time'].toString()) ?? DateTime.now()
+      orderId: (map['order_id'] ?? map['orderId'])?.toString() ?? '',
+      driverId: (map['driver_id'] ?? map['driverId'])?.toString() ?? '',
+      pickupTime: rawPickupTime != null
+          ? DateTime.tryParse(rawPickupTime.toString()) ?? DateTime.now()
           : DateTime.now(),
-      deliveredTime: map['delivered_time'] == null
+      deliveredTime: rawDeliveredTime == null
           ? null
-          : DateTime.tryParse(map['delivered_time'].toString()),
-      deliveryLocation: map['delivery_location']?.toString() ?? '',
-      customerPhone: map['customer_phone']?.toString(),
+          : DateTime.tryParse(rawDeliveredTime.toString()),
+      deliveryLocation: (map['delivery_location'] ?? map['deliveryLocation'])?.toString() ?? '',
+      customerPhone: (map['customer_phone'] ?? map['customerPhone'])?.toString(),
       latitude: (map['latitude'] as num?)?.toDouble() ?? 0,
       longitude: (map['longitude'] as num?)?.toDouble() ?? 0,
       deliveryStatus: DeliveryStatus.fromName(
-        map['delivery_status'] as String?,
+        (map['delivery_status'] ?? map['deliveryStatus']) as String?,
       ),
-      deliveryFee: (map['delivery_fee'] as num?)?.toDouble(),
-      routeOptimized: map['route_optimized']?.toString(),
-      routeDistanceMeters: (map['route_distance_meters'] as num?)?.toDouble(),
-      driverName: driverMap['name']?.toString(),
-      driverPhone: driverMap['phone']?.toString(),
-      driverRating: (driverMap['rating'] as num?)?.toDouble(),
-      vehicleInfo: driverMap['vehicle_info']?.toString(),
-      assignmentMethod: map['assignment_method']?.toString() ?? 'auto',
-      assignedAt: map['assigned_at'] == null
+      deliveryFee: ((map['delivery_fee'] ?? map['deliveryFee']) as num?)?.toDouble(),
+      routeOptimized: (map['route_optimized'] ?? map['routeOptimized'])?.toString(),
+      routeDistanceMeters: ((map['route_distance_meters'] ?? map['routeDistanceMeters']) as num?)?.toDouble(),
+      driverName: driverMap['name']?.toString() ?? map['driver_name']?.toString() ?? map['driverName']?.toString(),
+      driverPhone: driverMap['phone']?.toString() ?? map['driver_phone']?.toString() ?? map['driverPhone']?.toString(),
+      driverRating: (driverMap['rating'] as num?)?.toDouble() ?? ((map['driver_rating'] ?? map['driverRating']) as num?)?.toDouble(),
+      vehicleInfo: driverMap['vehicle_info']?.toString() ?? map['vehicle_info']?.toString() ?? map['vehicleInfo']?.toString(),
+      assignmentMethod: (map['assignment_method'] ?? map['assignmentMethod'])?.toString() ?? 'auto',
+      assignedAt: rawAssignedAt == null
           ? null
-          : DateTime.tryParse(map['assigned_at'].toString()),
+          : DateTime.tryParse(rawAssignedAt.toString()),
     );
   }
+
+  /// Exposed parser for realtime event listeners
+  static DeliveryAssignment fromRow(Map<String, dynamic> map) =>
+      _assignmentFromRow(map);
 }

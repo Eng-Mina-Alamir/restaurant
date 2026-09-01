@@ -60,7 +60,7 @@ void main() {
     final order = await orders.placeOrder();
 
     expect(order, isNotNull);
-    expect(order!.id, 'ORD-0001');
+    expect(order!.id.startsWith('ORD-'), isTrue);
     expect(container.read(ordersControllerProvider), hasLength(1));
     expect(cart.state, isEmpty);
   });
@@ -71,7 +71,7 @@ void main() {
     expect(order, isNull);
   });
 
-  test('placeOrder increments the order number sequentially', () async {
+  test('placeOrder creates unique distinct order numbers', () async {
     final cart = container.read(cartControllerProvider.notifier);
 
     final orders = container.read(ordersControllerProvider.notifier);
@@ -80,8 +80,9 @@ void main() {
     cart.addItem(const CartItem(menuItem: burger));
     final second = await orders.placeOrder();
 
-    expect(first!.id, 'ORD-0001');
-    expect(second!.id, 'ORD-0002');
+    expect(first!.id.startsWith('ORD-'), isTrue);
+    expect(second!.id.startsWith('ORD-'), isTrue);
+    expect(first.id != second.id, isTrue);
   });
 
   test('updateStatus advances the order and keeps it in state', () async {

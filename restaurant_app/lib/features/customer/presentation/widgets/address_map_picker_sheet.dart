@@ -588,32 +588,31 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _isWithinRange
-                                ? Icons.check_circle_outline
-                                : Icons.warning_amber_rounded,
-                            size: 16,
+                      Icon(
+                        _isWithinRange
+                            ? Icons.check_circle_outline
+                            : Icons.warning_amber_rounded,
+                        size: 16,
+                        color: _isWithinRange
+                            ? colorScheme.primary
+                            : warningColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _isWithinRange
+                              ? 'ضمن نطاق التوصيل المتاح (${_distanceKm.toStringAsFixed(1)} كم عن المطعم)'
+                              : 'خارج نطاق التوصيل الأساسي (${_distanceKm.toStringAsFixed(1)} كم)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
                             color: _isWithinRange
                                 ? colorScheme.primary
                                 : warningColor,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _isWithinRange
-                                ? 'ضمن نطاق التوصيل المتاح (${_distanceKm.toStringAsFixed(1)} كم عن المطعم)'
-                                : 'خارج نطاق التوصيل الأساسي (${_distanceKm.toStringAsFixed(1)} كم)',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: _isWithinRange
-                                  ? colorScheme.primary
-                                  : warningColor,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),

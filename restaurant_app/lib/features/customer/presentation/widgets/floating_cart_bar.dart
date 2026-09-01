@@ -116,7 +116,9 @@ class FloatingCartBar extends ConsumerWidget {
                       ),
                       const SizedBox(width: 4),
                       Icon(
-                        Icons.arrow_forward_ios_rounded,
+                        Directionality.of(context) == TextDirection.rtl
+                            ? Icons.arrow_back_ios_rounded
+                            : Icons.arrow_forward_ios_rounded,
                         size: 14,
                         color: theme.colorScheme.onPrimary,
                       ),

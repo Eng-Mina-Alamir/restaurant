@@ -33,6 +33,9 @@ class SupabaseOrderRepository implements OrderRepository {
     return defaultFallback;
   }
 
+  static const String defaultRestaurantId =
+      '1e08b47c-15be-4604-a913-431af7fbd54f';
+
   @override
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
     try {
@@ -41,10 +44,12 @@ class SupabaseOrderRepository implements OrderRepository {
         'id': order.id,
         'restaurant_id': _sanitizeUuid(
           order.restaurantId,
-          defaultFallback: '00000000-0000-0000-0000-000000000001',
+          defaultFallback: defaultRestaurantId,
         ),
         'customer_id': _sanitizeUuid(order.customerId),
-        'table_id': _sanitizeUuid(order.tableId),
+        'table_id': order.tableId != null && order.tableId!.trim().isNotEmpty
+            ? order.tableId!.trim()
+            : null,
         'waiter_id': _sanitizeUuid(order.waiterId),
         'assigned_kitchen_id': _sanitizeUuid(order.assignedKitchenId),
         'driver_id': _sanitizeUuid(order.driverId),
@@ -194,45 +199,55 @@ class SupabaseOrderRepository implements OrderRepository {
 
   /// Maps a raw `orders` row (including `items_json`) into an [OrderEntity].
   ///
-  /// Shared by [getOrders] and the claim/revert flows so assignment columns
-  /// survive every read path.
+  /// Shared by [getOrders], realtime event handlers, and claim/revert flows.
   static OrderEntity _orderFromRow(Map<String, dynamic> map) {
     List<OrderItem> items = [];
-    if (map['items_json'] is List) {
-      items = (map['items_json'] as List)
-          .map((i) => OrderItem.fromJson(Map<String, dynamic>.from(i as Map)))
-          .toList();
+    final itemsSource = map['items_json'] ?? map['items'];
+    if (itemsSource is List) {
+      for (final raw in itemsSource) {
+        if (raw is Map) {
+          try {
+            items.add(OrderItem.fromJson(Map<String, dynamic>.from(raw)));
+          } catch (_) {}
+        }
+      }
     }
+
+    final rawCreatedAt = map['created_at'] ?? map['createdAt'];
+    final rawCompletedAt = map['completed_at'] ?? map['completedAt'];
 
     return OrderEntity(
       id: map['id']?.toString() ?? '',
-      restaurantId: map['restaurant_id'] as String? ?? 'restaurant-1',
-      customerId: map['customer_id'] as String?,
-      tableId: map['table_id'] as String?,
-      waiterId: map['waiter_id'] as String?,
-      assignedKitchenId: map['assigned_kitchen_id']?.toString(),
-      driverId: map['driver_id']?.toString(),
-      orderType: OrderType.fromName(map['order_type'] as String?),
+      restaurantId: (map['restaurant_id'] ?? map['restaurantId'])?.toString() ?? defaultRestaurantId,
+      customerId: (map['customer_id'] ?? map['customerId'])?.toString(),
+      tableId: (map['table_id'] ?? map['tableId'])?.toString(),
+      waiterId: (map['waiter_id'] ?? map['waiterId'])?.toString(),
+      assignedKitchenId: (map['assigned_kitchen_id'] ?? map['assignedKitchenId'])?.toString(),
+      driverId: (map['driver_id'] ?? map['driverId'])?.toString(),
+      orderType: OrderType.fromName((map['order_type'] ?? map['orderType']) as String?),
       items: items,
       status: OrderStatus.fromName(map['status'] as String?),
-      subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0.0,
-      taxAmount: (map['tax_amount'] as num?)?.toDouble() ?? 0.0,
-      discountAmount: (map['discount_amount'] as num?)?.toDouble() ?? 0.0,
-      totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0.0,
-      paymentMethod: map['payment_method'] != null
-          ? PaymentMethod.fromName(map['payment_method'] as String)
+      subtotal: ((map['subtotal'] ?? map['subTotal']) as num?)?.toDouble() ?? 0.0,
+      taxAmount: ((map['tax_amount'] ?? map['taxAmount']) as num?)?.toDouble() ?? 0.0,
+      discountAmount: ((map['discount_amount'] ?? map['discountAmount']) as num?)?.toDouble() ?? 0.0,
+      totalAmount: ((map['total_amount'] ?? map['totalAmount']) as num?)?.toDouble() ?? 0.0,
+      paymentMethod: (map['payment_method'] ?? map['paymentMethod']) != null
+          ? PaymentMethod.fromName((map['payment_method'] ?? map['paymentMethod']) as String)
           : null,
-      deliveryAddress: map['delivery_address'] as String?,
-      deliveryNotes: map['delivery_notes'] as String?,
-      createdAt: map['created_at'] != null
-          ? DateTime.tryParse(map['created_at'] as String) ?? DateTime.now()
+      deliveryAddress: (map['delivery_address'] ?? map['deliveryAddress']) as String?,
+      deliveryNotes: (map['delivery_notes'] ?? map['deliveryNotes']) as String?,
+      createdAt: rawCreatedAt != null
+          ? DateTime.tryParse(rawCreatedAt.toString()) ?? DateTime.now()
           : DateTime.now(),
-      completedAt: map['completed_at'] != null
-          ? DateTime.tryParse(map['completed_at'] as String)
+      completedAt: rawCompletedAt != null
+          ? DateTime.tryParse(rawCompletedAt.toString())
           : null,
-      estimatedMinutes: (map['estimated_minutes'] as num?)?.toInt(),
+      estimatedMinutes: ((map['estimated_minutes'] ?? map['estimatedMinutes']) as num?)?.toInt(),
     );
   }
+
+  /// Exposed parser for realtime event listeners
+  static OrderEntity fromRow(Map<String, dynamic> map) => _orderFromRow(map);
 
   @override
   Future<Either<Failure, OrderEntity>> claimOrder(
@@ -341,7 +356,11 @@ class SupabaseOrderRepository implements OrderRepository {
     }
   }
 
-  /// Updates status of an order in Supabase.
+  /// Updates status of an order in Supabase with server-side validation.
+  ///
+  /// The DB trigger `trg_validate_order_status` enforces valid transitions;
+  /// if the transition is illegal, the trigger will raise an exception that
+  /// surfaces as a [ServerFailure] here.
   @override
   Future<Either<Failure, void>> updateOrderStatus(
     String orderId,
@@ -358,7 +377,80 @@ class SupabaseOrderRepository implements OrderRepository {
           .eq('id', orderId);
       return const Right<Failure, void>(null);
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('Invalid status transition') ||
+          msg.contains('Cannot change status')) {
+        AppLogger.warning(
+          'updateOrderStatus: transition rejected by DB for $orderId: $msg',
+        );
+        return Left<Failure, void>(
+          ValidationFailure('تحويل الحالة غير مسموح: $msg'),
+        );
+      }
       return Left<Failure, void>(ServerFailure('فشل تحديث حالة الطلب: $e'));
+    }
+  }
+
+  /// Persists [items] to the `order_items` table for an existing order.
+  ///
+  /// Used by [addItemsToExistingOrder] to sync appended items to Supabase.
+  Future<Either<Failure, void>> persistOrderItems(
+    String orderId,
+    List<OrderItem> items,
+  ) async {
+    try {
+      final payload = items
+          .map(
+            (item) => <String, dynamic>{
+              'order_id': orderId,
+              'menu_item_id': item.menuItem.id,
+              'item_name': item.menuItem.name,
+              'price': item.menuItem.price,
+              'quantity': item.quantity,
+              'total_price': item.lineTotal,
+              'special_notes': item.specialNotes,
+              'modifiers_json': item.selectedModifiers
+                  .map((m) => m.toJson())
+                  .toList(),
+              'created_at': item.addedAt.toIso8601String(),
+            },
+          )
+          .toList();
+      if (payload.isEmpty) return const Right<Failure, void>(null);
+      await _supabase
+          .from(SupabaseConfig.orderItemsTable)
+          .insert(payload);
+
+      // Note: items_json column on orders is maintained by the initial
+      // createOrder upsert. For appended items the relational
+      // order_items rows are the source of truth.
+
+      return const Right<Failure, void>(null);
+    } catch (e) {
+      AppLogger.error('persistOrderItems error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل حفظ العناصر المضافة: $e'),
+      );
+    }
+  }
+
+  /// Updates the driver_id on the order row in Supabase.
+  Future<Either<Failure, void>> updateOrderDriverId(
+    String orderId,
+    String driverId,
+  ) async {
+    try {
+      final sanitizedId = _sanitizeUuid(driverId);
+      await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .update({'driver_id': sanitizedId})
+          .eq('id', orderId);
+      return const Right<Failure, void>(null);
+    } catch (e) {
+      AppLogger.error('updateOrderDriverId error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل ربط السائق بالطلب: $e'),
+      );
     }
   }
 

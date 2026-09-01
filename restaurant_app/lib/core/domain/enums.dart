@@ -101,9 +101,12 @@ enum OrderStatus {
       case OrderStatus.pending:
         return next == OrderStatus.confirmed ||
             next == OrderStatus.preparing ||
+            next == OrderStatus.completed ||
             next == OrderStatus.cancelled;
       case OrderStatus.confirmed:
-        return next == OrderStatus.preparing || next == OrderStatus.cancelled;
+        return next == OrderStatus.preparing ||
+            next == OrderStatus.completed ||
+            next == OrderStatus.cancelled;
       case OrderStatus.preparing:
         return next == OrderStatus.ready || next == OrderStatus.cancelled;
       case OrderStatus.ready:

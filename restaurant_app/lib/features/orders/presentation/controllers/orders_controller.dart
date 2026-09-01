@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,17 +13,19 @@ import '../../../../core/network/realtime_event.dart';
 import '../../../../core/notifications/new_order_notifier.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/supabase/supabase_realtime_service.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../../core/utils/financial_calculator.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
 import '../../../delivery/domain/entities/delivery_assignment.dart';
+import '../../../delivery/domain/repositories/delivery_repository.dart';
 import '../../../delivery/domain/services/delivery_fee_calculator.dart';
 import '../../../delivery/domain/services/driver_assignment_service.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../inventory/presentation/controllers/inventory_controller.dart';
+import '../../../loyalty/presentation/controllers/loyalty_controller.dart';
 import '../../../menu/data/menu_seed_data.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
@@ -76,9 +79,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
        _menuLookup = menuLookup,
        _onDeliveryOrderReady = onDeliveryOrderReady,
        _onOrderCompleted = onOrderCompleted,
-       super(const []) {
+        super(const []) {
     _initRealtime();
     _initConnectivity();
+    unawaited(loadOrders());
   }
 
   final OrderRepository _repository;
@@ -88,6 +92,33 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final ConnectivityService? _connectivityService;
   final OfflineQueueService? _offlineQueueService;
   final CartDiscountResolver? _discountResolver;
+
+  /// Loads existing active & recent orders from the repository.
+  Future<void> loadOrders() async {
+    try {
+      final result = await _repository.getOrders();
+      result.when(
+        onLeft: (failure) {
+          AppLogger.warning('OrdersController.loadOrders failed: ${failure.message}');
+        },
+        onRight: (orders) {
+          if (!mounted) return;
+          final existingMap = {for (final o in state) o.id: o};
+          for (final order in orders) {
+            existingMap.putIfAbsent(order.id, () => order);
+          }
+          final merged = existingMap.values.toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          state = merged;
+        },
+      );
+    } catch (e, st) {
+      AppLogger.error('OrdersController.loadOrders exception: $e', error: e, stackTrace: st);
+    }
+  }
+
+  /// Public method to refresh orders on-demand (e.g. pull-to-refresh).
+  Future<void> refreshOrders() => loadOrders();
 
   /// Live menu lookup used at checkout time to revalidate item availability
   /// and price; null disables revalidation (offline/demo mode).
@@ -167,7 +198,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       await queueService.drainWith((type, payload) async {
         if (type == 'createOrder') {
           try {
-            final order = OrderEntity.fromJson(payload);
+            final order = SupabaseOrderRepository.fromRow(payload);
             final result = await _repository.createOrder(order);
             if (result.isRight) {
               // Keep the UI mirror consistent with the persistent queue.
@@ -215,11 +246,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _realtimeSub = realtime.events.listen((event) {
       if (event.type == RealtimeEventType.orderCreated) {
         try {
-          final order = OrderEntity.fromJson(event.payload);
-          final exists = state.any((o) => o.id == order.id);
-          if (!exists) {
-            state = [...state, order];
+          final order = SupabaseOrderRepository.fromRow(event.payload);
+          final index = state.indexWhere((o) => o.id == order.id);
+          if (index == -1) {
+            state = [order, ...state];
             _newOrderNotifier.notifyNewOrder();
+          } else {
+            state = [...state]..[index] = order;
           }
         } catch (e, st) {
           AppLogger.warning(
@@ -229,7 +262,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       } else if (event.type == RealtimeEventType.orderStatusChanged ||
           event.type == RealtimeEventType.orderStatusReverted) {
         try {
-          final orderId = (event.payload['orderId'] ?? event.payload['id'])
+          final orderId = (event.payload['order_id'] ??
+                  event.payload['orderId'] ??
+                  event.payload['id'])
               ?.toString();
           final statusName = event.payload['status']?.toString();
           if (orderId == null || statusName == null) {
@@ -316,12 +351,27 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     }
   }
 
-  int get _nextNumber {
-    final maxNumber = state.fold<int>(0, (max, order) {
-      final n = Formatters.orderNumberFromId(order.id);
-      return (n ?? 0) > max ? (n ?? 0) : max;
-    });
-    return maxNumber + 1;
+  /// Collision-proof order ID: combines timestamp + random suffix.
+  ///
+  /// Format: `ORD-YYMMDD-HHMMSS-XXXX` where XXXX is a 4-digit random.
+  /// This gives readable IDs for cashiers while guaranteeing uniqueness
+  /// even with concurrent devices at millisecond precision.
+  String _generateOrderId() {
+    final now = DateTime.now();
+    final datePart = '${now.year % 100}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}';
+    final timePart = '${now.hour.toString().padLeft(2, '0')}'
+        '${now.minute.toString().padLeft(2, '0')}'
+        '${now.second.toString().padLeft(2, '0')}';
+    final randomSuffix = (Random().nextInt(9000) + 1000).toString();
+    final candidate = 'ORD-$datePart-$timePart-$randomSuffix';
+    // Double-check local state (exceedingly unlikely to collide)
+    if (!state.any((o) => o.id == candidate)) {
+      return candidate;
+    }
+    // Fallback with millisecond precision
+    return 'ORD-$datePart-${now.millisecondsSinceEpoch}';
   }
 
   /// Checkout-time revalidation: returns a localized rejection reason when
@@ -358,6 +408,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// success. [orderType] defaults to takeaway when null; [deliveryAddress]
   /// and [deliveryNotes] are persisted for delivery orders.
   Future<OrderEntity?> placeOrder({
+    String? customerId,
     PaymentMethod? paymentMethod,
     OrderType? orderType,
     String? deliveryAddress,
@@ -380,10 +431,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final createdAt = DateTime.now();
       final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForCustomer(
-        orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
+        orderId: _generateOrderId(),
         restaurantId: MenuSeedData.restaurantId,
         cartItems: cartItems,
         createdAt: createdAt,
+        customerId: customerId,
         paymentMethod: paymentMethod,
         discountAmount: discountAmount,
         orderType: orderType,
@@ -430,6 +482,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// contents, defaulting the type to [OrderType.dineIn].
   Future<OrderEntity?> placeOrderForTable(
     String tableId, {
+    String? customerId,
+    String? waiterId,
     PaymentMethod? paymentMethod,
   }) async {
     if (_placing) return null;
@@ -449,9 +503,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final createdAt = DateTime.now();
       final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForTable(
-        orderId: 'ORD-${_nextNumber.toString().padLeft(4, '0')}',
+        orderId: _generateOrderId(),
         restaurantId: MenuSeedData.restaurantId,
         tableId: tableId,
+        customerId: customerId,
+        waiterId: waiterId,
         cartItems: cartItems,
         createdAt: createdAt,
         paymentMethod: paymentMethod,
@@ -536,6 +592,14 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       _offlineQueue.add(updated);
     } else {
       await _repository.updateOrderStatus(existingOrderId, updated.status);
+      // Persist the new items to Supabase order_items table
+      final repo = _repository;
+      if (repo is SupabaseOrderRepository) {
+        final newOrderItems = newCartItems
+            .map((c) => OrderMapper.toOrderItem(c, timestamp: now))
+            .toList();
+        await repo.persistOrderItems(existingOrderId, newOrderItems);
+      }
     }
 
     AppHaptics.milestoneSuccess();
@@ -543,6 +607,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   }
 
   /// Completes and marks an order as paid, recording the payment method and timestamp.
+  ///
+  /// Uses [FinancialCalculator] for precise VAT/rounding to avoid halala
+  /// discrepancies.
   Future<OrderEntity?> completeAndPayOrder(
     String orderId, {
     required PaymentMethod paymentMethod,
@@ -554,9 +621,13 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     var order = state[index];
     if (discountAmount != null && discountAmount > 0) {
       final newSubtotal = order.subtotal;
-      final taxable = (newSubtotal - discountAmount).clamp(0.0, double.infinity);
-      final taxAmount = taxable * 0.15;
-      final totalAmount = taxable + taxAmount;
+      final taxable = FinancialCalculator.roundCurrency(
+        (newSubtotal - discountAmount).clamp(0.0, double.infinity),
+      );
+      final taxAmount = FinancialCalculator.calculateVat(taxable);
+      final totalAmount = FinancialCalculator.roundCurrency(
+        taxable + taxAmount,
+      );
       order = order.copyWith(
         discountAmount: discountAmount,
         taxAmount: taxAmount,
@@ -623,6 +694,77 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     }
 
     return result.when(onLeft: (_) => null, onRight: (_) => updated);
+  }
+
+  /// Assigns a driver to a delivery order (manual selection from KDS or Manager, or auto-assign).
+  ///
+  /// Also persists `driver_id` on the order row in Supabase so all clients
+  /// see the assignment.
+  Future<bool> assignDriver({
+    required String orderId,
+    required String driverId,
+    required DeliveryRepository deliveryRepo,
+    String assignmentMethod = 'manual',
+    String? driverName,
+    String? driverPhone,
+  }) async {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return false;
+
+    final order = state[index];
+    final now = DateTime.now();
+    final assignment = DeliveryAssignment(
+      id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
+      orderId: order.id,
+      driverId: driverId,
+      pickupTime: now,
+      deliveryLocation: order.deliveryAddress ?? '',
+      customerPhone: order.deliveryNotes,
+      deliveryStatus: DeliveryStatus.pending,
+      assignmentMethod: assignmentMethod,
+      assignedAt: now,
+      driverName: driverName,
+      driverPhone: driverPhone,
+    );
+
+    final createdResult = await deliveryRepo.createAssignment(assignment);
+    return createdResult.when(
+      onLeft: (failure) {
+        AppLogger.warning('Failed to create delivery assignment: ${failure.message}');
+        return false;
+      },
+      onRight: (createdAssignment) {
+        // Update local order driverId and status to ready if it was preparing
+        final updatedOrder = order.copyWith(
+          driverId: driverId,
+          status: order.status == OrderStatus.preparing ? OrderStatus.ready : order.status,
+        );
+        state = [...state]..[index] = updatedOrder;
+
+        // Persist driver_id on the order row in Supabase
+        final repo = _repository;
+        if (repo is SupabaseOrderRepository) {
+          unawaited(repo.updateOrderDriverId(order.id, driverId));
+        }
+
+        // Persist order status change if needed
+        if (order.status == OrderStatus.preparing) {
+          unawaited(_repository.updateOrderStatus(order.id, OrderStatus.ready));
+        }
+
+        // Broadcast realtime event for driver app
+        final realtime = _realtimeService;
+        if (realtime != null) {
+          realtime.emit(
+            RealtimeEvent(
+              type: RealtimeEventType.deliveryAssignmentCreated,
+              payload: createdAssignment.toJson(),
+            ),
+          );
+        }
+        return true;
+      },
+    );
   }
 
   /// Claims [orderId] for [kitchenUserId] (KDS استلام الطلب).
@@ -964,6 +1106,21 @@ ordersControllerProvider = StateNotifierProvider((ref) {
           error: e,
           stackTrace: st,
         );
+      }
+
+      if (order.customerId != null && order.customerId!.isNotEmpty) {
+        try {
+          final loyaltyRepo = ref.read(loyaltyRepositoryProvider);
+          await loyaltyRepo.earnPoints(
+            userId: order.customerId!,
+            orderId: order.id,
+            orderTotal: order.totalAmount,
+          );
+        } catch (loyaltyError) {
+          AppLogger.warning(
+            'Failed to award loyalty points for order ${order.id}: $loyaltyError',
+          );
+        }
       }
     },
   );

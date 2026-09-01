@@ -294,11 +294,15 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                 _restaurantLatLng.lng,
               ),
               deliveryLatLng: LatLng(_customerLatLng.lat, _customerLatLng.lng),
+              driverLatLng: (assignment != null && (assignment.latitude != 0 || assignment.longitude != 0))
+                  ? LatLng(assignment.latitude, assignment.longitude)
+                  : LatLng(_driverLatLng.lat, _driverLatLng.lng),
+              trackDeviceGps: false,
               pickupLabel: 'المطعم',
               deliveryLabel: 'عنوانك',
               initialTheme: isDark
                   ? AppMapThemeOption.dark
-                  : AppMapThemeOption.voyager,
+                  : AppMapThemeOption.standard,
               showControls: true,
               showNavigationHud: true,
               showDeliveryRadius: true,
