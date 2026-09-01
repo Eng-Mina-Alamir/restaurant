@@ -13,6 +13,7 @@ void main() {
       expect(UserRole.manager.homeRoute, '/manager');
       expect(UserRole.admin.homeRoute, '/manager');
       expect(UserRole.driver.homeRoute, '/driver');
+      expect(UserRole.cashier.homeRoute, '/cashier');
     });
 
     test('demo authentication enforces role integrity and email matching', () {

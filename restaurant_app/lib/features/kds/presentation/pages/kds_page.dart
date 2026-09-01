@@ -32,11 +32,72 @@ class KdsPage extends ConsumerStatefulWidget {
   ConsumerState<KdsPage> createState() => _KdsPageState();
 }
 
+enum KitchenStation {
+  all('الكل', Icons.apps_rounded),
+  grill('الشواية واللحوم', Icons.local_fire_department_rounded),
+  bakery('الفرن والمخبوزات', Icons.local_pizza_rounded),
+  bar('المشروبات والبار', Icons.local_cafe_rounded),
+  expo('شاشة التجميع (Expo)', Icons.inventory_2_rounded);
+
+  final String titleAr;
+  final IconData icon;
+  const KitchenStation(this.titleAr, this.icon);
+}
+
 class _KdsPageState extends ConsumerState<KdsPage> {
   static const _elapsedRefreshInterval = Duration(minutes: 1);
 
   Timer? _elapsedTimer;
   int _lastOrderCount = 0;
+  KitchenStation _selectedStation = KitchenStation.all;
+
+  bool _orderMatchesStation(OrderEntity order, KitchenStation station) {
+    if (station == KitchenStation.all || station == KitchenStation.expo) {
+      return true;
+    }
+    return order.items.any((item) {
+      final cat = item.menuItem.categoryId.toLowerCase();
+      final name = item.menuItem.name.toLowerCase();
+      switch (station) {
+        case KitchenStation.grill:
+          return cat.contains('grill') ||
+              cat.contains('meat') ||
+              cat.contains('لحوم') ||
+              cat.contains('مشويات') ||
+              name.contains('كباب') ||
+              name.contains('كفتة') ||
+              name.contains('لحم') ||
+              name.contains('شيش') ||
+              name.contains('برجر') ||
+              name.contains('دجاج') ||
+              name.contains('فراخ') ||
+              name.contains('شاورما');
+        case KitchenStation.bakery:
+          return cat.contains('pizza') ||
+              cat.contains('bakery') ||
+              cat.contains('مخبوزات') ||
+              cat.contains('بيتزا') ||
+              cat.contains('فطائر') ||
+              name.contains('بيتزا') ||
+              name.contains('عيش') ||
+              name.contains('طاجن') ||
+              name.contains('حواوشي');
+        case KitchenStation.bar:
+          return cat.contains('drink') ||
+              cat.contains('beverage') ||
+              cat.contains('مشروبات') ||
+              cat.contains('عصائر') ||
+              name.contains('عصير') ||
+              name.contains('شاي') ||
+              name.contains('قهوة') ||
+              name.contains('مياه') ||
+              name.contains('بيبسي') ||
+              name.contains('مانجو');
+        default:
+          return true;
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -79,8 +140,12 @@ class _KdsPageState extends ConsumerState<KdsPage> {
           o.assignedKitchenId == null || o.assignedKitchenId == currentUserId,
     );
 
+    // Filter by Kitchen Station
+    final filteredActive =
+        active.where((o) => _orderMatchesStation(o, _selectedStation)).toList();
+
     // Alert when new pending orders arrive
-    final pendingCount = active
+    final pendingCount = filteredActive
         .where((o) => o.status == OrderStatus.pending)
         .length;
     if (pendingCount > _lastOrderCount) {
@@ -89,20 +154,84 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     _lastOrderCount = pendingCount;
 
     final pendingList =
-        active.where((o) => o.status == OrderStatus.pending).toList()
+        filteredActive.where((o) => o.status == OrderStatus.pending).toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final preparingList =
-        active.where((o) => o.status == OrderStatus.preparing).toList()
+        filteredActive.where((o) => o.status == OrderStatus.preparing).toList()
           ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final readyList =
-        active.where((o) => o.status == OrderStatus.ready).toList()
+        filteredActive.where((o) => o.status == OrderStatus.ready).toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(AppConstants.kdsTitle),
+          title: Row(
+            children: [
+              const Text(AppConstants.kdsTitle),
+              const SizedBox(width: AppSpacing.sm),
+              // Station Selector Menu
+              PopupMenuButton<KitchenStation>(
+                initialValue: _selectedStation,
+                tooltip: 'اختيار محطة المطبخ',
+                onSelected: (st) => setState(() => _selectedStation = st),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _selectedStation.icon,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _selectedStation.titleAr,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down_rounded, size: 16),
+                    ],
+                  ),
+                ),
+                itemBuilder:
+                    (ctx) =>
+                        KitchenStation.values
+                            .map(
+                              (s) => PopupMenuItem(
+                                value: s,
+                                child: Row(
+                                  children: [
+                                    Icon(s.icon, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(s.titleAr),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+              ),
+            ],
+          ),
           actions: [
             if (badge > 0)
               Padding(
@@ -116,7 +245,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
               ),
             const LogoutActionButton(),
           ],
-          bottom: AppBreakpoints.isMobile(context) && active.isNotEmpty
+          bottom: AppBreakpoints.isMobile(context) && filteredActive.isNotEmpty
               ? TabBar(
                   tabs: [
                     Tab(

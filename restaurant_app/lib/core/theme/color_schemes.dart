@@ -7,19 +7,147 @@ abstract final class AppColors {
   AppColors._();
 
   /// Warm deep-orange brand accent (light theme).
-  static const Color brand = Color(0xFFB4550A);
+  static const Color brand = Color(0xFFC2410C);
 
   /// Light orange brand accent (dark theme).
-  static const Color brandDark = Color(0xFFFFB77C);
+  static const Color brandDark = Color(0xFFFF9E58);
 
   /// Teal secondary accent used for success/positive affordances.
-  static const Color teal = Color(0xFF006A6B);
+  static const Color teal = Color(0xFF0F766E);
 
-  /// Preferred background tint for the light theme.
-  static const Color background = Color(0xFFFFF8F3);
+  /// Preferred clean modern warm-tinted background for the light theme.
+  static const Color background = Color(0xFFFAFAF9);
+
+  /// Pure crisp card surface in light mode.
+  static const Color cardLight = Color(0xFFFFFFFF);
 
   /// Base surface for the dark theme.
-  static const Color surfaceDark = Color(0xFF151312);
+  static const Color surfaceDark = Color(0xFF0F1216);
+
+  /// Crisp card surface in dark mode.
+  static const Color cardDark = Color(0xFF181C24);
+}
+
+/// Curated gradient palettes for modern glowing cards, badges, and accents.
+abstract final class AppGradients {
+  AppGradients._();
+
+  /// Warm Brand Gradient (Orange to Coral Red)
+  static const LinearGradient primary = LinearGradient(
+    colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Success / Positive Gradient (Emerald to Teal)
+  static const LinearGradient success = LinearGradient(
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Info / Orders Gradient (Sky Blue to Royal Blue)
+  static const LinearGradient info = LinearGradient(
+    colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Warning / Pending Gradient (Amber to Golden Orange)
+  static const LinearGradient warning = LinearGradient(
+    colors: [Color(0xFFFBBF24), Color(0xFFD97706)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Purple / Royal Gradient (Violet to Deep Indigo)
+  static const LinearGradient purple = LinearGradient(
+    colors: [Color(0xFFA855F7), Color(0xFF6366F1)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Emerald Green Gradient
+  static const LinearGradient emerald = LinearGradient(
+    colors: [Color(0xFF34D399), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Modern Glass Surface Light Gradient
+  static const LinearGradient glassLight = LinearGradient(
+    colors: [Color(0xF5FFFFFF), Color(0xE6F8FAFC)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  /// Modern Glass Surface Dark Gradient
+  static const LinearGradient glassDark = LinearGradient(
+    colors: [Color(0xF51E293B), Color(0xE60F172A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
+/// Multi-layer modern shadow tokens for realistic, tactile card elevations.
+abstract final class AppShadows {
+  AppShadows._();
+
+  /// Very soft ambient shadow for subtle cards
+  static const List<BoxShadow> subtle = [
+    BoxShadow(
+      color: Color(0x06000000),
+      blurRadius: 8,
+      offset: Offset(0, 2),
+    ),
+    BoxShadow(
+      color: Color(0x03000000),
+      blurRadius: 2,
+      offset: Offset(0, 1),
+    ),
+  ];
+
+  /// Standard card elevation with soft ambient diffusion
+  static const List<BoxShadow> card = [
+    BoxShadow(
+      color: Color(0x08000000),
+      blurRadius: 14,
+      spreadRadius: 0,
+      offset: Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Color(0x04000000),
+      blurRadius: 3,
+      spreadRadius: 0,
+      offset: Offset(0, 1),
+    ),
+  ];
+
+  /// Floating elevated cards, modals, or focused elements
+  static const List<BoxShadow> elevated = [
+    BoxShadow(
+      color: Color(0x12000000),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Color(0x06000000),
+      blurRadius: 6,
+      spreadRadius: 0,
+      offset: Offset(0, 2),
+    ),
+  ];
+
+  /// Glowing ambient shadow for accent badges and call-to-actions
+  static List<BoxShadow> glow(Color color, {double opacity = 0.25}) => [
+        BoxShadow(
+          color: color.withValues(alpha: opacity),
+          blurRadius: 14,
+          spreadRadius: -1,
+          offset: const Offset(0, 4),
+        ),
+      ];
 }
 
 /// Semantic colors for Kitchen Display System (KDS) with verified contrast >= 4.5:1.
@@ -66,6 +194,9 @@ abstract final class AppColorSchemes {
     primary: AppColors.brand,
     secondary: AppColors.teal,
     surface: AppColors.background,
+  ).copyWith(
+    surfaceContainerLow: AppColors.cardLight,
+    surfaceContainer: const Color(0xFFF5F5F4),
   );
 
   static final ColorScheme dark = ColorScheme.fromSeed(
@@ -74,5 +205,8 @@ abstract final class AppColorSchemes {
     primary: AppColors.brandDark,
     secondary: const Color(0xFF4DD8DA),
     surface: AppColors.surfaceDark,
+  ).copyWith(
+    surfaceContainerLow: AppColors.cardDark,
+    surfaceContainer: const Color(0xFF222732),
   );
 }

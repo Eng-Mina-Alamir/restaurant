@@ -19,9 +19,24 @@ import 'package:restaurant_app/features/ratings/presentation/controllers/rating_
 import 'package:restaurant_app/features/reservations/data/repositories/in_memory_reservation_repository.dart';
 import 'package:restaurant_app/features/reservations/presentation/controllers/reservation_controller.dart';
 import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_repository.dart';
+import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
+import 'package:restaurant_app/features/table_management/data/repositories/in_memory_table_service_repository.dart';
+import 'package:restaurant_app/features/table_management/presentation/controllers/table_service_controller.dart';
 import 'package:restaurant_app/features/table_management/presentation/controllers/table_controller.dart';
-
 import 'package:restaurant_app/core/di/service_locator.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class _TestRealtimeService extends SupabaseRealtimeService {
+  _TestRealtimeService()
+    : super(
+        SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      );
+}
 
 /// Canonical checkout-fixture menu aligned with the item ids/prices used by
 /// controller and widget test fixtures (`b1` @ 28 EGP, `f1` @ 12 EGP).
@@ -108,6 +123,13 @@ ProviderContainer createTestContainer({
         InMemoryDeliveryRepository(),
       ),
       tableRepositoryProvider.overrideWithValue(InMemoryTableRepository()),
+      tableControllerProvider.overrideWith(
+        (ref) => TableController(ref.watch(tableRepositoryProvider)),
+      ),
+      tableServiceControllerProvider.overrideWith(
+        (ref) => TableServiceController(InMemoryTableServiceRepository()),
+      ),
+      supabaseRealtimeServiceProvider.overrideWithValue(_TestRealtimeService()),
       couponRepositoryProvider.overrideWithValue(InMemoryCouponRepository()),
       reservationRepositoryProvider.overrideWithValue(
         InMemoryReservationRepository(),

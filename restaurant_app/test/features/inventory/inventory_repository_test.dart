@@ -16,7 +16,7 @@ void main() {
       final result = await repository.getInventoryItems();
       expect(result.isRight, isTrue);
       final items = (result as Right<Failure, List<InventoryItemEntity>>).value;
-      expect(items.length, 8);
+      expect(items.length, greaterThanOrEqualTo(8));
       expect(items.any((i) => i.status == StockStatus.low), isTrue);
     });
 

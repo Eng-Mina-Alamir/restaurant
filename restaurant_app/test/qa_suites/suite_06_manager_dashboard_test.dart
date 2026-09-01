@@ -192,6 +192,7 @@ void main() {
       expect(UserRole.kitchen.homeRoute, '/kds');
       expect(UserRole.driver.homeRoute, '/driver');
       expect(UserRole.manager.homeRoute, '/manager');
+      expect(UserRole.cashier.homeRoute, '/cashier');
     });
   });
 }

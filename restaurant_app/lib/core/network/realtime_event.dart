@@ -12,6 +12,7 @@ enum RealtimeEventType {
   driverLocationUpdated,
   deliveryAssignmentCreated,
   deliveryAssignmentUpdated,
+  kitchenCourseFired,
   unknown,
 }
 
@@ -80,6 +81,9 @@ class RealtimeEvent {
       case 'deliveryAssignmentUpdated':
       case 'delivery_assignment_updated':
         return RealtimeEventType.deliveryAssignmentUpdated;
+      case 'kitchenCourseFired':
+      case 'kitchen_course_fired':
+        return RealtimeEventType.kitchenCourseFired;
       default:
         return RealtimeEventType.unknown;
     }

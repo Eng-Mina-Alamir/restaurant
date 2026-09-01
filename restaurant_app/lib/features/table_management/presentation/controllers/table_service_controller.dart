@@ -47,7 +47,9 @@ class TableServiceController extends StateNotifier<List<TableServiceRequest>> {
         AppLogger.warning('Failed to load active table service requests: ${failure.message}');
       },
       onRight: (requests) {
-        state = requests;
+        final existingUnpersisted =
+            state.where((r) => !requests.any((rem) => rem.id == r.id)).toList();
+        state = [...existingUnpersisted, ...requests];
       },
     );
   }

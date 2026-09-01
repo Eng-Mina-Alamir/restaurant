@@ -66,15 +66,20 @@ void main() {
   );
 
   testWidgets('shows empty state when no orders', (tester) async {
+    final container = _containerWithChef(
+      'chef-1',
+      additionalOverrides: [
+        kdsAlertServiceProvider.overrideWithValue(SpyKdsAlertService()),
+      ],
+    );
+    addTearDown(container.dispose);
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          kdsAlertServiceProvider.overrideWithValue(SpyKdsAlertService()),
-        ],
+      UncontrolledProviderScope(
+        container: container,
         child: const MaterialApp(home: KdsPage()),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('لا توجد طلبات حالياً'), findsOneWidget);
   });
 

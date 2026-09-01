@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 
 /// A bar chart visualizing hourly traffic patterns and highlighting peak rush hours.
@@ -21,6 +22,7 @@ class PeakHoursChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final peakInt = peakHour.toInt();
 
     // Standard business hours if empty (e.g., 12:00 to 23:00)
@@ -34,14 +36,15 @@ class PeakHoursChart extends StatelessWidget {
     }
     final maxY = (maxOrders * 1.25).ceilToDouble();
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colorScheme.surfaceContainerLow : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.6),
+          width: 1.0,
         ),
+        boxShadow: AppShadows.card,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),

@@ -10,16 +10,23 @@ import '../../domain/repositories/menu_repository.dart';
 import '../menu_seed_data.dart';
 
 /// Supabase-backed [MenuRepository] with fallback to seed menu data.
+///
+/// Uses PostgREST embedded selects to fetch menu items with their modifier
+/// groups and options in a single request (instead of 4 separate queries).
 class SupabaseMenuRepositoryImpl implements MenuRepository {
   SupabaseMenuRepositoryImpl(this._supabase);
 
   final SupabaseClient _supabase;
   Menu? _cachedMenu;
 
+  /// PostgREST embedded select: fetches items with nested groups and options.
+  static const String _menuItemsWithModifiers =
+      '*, menu_modifier_groups(*, menu_modifier_options(*))';
+
   @override
   Future<Either<Failure, Menu>> getMenu() async {
     try {
-      // 1. Fetch categories
+      // Query 1: Fetch categories (small, stable table)
       final catResponse = await _supabase
           .from(SupabaseConfig.categoriesTable)
           .select()
@@ -34,51 +41,47 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         }
       }
 
-      // 2. Fetch modifier options
-      final optResponse = await _supabase
-          .from(SupabaseConfig.modifierOptionsTable)
-          .select();
-      final Map<String, List<MenuModifierOption>> groupOptionsMap = {};
-      for (final raw in (optResponse as List)) {
-        final map = Map<String, dynamic>.from(raw as Map);
-        final groupId = map['modifier_group_id']?.toString() ?? '';
-        final opt = MenuModifierOption(
-          id: map['id']?.toString() ?? '',
-          name: map['name'] as String? ?? '',
-          extraPrice: (map['extra_price'] as num?)?.toDouble() ?? 0.0,
-          isAvailable: map['is_available'] as bool? ?? true,
-        );
-        groupOptionsMap.putIfAbsent(groupId, () => []).add(opt);
-      }
-
-      // 3. Fetch modifier groups
-      final groupResponse = await _supabase
-          .from(SupabaseConfig.modifierGroupsTable)
-          .select();
-      final Map<String, List<MenuModifierGroup>> itemGroupsMap = {};
-      for (final raw in (groupResponse as List)) {
-        final map = Map<String, dynamic>.from(raw as Map);
-        final itemId = map['menu_item_id']?.toString() ?? '';
-        final groupId = map['id']?.toString() ?? '';
-        final group = MenuModifierGroup(
-          id: groupId,
-          title: map['title'] as String? ?? '',
-          description: map['description'] as String?,
-          isRequired: map['is_required'] as bool? ?? false,
-          maxSelection: (map['max_selection'] as num?)?.toInt() ?? 1,
-          options: groupOptionsMap[groupId] ?? [],
-        );
-        itemGroupsMap.putIfAbsent(itemId, () => []).add(group);
-      }
-
-      // 4. Fetch menu items
+      // Query 2: Fetch menu items WITH embedded modifier groups & options
+      // This replaces 3 separate queries (items + groups + options) with 1.
       final itemResponse = await _supabase
           .from(SupabaseConfig.menuItemsTable)
-          .select();
+          .select(_menuItemsWithModifiers);
+
       final List<MenuItem> items = [];
       for (final raw in (itemResponse as List)) {
         final map = Map<String, dynamic>.from(raw as Map);
         final itemId = map['id']?.toString() ?? '';
+
+        // Parse embedded modifier groups
+        final List<MenuModifierGroup> modifierGroups = [];
+        final groupsRaw = map['menu_modifier_groups'] as List? ?? const [];
+        for (final groupRaw in groupsRaw) {
+          final groupMap = Map<String, dynamic>.from(groupRaw as Map);
+
+          // Parse embedded modifier options within each group
+          final List<MenuModifierOption> options = [];
+          final optionsRaw =
+              groupMap['menu_modifier_options'] as List? ?? const [];
+          for (final optRaw in optionsRaw) {
+            final optMap = Map<String, dynamic>.from(optRaw as Map);
+            options.add(MenuModifierOption(
+              id: optMap['id']?.toString() ?? '',
+              name: optMap['name'] as String? ?? '',
+              extraPrice: (optMap['extra_price'] as num?)?.toDouble() ?? 0.0,
+              isAvailable: optMap['is_available'] as bool? ?? true,
+            ));
+          }
+
+          modifierGroups.add(MenuModifierGroup(
+            id: groupMap['id']?.toString() ?? '',
+            title: groupMap['title'] as String? ?? '',
+            description: groupMap['description'] as String?,
+            isRequired: groupMap['is_required'] as bool? ?? false,
+            maxSelection: (groupMap['max_selection'] as num?)?.toInt() ?? 1,
+            options: options,
+          ));
+        }
+
         items.add(
           MenuItem(
             id: itemId,
@@ -93,7 +96,7 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
             preparationTime: (map['preparation_time'] as num?)?.toDouble(),
             rating: (map['rating'] as num?)?.toDouble() ?? 5.0,
             orderCount: (map['order_count'] as num?)?.toInt() ?? 0,
-            modifierGroups: itemGroupsMap[itemId] ?? [],
+            modifierGroups: modifierGroups,
           ),
         );
       }
@@ -150,10 +153,10 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       );
       return Right<Failure, MenuItem>(item);
     } catch (e) {
-      _cachedMenu = _cachedMenu!.copyWith(
-        items: [..._cachedMenu!.items.where((i) => i.id != item.id), item],
+      AppLogger.error('Supabase addMenuItem error: $e');
+      return Left<Failure, MenuItem>(
+        ServerFailure('فشل إضافة الصنف: $e'),
       );
-      return Right<Failure, MenuItem>(item);
     }
   }
 
@@ -182,12 +185,10 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       );
       return Right<Failure, MenuItem>(item);
     } catch (e) {
-      _cachedMenu = _cachedMenu!.copyWith(
-        items: _cachedMenu!.items
-            .map((i) => i.id == item.id ? item : i)
-            .toList(),
+      AppLogger.error('Supabase updateMenuItem error: $e');
+      return Left<Failure, MenuItem>(
+        ServerFailure('فشل تحديث الصنف: $e'),
       );
-      return Right<Failure, MenuItem>(item);
     }
   }
 
@@ -204,10 +205,10 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       );
       return const Right<Failure, void>(null);
     } catch (e) {
-      _cachedMenu = _cachedMenu!.copyWith(
-        items: _cachedMenu!.items.where((i) => i.id != itemId).toList(),
+      AppLogger.error('Supabase deleteMenuItem error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل حذف الصنف: $e'),
       );
-      return const Right<Failure, void>(null);
     }
   }
 
@@ -225,12 +226,10 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       }
       return const Right<Failure, void>(null);
     } catch (e) {
-      if (!_cachedMenu!.categories.contains(categoryName)) {
-        _cachedMenu = _cachedMenu!.copyWith(
-          categories: [..._cachedMenu!.categories, categoryName],
-        );
-      }
-      return const Right<Failure, void>(null);
+      AppLogger.error('Supabase addCategory error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل إضافة الفئة: $e'),
+      );
     }
   }
 
@@ -249,12 +248,10 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       );
       return const Right<Failure, void>(null);
     } catch (e) {
-      _cachedMenu = _cachedMenu!.copyWith(
-        categories: _cachedMenu!.categories
-            .where((c) => c != categoryName)
-            .toList(),
+      AppLogger.error('Supabase deleteCategory error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل حذف الفئة: $e'),
       );
-      return const Right<Failure, void>(null);
     }
   }
 

@@ -4,8 +4,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 
-/// Horizontal, scrollable set of category filter chips (RTL aware uses
-/// horizontal list). The leading chip is "الكل" (all).
+/// Horizontal, scrollable set of category filter chips with visual emojis.
 class CategoryChips extends StatelessWidget {
   const CategoryChips({
     super.key,
@@ -22,7 +21,7 @@ class CategoryChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final all = [kAllCategoriesFilter, ...categories];
     return SizedBox(
-      height: 44,
+      height: 48,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -34,8 +33,14 @@ class CategoryChips extends StatelessWidget {
           final label = category == kAllCategoriesFilter
               ? AppConstants.dietAll
               : category;
+
           return ChoiceChip(
-            label: Text(label),
+            label: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
             selected: isSelected,
             showCheckmark: false,
             onSelected: (_) => onSelected(category),

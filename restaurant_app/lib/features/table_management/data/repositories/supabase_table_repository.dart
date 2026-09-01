@@ -89,11 +89,10 @@ class SupabaseTableRepository implements TableRepository {
 
       return Right<Failure, RestaurantTable>(table);
     } catch (e) {
-      final index = _cachedTables!.indexWhere((t) => t.id == table.id);
-      if (index != -1) {
-        _cachedTables![index] = table;
-      }
-      return Right<Failure, RestaurantTable>(table);
+      AppLogger.error('Supabase updateTable error: $e');
+      return Left<Failure, RestaurantTable>(
+        ServerFailure('فشل تحديث الطاولة: $e'),
+      );
     }
   }
 
@@ -117,8 +116,10 @@ class SupabaseTableRepository implements TableRepository {
       _cachedTables!.add(table);
       return Right<Failure, RestaurantTable>(table);
     } catch (e) {
-      _cachedTables!.add(table);
-      return Right<Failure, RestaurantTable>(table);
+      AppLogger.error('Supabase addTable error: $e');
+      return Left<Failure, RestaurantTable>(
+        ServerFailure('فشل إضافة الطاولة: $e'),
+      );
     }
   }
 
@@ -131,8 +132,10 @@ class SupabaseTableRepository implements TableRepository {
       _cachedTables!.removeWhere((t) => t.id == id);
       return const Right<Failure, void>(null);
     } catch (e) {
-      _cachedTables!.removeWhere((t) => t.id == id);
-      return const Right<Failure, void>(null);
+      AppLogger.error('Supabase deleteTable error: $e');
+      return Left<Failure, void>(
+        ServerFailure('فشل حذف الطاولة: $e'),
+      );
     }
   }
 }

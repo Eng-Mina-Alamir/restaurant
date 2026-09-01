@@ -14,9 +14,19 @@ import 'package:restaurant_app/features/manager_dashboard/presentation/controlle
 import 'package:restaurant_app/features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:restaurant_app/features/restaurant/presentation/controllers/branch_controller.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:restaurant_app/core/l10n/app_localizations.dart';
 import '../../helpers/test_container.dart';
+
+class _ArabicLocaleController extends StateNotifier<Locale>
+    implements LocaleController {
+  _ArabicLocaleController() : super(const Locale('ar'));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 /// Read-only orders source so [dispatchControllerProvider] observes fixtures.
 class OrdersControllerMock extends StateNotifier<List<OrderEntity>>
@@ -113,6 +123,10 @@ void main() {
   testWidgets('seeded container renders the three dispatch-health counts', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1200, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     final container = createTestContainer(
       additionalOverrides: [
         deliveryRepositoryProvider.overrideWithValue(
@@ -147,12 +161,17 @@ void main() {
             buildOrder(id: 'ORD-F'),
           ]),
         ),
+        selectedBranchIdProvider.overrideWith((ref) => 'branch-1'),
+        localeControllerProvider.overrideWith((ref) => _ArabicLocaleController()),
       ],
     );
     addTearDown(container.dispose);
+    await container.read(dispatchControllerProvider.notifier).refresh();
 
     await pumpDashboard(tester, container);
-    await tester.pumpAndSettle();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     expect(find.byKey(_healthCardKey), findsOneWidget);
     // Three undispatched orders.
@@ -176,6 +195,10 @@ void main() {
   });
 
   testWidgets('tapping the card opens the dispatch board', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     final container = createTestContainer(
       additionalOverrides: [
         deliveryRepositoryProvider.overrideWithValue(
@@ -184,16 +207,22 @@ void main() {
         ordersControllerProvider.overrideWith(
           (ref) => OrdersControllerMock(const []),
         ),
+        selectedBranchIdProvider.overrideWith((ref) => 'branch-1'),
+        localeControllerProvider.overrideWith((ref) => _ArabicLocaleController()),
       ],
     );
     addTearDown(container.dispose);
 
     await pumpDashboard(tester, container);
-    await tester.pumpAndSettle();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     await tester.ensureVisible(find.byKey(_healthCardKey));
     await tester.tap(find.byKey(_healthCardKey));
-    await tester.pumpAndSettle();
+    for (int i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     expect(find.text('DISPATCH_BOARD_STUB'), findsOneWidget);
   });
@@ -201,6 +230,10 @@ void main() {
   testWidgets('renders a loading shell while the board is AsyncLoading', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1200, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     final container = createTestContainer(
       additionalOverrides: [
         dispatchControllerProvider.overrideWith(
@@ -209,6 +242,8 @@ void main() {
         ordersControllerProvider.overrideWith(
           (ref) => OrdersControllerMock(const []),
         ),
+        selectedBranchIdProvider.overrideWith((ref) => 'branch-1'),
+        localeControllerProvider.overrideWith((ref) => _ArabicLocaleController()),
       ],
     );
     addTearDown(container.dispose);

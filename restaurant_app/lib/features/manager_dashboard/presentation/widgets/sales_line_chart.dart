@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 
@@ -49,14 +50,17 @@ class SalesLineChart extends StatelessWidget {
     if (maxY == 0) maxY = 100;
     maxY = (maxY * 1.2).ceilToDouble();
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colorScheme.surfaceContainerLow : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.6),
+          width: 1.0,
         ),
+        boxShadow: AppShadows.card,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),

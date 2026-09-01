@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 
 /// A bar chart showing the highest selling dishes and their volume.
@@ -18,17 +19,25 @@ class TopItemsBarChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     if (itemsSold.isEmpty) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Center(
-            child: Text(
-              'لا توجد بيانات مبيعات أصناف بعد',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: isDark ? colorScheme.surfaceContainerLow : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.6),
+            width: 1,
+          ),
+          boxShadow: AppShadows.card,
+        ),
+        child: Center(
+          child: Text(
+            'لا توجد بيانات مبيعات أصناف بعد',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -47,14 +56,15 @@ class TopItemsBarChart extends StatelessWidget {
     if (maxCount == 0) maxCount = 10;
     final maxY = (maxCount * 1.25).ceilToDouble();
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colorScheme.surfaceContainerLow : Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: isDark ? 0.3 : 0.6),
+          width: 1.0,
         ),
+        boxShadow: AppShadows.card,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),

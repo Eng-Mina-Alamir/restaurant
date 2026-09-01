@@ -18,10 +18,17 @@ class SupabaseReservationRepository implements ReservationRepository {
   @override
   Future<Either<Failure, List<ReservationEntity>>> getReservations() async {
     try {
+      // Only fetch reservations from the last 30 days + all future ones
+      // to stay within free-plan bandwidth limits.
+      final cutoff = DateTime.now()
+          .subtract(const Duration(days: 30))
+          .toIso8601String();
       final response = await _supabase
           .from(SupabaseConfig.reservationsTable)
           .select()
-          .order('reservation_time', ascending: true);
+          .gte('reservation_time', cutoff)
+          .order('reservation_time', ascending: true)
+          .limit(200);
 
       final List<ReservationEntity> reservations = [];
       for (final raw in (response as List)) {
@@ -90,13 +97,12 @@ class SupabaseReservationRepository implements ReservationRepository {
       _cachedReservations.add(reservation);
       return Right(reservation);
     } catch (e, st) {
-      AppLogger.warning(
-        'Supabase createReservation fallback: $e',
+      AppLogger.error(
+        'Supabase createReservation error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedReservations.add(reservation);
-      return Right(reservation);
+      return Left(ServerFailure('فشل إنشاء الحجز: $e'));
     }
   }
 
@@ -106,24 +112,17 @@ class SupabaseReservationRepository implements ReservationRepository {
     ReservationStatus status,
   ) async {
     try {
-      await _supabase
-          .from(SupabaseConfig.reservationsTable)
-          .update({'status': status.name})
-          .eq('id', id);
-
+      // Single call: update and return the row in one round-trip
       final updatedRaw = await _supabase
           .from(SupabaseConfig.reservationsTable)
-          .select()
+          .update({'status': status.name})
           .eq('id', id)
-          .maybeSingle();
+          .select()
+          .single();
 
-      if (updatedRaw != null) {
-        return Right(
-          _mapToReservationEntity(Map<String, dynamic>.from(updatedRaw)),
-        );
-      }
-
-      return const Left(NotFoundFailure('الحجز غير موجود'));
+      return Right(
+        _mapToReservationEntity(Map<String, dynamic>.from(updatedRaw)),
+      );
     } catch (e, st) {
       AppLogger.error(
         'Supabase updateStatus reservation error',

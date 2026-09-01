@@ -22,9 +22,12 @@ void main() {
   testWidgets('shows table info and no active order when empty', (
     tester,
   ) async {
+    final container = createTestContainer();
+    addTearDown(container.dispose);
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: TableDetailPage(tableId: 't1')),
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: TableDetailPage(tableId: 't1')),
       ),
     );
     await tester.pumpAndSettle();

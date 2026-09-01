@@ -17,6 +17,7 @@ import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../controllers/curbside_controller.dart';
 
 /// Whether a [RealtimeEventType.driverLocationUpdated] payload targets
 /// tracking of [orderId].
@@ -382,6 +383,91 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                         ],
                       ),
                     ),
+                  ),
+
+                  // ── Curbside Arrival Signal ───────────────────────────
+                  Builder(
+                    builder: (context) {
+                      final curbside = ref.watch(curbsideControllerProvider);
+                      if (curbside == null && order.orderType != OrderType.takeaway) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final isArrived = curbside?.isArrived ?? false;
+
+                      return Container(
+                        margin: const EdgeInsets.only(top: AppSpacing.sm),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: isArrived
+                              ? const Color(0xFF10B981).withValues(alpha: 0.1)
+                              : const Color(0xFFC2410C).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(
+                            color: isArrived ? const Color(0xFF10B981) : const Color(0xFFC2410C),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.directions_car_filled_rounded,
+                                  color: isArrived ? const Color(0xFF10B981) : const Color(0xFFC2410C),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    isArrived
+                                        ? '✅ تم إرسال إشعار وصولك لطاقم المطعم!'
+                                        : '🚗 استلام من السيارة (Curbside Pickup)',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isArrived ? const Color(0xFF047857) : const Color(0xFFC2410C),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              isArrived
+                                  ? 'الموظف في طريقه إليك الآن لتسليم الطلب لسيارتك: ${curbside?.carModel ?? ""} (${curbside?.carColor ?? ""})'
+                                  : 'عند وصولك وتوقفك بالخارج أمام الفرع، اضغط الزر أدناه ليخرج الموظف فوراً لتسليمك الطلب.',
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            if (!isArrived) ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFC2410C),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  onPressed: () {
+                                    ref.read(curbsideControllerProvider.notifier).signalArrival();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('تم إرسال إشارة وصولك بنجاح! كابتن الصالة في طريقه لسيارتك.'),
+                                        backgroundColor: Color(0xFF10B981),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.touch_app_rounded),
+                                  label: const Text(
+                                    'أنا وصلت بالخارج (إرسال إشارة للمطعم)',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
                   ),
 
                   // Chat with the assigned driver — offered only once an

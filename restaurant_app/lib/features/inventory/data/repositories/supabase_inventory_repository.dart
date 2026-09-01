@@ -6,6 +6,8 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../domain/entities/inventory_item_entity.dart';
+import '../../domain/entities/recipe_item_entity.dart';
+import '../../domain/entities/waste_log_entity.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
 class SupabaseInventoryRepository implements InventoryRepository {
@@ -54,6 +56,8 @@ class SupabaseInventoryRepository implements InventoryRepository {
   ];
 
   List<InventoryItemEntity>? _cachedItems;
+  final List<MenuItemRecipeEntity> _cachedRecipes = [];
+  final List<WasteLogEntity> _cachedWasteLogs = [];
 
   @override
   Future<Either<Failure, List<InventoryItemEntity>>> getInventoryItems() async {
@@ -100,9 +104,10 @@ class SupabaseInventoryRepository implements InventoryRepository {
         'cost_per_unit': item.costPerUnit,
         'last_updated': DateTime.now().toIso8601String(),
       };
-
       await _supabase.from(SupabaseConfig.inventoryTable).insert(payload);
-      _cachedItems?.add(item);
+      if (_cachedItems != null) {
+        _cachedItems!.add(item);
+      }
       return Right(item);
     } catch (e, st) {
       AppLogger.warning(
@@ -130,12 +135,10 @@ class SupabaseInventoryRepository implements InventoryRepository {
         'cost_per_unit': item.costPerUnit,
         'last_updated': DateTime.now().toIso8601String(),
       };
-
       await _supabase
           .from(SupabaseConfig.inventoryTable)
           .update(payload)
           .eq('id', item.id);
-
       if (_cachedItems != null) {
         final idx = _cachedItems!.indexWhere((i) => i.id == item.id);
         if (idx != -1) _cachedItems![idx] = item;
@@ -147,19 +150,26 @@ class SupabaseInventoryRepository implements InventoryRepository {
         error: e,
         stackTrace: st,
       );
-      if (_cachedItems != null) {
-        final idx = _cachedItems!.indexWhere((i) => i.id == item.id);
-        if (idx != -1) _cachedItems![idx] = item;
+      _cachedItems ??= List.of(_initialSeedItems);
+      final idx = _cachedItems!.indexWhere((i) => i.id == item.id);
+      if (idx != -1) {
+        _cachedItems![idx] = item;
+        return Right(item);
       }
-      return Right(item);
+      return const Left(NotFoundFailure('الصنف غير موجود في المخزون'));
     }
   }
 
   @override
   Future<Either<Failure, void>> deleteItem(String id) async {
     try {
-      await _supabase.from(SupabaseConfig.inventoryTable).delete().eq('id', id);
-      _cachedItems?.removeWhere((i) => i.id == id);
+      await _supabase
+          .from(SupabaseConfig.inventoryTable)
+          .delete()
+          .eq('id', id);
+      if (_cachedItems != null) {
+        _cachedItems!.removeWhere((i) => i.id == id);
+      }
       return const Right(null);
     } catch (e, st) {
       AppLogger.warning(
@@ -185,18 +195,7 @@ class SupabaseInventoryRepository implements InventoryRepository {
           .maybeSingle();
 
       if (existingRaw == null) {
-        final local = (_cachedItems ?? _initialSeedItems).firstWhere(
-          (i) => i.id == id,
-          orElse: () =>
-              throw const NotFoundFailure('الصنف غير موجود في المخزون'),
-        );
-        final newQuantity = (local.currentStock + amount).clamp(0.0, 999999.0);
-        final updated = local.copyWith(currentStock: newQuantity);
-        if (_cachedItems != null) {
-          final idx = _cachedItems!.indexWhere((i) => i.id == id);
-          if (idx != -1) _cachedItems![idx] = updated;
-        }
-        return Right(updated);
+        return const Left(NotFoundFailure('الصنف غير موجود في المخزون'));
       }
 
       final existing = _mapToInventoryItemEntity(
@@ -303,6 +302,47 @@ class SupabaseInventoryRepository implements InventoryRepository {
       }
     }
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<MenuItemRecipeEntity>>> getRecipes() async {
+    return Right(List.unmodifiable(_cachedRecipes));
+  }
+
+  @override
+  Future<Either<Failure, MenuItemRecipeEntity?>> getRecipeForMenuItem(
+    String menuItemId,
+  ) async {
+    final match = _cachedRecipes.where((r) => r.menuItemId == menuItemId);
+    if (match.isEmpty) return const Right(null);
+    return Right(match.first);
+  }
+
+  @override
+  Future<Either<Failure, MenuItemRecipeEntity>> saveRecipe(
+    MenuItemRecipeEntity recipe,
+  ) async {
+    final idx = _cachedRecipes.indexWhere((r) => r.menuItemId == recipe.menuItemId);
+    final updated = recipe.copyWith(lastUpdated: DateTime.now());
+    if (idx == -1) {
+      _cachedRecipes.add(updated);
+    } else {
+      _cachedRecipes[idx] = updated;
+    }
+    return Right(updated);
+  }
+
+  @override
+  Future<Either<Failure, List<WasteLogEntity>>> getWasteLogs() async {
+    return Right(List.unmodifiable(_cachedWasteLogs));
+  }
+
+  @override
+  Future<Either<Failure, WasteLogEntity>> logWaste(
+    WasteLogEntity wasteLog,
+  ) async {
+    _cachedWasteLogs.insert(0, wasteLog);
+    return Right(wasteLog);
   }
 
   InventoryItemEntity _mapToInventoryItemEntity(Map<String, dynamic> map) {

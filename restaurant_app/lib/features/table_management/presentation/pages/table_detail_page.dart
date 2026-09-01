@@ -12,6 +12,9 @@ import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../controllers/table_controller.dart';
+import '../widgets/course_fire_action_bar.dart';
+import '../widgets/split_bill_dialog.dart';
+import '../widgets/table_transfer_dialog.dart';
 import 'waiter_dashboard_page.dart';
 
 /// Waiter table detail: shows table info, the linked active order (if any)
@@ -74,12 +77,69 @@ class TableDetailPage extends ConsumerWidget {
             _ActiveOrderCard(order: activeOrder),
           const SizedBox(height: AppSpacing.lg),
           if (currentTable.status == TableStatus.occupied && activeOrder != null) ...[
+            // Course Fire Action Bar
+            CourseFireActionBar(
+              tableId: tableId,
+              tableNumber: currentTable.tableNumber,
+              orderId: activeOrder.id,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
             FilledButton.icon(
               onPressed: () => context.push('/waiter/order/$tableId'),
               icon: const Icon(Icons.add_shopping_cart),
               label: const Text('إضافة أصناف إضافية للطلب'),
             ),
             const SizedBox(height: AppSpacing.sm),
+
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final order = activeOrder;
+                      if (order == null) return;
+                      final splitResult = await SplitBillDialog.show(
+                        context,
+                        order: order,
+                        tableNumber: currentTable.tableNumber,
+                      );
+                      if (splitResult != null && splitResult.isFullySettled) {
+                        await ref
+                            .read(ordersControllerProvider.notifier)
+                            .updateStatus(order.id, OrderStatus.completed);
+                        await ref
+                            .read(tableControllerProvider.notifier)
+                            .release(tableId, needsCleaning: true);
+                        if (context.mounted) {
+                          context.pop();
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.call_split_rounded, color: Color(0xFF3B82F6)),
+                    label: const Text('تقسيم الشيك (Split Bill)'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final order = activeOrder;
+                      if (order == null) return;
+                      TableTransferDialog.show(
+                        context,
+                        currentTable: currentTable,
+                        activeOrderId: order.id,
+                      );
+                    },
+                    icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF10B981)),
+                    label: const Text('نقل / دمج الطاولة'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
             FilledButton.tonalIcon(
               onPressed: () => _showCheckoutDialog(
                 context,

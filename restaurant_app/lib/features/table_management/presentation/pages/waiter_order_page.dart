@@ -18,6 +18,7 @@ import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/table_controller.dart';
+import '../widgets/allergen_cooking_tags_selector.dart';
 
 /// Waiter order intake: pick items from the menu, review cart, and send the
 /// order to the kitchen for a specific table.
@@ -145,6 +146,38 @@ class _WaiterOrderPageState extends ConsumerState<WaiterOrderPage> {
               : '${AppConstants.tableActionTakeOrder} — '
                   '${AppConstants.seats} $tableLabel',
         ),
+        actions: [
+          if (cart.isNotEmpty)
+            IconButton(
+              tooltip: 'تخصيص المقاعد والحساسية وملاحظات المطبخ',
+              icon: const Icon(
+                Icons.room_service_outlined,
+                color: Color(0xFF3B82F6),
+              ),
+              onPressed: () {
+                AllergenCookingTagsSelector.show(
+                  context,
+                  itemName: cart.last.menuItem.name,
+                  onSave: ({
+                    required allergens,
+                    required cookingTags,
+                    required course,
+                    required customNote,
+                    required seatNumber,
+                  }) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'تم تخصيص المقعد #$seatNumber وملاحظات الطهي للشيف بنجاح ✅',
+                        ),
+                        backgroundColor: const Color(0xFF10B981),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+        ],
       ),
       body: menu.when(
         loading: () => const _MenuSkeleton(),

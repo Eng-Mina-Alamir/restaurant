@@ -206,6 +206,110 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     );
   }
 
+  /// Transfers an active order from [fromTableId] to [toTableId].
+  /// [fromTableId] is flagged as needsCleaning so staff can prepare it,
+  /// while [toTableId] becomes occupied with the transferred order.
+  Future<bool> transferTable(
+    String fromTableId,
+    String toTableId, {
+    String? reason,
+  }) async {
+    final fromTable = tableById(fromTableId);
+    final toTable = tableById(toTableId);
+
+    if (fromTable == null || toTable == null) return false;
+    if (fromTable.currentOrderId == null) return false;
+    if (toTable.status == TableStatus.occupied) return false;
+
+    final activeOrderId = fromTable.currentOrderId;
+
+    // 1. Release source table to needsCleaning
+    final updatedFrom = fromTable.copyWith(
+      status: TableStatus.needsCleaning,
+      currentOrderId: null,
+      lastUpdated: DateTime.now(),
+    );
+
+    // 2. Occupy destination table with activeOrderId
+    final updatedTo = toTable.copyWith(
+      status: TableStatus.occupied,
+      currentOrderId: activeOrderId,
+      lastUpdated: DateTime.now(),
+    );
+
+    state = state.map((t) {
+      if (t.id == fromTableId) return updatedFrom;
+      if (t.id == toTableId) return updatedTo;
+      return t;
+    }).toList();
+
+    await _repository.updateTable(updatedFrom);
+    await _repository.updateTable(updatedTo);
+    return true;
+  }
+
+  /// Merges [secondaryTableIds] into [primaryTableId] under one unified order.
+  Future<bool> mergeTables(
+    String primaryTableId,
+    List<String> secondaryTableIds,
+  ) async {
+    final primary = tableById(primaryTableId);
+    if (primary == null) return false;
+
+    final orderId = primary.currentOrderId ?? 'ORD-MERGE-${DateTime.now().millisecondsSinceEpoch}';
+
+    final updatedPrimary = primary.copyWith(
+      status: TableStatus.occupied,
+      currentOrderId: orderId,
+      lastUpdated: DateTime.now(),
+    );
+
+    final List<RestaurantTable> updatedSecondaries = [];
+    for (final secId in secondaryTableIds) {
+      final secTable = tableById(secId);
+      if (secTable != null) {
+        final up = secTable.copyWith(
+          status: TableStatus.occupied,
+          currentOrderId: orderId,
+          lastUpdated: DateTime.now(),
+        );
+        updatedSecondaries.add(up);
+      }
+    }
+
+    state = state.map((t) {
+      if (t.id == primaryTableId) return updatedPrimary;
+      final match = updatedSecondaries.where((s) => s.id == t.id);
+      if (match.isNotEmpty) return match.first;
+      return t;
+    }).toList();
+
+    await _repository.updateTable(updatedPrimary);
+    for (final s in updatedSecondaries) {
+      await _repository.updateTable(s);
+    }
+    return true;
+  }
+
+  /// Sends a "Fire Course" timing signal to the kitchen brigade for [courseCode].
+  void fireCourse({
+    required String tableId,
+    required String orderId,
+    required String courseCode,
+  }) {
+    _realtimeService?.emit(
+      RealtimeEvent(
+        type: RealtimeEventType.kitchenCourseFired,
+        payload: {
+          'tableId': tableId,
+          'orderId': orderId,
+          'courseCode': courseCode,
+          'firedAt': DateTime.now().toIso8601String(),
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();

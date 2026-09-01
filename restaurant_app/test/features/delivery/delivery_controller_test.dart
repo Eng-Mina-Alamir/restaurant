@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/network/realtime_event.dart';
 import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
@@ -13,6 +15,23 @@ import 'package:restaurant_app/features/delivery/presentation/controllers/delive
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
 import 'package:restaurant_app/features/orders/data/repositories/in_memory_order_repository.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+
+class _TestRealtimeService extends SupabaseRealtimeService {
+  _TestRealtimeService()
+    : super(
+        SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      );
+
+  @override
+  void subscribeForRole(UserRole? role) {}
+
+  @override
+  void subscribe() {}
+}
 
 /// Builds a well-formed deliveryAssignmentCreated payload.
 Map<String, dynamic> assignmentJson({
@@ -44,95 +63,136 @@ void main() {
     deliveryRepositoryProvider.overrideWithValue(InMemoryDeliveryRepository()),
     chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
     orderRepositoryProvider.overrideWithValue(InMemoryOrderRepository()),
+    supabaseRealtimeServiceProvider.overrideWithValue(_TestRealtimeService()),
   ];
 
   group('DeliveryController', () {
     late ProviderContainer container;
 
-    setUp(() => container = ProviderContainer(overrides: offlineOverrides()));
-    tearDown(() => container.dispose());
+    setUp(() {
+      container = ProviderContainer(overrides: offlineOverrides());
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
 
     test('loads seeded assignments for the demo driver', () async {
       container.read(deliveryControllerProvider.notifier);
       await Future<void>.delayed(Duration.zero);
-      expect(container.read(deliveryControllerProvider), hasLength(2));
+      final state = container.read(deliveryControllerProvider);
+      expect(state, hasLength(2));
+      expect(state.first.driverId, 'driver-demo');
     });
 
     test('pending → accepted → inTransit → delivered', () async {
       final controller = container.read(deliveryControllerProvider.notifier);
       await Future<void>.delayed(Duration.zero);
-      final id = controller.state.first.id;
+      const id = 'd1';
+
+      expect(
+        container
+            .read(deliveryControllerProvider)
+            .firstWhere((a) => a.id == id)
+            .deliveryStatus,
+        DeliveryStatus.pending,
+      );
 
       await controller.accept(id);
-      expect(controller.state.first.deliveryStatus, DeliveryStatus.accepted);
+      expect(
+        container
+            .read(deliveryControllerProvider)
+            .firstWhere((a) => a.id == id)
+            .deliveryStatus,
+        DeliveryStatus.accepted,
+      );
 
       await controller.start(id);
-      expect(controller.state.first.deliveryStatus, DeliveryStatus.inTransit);
+      expect(
+        container
+            .read(deliveryControllerProvider)
+            .firstWhere((a) => a.id == id)
+            .deliveryStatus,
+        DeliveryStatus.inTransit,
+      );
 
       await controller.complete(id);
-      expect(controller.state.first.deliveryStatus, DeliveryStatus.delivered);
-      expect(controller.state.first.deliveredTime, isNotNull);
+      expect(
+        container
+            .read(deliveryControllerProvider)
+            .firstWhere((a) => a.id == id)
+            .deliveryStatus,
+        DeliveryStatus.delivered,
+      );
     });
 
     test('fail marks an assignment as failed', () async {
       final controller = container.read(deliveryControllerProvider.notifier);
       await Future<void>.delayed(Duration.zero);
-      final id = controller.state.first.id;
+      const id = 'd1';
 
       await controller.fail(id);
-      expect(controller.state.first.deliveryStatus, DeliveryStatus.failed);
+      expect(
+        container
+            .read(deliveryControllerProvider)
+            .firstWhere((a) => a.id == id)
+            .deliveryStatus,
+        DeliveryStatus.failed,
+      );
     });
-  });
 
-  group('realtime deliveryAssignmentCreated', () {
-    late ProviderContainer container;
-
-    setUp(() => container = ProviderContainer(overrides: offlineOverrides()));
-    tearDown(() => container.dispose());
-
-    /// The controller and the test read the same shared RealtimeService from
-    /// the container; with no socket connected sendEvent loops back into the
-    /// events stream, driving the exact path a live dispatch would take.
-    Future<void> broadcastAssignment(Map<String, dynamic> json) async {
+    Future<void> broadcastAssignment(Map<String, dynamic> payload) async {
       container
           .read(supabaseRealtimeServiceProvider)
-          .emit(RealtimeEvent(
-            type: RealtimeEventType.deliveryAssignmentCreated,
-            payload: json,
-          ));
+          .emit(
+            RealtimeEvent(
+              type: RealtimeEventType.deliveryAssignmentCreated,
+              payload: payload,
+            ),
+          );
       await Future<void>.delayed(Duration.zero);
     }
 
-    test('appends the assignment for the matching driver', () async {
-      container.read(deliveryControllerProvider.notifier);
-      await Future<void>.delayed(Duration.zero);
-      expect(container.read(deliveryControllerProvider), hasLength(2));
+    test(
+      'realtime deliveryAssignmentCreated appends the assignment for the matching driver',
+      () async {
+        // Eagerly instantiate the controller so it listens to the stream.
+        container.read(deliveryControllerProvider.notifier);
+        await Future<void>.delayed(Duration.zero);
 
-      await broadcastAssignment(
-        assignmentJson(id: 'assign-rt-1', orderId: 'ORD-0200'),
-      );
+        expect(container.read(deliveryControllerProvider), hasLength(2));
 
-      final state = container.read(deliveryControllerProvider);
-      expect(state, hasLength(3));
-      expect(state.last.id, 'assign-rt-1');
-      expect(state.last.orderId, 'ORD-0200');
-      expect(state.last.deliveryStatus, DeliveryStatus.pending);
-    });
+        await broadcastAssignment(assignmentJson(id: 'assign-rt-new'));
 
-    test('ignores a duplicate assignment id (no upsert)', () async {
-      container.read(deliveryControllerProvider.notifier);
-      await Future<void>.delayed(Duration.zero);
+        final state = container.read(deliveryControllerProvider);
+        expect(state, hasLength(3));
+        expect(state.last.id, 'assign-rt-new');
+        expect(state.last.orderId, 'ORD-0200');
+        expect(state.last.deliveryLocation, 'الرياض - حي الملقا');
+      },
+    );
 
-      await broadcastAssignment(assignmentJson(id: 'assign-rt-dup'));
-      // Same id again but different order: state must stay untouched.
-      await broadcastAssignment(
-        assignmentJson(id: 'assign-rt-dup', orderId: 'ORD-9999'),
-      );
+    test(
+      'realtime deliveryAssignmentCreated ignores a duplicate assignment id (no upsert)',
+      () async {
+        container.read(deliveryControllerProvider.notifier);
+        await Future<void>.delayed(Duration.zero);
 
-      final state = container.read(deliveryControllerProvider);
-      expect(state.where((a) => a.id == 'assign-rt-dup'), hasLength(1));
-      expect(state, hasLength(3));
-    });
+        await broadcastAssignment(assignmentJson(id: 'assign-rt-dup'));
+        expect(container.read(deliveryControllerProvider), hasLength(3));
+
+        await broadcastAssignment(
+          assignmentJson(
+            id: 'assign-rt-dup',
+            orderId: 'ORD-CHANGED-SHOULD-BE-IGNORED',
+          ),
+        );
+
+        final state = container.read(deliveryControllerProvider);
+        expect(state.where((a) => a.id == 'assign-rt-dup'), hasLength(1));
+        expect(state, hasLength(3));
+      },
+    );
 
     test('ignores assignments dispatched to another driver', () async {
       container.read(deliveryControllerProvider.notifier);

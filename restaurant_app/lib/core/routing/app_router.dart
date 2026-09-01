@@ -14,6 +14,7 @@ import '../../features/loyalty/presentation/pages/loyalty_page.dart';
 import '../../features/orders/presentation/pages/order_confirmation_page.dart';
 import '../../features/orders/domain/entities/order_entity.dart';
 import '../../features/delivery/presentation/pages/driver_home_page.dart';
+import '../../features/delivery/presentation/pages/driver_earnings_page.dart';
 import '../../features/kds/presentation/pages/kds_page.dart';
 import '../../features/manager_dashboard/presentation/pages/alerts_page.dart';
 import '../../features/manager_dashboard/presentation/pages/discounts_page.dart';
@@ -31,6 +32,8 @@ import '../../features/manager_dashboard/presentation/pages/staff_performance_pa
 import '../../features/manager_dashboard/presentation/pages/user_management_page.dart';
 import '../../features/menu/presentation/pages/menu_management_page.dart';
 import '../../features/reservations/presentation/pages/reservations_page.dart';
+import '../../features/cashier/presentation/pages/cashier_dashboard_page.dart';
+import '../../features/cashier/presentation/pages/fast_pos_checkout_page.dart';
 import '../../features/settings/presentation/pages/privacy_policy_page.dart';
 import '../../features/settings/presentation/pages/terms_page.dart';
 import '../../features/table_management/presentation/pages/all_orders_page.dart';
@@ -38,6 +41,19 @@ import '../../features/table_management/presentation/pages/table_detail_page.dar
 import '../../features/table_management/presentation/pages/table_management_crud_page.dart';
 import '../../features/table_management/presentation/pages/waiter_dashboard_page.dart';
 import '../../features/table_management/presentation/pages/waiter_order_page.dart';
+import '../../features/table_management/presentation/pages/waiter_tips_page.dart';
+import '../../features/inventory/presentation/pages/recipe_management_page.dart';
+import '../../features/inventory/presentation/pages/waste_logs_page.dart';
+import '../../features/manager_dashboard/presentation/pages/menu_engineering_page.dart';
+import '../../features/manager_dashboard/presentation/pages/owner_daily_digest_page.dart';
+import '../../features/manager_dashboard/presentation/pages/staff_timesheet_page.dart';
+import '../../features/manager_dashboard/presentation/pages/purchase_orders_page.dart';
+import '../../features/manager_dashboard/presentation/pages/security_audit_logs_page.dart';
+import '../../features/manager_dashboard/presentation/pages/guest_feedback_hub_page.dart';
+import '../../features/manager_dashboard/presentation/pages/sales_velocity_target_page.dart';
+import '../../features/customer/presentation/pages/group_order_room_page.dart';
+import '../../features/customer/presentation/pages/gift_cards_hub_page.dart';
+import '../../features/customer/presentation/pages/customer_dietary_profile_page.dart';
 import '../../shared/animations/page_transitions.dart';
 import '../../shared/widgets/not_found_page.dart';
 
@@ -46,6 +62,7 @@ import '../../shared/widgets/not_found_page.dart';
 /// Route map:
 ///   /login           – authentication
 ///   /customer        – Dine-in customer flow
+///   /cashier         – Cashier POS & cash drawer hub
 ///   /waiter          – Waiter / captain
 ///   /kds             – Kitchen Display System
 ///   /manager         – Manager / admin dashboard
@@ -56,6 +73,7 @@ import '../../shared/widgets/not_found_page.dart';
 /// The customer area (`/customer/**`) stays open to every authenticated role:
 /// it grants no privileges, and managers/waiters legitimately preview it.
 const Map<String, Set<UserRole>> _roleProtectedPrefixes = {
+  '/cashier': {UserRole.cashier, UserRole.manager, UserRole.admin},
   '/manager/shifts': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
   '/manager/invoices': {UserRole.cashier, UserRole.manager, UserRole.admin},
   '/manager/orders': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
@@ -197,6 +215,44 @@ GoRouter createAppRouter({required WidgetRef ref}) {
               child: const LoyaltyPage(),
             ),
           ),
+          GoRoute(
+            path: 'group-order',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const GroupOrderRoomPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'gift-cards',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const GiftCardsHubPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'dietary-profile',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const CustomerDietaryProfilePage(),
+            ),
+          ),
+        ],
+      ),
+
+      GoRoute(
+        path: '/cashier',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const CashierDashboardPage(),
+        ),
+        routes: [
+          GoRoute(
+            path: 'pos',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const FastPOSCheckoutPage(),
+            ),
+          ),
         ],
       ),
 
@@ -219,6 +275,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
               key: state.pageKey,
               child: WaiterOrderPage(tableId: state.pathParameters['tableId']!),
+            ),
+          ),
+          GoRoute(
+            path: 'tips',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const WaiterTipsPage(),
             ),
           ),
         ],
@@ -350,6 +413,69 @@ GoRouter createAppRouter({required WidgetRef ref}) {
               child: const ShiftManagementPage(),
             ),
           ),
+          GoRoute(
+            path: 'recipes',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const RecipeManagementPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'waste-logs',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const WasteLogsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'menu-engineering',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const MenuEngineeringPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'owner-digest',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const OwnerDailyDigestPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'timesheet',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const StaffTimesheetPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'purchase-orders',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const PurchaseOrdersPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'security-audit',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const SecurityAuditLogsPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'guest-feedback',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const GuestFeedbackHubPage(),
+            ),
+          ),
+          GoRoute(
+            path: 'sales-target',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const SalesVelocityTargetPage(),
+            ),
+          ),
         ],
       ),
 
@@ -358,6 +484,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const DriverHomePage(),
+        ),
+      ),
+      GoRoute(
+        path: '/driver/earnings',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const DriverEarningsPage(),
         ),
       ),
       GoRoute(

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:restaurant_app/config/constants.dart';
+import 'package:restaurant_app/config/supabase_config.dart';
+import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/network/realtime_event.dart';
 import 'package:restaurant_app/core/notifications/driver_alert_service.dart';
 import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
@@ -25,6 +28,23 @@ class SpyDriverAlertService implements DriverAlertService {
   void dispose() {}
 }
 
+class _TestRealtimeService extends SupabaseRealtimeService {
+  _TestRealtimeService()
+    : super(
+        SupabaseClient(
+          SupabaseConfig.url,
+          SupabaseConfig.anonKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      );
+
+  @override
+  void subscribeForRole(UserRole? role) {}
+
+  @override
+  void subscribe() {}
+}
+
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('ar');
@@ -38,6 +58,7 @@ void main() {
   List<Override> offlineOverrides() => [
     deliveryRepositoryProvider.overrideWithValue(InMemoryDeliveryRepository()),
     chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+    supabaseRealtimeServiceProvider.overrideWithValue(_TestRealtimeService()),
   ];
 
   testWidgets('shows empty state when no delivery jobs', (tester) async {
@@ -47,6 +68,9 @@ void main() {
           InMemoryDeliveryRepository(seed: const []),
         ),
         chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+        supabaseRealtimeServiceProvider.overrideWithValue(
+          _TestRealtimeService(),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -95,6 +119,9 @@ void main() {
           InMemoryDeliveryRepository(seed: const []),
         ),
         chatRepositoryProvider.overrideWithValue(InMemoryChatRepository()),
+        supabaseRealtimeServiceProvider.overrideWithValue(
+          _TestRealtimeService(),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -187,9 +214,11 @@ void main() {
 
   testWidgets('announces a broadcast assignment exactly once', (tester) async {
     final spy = SpyDriverAlertService();
+    final realtime = _TestRealtimeService();
     final container = ProviderContainer(
       overrides: [
         ...offlineOverrides(),
+        supabaseRealtimeServiceProvider.overrideWithValue(realtime),
         driverAlertServiceProvider.overrideWithValue(spy),
       ],
     );
@@ -208,21 +237,19 @@ void main() {
     expect(spy.notifyCalls, 0);
 
     // Dispatch a new assignment over the shared realtime service.
-    container
-        .read(supabaseRealtimeServiceProvider)
-        .emit(
-          RealtimeEvent(
-            type: RealtimeEventType.deliveryAssignmentCreated,
-            payload: {
-              'id': 'assign-rt-9',
-              'orderId': 'ORD-0200',
-              'driverId': 'driver-demo',
-              'pickupTime': DateTime.now().toIso8601String(),
-              'deliveryLocation': 'الرياض - حي النرجس',
-              'deliveryStatus': 'pending',
-            },
-          ),
-        );
+    realtime.emit(
+      RealtimeEvent(
+        type: RealtimeEventType.deliveryAssignmentCreated,
+        payload: {
+          'id': 'assign-rt-9',
+          'orderId': 'ORD-0200',
+          'driverId': 'driver-demo',
+          'pickupTime': DateTime.now().toIso8601String(),
+          'deliveryLocation': 'الرياض - حي النرجس',
+          'deliveryStatus': 'pending',
+        },
+      ),
+    );
     await tester.pump(); // deliver the realtime event + rebuild
     await tester.pump(const Duration(milliseconds: 300)); // snackbar entrance
 
@@ -239,21 +266,19 @@ void main() {
     expect(find.byType(SnackBar), findsOneWidget);
     expect(spy.notifyCalls, 1);
 
-    container
-        .read(supabaseRealtimeServiceProvider)
-        .emit(
-          RealtimeEvent(
-            type: RealtimeEventType.deliveryAssignmentCreated,
-            payload: {
-              'id': 'assign-rt-9',
-              'orderId': 'ORD-0200',
-              'driverId': 'driver-demo',
-              'pickupTime': DateTime.now().toIso8601String(),
-              'deliveryLocation': 'الرياض - حي النرجس',
-              'deliveryStatus': 'pending',
-            },
-          ),
-        );
+    realtime.emit(
+      RealtimeEvent(
+        type: RealtimeEventType.deliveryAssignmentCreated,
+        payload: {
+          'id': 'assign-rt-9',
+          'orderId': 'ORD-0200',
+          'driverId': 'driver-demo',
+          'pickupTime': DateTime.now().toIso8601String(),
+          'deliveryLocation': 'الرياض - حي النرجس',
+          'deliveryStatus': 'pending',
+        },
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(spy.notifyCalls, 1);

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/network/realtime_event.dart';
 import 'package:restaurant_app/core/supabase/supabase_realtime_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/order_tracking_page.dart';
 import 'package:restaurant_app/features/delivery/data/repositories/in_memory_delivery_repository.dart';
 import 'package:restaurant_app/features/delivery/domain/entities/delivery_assignment.dart';
@@ -94,6 +95,7 @@ void main() {
           deliveryRepositoryProvider.overrideWithValue(
             deliveryRepo ?? InMemoryDeliveryRepository(seed: const []),
           ),
+          supabaseRealtimeServiceProvider.overrideWithValue(_MockRealtimeService()),
         ],
         child: MaterialApp(
           routes: {
@@ -393,3 +395,15 @@ class FakeOrdersController extends StateNotifier<List<OrderEntity>>
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+class _MockRealtimeService extends SupabaseRealtimeService {
+  _MockRealtimeService()
+      : super(
+          SupabaseClient(
+            'https://mock.supabase.co',
+            'mock-key',
+            authOptions: const AuthClientOptions(autoRefreshToken: false),
+          ),
+        );
+}
+

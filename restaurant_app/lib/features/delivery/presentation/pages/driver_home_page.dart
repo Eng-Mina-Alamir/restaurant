@@ -15,11 +15,16 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../chat/presentation/controllers/unread_chat_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
+import '../../domain/services/driver_quick_action_service.dart';
 import '../controllers/delivery_controller.dart';
+import '../controllers/driver_wallet_controller.dart';
+import '../widgets/customer_unreachable_dialog.dart';
+import '../widgets/driver_cash_summary_card.dart';
 import '../widgets/live_tracking_map.dart';
+import '../widgets/proof_of_delivery_dialog.dart';
 
 /// Delivery driver home: live list of assignments with lifecycle actions,
-/// live map tracking and status filter.
+/// live map tracking, cash float summary, 1-tap WhatsApp/calling, and proof of delivery.
 class DriverHomePage extends ConsumerStatefulWidget {
   const DriverHomePage({super.key});
 
@@ -47,56 +52,76 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
       (_, next) => _announceNewAssignments(next),
     );
 
-    final visible = _filter == null
-        ? assignments
-        : assignments.where((a) => a.deliveryStatus == _filter).toList();
+    final visible =
+        _filter == null
+            ? assignments
+            : assignments.where((a) => a.deliveryStatus == _filter).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.driverTitle),
-        actions: const [LogoutActionButton()],
+        actions: [
+          IconButton(
+            tooltip: 'أرباح وعمولات الكابتن',
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            onPressed: () => context.push('/driver/earnings'),
+          ),
+          const LogoutActionButton(),
+        ],
       ),
       body: Column(
         children: [
+          // 1. Top Cash-in-Hand Summary Card
+          const DriverCashSummaryCard(),
+
+          // 2. Status Filter Chips Bar
           _StatusFilterBar(
             selected: _filter,
             onChanged: (s) => setState(() => _filter = s),
           ),
+
+          // 3. Assignments List
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async => ref.refresh(deliveryControllerProvider),
-              child: visible.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.5,
-                          child: EmptyState(
-                            message: _filter == null
-                                ? AppConstants.noDeliveryJobs
-                                : '${_filter!.labelAr} — '
-                                      '${AppConstants.noDeliveryJobs}',
-                            icon: Icons.local_shipping_outlined,
+              child:
+                  visible.isEmpty
+                      ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: EmptyState(
+                              message:
+                                  _filter == null
+                                      ? AppConstants.noDeliveryJobs
+                                      : '${_filter!.labelAr} — ${AppConstants.noDeliveryJobs}',
+                              icon: Icons.local_shipping_outlined,
+                            ),
                           ),
-                        ),
-                      ],
-                    )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      itemCount: visible.length,
-                      itemBuilder: (context, index) {
-                        final assignment = visible[index];
-                        return _DeliveryCard(
-                          assignment: assignment,
-                          onAction: () => _handleAction(ref, assignment),
-                          onOpenMap: () =>
-                              _showTrackingMap(context, ref, assignment),
-                          onOpenChat: () =>
-                              context.push('/chat/${assignment.orderId}'),
-                        );
-                      },
-                    ),
+                        ],
+                      )
+                      : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        itemCount: visible.length,
+                        itemBuilder: (context, index) {
+                          final assignment = visible[index];
+
+                          return _DeliveryCard(
+                            assignment: assignment,
+                            onAction: () => _handleAction(ref, assignment),
+                            onException:
+                                () => _handleException(ref, assignment),
+                            onOpenMap:
+                                () =>
+                                    _showTrackingMap(context, ref, assignment),
+                            onOpenChat:
+                                () =>
+                                    context.push('/chat/${assignment.orderId}'),
+                          );
+                        },
+                      ),
             ),
           ),
         ],
@@ -146,104 +171,104 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      // Fully transparent raw hex keeps every raw Material palette reference
-      // out of this page (tokenization audit); bit-identical to the Flutter
-      // fully-transparent color constant.
       backgroundColor: const Color(0x00000000),
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.90,
-        decoration: BoxDecoration(
-          color: Theme.of(ctx).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.navigation_rounded,
-                    color: Theme.of(ctx).colorScheme.primary,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      'ملاحة وتتبع الطلب ${Formatters.formatOrderId(assignment.orderId)}',
-                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    // Icon-only control: named for screen readers (audit in
-                    // test/core/accessibility_semantics_test.dart).
-                    tooltip: 'إغلاق',
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
+      builder:
+          (ctx) => Container(
+            height: MediaQuery.of(ctx).size.height * 0.90,
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: LiveTrackingMap(
-                  pickupLatLng: pickup,
-                  deliveryLatLng: delivery,
-                  pickupLabel: 'مطعم الأصالة',
-                  deliveryLabel: assignment.deliveryLocation,
-                  showControls: true,
-                  showNavigationHud: true,
-                  showDeliveryRadius: true,
-                  deliveryRadiusMeters: 10000,
-                  onLocationUpdate: (pos) {
-                    ref
-                        .read(deliveryControllerProvider.notifier)
-                        .updateLocation(
-                          latitude: pos.latitude,
-                          longitude: pos.longitude,
-                        );
-                  },
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.navigation_rounded,
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'ملاحة وتتبع الطلب ${Formatters.formatOrderId(assignment.orderId)}',
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'إغلاق',
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_pin,
-                    color: StatusColors.tone(
-                      SemanticTone.danger,
-                      Theme.of(ctx).brightness,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
                     ),
-                    size: 20,
+                    child: LiveTrackingMap(
+                      pickupLatLng: pickup,
+                      deliveryLatLng: delivery,
+                      pickupLabel: 'مطعم ليالي المحروسة',
+                      deliveryLabel: assignment.deliveryLocation,
+                      showControls: true,
+                      showNavigationHud: true,
+                      showDeliveryRadius: true,
+                      deliveryRadiusMeters: 10000,
+                      onLocationUpdate: (pos) {
+                        ref
+                            .read(deliveryControllerProvider.notifier)
+                            .updateLocation(
+                              latitude: pos.latitude,
+                              longitude: pos.longitude,
+                            );
+                      },
+                    ),
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      assignment.deliveryLocation,
-                      style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_pin,
+                        color: StatusColors.tone(
+                          SemanticTone.danger,
+                          Theme.of(ctx).brightness,
+                        ),
+                        size: 20,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          assignment.deliveryLocation,
+                          style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (assignment.customerPhone != null) ...[
+                        const SizedBox(width: 8),
+                        Chip(
+                          label: Text(assignment.customerPhone!),
+                          visualDensity: VisualDensity.compact,
+                          avatar: const Icon(Icons.phone, size: 14),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (assignment.customerPhone != null) ...[
-                    const SizedBox(width: 8),
-                    Chip(
-                      label: Text(assignment.customerPhone!),
-                      visualDensity: VisualDensity.compact,
-                      avatar: const Icon(Icons.phone, size: 14),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -258,9 +283,67 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
       case DeliveryStatus.accepted:
         await controller.start(assignment.id);
       case DeliveryStatus.inTransit:
-        await controller.complete(assignment.id);
+        const isCash = true;
+        final amountDue = (assignment.deliveryFee != null && assignment.deliveryFee! > 0)
+            ? (assignment.deliveryFee! * 5)
+            : 185.0;
+
+        final result = await ProofOfDeliveryDialog.show(
+          context,
+          orderId: assignment.orderId,
+          isCashOnDelivery: isCash,
+          amountDue: amountDue,
+        );
+
+        if (result != null && result.confirmed) {
+          await controller.complete(assignment.id);
+          ref
+              .read(driverWalletControllerProvider.notifier)
+              .recordCodCollection(
+                amountDue,
+                tip: result.tipAmount,
+                commission: assignment.deliveryFee ?? 20.0,
+              );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'تم إثبات وتسليم الطلب بنجاح وتحديث محفظة الكاش ✅',
+                ),
+                backgroundColor: Color(0xFF10B981),
+              ),
+            );
+          }
+        }
       default:
         break;
+    }
+  }
+
+  Future<void> _handleException(
+    WidgetRef ref,
+    DeliveryAssignment assignment,
+  ) async {
+    final exception = await CustomerUnreachableDialog.show(
+      context,
+      orderId: assignment.orderId,
+      customerPhone: assignment.customerPhone,
+    );
+
+    if (exception != null) {
+      final controller = ref.read(deliveryControllerProvider.notifier);
+      await controller.fail(assignment.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تسجيل تعثر التسليم (${exception.reason.labelAr}) وإرجاع الطلب للمطبخ',
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
     }
   }
 }
@@ -277,7 +360,7 @@ class _StatusFilterBar extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       child: Row(
         children: [
@@ -308,12 +391,14 @@ class _DeliveryCard extends ConsumerWidget {
   const _DeliveryCard({
     required this.assignment,
     required this.onAction,
+    required this.onException,
     required this.onOpenMap,
     required this.onOpenChat,
   });
 
   final DeliveryAssignment assignment;
   final VoidCallback onAction;
+  final VoidCallback onException;
   final VoidCallback onOpenMap;
   final VoidCallback onOpenChat;
 
@@ -322,24 +407,16 @@ class _DeliveryCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final status = assignment.deliveryStatus;
-    // Unread counter for this order's thread (0 until the customer replies
-    // after the badge subscription started). Cost model: each card rendered
-    // here opens ONE realtime channel + ONE history query per distinct order
-    // (see SupabaseChatRepository.watch), and because unreadChatCountProvider
-    // is a non-autoDispose family, every order ever listed on this page keeps
-    // its channel open for the whole session even after the card leaves the
-    // list — getAssignments feeds this page the driver's full unbounded
-    // history. Keeping per-order subscriptions is a deliberate tradeoff for
-    // now: converting to autoDispose would break ChatPage's .notifier-based
-    // markRead path; the decision and constraints are recorded on
-    // unreadChatCountProvider.
     final unreadCount = ref.watch(unreadChatCountProvider(assignment.orderId));
+
     final actionLabel = switch (status) {
       DeliveryStatus.pending => AppConstants.actionAccept,
       DeliveryStatus.accepted => AppConstants.actionStartDelivery,
       DeliveryStatus.inTransit => AppConstants.actionCompleteDelivery,
       _ => null,
     };
+
+    final customerPhone = assignment.customerPhone ?? '01000000000';
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -348,6 +425,7 @@ class _DeliveryCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top Row: Order ID + Status
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -361,19 +439,26 @@ class _DeliveryCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
+
+            // Location
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on_outlined, size: 18),
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    '${AppConstants.deliveryLocationLabel}: '
-                    '${assignment.deliveryLocation}',
+                    '${AppConstants.deliveryLocationLabel}: ${assignment.deliveryLocation}',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
               ],
             ),
+
+            // Customer Phone
             if (assignment.customerPhone != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Row(
@@ -381,13 +466,14 @@ class _DeliveryCard extends ConsumerWidget {
                   const Icon(Icons.phone_outlined, size: 18),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    '${AppConstants.customerPhoneLabel}: '
-                    '${assignment.customerPhone}',
+                    '${AppConstants.customerPhoneLabel}: ${assignment.customerPhone}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
             ],
+
+            // Distance
             if (assignment.routeDistanceMeters != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Row(
@@ -395,25 +481,27 @@ class _DeliveryCard extends ConsumerWidget {
                   const Icon(Icons.route_outlined, size: 18),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    '${AppConstants.distanceLabel}: '
-                    '${_formatDistance(assignment.routeDistanceMeters!)}',
+                    '${AppConstants.distanceLabel}: ${_formatDistance(assignment.routeDistanceMeters!)}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
             ],
+
+            // Pickup Time
             const SizedBox(height: AppSpacing.xs),
             Row(
               children: [
                 const Icon(Icons.schedule_outlined, size: 18),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  '${AppConstants.pickupTimeLabel}: '
-                  '${Formatters.formatTime(assignment.pickupTime)}',
+                  '${AppConstants.pickupTimeLabel}: ${Formatters.formatTime(assignment.pickupTime)}',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
             ),
+
+            // Delivery ETA
             if (assignment.routeDistanceMeters != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Row(
@@ -421,25 +509,139 @@ class _DeliveryCard extends ConsumerWidget {
                   const Icon(Icons.timer_outlined, size: 18),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    '${AppConstants.deliveryEtaLabel}: '
-                    '${Formatters.estimateDeliveryMinutes(assignment.routeDistanceMeters!)} '
-                    '${AppConstants.minutes}',
+                    '${AppConstants.deliveryEtaLabel}: ${Formatters.estimateDeliveryMinutes(assignment.routeDistanceMeters!)} ${AppConstants.minutes}',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
             ],
+
+            // Delivery Fee
             if (assignment.deliveryFee != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '${AppConstants.deliveryFeeLabel}: '
-                '${Formatters.formatCurrency(assignment.deliveryFee!)}',
+                '${AppConstants.deliveryFeeLabel}: ${Formatters.formatCurrency(assignment.deliveryFee!)}',
                 style: theme.textTheme.bodySmall,
               ),
             ],
+
             const SizedBox(height: AppSpacing.sm),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.sm),
+
+            // 1-Tap Field Communication Actions
             Row(
               children: [
+                // 1-Tap Direct Call
+                IconButton.filledTonal(
+                  tooltip: 'اتصال هاتفي مباشر',
+                  icon: const Icon(
+                    Icons.phone_in_talk_rounded,
+                    size: 18,
+                    color: Color(0xFF10B981),
+                  ),
+                  onPressed: () {
+                    final tel = DriverQuickActionService.getTelUriString(
+                      customerPhone,
+                    );
+                    DriverQuickActionService.copyToClipboard(customerPhone);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('رقم الهاتف $customerPhone منسوخ ($tel)'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: AppSpacing.xs),
+
+                // 1-Tap WhatsApp Popup with 3 Ready Templates
+                PopupMenuButton<String>(
+                  tooltip: 'رسالة واتساب سريعة',
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF25D366).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 18,
+                      color: Color(0xFF25D366),
+                    ),
+                  ),
+                  onSelected: (template) {
+                    final waUrl =
+                        DriverQuickActionService.getWhatsAppUriString(
+                          phone: customerPhone,
+                          message: template,
+                        );
+                    DriverQuickActionService.copyToClipboard(waUrl);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'تم نسخ رسالة الواتساب الجاهزة: "$template"',
+                        ),
+                        backgroundColor: const Color(0xFF25D366),
+                      ),
+                    );
+                  },
+                  itemBuilder: (ctx) {
+                    return DriverQuickActionService.defaultWhatsAppTemplates
+                        .map((tpl) {
+                          return PopupMenuItem(
+                            value: tpl,
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.send_rounded,
+                                  size: 14,
+                                  color: Color(0xFF25D366),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    tpl,
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        })
+                        .toList();
+                  },
+                ),
+                const SizedBox(width: AppSpacing.xs),
+
+                // External Google Maps Navigation
+                IconButton.filledTonal(
+                  tooltip: 'فتح خرائط Google للملاحة الصوتية',
+                  icon: const Icon(
+                    Icons.directions_rounded,
+                    size: 18,
+                    color: Color(0xFF3B82F6),
+                  ),
+                  onPressed: () {
+                    final mapsUrl =
+                        DriverQuickActionService.getGoogleMapsDirectionsUrl(
+                          latitude: assignment.latitude,
+                          longitude: assignment.longitude,
+                          label: assignment.deliveryLocation,
+                        );
+                    DriverQuickActionService.copyToClipboard(mapsUrl);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'تم نسخ رابط اتجاهات Google Maps الخارجي',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: AppSpacing.xs),
+
+                // Internal Map Sheet
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 48),
@@ -448,7 +650,10 @@ class _DeliveryCard extends ConsumerWidget {
                   label: const Text('الخريطة والتتبع'),
                   onPressed: onOpenMap,
                 ),
-                const SizedBox(width: AppSpacing.xs),
+
+                const Spacer(),
+
+                // In-App Chat
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -497,11 +702,37 @@ class _DeliveryCard extends ConsumerWidget {
                       ),
                   ],
                 ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+
+            // Action / Lifecycle Buttons Row
+            Row(
+              children: [
+                if (status == DeliveryStatus.inTransit) ...[
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFEF4444),
+                      side: const BorderSide(color: Color(0xFFEF4444)),
+                      minimumSize: const Size(0, 48),
+                    ),
+                    icon: const Icon(Icons.warning_amber_rounded, size: 16),
+                    label: const Text(
+                      'تعثر التسليم',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    onPressed: onException,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
                 if (actionLabel != null) ...[
-                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
+                        backgroundColor:
+                            status == DeliveryStatus.inTransit
+                                ? const Color(0xFF10B981)
+                                : null,
                         minimumSize: const Size(0, 48),
                       ),
                       onPressed: onAction,

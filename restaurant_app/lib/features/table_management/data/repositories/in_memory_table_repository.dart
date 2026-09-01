@@ -10,7 +10,10 @@ import '../table_seed_data.dart';
 /// survive within the session. A future implementation should persist to Hive
 /// and/or the backend floor-plan API.
 class InMemoryTableRepository implements TableRepository {
-  InMemoryTableRepository() : _tables = <String, RestaurantTable>{};
+  InMemoryTableRepository({List<RestaurantTable>? seed})
+      : _tables = <String, RestaurantTable>{
+          if (seed != null) for (final t in seed) t.id: t,
+        };
 
   final Map<String, RestaurantTable> _tables;
 

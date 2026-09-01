@@ -21,8 +21,13 @@ void main() {
     price: 28,
   );
   Future<void> pumpPage(WidgetTester tester) async {
+    final container = createTestContainer(seedCheckoutFixtures: true);
+    addTearDown(container.dispose);
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: WaiterDashboardPage())),
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: WaiterDashboardPage()),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -31,8 +36,12 @@ void main() {
     await pumpPage(tester);
     expect(find.byType(GridView), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    // Table 8 is below the fold; scroll until visible.
-    await tester.scrollUntilVisible(find.text('8'), 200);
+    // Table 8 is below the fold; scroll until visible in the GridView.
+    await tester.scrollUntilVisible(
+      find.text('8'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('8'), findsOneWidget);
   });
 

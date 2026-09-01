@@ -6,10 +6,15 @@ import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 import 'package:restaurant_app/features/table_management/presentation/pages/waiter_order_page.dart';
 
+import '../../helpers/test_container.dart';
+
 void main() {
   Future<void> pumpPage(WidgetTester tester, String tableId) async {
+    final container = createTestContainer();
+    addTearDown(container.dispose);
     await tester.pumpWidget(
-      ProviderScope(
+      UncontrolledProviderScope(
+        container: container,
         child: MaterialApp(home: WaiterOrderPage(tableId: tableId)),
       ),
     );

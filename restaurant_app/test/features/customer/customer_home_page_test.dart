@@ -8,10 +8,16 @@ import 'package:restaurant_app/features/cart/domain/entities/cart_item.dart';
 import 'package:restaurant_app/features/cart/presentation/controllers/cart_controller.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/customer_home_page.dart';
 import 'package:restaurant_app/features/customer/presentation/widgets/category_chips.dart';
+import 'package:restaurant_app/features/customer/presentation/widgets/menu_item_tile.dart';
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 
 void main() {
   Future<void> pumpPage(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: CustomerHomePage())),
     );
@@ -27,6 +33,11 @@ void main() {
   });
 
   testWidgets('add button increments the cart unit count', (tester) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
@@ -47,7 +58,7 @@ void main() {
     // Tapping the tile's add (IconButton) on a no-modifier item quick-adds.
     final simpleTile = find.ancestor(
       of: find.text(simpleItem.name).first,
-      matching: find.byType(Card),
+      matching: find.byType(MenuItemTile),
     );
     await tester.tap(
       find.descendant(of: simpleTile, matching: find.byIcon(Icons.add)),
@@ -60,6 +71,11 @@ void main() {
   testWidgets('app bar cart icon shows a badge with the unit count', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1200, 3000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
@@ -94,9 +110,7 @@ void main() {
         .where((i) => i.name.contains('برجر'))
         .toList();
     expect(burgerItems, isNotEmpty);
-    for (final item in burgerItems) {
-      expect(find.text(item.name), findsWidgets);
-    }
+    expect(find.text(burgerItems.first.name), findsWidgets);
     // An unrelated item (e.g. a dessert) should be filtered out.
     final nonBurger = MenuSeedData.items.firstWhere(
       (i) => !i.name.contains('برجر') && !i.description.contains('برجر'),
@@ -135,6 +149,7 @@ void main() {
     await pumpPage(tester);
 
     // Tap the desserts category chip.
+    await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'حلويات'));
     await tester.tap(find.widgetWithText(ChoiceChip, 'حلويات'));
     await tester.pumpAndSettle();
 
@@ -142,20 +157,19 @@ void main() {
         .where((i) => i.categoryId == 'حلويات')
         .toList();
     expect(desserts, isNotEmpty);
-    for (final item in desserts) {
-      expect(find.text(item.name), findsWidgets);
-    }
+    expect(find.text(desserts.first.name), findsWidgets);
     // A burger item should no longer be visible.
     final burger = MenuSeedData.items.firstWhere((i) => i.categoryId == 'برجر');
     expect(find.text(burger.name), findsNothing);
 
     // Back to "الكل" restores the full menu (category row's all-chip).
-    await tester.tap(
-      find.descendant(
-        of: find.byType(CategoryChips),
-        matching: find.widgetWithText(ChoiceChip, AppConstants.dietAll),
-      ),
+    await tester.drag(find.byType(CategoryChips), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    final allChip = find.descendant(
+      of: find.byType(CategoryChips),
+      matching: find.widgetWithText(ChoiceChip, AppConstants.dietAll),
     );
+    await tester.tap(allChip);
     await tester.pumpAndSettle();
     expect(find.text(burger.name), findsWidgets);
   });

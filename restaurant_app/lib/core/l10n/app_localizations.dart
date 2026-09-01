@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/app_cache.dart';
 import '../data/local_cache_service.dart';
+import '../utils/formatters.dart';
 
 /// Supported locales in the restaurant application.
 enum AppLanguage {
@@ -25,23 +26,26 @@ enum AppLanguage {
 /// Manages the application-wide active locale with caching and device language detection.
 class LocaleController extends StateNotifier<Locale> {
   LocaleController([LocalCacheService? cache])
-    : _cache = cache,
-      super(_resolveDefaultLocale()) {
+      : _cache = cache,
+        super(_resolveDefaultLocale()) {
     _load();
   }
 
   final LocalCacheService? _cache;
   static const _cacheKey = 'app_selected_locale';
 
-  /// Resolves device language or falls back to Arabic
+  /// Resolves device language: Arabic -> Arabic (RTL), otherwise -> English (LTR)
   static Locale _resolveDefaultLocale() {
     try {
       final deviceLocale = ui.PlatformDispatcher.instance.locale;
-      if (deviceLocale.languageCode.toLowerCase() == 'en') {
+      if (deviceLocale.languageCode.toLowerCase().startsWith('ar')) {
+        return const Locale('ar');
+      } else {
         return const Locale('en');
       }
-    } catch (_) {}
-    return const Locale('ar');
+    } catch (_) {
+      return const Locale('ar');
+    }
   }
 
   void _load() {
@@ -51,12 +55,14 @@ class LocaleController extends StateNotifier<Locale> {
     } else {
       state = _resolveDefaultLocale();
     }
+    Formatters.setLocale(state.languageCode);
   }
 
   /// Sets the active locale to [locale] and persists the preference.
   Future<void> setLocale(Locale locale) async {
     if (state == locale) return;
     state = locale;
+    Formatters.setLocale(locale.languageCode);
     await _cache?.writeString(_cacheKey, locale.languageCode);
   }
 
@@ -75,9 +81,9 @@ class LocaleController extends StateNotifier<Locale> {
 /// Provider for managing and watching the active [Locale].
 final localeControllerProvider =
     StateNotifierProvider<LocaleController, Locale>((ref) {
-      final cache = ref.watch(localCacheServiceProvider);
-      return LocaleController(cache);
-    });
+  final cache = ref.watch(localCacheServiceProvider);
+  return LocaleController(cache);
+});
 
 /// Convenience provider returning whether current locale is RTL (Arabic).
 final isRtlProvider = Provider<bool>((ref) {
@@ -90,3 +96,6 @@ final currentLanguageProvider = Provider<AppLanguage>((ref) {
   final locale = ref.watch(localeControllerProvider);
   return AppLanguage.fromLocale(locale);
 });
+
+/// Tracks the global tap origin where the language switch was initiated for radial reveal.
+final languageTransitionOriginProvider = StateProvider<Offset?>((ref) => null);

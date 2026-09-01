@@ -42,10 +42,16 @@ void main() {
   );
 
   testWidgets('shows empty state when no orders', (tester) async {
+    final container = createTestContainer();
+    addTearDown(container.dispose);
+
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: OrderHistoryPage())),
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: OrderHistoryPage()),
+      ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('لا توجد طلبات حالياً'), findsOneWidget);
   });
 

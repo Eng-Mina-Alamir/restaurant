@@ -25,6 +25,19 @@ enum OrderType {
     }
   }
 
+  String get labelEn {
+    switch (this) {
+      case OrderType.dineIn:
+        return 'Dine-In';
+      case OrderType.takeaway:
+        return 'Takeaway';
+      case OrderType.delivery:
+        return 'Delivery';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
+
   static OrderType fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'dinein':
@@ -53,6 +66,27 @@ enum OrderStatus {
   cancelled;
 
   String get labelAr => OrderStatusAr.labelOf(name);
+
+  String get labelEn {
+    switch (this) {
+      case OrderStatus.pending:
+        return 'Pending';
+      case OrderStatus.confirmed:
+        return 'Confirmed';
+      case OrderStatus.preparing:
+        return 'Preparing';
+      case OrderStatus.ready:
+        return 'Ready';
+      case OrderStatus.served:
+        return 'Served';
+      case OrderStatus.completed:
+        return 'Completed';
+      case OrderStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
 
   /// Whether the order reached a final state and no longer needs action.
   bool get isTerminal =>
@@ -144,6 +178,21 @@ enum TableStatus {
     }
   }
 
+  String get labelEn {
+    switch (this) {
+      case TableStatus.available:
+        return 'Available';
+      case TableStatus.occupied:
+        return 'Occupied';
+      case TableStatus.reserved:
+        return 'Reserved';
+      case TableStatus.needsCleaning:
+        return 'Cleaning Needed';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
+
   static TableStatus fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'available':
@@ -191,6 +240,27 @@ enum UserRole {
     }
   }
 
+  String get labelEn {
+    switch (this) {
+      case UserRole.customer:
+        return 'Customer';
+      case UserRole.waiter:
+        return 'Waiter';
+      case UserRole.kitchen:
+        return 'Kitchen Chef';
+      case UserRole.manager:
+        return 'Branch Manager';
+      case UserRole.admin:
+        return 'Super Admin';
+      case UserRole.driver:
+        return 'Delivery Driver';
+      case UserRole.cashier:
+        return 'Cashier';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
+
   /// Base route for the role used by the role-based router guard.
   String get homeRoute {
     switch (this) {
@@ -206,7 +276,7 @@ enum UserRole {
       case UserRole.driver:
         return '/driver';
       case UserRole.cashier:
-        return '/manager/shifts';
+        return '/cashier';
     }
   }
 
@@ -254,6 +324,21 @@ enum PaymentMethod {
     }
   }
 
+  String get labelEn {
+    switch (this) {
+      case PaymentMethod.cash:
+        return 'Cash';
+      case PaymentMethod.card:
+        return 'Card / Visa';
+      case PaymentMethod.wallet:
+        return 'Digital Wallet';
+      case PaymentMethod.online:
+        return 'Online Payment';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
+
   static PaymentMethod fromName(String? name) {
     switch (name?.toLowerCase()) {
       case 'cash':
@@ -296,6 +381,25 @@ enum DeliveryStatus {
         return AppConstants.deliveryFailed;
     }
   }
+
+  String get labelEn {
+    switch (this) {
+      case DeliveryStatus.pending:
+        return 'Pending Assignment';
+      case DeliveryStatus.accepted:
+        return 'Accepted by Driver';
+      case DeliveryStatus.pickedUp:
+        return 'Picked Up';
+      case DeliveryStatus.inTransit:
+        return 'In Transit';
+      case DeliveryStatus.delivered:
+        return 'Delivered';
+      case DeliveryStatus.failed:
+        return 'Failed / Cancelled';
+    }
+  }
+
+  String localizedLabel(bool isArabic) => isArabic ? labelAr : labelEn;
 
   static DeliveryStatus fromName(String? name) {
     switch (name?.toLowerCase()) {

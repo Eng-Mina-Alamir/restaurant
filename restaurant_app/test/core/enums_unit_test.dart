@@ -81,6 +81,7 @@ void main() {
       expect(UserRole.manager.homeRoute, '/manager');
       expect(UserRole.admin.homeRoute, '/manager');
       expect(UserRole.driver.homeRoute, '/driver');
+      expect(UserRole.cashier.homeRoute, '/cashier');
     });
 
     test('fromName matches aliases and defaults to customer', () {

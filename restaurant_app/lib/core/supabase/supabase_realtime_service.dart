@@ -4,17 +4,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_config.dart';
 import '../../config/supabase_config.dart';
+import '../domain/enums.dart';
 import '../network/realtime_event.dart';
 import '../utils/logger.dart';
 import 'supabase_providers.dart';
 
-/// Connects to Supabase Realtime Postgres change streams:
-/// - orders (inserts, updates)
-/// - tables (inserts, updates, deletes)
-/// - driver_locations (inserts, updates)
-/// - table_service_requests (inserts, updates)
-/// - delivery_assignments (inserts, updates)
-/// and emits typed [RealtimeEvent]s to subscribers.
+/// Connects to Supabase Realtime Postgres change streams and emits typed
+/// [RealtimeEvent]s to subscribers.
+///
+/// **Role-based channel filtering**: each user role subscribes only to the
+/// channels it needs, dramatically reducing concurrent connections:
+/// - Customer:  orders (1 channel)
+/// - Kitchen:   orders (1 channel)
+/// - Cashier:   orders (1 channel)
+/// - Waiter:    orders + tables + table_service_requests (3 channels)
+/// - Driver:    orders + delivery_assignments + driver_locations (3 channels)
+/// - Manager/Admin: all 5 channels
 class SupabaseRealtimeService {
   SupabaseRealtimeService(this._supabase);
 
@@ -36,173 +41,230 @@ class SupabaseRealtimeService {
   /// Alias for [stream].
   Stream<RealtimeEvent> get events => stream;
 
-  /// Subscribes to Supabase Realtime channels.
-  void subscribe() {
+  /// Subscribes to ALL channels (legacy — used when role is unknown).
+  void subscribe() => subscribeForRole(null);
+
+  /// Subscribes to Supabase Realtime channels based on [role].
+  ///
+  /// Only channels relevant to the user's role are opened, which reduces
+  /// concurrent Realtime connections from 5 per user to 1–3 on average.
+  void subscribeForRole(UserRole? role) {
     if (_isSubscribed) return;
     _controller ??= StreamController<RealtimeEvent>.broadcast();
     _isSubscribed = true;
 
     try {
-      // 1. Orders Realtime Channel
-      _ordersChannel = _supabase.channel('public:${SupabaseConfig.ordersTable}')
-        ..onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: SupabaseConfig.ordersTable,
-          callback: (payload) {
-            AppLogger.info(
-              'Realtime Order Inserted: ${payload.newRecord['id']}',
-            );
+      // Orders channel — needed by ALL roles
+      _subscribeOrders();
+
+      // Tables + Table Service Requests — needed by waiter, manager, admin
+      if (role == null ||
+          role == UserRole.waiter ||
+          role == UserRole.manager ||
+          role == UserRole.admin) {
+        _subscribeTables();
+        _subscribeTableServiceRequests();
+      }
+
+      // Driver Locations — needed by driver, manager, admin
+      if (role == null ||
+          role == UserRole.driver ||
+          role == UserRole.manager ||
+          role == UserRole.admin) {
+        _subscribeDriverLocations();
+      }
+
+      // Delivery Assignments — needed by driver, manager, admin, cashier
+      if (role == null ||
+          role == UserRole.driver ||
+          role == UserRole.manager ||
+          role == UserRole.admin ||
+          role == UserRole.cashier) {
+        _subscribeDeliveryAssignments();
+      }
+
+      final channelCount = [
+        _ordersChannel,
+        _tablesChannel,
+        _driverChannel,
+        _tableServiceChannel,
+        _deliveryAssignmentsChannel,
+      ].where((c) => c != null).length;
+      AppLogger.info(
+        'Realtime: subscribed to $channelCount channels for role=${role?.name ?? "all"}',
+      );
+    } catch (e, st) {
+      _isSubscribed = false;
+      AppLogger.error(
+        'Failed to subscribe to Supabase Realtime channels: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
+  }
+
+  // ── Channel setup helpers ──────────────────────────────────────────────
+
+  void _subscribeOrders() {
+    _ordersChannel = _supabase.channel('public:${SupabaseConfig.ordersTable}')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.insert,
+        schema: 'public',
+        table: SupabaseConfig.ordersTable,
+        callback: (payload) {
+          AppLogger.info(
+            'Realtime Order Inserted: ${payload.newRecord['id']}',
+          );
+          _controller?.add(
+            RealtimeEvent(
+              type: RealtimeEventType.orderCreated,
+              payload: payload.newRecord,
+            ),
+          );
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.update,
+        schema: 'public',
+        table: SupabaseConfig.ordersTable,
+        callback: (payload) {
+          AppLogger.info(
+            'Realtime Order Updated: ${payload.newRecord['id']} -> ${payload.newRecord['status']}',
+          );
+          _controller?.add(
+            RealtimeEvent(
+              type: RealtimeEventType.orderStatusChanged,
+              payload: payload.newRecord,
+            ),
+          );
+          // If dineIn order reached ready, also emit orderReadyForPickup for waiter alerts
+          if (payload.newRecord['status'] == 'ready' &&
+              payload.newRecord['order_type'] == 'dineIn') {
             _controller?.add(
               RealtimeEvent(
-                type: RealtimeEventType.orderCreated,
+                type: RealtimeEventType.orderReadyForPickup,
                 payload: payload.newRecord,
               ),
             );
-          },
-        )
-        ..onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: SupabaseConfig.ordersTable,
-          callback: (payload) {
-            AppLogger.info(
-              'Realtime Order Updated: ${payload.newRecord['id']} -> ${payload.newRecord['status']}',
-            );
-            _controller?.add(
-              RealtimeEvent(
-                type: RealtimeEventType.orderStatusChanged,
-                payload: payload.newRecord,
-              ),
-            );
-            // If dineIn order reached ready, also emit orderReadyForPickup for waiter alerts
-            if (payload.newRecord['status'] == 'ready' &&
-                payload.newRecord['order_type'] == 'dineIn') {
+          }
+        },
+      )
+      ..subscribe();
+  }
+
+  void _subscribeTables() {
+    _tablesChannel = _supabase.channel('public:${SupabaseConfig.tablesTable}')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: SupabaseConfig.tablesTable,
+        callback: (payload) {
+          _controller?.add(
+            RealtimeEvent(
+              type: RealtimeEventType.tableStatusChanged,
+              payload: payload.newRecord.isNotEmpty
+                  ? payload.newRecord
+                  : payload.oldRecord,
+            ),
+          );
+        },
+      )
+      ..subscribe();
+  }
+
+  void _subscribeDriverLocations() {
+    _driverChannel =
+        _supabase.channel('public:${SupabaseConfig.driverLocationsTable}')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: SupabaseConfig.driverLocationsTable,
+            callback: (payload) {
               _controller?.add(
                 RealtimeEvent(
-                  type: RealtimeEventType.orderReadyForPickup,
+                  type: RealtimeEventType.driverLocationUpdated,
                   payload: payload.newRecord,
                 ),
               );
-            }
-          },
-        )
-        ..subscribe();
+            },
+          )
+          ..subscribe();
+  }
 
-      // 2. Tables Realtime Channel
-      _tablesChannel = _supabase.channel('public:${SupabaseConfig.tablesTable}')
-        ..onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: SupabaseConfig.tablesTable,
-          callback: (payload) {
-            _controller?.add(
-              RealtimeEvent(
-                type: RealtimeEventType.tableStatusChanged,
-                payload: payload.newRecord.isNotEmpty
-                    ? payload.newRecord
-                    : payload.oldRecord,
-              ),
-            );
-          },
-        )
-        ..subscribe();
+  void _subscribeTableServiceRequests() {
+    _tableServiceChannel =
+        _supabase.channel('public:${SupabaseConfig.tableServiceRequestsTable}')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: SupabaseConfig.tableServiceRequestsTable,
+            callback: (payload) {
+              AppLogger.info(
+                'Realtime Table Service Requested: ${payload.newRecord['id']} for table ${payload.newRecord['table_number']}',
+              );
+              _controller?.add(
+                RealtimeEvent(
+                  type: RealtimeEventType.tableServiceRequested,
+                  payload: payload.newRecord,
+                ),
+              );
+            },
+          )
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: SupabaseConfig.tableServiceRequestsTable,
+            callback: (payload) {
+              AppLogger.info(
+                'Realtime Table Service Updated: ${payload.newRecord['id']} (is_handled=${payload.newRecord['is_handled']})',
+              );
+              _controller?.add(
+                RealtimeEvent(
+                  type: RealtimeEventType.tableServiceHandled,
+                  payload: payload.newRecord,
+                ),
+              );
+            },
+          )
+          ..subscribe();
+  }
 
-      // 3. Driver Locations Realtime Channel
-      _driverChannel =
-          _supabase.channel('public:${SupabaseConfig.driverLocationsTable}')
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.all,
-              schema: 'public',
-              table: SupabaseConfig.driverLocationsTable,
-              callback: (payload) {
-                _controller?.add(
-                  RealtimeEvent(
-                    type: RealtimeEventType.driverLocationUpdated,
-                    payload: payload.newRecord,
-                  ),
-                );
-              },
-            )
-            ..subscribe();
-
-      // 4. Table Service Requests Channel
-      _tableServiceChannel =
-          _supabase.channel('public:${SupabaseConfig.tableServiceRequestsTable}')
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.insert,
-              schema: 'public',
-              table: SupabaseConfig.tableServiceRequestsTable,
-              callback: (payload) {
-                AppLogger.info(
-                  'Realtime Table Service Requested: ${payload.newRecord['id']} for table ${payload.newRecord['table_number']}',
-                );
-                _controller?.add(
-                  RealtimeEvent(
-                    type: RealtimeEventType.tableServiceRequested,
-                    payload: payload.newRecord,
-                  ),
-                );
-              },
-            )
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.update,
-              schema: 'public',
-              table: SupabaseConfig.tableServiceRequestsTable,
-              callback: (payload) {
-                AppLogger.info(
-                  'Realtime Table Service Updated: ${payload.newRecord['id']} (is_handled=${payload.newRecord['is_handled']})',
-                );
-                _controller?.add(
-                  RealtimeEvent(
-                    type: RealtimeEventType.tableServiceHandled,
-                    payload: payload.newRecord,
-                  ),
-                );
-              },
-            )
-            ..subscribe();
-
-      // 5. Delivery Assignments Channel
-      _deliveryAssignmentsChannel =
-          _supabase.channel('public:${SupabaseConfig.deliveryAssignmentsTable}')
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.insert,
-              schema: 'public',
-              table: SupabaseConfig.deliveryAssignmentsTable,
-              callback: (payload) {
-                AppLogger.info(
-                  'Realtime Delivery Assignment Inserted: ${payload.newRecord['id']}',
-                );
-                _controller?.add(
-                  RealtimeEvent(
-                    type: RealtimeEventType.deliveryAssignmentCreated,
-                    payload: payload.newRecord,
-                  ),
-                );
-              },
-            )
-            ..onPostgresChanges(
-              event: PostgresChangeEvent.update,
-              schema: 'public',
-              table: SupabaseConfig.deliveryAssignmentsTable,
-              callback: (payload) {
-                AppLogger.info(
-                  'Realtime Delivery Assignment Updated: ${payload.newRecord['id']}',
-                );
-                _controller?.add(
-                  RealtimeEvent(
-                    type: RealtimeEventType.deliveryAssignmentUpdated,
-                    payload: payload.newRecord,
-                  ),
-                );
-              },
-            )
-            ..subscribe();
-    } catch (e, st) {
-      _isSubscribed = false;
-      AppLogger.error('Failed to subscribe to Supabase Realtime channels: $e', error: e, stackTrace: st);
-    }
+  void _subscribeDeliveryAssignments() {
+    _deliveryAssignmentsChannel =
+        _supabase.channel('public:${SupabaseConfig.deliveryAssignmentsTable}')
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: SupabaseConfig.deliveryAssignmentsTable,
+            callback: (payload) {
+              AppLogger.info(
+                'Realtime Delivery Assignment Inserted: ${payload.newRecord['id']}',
+              );
+              _controller?.add(
+                RealtimeEvent(
+                  type: RealtimeEventType.deliveryAssignmentCreated,
+                  payload: payload.newRecord,
+                ),
+              );
+            },
+          )
+          ..onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: SupabaseConfig.deliveryAssignmentsTable,
+            callback: (payload) {
+              AppLogger.info(
+                'Realtime Delivery Assignment Updated: ${payload.newRecord['id']}',
+              );
+              _controller?.add(
+                RealtimeEvent(
+                  type: RealtimeEventType.deliveryAssignmentUpdated,
+                  payload: payload.newRecord,
+                ),
+              );
+            },
+          )
+          ..subscribe();
   }
 
   /// Updates driver location in the DB (which triggers Realtime to all clients)
@@ -251,3 +313,4 @@ final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((ref) 
   ref.onDispose(service.dispose);
   return service;
 });
+

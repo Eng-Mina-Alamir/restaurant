@@ -132,10 +132,18 @@ class SupabaseOrderRepository implements OrderRepository {
   @override
   Future<Either<Failure, List<OrderEntity>>> getOrders() async {
     try {
+      // Limit to last 90 days and cap at 200 rows to stay within free-plan
+      // bandwidth. Older orders can be fetched on-demand via getOrderById.
+      final cutoff = DateTime.now()
+          .subtract(const Duration(days: 90))
+          .toIso8601String();
       final response = await _supabase
           .from(SupabaseConfig.ordersTable)
           .select()
-          .order('created_at', ascending: false);
+          .eq('is_archived', false)
+          .gte('created_at', cutoff)
+          .order('created_at', ascending: false)
+          .limit(200);
 
       final List<OrderEntity> orders = [];
       for (final raw in (response as List)) {

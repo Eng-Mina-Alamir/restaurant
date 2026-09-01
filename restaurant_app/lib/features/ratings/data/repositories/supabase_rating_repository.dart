@@ -24,7 +24,8 @@ class SupabaseRatingRepository implements RatingRepository {
           .from(SupabaseConfig.ratingsTable)
           .select()
           .eq('target_id', targetId)
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(50);
 
       final List<RatingEntity> ratings = [];
       for (final raw in (response as List)) {
@@ -82,7 +83,8 @@ class SupabaseRatingRepository implements RatingRepository {
       final response = await _supabase
           .from(SupabaseConfig.ratingsTable)
           .select('score')
-          .eq('target_id', targetId);
+          .eq('target_id', targetId)
+          .limit(500);
 
       final list = (response as List);
       if (list.isEmpty) return const Right(5.0);

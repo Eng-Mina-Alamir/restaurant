@@ -9,6 +9,7 @@ import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/auth/presentation/controllers/auth_controller.dart';
+import 'shared/animations/radial_language_reveal.dart';
 
 /// Root application widget.
 ///
@@ -63,6 +64,12 @@ class _RestaurantAppState extends ConsumerState<RestaurantApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        return RadialLanguageReveal(
+          locale: activeLocale,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

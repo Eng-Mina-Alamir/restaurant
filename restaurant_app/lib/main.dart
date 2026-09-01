@@ -13,40 +13,41 @@ import 'core/utils/logger.dart';
 const String _sentryDsn = String.fromEnvironment('SENTRY_DSN');
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   // 1. Control logging: emit logs only in debug mode
   AppLogger.enabled = kDebugMode;
-
-  // 2. Global Flutter framework error handling
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    AppLogger.error(
-      'Flutter framework error: ${details.exceptionAsString()}',
-      error: details.exception,
-      stackTrace: details.stack,
-    );
-    if (_sentryDsn.isNotEmpty) {
-      Sentry.captureException(details.exception, stackTrace: details.stack);
-    }
-  };
-
-  // 3. Global Platform Dispatcher error handling
-  PlatformDispatcher.instance.onError = (error, stack) {
-    AppLogger.error(
-      'PlatformDispatcher error: $error',
-      error: error,
-      stackTrace: stack,
-    );
-    if (_sentryDsn.isNotEmpty) {
-      Sentry.captureException(error, stackTrace: stack);
-    }
-    return true;
-  };
 
   Future<void> appRunner() async {
     await runZonedGuarded(
       () async {
+        // Binding must be initialized inside the same zone as runApp().
+        WidgetsFlutterBinding.ensureInitialized();
+
+        // 2. Global Flutter framework error handling
+        FlutterError.onError = (FlutterErrorDetails details) {
+          FlutterError.presentError(details);
+          AppLogger.error(
+            'Flutter framework error: ${details.exceptionAsString()}',
+            error: details.exception,
+            stackTrace: details.stack,
+          );
+          if (_sentryDsn.isNotEmpty) {
+            Sentry.captureException(details.exception, stackTrace: details.stack);
+          }
+        };
+
+        // 3. Global Platform Dispatcher error handling
+        PlatformDispatcher.instance.onError = (error, stack) {
+          AppLogger.error(
+            'PlatformDispatcher error: $error',
+            error: error,
+            stackTrace: stack,
+          );
+          if (_sentryDsn.isNotEmpty) {
+            Sentry.captureException(error, stackTrace: stack);
+          }
+          return true;
+        };
+
         // Cache setup is independent of the backend, so start it now and
         // await it below; both initializations then run concurrently.
         final cacheFuture = initAppCache();
@@ -102,3 +103,4 @@ Future<void> main() async {
     await appRunner();
   }
 }
+
