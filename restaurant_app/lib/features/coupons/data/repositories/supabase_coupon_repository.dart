@@ -150,7 +150,6 @@ class SupabaseCouponRepository implements CouponRepository {
     try {
       final cleanCode = coupon.code.trim().toUpperCase();
       final payload = {
-        'id': coupon.id,
         'code': cleanCode,
         'title': coupon.title,
         'discount_type': coupon.discountType.name,
@@ -166,8 +165,16 @@ class SupabaseCouponRepository implements CouponRepository {
         'expires_at': coupon.validUntil?.toIso8601String(),
       };
 
-      await _supabase.from(SupabaseConfig.couponsTable).insert(payload);
-      return Right(coupon);
+      final response = await _supabase
+          .from(SupabaseConfig.couponsTable)
+          .insert(payload)
+          .select()
+          .single();
+
+      final created = coupon.copyWith(
+        id: response['id']?.toString() ?? coupon.id,
+      );
+      return Right(created);
     } catch (e, st) {
       AppLogger.error('Supabase createCoupon error', error: e, stackTrace: st);
       return Left(ServerFailure('فشل إنشاء الكوبون: $e'));

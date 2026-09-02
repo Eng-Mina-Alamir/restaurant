@@ -500,9 +500,7 @@ class CouponManagementPage extends ConsumerWidget {
                     }
 
                     final newCoupon = CouponEntity(
-                      id:
-                          coupon?.id ??
-                          'cpn-${DateTime.now().millisecondsSinceEpoch}',
+                      id: coupon?.id ?? '0',
                       code: code,
                       title: title,
                       discountType: discountType,

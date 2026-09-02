@@ -40,16 +40,20 @@ class SupabaseOrderRepository implements OrderRepository {
   Future<Either<Failure, OrderEntity>> createOrder(OrderEntity order) async {
     try {
       // 1. Insert into Supabase `orders` table
-      final orderRow = {
-        'id': order.id,
+      final parsedOrderId = int.tryParse(order.id);
+      final parsedTableId = order.tableId != null && order.tableId!.trim().isNotEmpty
+          ? int.tryParse(order.tableId!.replaceAll(RegExp(r'[^0-9]'), ''))
+          : null;
+
+      final orderRow = <String, dynamic>{
+        if (parsedOrderId != null && parsedOrderId > 0) 'id': parsedOrderId,
+        'order_number': order.id.startsWith('ORD-') ? order.id : null,
         'restaurant_id': _sanitizeUuid(
           order.restaurantId,
           defaultFallback: defaultRestaurantId,
         ),
         'customer_id': _sanitizeUuid(order.customerId),
-        'table_id': order.tableId != null && order.tableId!.trim().isNotEmpty
-            ? order.tableId!.trim()
-            : null,
+        'table_id': parsedTableId,
         'waiter_id': _sanitizeUuid(order.waiterId),
         'assigned_kitchen_id': _sanitizeUuid(order.assignedKitchenId),
         'driver_id': _sanitizeUuid(order.driverId),
@@ -66,27 +70,40 @@ class SupabaseOrderRepository implements OrderRepository {
         'items_json': order.items.map((i) => i.toJson()).toList(),
       };
 
+      Map<String, dynamic> responseMap;
       try {
-        await _supabase.from(SupabaseConfig.ordersTable).upsert(orderRow);
+        final inserted = await _supabase
+            .from(SupabaseConfig.ordersTable)
+            .insert(orderRow)
+            .select()
+            .single();
+        responseMap = Map<String, dynamic>.from(inserted);
       } catch (e) {
         if (e.toString().contains('items_json') ||
             e.toString().contains('restaurant_id')) {
           final rowCleaned = Map<String, dynamic>.from(orderRow)
             ..remove('items_json')
             ..remove('restaurant_id');
-          await _supabase.from(SupabaseConfig.ordersTable).upsert(rowCleaned);
+          final inserted = await _supabase
+              .from(SupabaseConfig.ordersTable)
+              .insert(rowCleaned)
+              .select()
+              .single();
+          responseMap = Map<String, dynamic>.from(inserted);
         } else {
           rethrow;
         }
       }
 
-      // 2. Also insert line items into `order_items` table (delete-then-insert to prevent duplicates)
+      final dynamic realDbId = responseMap['id'];
+
+      // 2. Also insert line items into `order_items` table
       try {
         final itemsPayload = order.items
             .map(
               (item) => {
-                'order_id': order.id,
-                'menu_item_id': item.menuItem.id,
+                'order_id': realDbId,
+                'menu_item_id': int.tryParse(item.menuItem.id) ?? item.menuItem.id,
                 'item_name': item.menuItem.name,
                 'price': item.menuItem.price,
                 'quantity': item.quantity,
@@ -101,29 +118,20 @@ class SupabaseOrderRepository implements OrderRepository {
             .toList();
 
         if (itemsPayload.isNotEmpty) {
-          try {
-            await _supabase
-                .from(SupabaseConfig.orderItemsTable)
-                .delete()
-                .eq('order_id', order.id);
-          } catch (e) {
-            AppLogger.warning(
-              'Could not delete old order_items for ${order.id}: $e',
-            );
-          }
-
           await _supabase
               .from(SupabaseConfig.orderItemsTable)
-              .upsert(itemsPayload);
+              .insert(itemsPayload);
         }
       } catch (e) {
         AppLogger.warning('Could not insert items into order_items table: $e');
       }
 
-      // 3. Cache locally
-      await _cacheOrderLocally(order);
+      final updatedOrder = _orderFromRow(responseMap);
 
-      return Right<Failure, OrderEntity>(order);
+      // 3. Cache locally
+      await _cacheOrderLocally(updatedOrder);
+
+      return Right<Failure, OrderEntity>(updatedOrder);
     } catch (e) {
       AppLogger.error('Supabase createOrder error: $e');
       // Save locally so orders aren't lost
@@ -177,11 +185,12 @@ class SupabaseOrderRepository implements OrderRepository {
   @override
   Future<Either<Failure, OrderEntity?>> getOrderById(String orderId) async {
     try {
-      final response = await _supabase
-          .from(SupabaseConfig.ordersTable)
-          .select()
-          .eq('id', orderId)
-          .limit(1);
+      final parsedId = int.tryParse(orderId);
+      final query = _supabase.from(SupabaseConfig.ordersTable).select();
+      final response = parsedId != null
+          ? await query.eq('id', parsedId).limit(1)
+          : await query.or('order_number.eq.$orderId,id.eq.0').limit(1);
+
       final rows = response as List;
       if (rows.isEmpty) {
         return const Right<Failure, OrderEntity?>(null);
@@ -255,12 +264,11 @@ class SupabaseOrderRepository implements OrderRepository {
     String kitchenUserId,
   ) async {
     try {
-      // Update and RETURN the row so callers receive the authoritative
-      // post-claim entity.
+      final parsedId = int.tryParse(orderId) ?? orderId;
       final response = await _supabase
           .from(SupabaseConfig.ordersTable)
           .update({'assigned_kitchen_id': kitchenUserId})
-          .eq('id', orderId)
+          .eq('id', parsedId)
           .select()
           .single();
 
@@ -281,12 +289,11 @@ class SupabaseOrderRepository implements OrderRepository {
     String? reason,
   }) async {
     try {
-      // 1. Read current state so the revert can be validated server-side of
-      //    the optimistic UI update.
+      final parsedId = int.tryParse(orderId) ?? orderId;
       final rows = await _supabase
           .from(SupabaseConfig.ordersTable)
           .select()
-          .eq('id', orderId)
+          .eq('id', parsedId)
           .limit(1);
       if ((rows as List).isEmpty) {
         return const Left<Failure, OrderEntity>(
@@ -310,7 +317,7 @@ class SupabaseOrderRepository implements OrderRepository {
       final revertLog = await _supabase
           .from(SupabaseConfig.orderStatusLogTable)
           .select('id')
-          .eq('order_id', orderId)
+          .eq('order_id', parsedId)
           .eq('is_revert', true);
       if ((revertLog as List).length >= 2) {
         return const Left<Failure, OrderEntity>(
@@ -324,7 +331,7 @@ class SupabaseOrderRepository implements OrderRepository {
       final response = await _supabase
           .from(SupabaseConfig.ordersTable)
           .update({'status': toStatus.name})
-          .eq('id', orderId)
+          .eq('id', parsedId)
           .select()
           .single();
       final updated = _orderFromRow(Map<String, dynamic>.from(response as Map));
@@ -333,7 +340,7 @@ class SupabaseOrderRepository implements OrderRepository {
       //    status change, but it is surfaced in logs for observability.
       try {
         await _supabase.from(SupabaseConfig.orderStatusLogTable).insert({
-          'order_id': orderId,
+          'order_id': parsedId,
           'from_status': current.status.name,
           'to_status': toStatus.name,
           'changed_by': _sanitizeUuid(actorId),
@@ -367,6 +374,7 @@ class SupabaseOrderRepository implements OrderRepository {
     OrderStatus status,
   ) async {
     try {
+      final parsedId = int.tryParse(orderId) ?? orderId;
       await _supabase
           .from(SupabaseConfig.ordersTable)
           .update({
@@ -374,7 +382,7 @@ class SupabaseOrderRepository implements OrderRepository {
             if (status == OrderStatus.completed || status == OrderStatus.served)
               'completed_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', orderId);
+          .eq('id', parsedId);
       return const Right<Failure, void>(null);
     } catch (e) {
       final msg = e.toString();
@@ -399,11 +407,12 @@ class SupabaseOrderRepository implements OrderRepository {
     List<OrderItem> items,
   ) async {
     try {
+      final parsedOrderId = int.tryParse(orderId) ?? orderId;
       final payload = items
           .map(
             (item) => <String, dynamic>{
-              'order_id': orderId,
-              'menu_item_id': item.menuItem.id,
+              'order_id': parsedOrderId,
+              'menu_item_id': int.tryParse(item.menuItem.id) ?? item.menuItem.id,
               'item_name': item.menuItem.name,
               'price': item.menuItem.price,
               'quantity': item.quantity,
@@ -440,11 +449,12 @@ class SupabaseOrderRepository implements OrderRepository {
     String driverId,
   ) async {
     try {
+      final parsedId = int.tryParse(orderId) ?? orderId;
       final sanitizedId = _sanitizeUuid(driverId);
       await _supabase
           .from(SupabaseConfig.ordersTable)
           .update({'driver_id': sanitizedId})
-          .eq('id', orderId);
+          .eq('id', parsedId);
       return const Right<Failure, void>(null);
     } catch (e) {
       AppLogger.error('updateOrderDriverId error: $e');
@@ -459,10 +469,11 @@ class SupabaseOrderRepository implements OrderRepository {
     String orderId,
   ) async {
     try {
+      final parsedId = int.tryParse(orderId) ?? orderId;
       final response = await _supabase
           .from(SupabaseConfig.orderStatusLogTable)
           .select()
-          .eq('order_id', orderId)
+          .eq('order_id', parsedId)
           .order('created_at');
       final trail = (response as List)
           .map((raw) => _logFromRow(Map<String, dynamic>.from(raw as Map)))

@@ -53,7 +53,6 @@ class SupabaseRatingRepository implements RatingRepository {
     try {
       final currentUid = _supabase.auth.currentUser?.id ?? rating.userId;
       final payload = {
-        'id': rating.id,
         'target_id': rating.targetId,
         'target_type': rating.targetType.name,
         'user_id': currentUid,
@@ -63,9 +62,17 @@ class SupabaseRatingRepository implements RatingRepository {
         'created_at': rating.createdAt.toIso8601String(),
       };
 
-      await _supabase.from(SupabaseConfig.ratingsTable).insert(payload);
-      _cachedRatings.insert(0, rating);
-      return Right(rating);
+      final response = await _supabase
+          .from(SupabaseConfig.ratingsTable)
+          .insert(payload)
+          .select()
+          .single();
+
+      final created = rating.copyWith(
+        id: response['id']?.toString() ?? rating.id,
+      );
+      _cachedRatings.insert(0, created);
+      return Right(created);
     } catch (e, st) {
       AppLogger.warning(
         'Supabase submitRating fallback: $e',

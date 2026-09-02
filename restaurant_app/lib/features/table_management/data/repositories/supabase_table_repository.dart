@@ -69,6 +69,11 @@ class SupabaseTableRepository implements TableRepository {
   ) async {
     _ensureCache();
     try {
+      final parsedId = int.tryParse(table.id) ?? table.id;
+      final parsedOrderId = table.currentOrderId != null
+          ? int.tryParse(table.currentOrderId!.replaceAll(RegExp(r'[^0-9]'), ''))
+          : null;
+
       await _supabase
           .from(SupabaseConfig.tablesTable)
           .update({
@@ -76,11 +81,11 @@ class SupabaseTableRepository implements TableRepository {
             'capacity': table.capacity,
             'location': table.location,
             'status': table.status.name,
-            'current_order_id': table.currentOrderId,
+            'current_order_id': parsedOrderId,
             'assigned_waiter_id': table.assignedWaiterId,
             'last_updated': DateTime.now().toIso8601String(),
           })
-          .eq('id', table.id);
+          .eq('id', parsedId);
 
       final index = _cachedTables!.indexWhere((t) => t.id == table.id);
       if (index != -1) {
@@ -102,8 +107,7 @@ class SupabaseTableRepository implements TableRepository {
   ) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.tablesTable).insert({
-        'id': table.id,
+      final response = await _supabase.from(SupabaseConfig.tablesTable).insert({
         'table_number': table.tableNumber,
         'capacity': table.capacity,
         'location': table.location,
@@ -111,10 +115,14 @@ class SupabaseTableRepository implements TableRepository {
         'current_order_id': table.currentOrderId,
         'assigned_waiter_id': table.assignedWaiterId,
         'last_updated': DateTime.now().toIso8601String(),
-      });
+      }).select().single();
 
-      _cachedTables!.add(table);
-      return Right<Failure, RestaurantTable>(table);
+      final created = table.copyWith(
+        id: response['id']?.toString() ?? table.id,
+      );
+
+      _cachedTables!.add(created);
+      return Right<Failure, RestaurantTable>(created);
     } catch (e) {
       AppLogger.error('Supabase addTable error: $e');
       return Left<Failure, RestaurantTable>(
@@ -127,7 +135,8 @@ class SupabaseTableRepository implements TableRepository {
   Future<Either<Failure, void>> deleteTable(String id) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.tablesTable).delete().eq('id', id);
+      final parsedId = int.tryParse(id) ?? id;
+      await _supabase.from(SupabaseConfig.tablesTable).delete().eq('id', parsedId);
 
       _cachedTables!.removeWhere((t) => t.id == id);
       return const Right<Failure, void>(null);

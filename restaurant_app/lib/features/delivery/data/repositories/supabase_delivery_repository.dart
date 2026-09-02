@@ -48,10 +48,19 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           ValidationFailure('معرّف السائق غير صالح للإرسال للسيرفر'),
         );
       }
-      await _supabase
+      final row = _assignmentToRow(assignment, driverId);
+      final parsedId = int.tryParse(assignment.id);
+      if (parsedId == null || parsedId == 0) {
+        row.remove('id');
+      }
+      final response = await _supabase
           .from(SupabaseConfig.deliveryAssignmentsTable)
-          .upsert(_assignmentToRow(assignment, driverId));
-      return Right<Failure, DeliveryAssignment>(assignment);
+          .upsert(row)
+          .select(_selectWithDriver)
+          .single();
+
+      final created = _assignmentFromRow(Map<String, dynamic>.from(response));
+      return Right<Failure, DeliveryAssignment>(created);
     } catch (e) {
       AppLogger.error(
         'Supabase createAssignment error: $e '

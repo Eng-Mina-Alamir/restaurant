@@ -64,38 +64,47 @@ class SupabaseReservationRepository implements ReservationRepository {
   ) async {
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
+      final parsedTableId = int.tryParse(reservation.tableId.replaceAll(RegExp(r'[^0-9]'), ''));
       final payload = {
-        'id': reservation.id,
         'user_id': _sanitizeUuid(currentUserId),
         'customer_name': reservation.customerName,
         'phone': reservation.customerPhone,
         'party_size': reservation.guestCount,
         'reservation_time': reservation.reservationTime.toIso8601String(),
-        'table_id': _sanitizeUuid(reservation.tableId),
+        'table_id': parsedTableId,
         'table_number': reservation.tableNumber,
         'status': reservation.status.name,
         'notes': reservation.notes,
         'created_at': reservation.createdAt.toIso8601String(),
       };
 
+      Map<String, dynamic> response;
       try {
-        await _supabase.from(SupabaseConfig.reservationsTable).insert(payload);
+        final res = await _supabase.from(SupabaseConfig.reservationsTable).insert(payload).select().single();
+        response = Map<String, dynamic>.from(res);
       } catch (e) {
         if (e.toString().contains('phone') ||
             e.toString().contains('PGRST204')) {
           final legacyPayload = Map<String, dynamic>.from(payload)
             ..remove('phone')
             ..['customer_phone'] = reservation.customerPhone;
-          await _supabase
+          final res = await _supabase
               .from(SupabaseConfig.reservationsTable)
-              .insert(legacyPayload);
+              .insert(legacyPayload)
+              .select()
+              .single();
+          response = Map<String, dynamic>.from(res);
         } else {
           rethrow;
         }
       }
 
-      _cachedReservations.add(reservation);
-      return Right(reservation);
+      final created = reservation.copyWith(
+        id: response['id']?.toString() ?? reservation.id,
+      );
+
+      _cachedReservations.add(created);
+      return Right(created);
     } catch (e, st) {
       AppLogger.error(
         'Supabase createReservation error: $e',

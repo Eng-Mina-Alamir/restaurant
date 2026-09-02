@@ -95,7 +95,6 @@ class SupabaseInventoryRepository implements InventoryRepository {
   ) async {
     try {
       final payload = {
-        'id': item.id,
         'name': item.name,
         'category': item.category,
         'quantity': item.currentStock,
@@ -104,11 +103,20 @@ class SupabaseInventoryRepository implements InventoryRepository {
         'cost_per_unit': item.costPerUnit,
         'last_updated': DateTime.now().toIso8601String(),
       };
-      await _supabase.from(SupabaseConfig.inventoryTable).insert(payload);
+      final response = await _supabase
+          .from(SupabaseConfig.inventoryTable)
+          .insert(payload)
+          .select()
+          .single();
+
+      final created = item.copyWith(
+        id: response['id']?.toString() ?? item.id,
+      );
+
       if (_cachedItems != null) {
-        _cachedItems!.add(item);
+        _cachedItems!.add(created);
       }
-      return Right(item);
+      return Right(created);
     } catch (e, st) {
       AppLogger.warning(
         'Supabase addItem fallback: $e',

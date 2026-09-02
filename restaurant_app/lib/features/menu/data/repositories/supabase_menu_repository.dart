@@ -136,8 +136,7 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   Future<Either<Failure, MenuItem>> addMenuItem(MenuItem item) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.menuItemsTable).insert({
-        'id': item.id,
+      final response = await _supabase.from(SupabaseConfig.menuItemsTable).insert({
         'category_id': item.categoryId,
         'name': item.name,
         'description': item.description,
@@ -147,11 +146,16 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         'is_vegetarian': item.isVegetarian,
         'is_spicy': item.isSpicy,
         'preparation_time': item.preparationTime,
-      });
-      _cachedMenu = _cachedMenu!.copyWith(
-        items: [..._cachedMenu!.items.where((i) => i.id != item.id), item],
+      }).select().single();
+
+      final created = item.copyWith(
+        id: response['id']?.toString() ?? item.id,
       );
-      return Right<Failure, MenuItem>(item);
+
+      _cachedMenu = _cachedMenu!.copyWith(
+        items: [..._cachedMenu!.items.where((i) => i.id != created.id), created],
+      );
+      return Right<Failure, MenuItem>(created);
     } catch (e) {
       AppLogger.error('Supabase addMenuItem error: $e');
       return Left<Failure, MenuItem>(

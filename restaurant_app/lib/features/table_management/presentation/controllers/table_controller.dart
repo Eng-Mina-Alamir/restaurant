@@ -157,7 +157,7 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
     String? assignedWaiterId,
   }) async {
     final newTable = RestaurantTable(
-      id: 'tbl-${DateTime.now().millisecondsSinceEpoch}',
+      id: '0',
       tableNumber: tableNumber,
       capacity: capacity,
       status: TableStatus.available,

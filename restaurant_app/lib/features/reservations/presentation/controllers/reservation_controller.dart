@@ -47,7 +47,7 @@ class ReservationController
     String? notes,
   }) async {
     final reservation = ReservationEntity(
-      id: 'res-${DateTime.now().millisecondsSinceEpoch}',
+      id: '0',
       customerName: customerName,
       customerPhone: customerPhone,
       tableId: tableId,

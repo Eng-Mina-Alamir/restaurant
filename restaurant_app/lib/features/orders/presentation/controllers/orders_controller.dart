@@ -714,7 +714,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final order = state[index];
     final now = DateTime.now();
     final assignment = DeliveryAssignment(
-      id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
+      id: '0',
       orderId: order.id,
       driverId: driverId,
       pickupTime: now,

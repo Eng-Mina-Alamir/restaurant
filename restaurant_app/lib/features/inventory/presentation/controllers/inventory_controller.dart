@@ -43,7 +43,7 @@ class InventoryController
     required double costPerUnit,
   }) async {
     final newItem = InventoryItemEntity(
-      id: 'inv-${DateTime.now().millisecondsSinceEpoch}',
+      id: '0',
       name: name,
       category: category,
       currentStock: currentStock,

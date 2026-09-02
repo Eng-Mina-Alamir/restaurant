@@ -113,8 +113,8 @@ class TableServiceController extends StateNotifier<List<TableServiceRequest>> {
     required TableServiceType type,
     String? note,
   }) async {
-    final request = TableServiceRequest(
-      id: 'REQ-${DateTime.now().millisecondsSinceEpoch}',
+    final initial = TableServiceRequest(
+      id: '0',
       tableId: tableId,
       tableNumber: tableNumber,
       type: type,
@@ -123,14 +123,18 @@ class TableServiceController extends StateNotifier<List<TableServiceRequest>> {
       isHandled: false,
     );
 
-    state = [request, ...state];
     AppLogger.info(
       'TableServiceController: Table $tableNumber requested ${type.name}',
     );
 
-    // Persist to database; Supabase Realtime delivers event to waiters
-    await _repository.createRequest(request);
-    return request;
+    final res = await _repository.createRequest(initial);
+    final saved = res.when(
+      onLeft: (_) => initial,
+      onRight: (data) => data,
+    );
+
+    state = [saved, ...state.where((r) => r.id != saved.id && r.id != '0')];
+    return saved;
   }
 
   /// Acknowledges and completes a table assistance request by a waiter.

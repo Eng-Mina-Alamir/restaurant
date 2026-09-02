@@ -48,11 +48,17 @@ class SupabaseTableServiceRepository implements TableServiceRepository {
     TableServiceRequest request,
   ) async {
     try {
-      await _supabase
+      final payload = request.toJson()..remove('id');
+      final response = await _supabase
           .from(SupabaseConfig.tableServiceRequestsTable)
-          .insert(request.toJson());
+          .insert(payload)
+          .select()
+          .single();
 
-      return Right<Failure, TableServiceRequest>(request);
+      final created = request.copyWith(
+        id: response['id']?.toString() ?? request.id,
+      );
+      return Right<Failure, TableServiceRequest>(created);
     } catch (e, st) {
       AppLogger.error(
         'Supabase createRequest failed: $e',

@@ -509,7 +509,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
 
                     if (existingItem == null) {
                       final newItem = MenuItem(
-                        id: 'item-${DateTime.now().millisecondsSinceEpoch}',
+                        id: '0',
                         categoryId: category,
                         name: name,
                         description: descCtrl.text.trim(),

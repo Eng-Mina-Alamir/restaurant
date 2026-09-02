@@ -31,36 +31,30 @@ class SupabaseCartRepository {
     try {
       await _deleteUserRows(userId);
 
-      final prefix = _idPrefix(userId);
-      final itemRows = <Map<String, dynamic>>[];
-      final modifierRows = <Map<String, dynamic>>[];
       for (var i = 0; i < items.length; i++) {
         final item = items[i];
-        final rowId = '${prefix}ci$i';
-        itemRows.add({
-          'id': rowId,
+        final menuItemId = int.tryParse(item.menuItem.id) ?? item.menuItem.id;
+        final insertedItem = await _supabase.from(SupabaseConfig.cartItemsTable).insert({
           'user_id': userId,
-          'menu_item_id': item.menuItem.id,
+          'menu_item_id': menuItemId,
           'quantity': item.quantity.clamp(1, 99),
           if (item.specialNotes != null) 'special_notes': item.specialNotes,
-        });
-        for (var j = 0; j < item.selectedModifiers.length; j++) {
+        }).select('id').single();
+
+        final dynamic generatedCartItemId = insertedItem['id'];
+        final modifierRows = <Map<String, dynamic>>[];
+        for (final mod in item.selectedModifiers) {
+          final modOptionId = int.tryParse(mod.id) ?? mod.id;
           modifierRows.add({
-            'id': '${prefix}cim${i}_$j',
-            'cart_item_id': rowId,
-            'modifier_option_id': item.selectedModifiers[j].id,
+            'cart_item_id': generatedCartItemId,
+            'modifier_option_id': modOptionId,
           });
         }
-      }
-
-      // Parents before children so the FKs are satisfied in order.
-      if (itemRows.isNotEmpty) {
-        await _supabase.from(SupabaseConfig.cartItemsTable).insert(itemRows);
-      }
-      if (modifierRows.isNotEmpty) {
-        await _supabase
-            .from(SupabaseConfig.cartItemModifiersTable)
-            .insert(modifierRows);
+        if (modifierRows.isNotEmpty) {
+          await _supabase
+              .from(SupabaseConfig.cartItemModifiersTable)
+              .insert(modifierRows);
+        }
       }
       return const Right<Failure, void>(null);
     } catch (e) {
@@ -137,8 +131,8 @@ class SupabaseCartRepository {
         .eq('user_id', userId);
     final ids = [
       for (final raw in (owned as List))
-        (Map<String, dynamic>.from(raw as Map))['id']?.toString(),
-    ].whereType<String>().toList();
+        (Map<String, dynamic>.from(raw as Map))['id'],
+    ].where((id) => id != null).toList();
     if (ids.isNotEmpty) {
       await _supabase
           .from(SupabaseConfig.cartItemModifiersTable)
@@ -151,14 +145,6 @@ class SupabaseCartRepository {
         .eq('user_id', userId);
   }
 
-  /// Stable short prefix so regenerated ids stay deterministic per user.
-  ///
-  /// Pads short ids instead of throwing: a uuid with all dashes stripped may
-  /// be shorter than 12 chars (or empty), which made `substring` a RangeError.
-  String _idPrefix(String userId) {
-    final sanitized = userId.replaceAll('-', '');
-    return sanitized.padRight(12, 'x').substring(0, 12);
-  }
 
   MenuItem? _menuItemFromJoin(Map<String, dynamic>? map) {
     if (map == null) return null;

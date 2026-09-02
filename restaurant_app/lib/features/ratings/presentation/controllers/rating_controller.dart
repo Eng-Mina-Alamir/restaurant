@@ -52,7 +52,7 @@ class RatingSubmissionController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncValue.loading();
     final rating = RatingEntity(
-      id: 'rate-${DateTime.now().millisecondsSinceEpoch}',
+      id: '0',
       targetId: targetId,
       targetType: targetType,
       userId: userId,

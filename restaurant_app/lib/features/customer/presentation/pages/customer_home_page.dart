@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
@@ -117,7 +118,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
               physics: const BouncingScrollPhysics(
                 parent: AlwaysScrollableScrollPhysics(),
               ),
-              cacheExtent: 1500,
+              scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
               slivers: [
                 // 1. Sleek Customer SliverAppBar with Quick Actions Hub
                 CustomerSliverAppBar(
@@ -179,9 +180,13 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
                                 AppSpacing.xs,
                               ),
                               child: TextField(
-                                onChanged: (value) => ref
-                                    .read(menuSearchQueryProvider.notifier)
-                                    .state = value,
+                                onChanged: (value) =>
+                                    ref
+                                            .read(
+                                              menuSearchQueryProvider.notifier,
+                                            )
+                                            .state =
+                                        value,
                                 decoration: InputDecoration(
                                   hintText: AppConstants.searchMenuHint,
                                   prefixIcon: const Icon(Icons.search_rounded),
@@ -190,8 +195,9 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
                                   fillColor: colorScheme.surfaceContainerHighest
                                       .withValues(alpha: 0.5),
                                   border: OutlineInputBorder(
-                                    borderRadius:
-                                        BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                     borderSide: BorderSide.none,
                                   ),
                                 ),
@@ -202,18 +208,24 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
                             CategoryChips(
                               categories: menu.categories,
                               selected: selected,
-                              onSelected: (category) => ref
-                                  .read(selectedCategoryProvider.notifier)
-                                  .state = category,
+                              onSelected: (category) =>
+                                  ref
+                                          .read(
+                                            selectedCategoryProvider.notifier,
+                                          )
+                                          .state =
+                                      category,
                             ),
                             const SizedBox(height: AppSpacing.xs),
 
                             // Dietary Filter Chips
                             _DietChips(
                               selected: diet,
-                              onSelected: (value) => ref
-                                  .read(menuDietFilterProvider.notifier)
-                                  .state = value,
+                              onSelected: (value) =>
+                                  ref
+                                          .read(menuDietFilterProvider.notifier)
+                                          .state =
+                                      value,
                             ),
 
                             // Promotional Banners Carousel
@@ -245,30 +257,30 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
                             80, // Space for floating cart bar
                           ),
                           sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final item = items[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpacing.xs,
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final item = items[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.xs,
+                                ),
+                                child: AnimatedListItem(
+                                  index: index,
+                                  staggerDuration: const Duration(
+                                    milliseconds: 40,
                                   ),
-                                  child: AnimatedListItem(
-                                    index: index,
-                                    staggerDuration:
-                                        const Duration(milliseconds: 40),
-                                    duration:
-                                        const Duration(milliseconds: 350),
-                                    child: MenuItemTile(
-                                      item: item,
-                                      onTap: () =>
-                                          _showItemDetail(context, ref, item),
-                                      onAdd: () => _quickAdd(ref, item),
-                                    ),
+                                  duration: const Duration(milliseconds: 350),
+                                  child: MenuItemTile(
+                                    item: item,
+                                    onTap: () =>
+                                        _showItemDetail(context, ref, item),
+                                    onAdd: () => _quickAdd(ref, item),
                                   ),
-                                );
-                              },
-                              childCount: items.length,
-                            ),
+                                ),
+                              );
+                            }, childCount: items.length),
                           ),
                         ),
                     ];
@@ -354,8 +366,9 @@ class _TableServiceBanner extends ConsumerWidget {
     final tableNum =
         int.tryParse(activeTable.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
     final requests = ref.watch(tableServiceControllerProvider);
-    final activeForThisTable =
-        requests.where((r) => r.tableId == activeTable && !r.isHandled).toList();
+    final activeForThisTable = requests
+        .where((r) => r.tableId == activeTable && !r.isHandled)
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -454,10 +467,7 @@ class _TableServiceBanner extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton.tonalIcon(
-                      icon: const Icon(
-                        Icons.receipt_long_outlined,
-                        size: 18,
-                      ),
+                      icon: const Icon(Icons.receipt_long_outlined, size: 18),
                       label: const Text('طلب الحساب'),
                       style: FilledButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -472,9 +482,7 @@ class _TableServiceBanner extends ConsumerWidget {
                             );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text(
-                              'تم إرسال طلب الفاتورة للنادل 🧾',
-                            ),
+                            content: Text('تم إرسال طلب الفاتورة للنادل 🧾'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
