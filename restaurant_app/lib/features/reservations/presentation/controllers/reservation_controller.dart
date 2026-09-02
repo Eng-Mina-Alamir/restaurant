@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../domain/entities/reservation_entity.dart';
 import '../../domain/repositories/reservation_repository.dart';
@@ -12,6 +13,7 @@ final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   if (AppConfig.useSupabase) {
     return SupabaseReservationRepository(
       supabase: ref.watch(supabaseClientProvider),
+      cache: ref.watch(localCacheServiceProvider),
     );
   }
   return InMemoryReservationRepository();

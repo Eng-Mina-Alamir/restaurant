@@ -1,23 +1,26 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
-import '../table_seed_data.dart';
 
-/// Supabase-backed [TableRepository] with fallback to seed data.
+/// Supabase-backed [TableRepository] with Hive cache-aside persistence.
 class SupabaseTableRepository implements TableRepository {
-  SupabaseTableRepository(this._supabase);
+  SupabaseTableRepository(this._supabase, [this._cache]);
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
   List<RestaurantTable>? _cachedTables;
 
+  static const String _tablesCacheKey = 'tables_v1';
+
   void _ensureCache() {
-    _cachedTables ??= TableSeedData.buildTables();
+    _cachedTables ??= [];
   }
 
   @override
@@ -38,7 +41,7 @@ class SupabaseTableRepository implements TableRepository {
             capacity: (map['capacity'] as num?)?.toInt() ?? 4,
             location: map['location'] as String? ?? 'صالة',
             status: TableStatus.fromName(map['status'] as String?),
-            currentOrderId: map['current_order_id'] as String?,
+            currentOrderId: map['current_order_id']?.toString(),
             assignedWaiterId: map['assigned_waiter_id'] as String?,
             lastUpdated: map['last_updated'] != null
                 ? DateTime.tryParse(map['last_updated'] as String)
@@ -47,19 +50,51 @@ class SupabaseTableRepository implements TableRepository {
         );
       }
 
-      if (tables.isEmpty) {
-        final fallback = TableSeedData.buildTables();
-        _cachedTables = fallback;
-        return Right<Failure, List<RestaurantTable>>(fallback);
+      _cachedTables = tables;
+
+      final cache = _cache;
+      if (cache != null) {
+        await cache.writeList(
+          _tablesCacheKey,
+          tables.map((t) => {
+            'id': t.id,
+            'tableNumber': t.tableNumber,
+            'capacity': t.capacity,
+            'location': t.location,
+            'status': t.status.name,
+            'currentOrderId': t.currentOrderId,
+            'assignedWaiterId': t.assignedWaiterId,
+            'lastUpdated': t.lastUpdated?.toIso8601String(),
+          }).toList(),
+        );
       }
 
-      _cachedTables = tables;
       return Right<Failure, List<RestaurantTable>>(tables);
-    } catch (e) {
-      AppLogger.warning('Supabase getTables failed: $e, using seed tables');
-      final fallback = _cachedTables ?? TableSeedData.buildTables();
-      _cachedTables = fallback;
-      return Right<Failure, List<RestaurantTable>>(fallback);
+    } catch (e, st) {
+      AppLogger.warning('Supabase getTables failed: $e, reading from local cache', error: e, stackTrace: st);
+      final cache = _cache;
+      if (cache != null) {
+        final cached = cache.readList(_tablesCacheKey);
+        if (cached.isNotEmpty) {
+          final tables = cached.map((map) => RestaurantTable(
+            id: map['id']?.toString() ?? '',
+            tableNumber: (map['tableNumber'] as num?)?.toInt() ?? 1,
+            capacity: (map['capacity'] as num?)?.toInt() ?? 4,
+            location: map['location'] as String? ?? 'صالة',
+            status: TableStatus.fromName(map['status'] as String?),
+            currentOrderId: map['currentOrderId'] as String?,
+            assignedWaiterId: map['assignedWaiterId'] as String?,
+            lastUpdated: map['lastUpdated'] != null
+                ? DateTime.tryParse(map['lastUpdated'] as String)
+                : null,
+          )).toList();
+          _cachedTables = tables;
+          return Right<Failure, List<RestaurantTable>>(tables);
+        }
+      }
+
+      final empty = _cachedTables ?? <RestaurantTable>[];
+      return Right<Failure, List<RestaurantTable>>(empty);
     }
   }
 
@@ -112,9 +147,12 @@ class SupabaseTableRepository implements TableRepository {
         'capacity': table.capacity,
         'location': table.location,
         'status': table.status.name,
-        'current_order_id': table.currentOrderId,
+        'current_order_id': table.currentOrderId != null
+            ? int.tryParse(table.currentOrderId!.replaceAll(RegExp(r'[^0-9]'), ''))
+            : null,
         'assigned_waiter_id': table.assignedWaiterId,
         'last_updated': DateTime.now().toIso8601String(),
+        'restaurant_id': SupabaseConfig.defaultRestaurantId,
       }).select().single();
 
       final created = table.copyWith(

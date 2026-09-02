@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
+import '../../data/repositories/supabase_manager_operations_repository.dart';
 import '../../domain/entities/purchase_order_entity.dart';
 import '../../domain/services/purchase_order_service.dart';
 
@@ -30,57 +32,22 @@ class PurchaseOrderState {
 
 /// Controller managing Purchase Orders lifecycle (draft, send, receive into inventory).
 class PurchaseOrderController extends StateNotifier<PurchaseOrderState> {
-  PurchaseOrderController()
-      : super(
-          PurchaseOrderState(
-            orders: [
-              PurchaseOrderEntity(
-                id: 'PO-101',
-                supplierName: 'شركة الأهرام للحوم والدواجن الطازجة',
-                supplierPhone: '01012345678',
-                orderDate: DateTime.now().subtract(const Duration(days: 1)),
-                expectedDeliveryDate: DateTime.now(),
-                status: POStatus.sentToSupplier,
-                items: const [
-                  POItem(
-                    ingredientId: 'ing-chicken',
-                    ingredientName: 'صدور دجاج طازجة متبلة',
-                    unit: 'كجم',
-                    orderedQuantity: 50.0,
-                    estimatedUnitPrice: 180.0,
-                  ),
-                  POItem(
-                    ingredientId: 'ing-beef',
-                    ingredientName: 'لحم بقري برجر بلدي',
-                    unit: 'كجم',
-                    orderedQuantity: 30.0,
-                    estimatedUnitPrice: 320.0,
-                  ),
-                ],
-              ),
-              PurchaseOrderEntity(
-                id: 'PO-100',
-                supplierName: 'مزارع النيل للخضار والصلصات',
-                supplierPhone: '01122334455',
-                orderDate: DateTime.now().subtract(const Duration(days: 3)),
-                receivedAt: DateTime.now().subtract(const Duration(days: 2)),
-                status: POStatus.received,
-                supplierInvoiceNumber: 'INV-54129',
-                items: const [
-                  POItem(
-                    ingredientId: 'ing-tomato',
-                    ingredientName: 'طماطم وخضروات طازجة',
-                    unit: 'كجم',
-                    orderedQuantity: 40.0,
-                    receivedQuantity: 40.0,
-                    estimatedUnitPrice: 25.0,
-                    actualUnitPrice: 25.0,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
+  PurchaseOrderController([this._repository]) : super(const PurchaseOrderState()) {
+    loadOrders();
+  }
+
+  final SupabaseManagerOperationsRepository? _repository;
+
+  Future<void> loadOrders() async {
+    if (_repository == null) return;
+    final result = await _repository.getPurchaseOrders();
+    result.when(
+      onLeft: (_) {},
+      onRight: (pos) {
+        if (mounted) state = state.copyWith(orders: pos);
+      },
+    );
+  }
 
   /// Creates a new Purchase Order.
   PurchaseOrderEntity createPO({
@@ -102,7 +69,22 @@ class PurchaseOrderController extends StateNotifier<PurchaseOrderState> {
     );
 
     state = state.copyWith(orders: [po, ...state.orders]);
+    _repository?.savePurchaseOrder(po);
     return po;
+  }
+
+  /// Updates status of a PO.
+  void updatePOStatus(String poId, POStatus newStatus) {
+    final updated = state.orders.map((po) {
+      if (po.id == poId) {
+        final mod = po.copyWith(status: newStatus);
+        _repository?.savePurchaseOrder(mod);
+        return mod;
+      }
+      return po;
+    }).toList();
+
+    state = state.copyWith(orders: updated);
   }
 
   /// Marks a PO as received, records invoice number, and final costs.
@@ -124,12 +106,27 @@ class PurchaseOrderController extends StateNotifier<PurchaseOrderState> {
 
     final list = [...state.orders]..[index] = updated;
     state = state.copyWith(orders: list);
+    _repository?.savePurchaseOrder(updated);
     return updated;
+  }
+
+  /// Receives items against a purchase order.
+  void receivePO({
+    required String poId,
+    required String invoiceNumber,
+    required List<POItem> receivedItems,
+  }) {
+    markReceived(
+      poId: poId,
+      supplierInvoiceNumber: invoiceNumber,
+      receivedItems: receivedItems,
+    );
   }
 }
 
 /// Riverpod provider for [PurchaseOrderController].
 final purchaseOrderControllerProvider =
     StateNotifierProvider<PurchaseOrderController, PurchaseOrderState>((ref) {
-      return PurchaseOrderController();
+      final repo = ref.watch(supabaseManagerOperationsRepositoryProvider);
+      return PurchaseOrderController(repo);
     });

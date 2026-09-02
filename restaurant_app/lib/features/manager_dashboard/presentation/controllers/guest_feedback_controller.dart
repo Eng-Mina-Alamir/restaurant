@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
+import '../../data/repositories/supabase_manager_operations_repository.dart';
 import '../../domain/entities/guest_feedback_entity.dart';
 
 /// State of customer feedback, CSAT metrics, and complaint resolution.
@@ -57,16 +59,27 @@ class GuestFeedbackState {
 
 /// Controller managing guest ratings and resolving complaints.
 class GuestFeedbackController extends StateNotifier<GuestFeedbackState> {
-  GuestFeedbackController()
-      : super(
-          GuestFeedbackState(
-            feedbacks: List.from(GuestFeedback.demoFeedbacks),
-          ),
-        );
+  GuestFeedbackController([this._repository]) : super(const GuestFeedbackState()) {
+    loadFeedback();
+  }
+
+  final SupabaseManagerOperationsRepository? _repository;
+
+  Future<void> loadFeedback() async {
+    if (_repository == null) return;
+    final result = await _repository.getGuestFeedbacks();
+    result.when(
+      onLeft: (_) {},
+      onRight: (feedbacks) {
+        if (mounted) state = state.copyWith(feedbacks: feedbacks);
+      },
+    );
+  }
 
   /// Adds a new guest feedback.
   GuestFeedback addFeedback(GuestFeedback feedback) {
     state = state.copyWith(feedbacks: [feedback, ...state.feedbacks]);
+    _repository?.saveGuestFeedback(feedback);
     return feedback;
   }
 
@@ -78,11 +91,13 @@ class GuestFeedbackController extends StateNotifier<GuestFeedbackState> {
   }) {
     final updated = state.feedbacks.map((f) {
       if (f.id == feedbackId) {
-        return f.copyWith(
+        final mod = f.copyWith(
           isResolved: true,
           resolutionNotes: resolutionNotes,
           compensationCouponCode: compensationCouponCode,
         );
+        _repository?.saveGuestFeedback(mod);
+        return mod;
       }
       return f;
     }).toList();
@@ -94,5 +109,7 @@ class GuestFeedbackController extends StateNotifier<GuestFeedbackState> {
 /// Riverpod provider for [GuestFeedbackController].
 final guestFeedbackControllerProvider =
     StateNotifierProvider<GuestFeedbackController, GuestFeedbackState>((ref) {
-      return GuestFeedbackController();
+      final repo = ref.watch(supabaseManagerOperationsRepositoryProvider);
+      return GuestFeedbackController(repo);
     });
+

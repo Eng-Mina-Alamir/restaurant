@@ -1,9 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../data/repositories/supabase_customer_profile_repository.dart';
 import '../../domain/entities/curbside_pickup_entity.dart';
 
 /// Controller for managing Curbside Car Pickup vehicle details and live arrival signal.
 class CurbsideController extends StateNotifier<CurbsideVehicleInfo?> {
-  CurbsideController() : super(null);
+  CurbsideController([this._repository]) : super(null);
+
+  final SupabaseCustomerProfileRepository? _repository;
 
   /// Registers car info during checkout.
   void setVehicleInfo({
@@ -22,12 +26,15 @@ class CurbsideController extends StateNotifier<CurbsideVehicleInfo?> {
   }
 
   /// Sends the "I'm Here - Arrived Outside" signal when the customer parks at the restaurant.
-  void signalArrival() {
+  void signalArrival([int? orderId]) {
     if (state == null) return;
     state = state!.copyWith(
       status: CurbsideArrivalStatus.arrivedOutside,
       arrivedAt: DateTime.now(),
     );
+    if (orderId != null) {
+      _repository?.signalCurbsideArrival(orderId);
+    }
   }
 
   /// Marks car delivery as completed.
@@ -46,5 +53,7 @@ class CurbsideController extends StateNotifier<CurbsideVehicleInfo?> {
 
 final curbsideControllerProvider =
     StateNotifierProvider<CurbsideController, CurbsideVehicleInfo?>((ref) {
-  return CurbsideController();
+  final repo = ref.watch(supabaseCustomerProfileRepositoryProvider);
+  return CurbsideController(repo);
 });
+

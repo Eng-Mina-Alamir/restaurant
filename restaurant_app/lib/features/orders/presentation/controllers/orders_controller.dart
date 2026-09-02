@@ -105,7 +105,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           if (!mounted) return;
           final existingMap = {for (final o in state) o.id: o};
           for (final order in orders) {
-            existingMap.putIfAbsent(order.id, () => order);
+            existingMap[order.id] = order;
           }
           final merged = existingMap.values.toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));

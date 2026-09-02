@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
+import '../../data/repositories/supabase_cashier_repository.dart';
 import '../../domain/entities/cash_drawer_transaction_entity.dart';
 import '../../domain/entities/order_refund_entity.dart';
 import '../../domain/services/cash_drawer_service.dart';
@@ -45,7 +47,24 @@ class CashDrawerState {
 
 /// Controller managing cash drawer movements (Pay-In, Pay-Out, and Refunds).
 class CashDrawerController extends StateNotifier<CashDrawerState> {
-  CashDrawerController() : super(const CashDrawerState());
+  CashDrawerController([this._repository]) : super(const CashDrawerState()) {
+    loadTransactions('SHIFT-${DateTime.now().year}${DateTime.now().month}${DateTime.now().day}');
+  }
+
+  final SupabaseCashierRepository? _repository;
+
+  Future<void> loadTransactions(String shiftId) async {
+    if (_repository == null) return;
+    final result = await _repository.getTransactions(shiftId);
+    result.when(
+      onLeft: (_) {},
+      onRight: (txs) {
+        if (mounted) {
+          state = state.copyWith(transactions: txs);
+        }
+      },
+    );
+  }
 
   /// Records a Pay-In (إيداع نقدية بالدرج).
   CashDrawerTransaction recordPayIn({
@@ -67,6 +86,7 @@ class CashDrawerController extends StateNotifier<CashDrawerState> {
     );
 
     state = state.copyWith(transactions: [tx, ...state.transactions]);
+    _repository?.recordTransaction(tx);
     return tx;
   }
 
@@ -90,6 +110,7 @@ class CashDrawerController extends StateNotifier<CashDrawerState> {
     );
 
     state = state.copyWith(transactions: [tx, ...state.transactions]);
+    _repository?.recordTransaction(tx);
     return tx;
   }
 
@@ -108,5 +129,7 @@ class CashDrawerController extends StateNotifier<CashDrawerState> {
 /// Riverpod provider for [CashDrawerController].
 final cashDrawerControllerProvider =
     StateNotifierProvider<CashDrawerController, CashDrawerState>((ref) {
-      return CashDrawerController();
+      final repo = ref.watch(supabaseCashierRepositoryProvider);
+      return CashDrawerController(repo);
     });
+

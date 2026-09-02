@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/domain/enums.dart';
+import '../../data/repositories/supabase_manager_operations_repository.dart';
 import '../../domain/entities/staff_timesheet_entity.dart';
 import '../../domain/services/staff_timesheet_service.dart';
 
@@ -33,37 +35,24 @@ class StaffTimesheetState {
 
 /// Controller managing staff clock-in / clock-out and labor cost tracking.
 class StaffTimesheetController extends StateNotifier<StaffTimesheetState> {
-  StaffTimesheetController()
-      : super(
-          StaffTimesheetState(
-            records: [
-              StaffAttendanceRecord(
-                id: 'ATT-1',
-                staffId: 'user-cashier-1',
-                staffName: 'حسام علي',
-                role: UserRole.cashier,
-                clockInAt: DateTime.now().subtract(const Duration(hours: 4, minutes: 30)),
-                hourlyWage: 40.0,
-              ),
-              StaffAttendanceRecord(
-                id: 'ATT-2',
-                staffId: 'user-waiter-1',
-                staffName: 'أحمد شريف',
-                role: UserRole.waiter,
-                clockInAt: DateTime.now().subtract(const Duration(hours: 5)),
-                hourlyWage: 35.0,
-              ),
-              StaffAttendanceRecord(
-                id: 'ATT-3',
-                staffId: 'user-kitchen-1',
-                staffName: 'الشيف محمود',
-                role: UserRole.kitchen,
-                clockInAt: DateTime.now().subtract(const Duration(hours: 6)),
-                hourlyWage: 55.0,
-              ),
-            ],
-          ),
-        );
+  StaffTimesheetController([this._repository]) : super(const StaffTimesheetState()) {
+    loadTimesheets();
+  }
+
+  final SupabaseManagerOperationsRepository? _repository;
+
+  Future<void> loadTimesheets() async {
+    if (_repository == null) return;
+    final result = await _repository.getTimesheets();
+    result.when(
+      onLeft: (_) {},
+      onRight: (entries) {
+        if (mounted) {
+          state = state.copyWith(records: entries);
+        }
+      },
+    );
+  }
 
   /// Records Clock-In for a staff member.
   StaffAttendanceRecord clockIn({
@@ -82,6 +71,7 @@ class StaffTimesheetController extends StateNotifier<StaffTimesheetState> {
     );
 
     state = state.copyWith(records: [newRecord, ...state.records]);
+    _repository?.saveTimesheet(newRecord);
     return newRecord;
   }
 
@@ -89,7 +79,9 @@ class StaffTimesheetController extends StateNotifier<StaffTimesheetState> {
   void clockOut(String recordId) {
     final updated = state.records.map((r) {
       if (r.id == recordId && r.isActiveOnDuty) {
-        return r.copyWith(clockOutAt: DateTime.now());
+        final mod = r.copyWith(clockOutAt: DateTime.now());
+        _repository?.saveTimesheet(mod);
+        return mod;
       }
       return r;
     }).toList();
@@ -101,5 +93,6 @@ class StaffTimesheetController extends StateNotifier<StaffTimesheetState> {
 /// Riverpod provider for [StaffTimesheetController].
 final staffTimesheetControllerProvider =
     StateNotifierProvider<StaffTimesheetController, StaffTimesheetState>((ref) {
-      return StaffTimesheetController();
+      final repo = ref.watch(supabaseManagerOperationsRepositoryProvider);
+      return StaffTimesheetController(repo);
     });

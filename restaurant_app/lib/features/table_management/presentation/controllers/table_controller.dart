@@ -20,7 +20,10 @@ import '../../domain/repositories/table_repository.dart';
 /// Uses Supabase table repository when enabled, or falls back to Hive/In-memory.
 final tableRepositoryProvider = Provider<TableRepository>((ref) {
   if (AppConfig.useSupabase) {
-    return SupabaseTableRepository(ref.watch(supabaseClientProvider));
+    return SupabaseTableRepository(
+      ref.watch(supabaseClientProvider),
+      ref.watch(localCacheServiceProvider),
+    );
   }
   final cache = ref.watch(localCacheServiceProvider);
   if (cache != null) return HiveTableRepository(cache);

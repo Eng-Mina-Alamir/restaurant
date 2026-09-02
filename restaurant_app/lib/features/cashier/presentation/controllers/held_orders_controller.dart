@@ -1,12 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
 import '../../../cart/domain/entities/cart_item.dart';
+import '../../data/repositories/supabase_cashier_repository.dart';
 import '../../domain/entities/held_order_entity.dart';
 import '../../domain/services/held_order_service.dart';
 
-/// Manages the in-memory queue of parked / held orders at the cashier terminal.
+/// Manages the queue of parked / held orders at the cashier terminal.
 class HeldOrdersController extends StateNotifier<List<HeldOrderEntity>> {
-  HeldOrdersController() : super(const []);
+  HeldOrdersController([this._repository]) : super(const []) {
+    loadHeldOrders();
+  }
+
+  final SupabaseCashierRepository? _repository;
+
+  Future<void> loadHeldOrders() async {
+    if (_repository == null) return;
+    final result = await _repository.getHeldOrders();
+    result.when(
+      onLeft: (_) {},
+      onRight: (list) {
+        if (mounted) state = list;
+      },
+    );
+  }
 
   /// Parks the current [cartItems] in the held orders queue.
   HeldOrderEntity? holdOrder({
@@ -28,6 +45,7 @@ class HeldOrdersController extends StateNotifier<List<HeldOrderEntity>> {
     );
 
     state = [heldOrder, ...state];
+    _repository?.saveHeldOrder(heldOrder);
     return heldOrder;
   }
 
@@ -38,12 +56,14 @@ class HeldOrdersController extends StateNotifier<List<HeldOrderEntity>> {
 
     final heldOrder = match.first;
     state = state.where((h) => h.id != heldOrderId).toList();
+    _repository?.deleteHeldOrder(heldOrderId);
     return heldOrder;
   }
 
   /// Discards / deletes a held order without restoring it.
   void discardHeldOrder(String heldOrderId) {
     state = state.where((h) => h.id != heldOrderId).toList();
+    _repository?.deleteHeldOrder(heldOrderId);
   }
 
   /// Number of currently held orders.
@@ -53,5 +73,7 @@ class HeldOrdersController extends StateNotifier<List<HeldOrderEntity>> {
 /// Riverpod provider for [HeldOrdersController].
 final heldOrdersControllerProvider =
     StateNotifierProvider<HeldOrdersController, List<HeldOrderEntity>>((ref) {
-      return HeldOrdersController();
+      final repo = ref.watch(supabaseCashierRepositoryProvider);
+      return HeldOrdersController(repo);
     });
+

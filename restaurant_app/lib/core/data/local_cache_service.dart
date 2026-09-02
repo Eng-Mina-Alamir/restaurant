@@ -34,6 +34,32 @@ class LocalCacheService {
     await _box.put(key, jsonEncode(items));
   }
 
+  /// Reads and decodes a map stored under [key], or null if not found/corrupted.
+  Map<String, dynamic>? readMap(String key) {
+    final raw = _box.get(key);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+      return null;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// Serializes [data] map to a JSON string under [key].
+  Future<void> writeMap(String key, Map<String, dynamic> data) async {
+    await _box.put(key, jsonEncode(data));
+  }
+
+  /// Checks whether [key] exists and is non-empty in the cache.
+  bool hasKey(String key) {
+    final raw = _box.get(key);
+    return raw != null && raw.isNotEmpty;
+  }
+
   /// Reads a single raw string value from [key].
   String? readString(String key) => _box.get(key);
 

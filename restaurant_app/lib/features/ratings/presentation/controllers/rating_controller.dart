@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/in_memory_rating_repository.dart';
 import '../../data/repositories/supabase_rating_repository.dart';
@@ -11,6 +12,7 @@ final ratingRepositoryProvider = Provider<RatingRepository>((ref) {
   if (AppConfig.useSupabase) {
     return SupabaseRatingRepository(
       supabase: ref.watch(supabaseClientProvider),
+      cache: ref.watch(localCacheServiceProvider),
     );
   }
   return InMemoryRatingRepository();

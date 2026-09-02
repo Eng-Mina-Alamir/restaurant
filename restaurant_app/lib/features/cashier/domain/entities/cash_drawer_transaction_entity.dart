@@ -28,6 +28,29 @@ class CashDrawerTransaction {
   final String? recipientOrDepositor;
   final String? authorizedByManagerPin;
 
+  CashDrawerTransaction copyWith({
+    String? id,
+    String? shiftId,
+    CashDrawerTransactionType? type,
+    double? amount,
+    String? reason,
+    DateTime? timestamp,
+    String? recipientOrDepositor,
+    String? authorizedByManagerPin,
+  }) {
+    return CashDrawerTransaction(
+      id: id ?? this.id,
+      shiftId: shiftId ?? this.shiftId,
+      type: type ?? this.type,
+      amount: amount ?? this.amount,
+      reason: reason ?? this.reason,
+      timestamp: timestamp ?? this.timestamp,
+      recipientOrDepositor: recipientOrDepositor ?? this.recipientOrDepositor,
+      authorizedByManagerPin:
+          authorizedByManagerPin ?? this.authorizedByManagerPin,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'shiftId': shiftId,

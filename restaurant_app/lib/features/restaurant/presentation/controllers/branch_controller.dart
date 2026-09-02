@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../data/repositories/supabase_branch_repository.dart';
 import '../../domain/entities/branch_entity.dart';
 
 /// Provider for the list of branches in the restaurant chain.
 final branchesControllerProvider =
     StateNotifierProvider<BranchNotifier, List<BranchEntity>>((ref) {
-  return BranchNotifier();
+  final repo = ref.watch(supabaseBranchRepositoryProvider);
+  return BranchNotifier(repo);
 });
 
 /// Currently selected branch ID in the dashboard.
@@ -16,6 +19,7 @@ final activeBranchProvider = Provider<BranchEntity?>((ref) {
   final selectedId = ref.watch(selectedBranchIdProvider);
   if (selectedId == null) return null;
   final branches = ref.watch(branchesControllerProvider);
+  if (branches.isEmpty) return null;
   return branches.firstWhere(
     (b) => b.id == selectedId,
     orElse: () => branches.first,
@@ -41,89 +45,40 @@ final totalChainActiveOrdersProvider = Provider<int>((ref) {
 });
 
 class BranchNotifier extends StateNotifier<List<BranchEntity>> {
-  BranchNotifier()
-      : super(const [
-          BranchEntity(
-            id: 'branch-1',
-            name: 'فرع المعادي',
-            city: 'القاهرة',
-            address: 'شارع النصر، المعادي الجديدة',
-            phone: '01012345678',
-            managerName: 'أحمد كمال',
-            isOpen: true,
-            totalTables: 24,
-            activeOrdersCount: 5,
-            todaySales: 18450.0,
-            totalOrdersToday: 42,
-            rating: 4.9,
-            colorValue: 0xFFC2410C,
-          ),
-          BranchEntity(
-            id: 'branch-2',
-            name: 'فرع التجمع الخامس',
-            city: 'القاهرة الجديدة',
-            address: 'شارع التسعين الشمالي، التجمع الخامس',
-            phone: '01023456789',
-            managerName: 'محمود سامي',
-            isOpen: true,
-            totalTables: 32,
-            activeOrdersCount: 8,
-            todaySales: 26800.0,
-            totalOrdersToday: 68,
-            rating: 4.8,
-            colorValue: 0xFF0F766E,
-          ),
-          BranchEntity(
-            id: 'branch-3',
-            name: 'فرع الشيخ زايد',
-            city: 'الجيزة',
-            address: 'مجمع أركان، الشيخ زايد',
-            phone: '01034567890',
-            managerName: 'طارق نبيل',
-            isOpen: true,
-            totalTables: 28,
-            activeOrdersCount: 3,
-            todaySales: 21300.0,
-            totalOrdersToday: 51,
-            rating: 4.7,
-            colorValue: 0xFF7C3AED,
-          ),
-          BranchEntity(
-            id: 'branch-4',
-            name: 'فرع الإسكندرية',
-            city: 'الإسكندرية',
-            address: 'طريق الجيش، الكورنيش، سموحة',
-            phone: '01045678901',
-            managerName: 'كريم عادل',
-            isOpen: false,
-            totalTables: 20,
-            activeOrdersCount: 0,
-            todaySales: 9400.0,
-            totalOrdersToday: 24,
-            rating: 4.6,
-            colorValue: 0xFF0284C7,
-          ),
-        ]);
+  BranchNotifier([this._repository]) : super(const []) {
+    loadBranches();
+  }
 
+  final SupabaseBranchRepository? _repository;
+
+  Future<void> loadBranches() async {
+    if (_repository == null) return;
+    final result = await _repository.getBranches();
+    result.when(
+      onLeft: (_) {},
+      onRight: (branches) {
+        if (mounted) state = branches;
+      },
+    );
+  }
+
+  /// Toggles open/closed status for a branch in the chain.
+  void toggleBranchStatus(String branchId) {
+    state = state.map((b) {
+      if (b.id == branchId) {
+        return b.copyWith(isOpen: !b.isOpen);
+      }
+      return b;
+    }).toList();
+  }
+
+  /// Adds a new branch to the chain.
   void addBranch(BranchEntity branch) {
     state = [...state, branch];
   }
 
-  void updateBranch(BranchEntity updated) {
-    state = [
-      for (final b in state)
-        if (b.id == updated.id) updated else b,
-    ];
-  }
-
-  void toggleBranchStatus(String branchId) {
-    state = [
-      for (final b in state)
-        if (b.id == branchId) b.copyWith(isOpen: !b.isOpen) else b,
-    ];
-  }
-
-  void deleteBranch(String branchId) {
-    state = state.where((b) => b.id != branchId).toList();
+  /// Updates existing branch settings.
+  void updateBranch(BranchEntity branch) {
+    state = state.map((b) => b.id == branch.id ? branch : b).toList();
   }
 }

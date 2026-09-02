@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/entities/loyalty_customer_entity.dart';
 
 /// Modal bottom sheet for searching customer loyalty accounts and redeeming points for discounts.
-class CustomerLoyaltyLookupSheet extends StatefulWidget {
+class CustomerLoyaltyLookupSheet extends ConsumerStatefulWidget {
   const CustomerLoyaltyLookupSheet({
     super.key,
     required this.orderTotal,
@@ -33,15 +35,16 @@ class CustomerLoyaltyLookupSheet extends StatefulWidget {
   }
 
   @override
-  State<CustomerLoyaltyLookupSheet> createState() =>
+  ConsumerState<CustomerLoyaltyLookupSheet> createState() =>
       _CustomerLoyaltyLookupSheetState();
 }
 
 class _CustomerLoyaltyLookupSheetState
-    extends State<CustomerLoyaltyLookupSheet> {
+    extends ConsumerState<CustomerLoyaltyLookupSheet> {
   final TextEditingController _searchCtrl = TextEditingController();
   LoyaltyCustomer? _foundCustomer;
   int _pointsToRedeem = 0;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -55,19 +58,26 @@ class _CustomerLoyaltyLookupSheetState
     super.dispose();
   }
 
-  void _searchCustomer(String query) {
+  Future<void> _searchCustomer(String query) async {
     final clean = query.trim();
     if (clean.length < 3) return;
 
-    final matches = LoyaltyCustomer.demoCustomers.where(
-      (c) => c.phoneNumber.contains(clean) || c.name.contains(clean),
-    );
+    setState(() => _isSearching = true);
+    final repo = ref.read(supabaseCashierRepositoryProvider);
+    final result = await repo.searchLoyaltyCustomers(clean);
+    if (!mounted) return;
 
     setState(() {
-      if (matches.isNotEmpty) {
-        _foundCustomer = matches.first;
-        _pointsToRedeem = 0;
-      }
+      _isSearching = false;
+      result.when(
+        onLeft: (_) {},
+        onRight: (matches) {
+          if (matches.isNotEmpty) {
+            _foundCustomer = matches.first;
+            _pointsToRedeem = 0;
+          }
+        },
+      );
     });
   }
 
@@ -156,15 +166,24 @@ class _CustomerLoyaltyLookupSheetState
             decoration: InputDecoration(
               hintText: 'اكتب رقم هاتف العميل (مثال: 01012345678)...',
               prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchCtrl.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchCtrl.clear();
-                        setState(() => _foundCustomer = null);
-                      },
+              suffixIcon: _isSearching
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                     )
-                  : null,
+                  : _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _foundCustomer = null);
+                          },
+                        )
+                      : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),

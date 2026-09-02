@@ -37,6 +37,22 @@ abstract final class SupabaseConfig {
   static const String tableServiceRequestsTable = 'table_service_requests';
   static const String paymentsTable = 'payments';
   static const String deliveryExceptionsTable = 'delivery_exceptions';
+  static const String restaurantsTable = 'restaurants';
+  static const String cashDrawerTransactionsTable = 'cash_drawer_transactions';
+  static const String heldOrdersTable = 'held_orders';
+  static const String operationalAlertsTable = 'operational_alerts';
+  static const String staffTimesheetsTable = 'staff_timesheets';
+  static const String purchaseOrdersTable = 'purchase_orders';
+  static const String guestFeedbacksTable = 'guest_feedbacks';
+  static const String salesTargetsTable = 'sales_targets';
+  static const String customerDietaryProfilesTable = 'customer_dietary_profiles';
+  static const String customerWalletsTable = 'customer_wallets';
+  static const String customerWalletTransactionsTable = 'customer_wallet_transactions';
+  static const String giftCardsTable = 'gift_cards';
+  static const String curbsidePickupsTable = 'curbside_pickups';
+  static const String recipesTable = 'recipes';
+  static const String wasteLogsTable = 'waste_logs';
+  static const String shiftReconciliationsTable = 'shift_reconciliations';
 
   // ── Storage Buckets ───────────────────────────────────────────────────────
   static const String menuBucket = 'menu-images';

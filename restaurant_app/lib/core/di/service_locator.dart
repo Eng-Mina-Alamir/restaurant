@@ -13,9 +13,14 @@ import '../../features/auth/domain/usecases/refresh_token_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../../features/auth/domain/usecases/restore_session_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
+import '../../features/cashier/data/repositories/supabase_cashier_repository.dart';
+import '../../features/customer/data/repositories/supabase_customer_profile_repository.dart';
+import '../../features/manager_dashboard/data/repositories/supabase_manager_operations_repository.dart';
 import '../../features/menu/data/repositories/menu_repository_impl.dart';
 import '../../features/menu/data/repositories/supabase_menu_repository.dart';
 import '../../features/menu/domain/repositories/menu_repository.dart';
+import '../../features/restaurant/data/repositories/supabase_branch_repository.dart';
+import '../data/app_cache.dart';
 import '../network/dio_client.dart';
 import '../storage/in_memory_secure_storage_service.dart';
 import '../storage/secure_storage_service.dart';
@@ -105,7 +110,10 @@ final _fallbackMenuRepository = MenuRepositoryImpl();
 
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
   if (AppConfig.useSupabase) {
-    return SupabaseMenuRepositoryImpl(ref.watch(supabaseClientProvider));
+    return SupabaseMenuRepositoryImpl(
+      ref.watch(supabaseClientProvider),
+      ref.watch(localCacheServiceProvider),
+    );
   }
   return _fallbackMenuRepository;
 });
@@ -114,4 +122,34 @@ final menuRepositoryProvider = Provider<MenuRepository>((ref) {
 
 final supabaseStorageServiceProvider = Provider<SupabaseStorageService>((ref) {
   return SupabaseStorageService(ref.watch(supabaseClientProvider));
+});
+
+final supabaseCashierRepositoryProvider = Provider<SupabaseCashierRepository>((ref) {
+  return SupabaseCashierRepository(
+    supabase: ref.watch(supabaseClientProvider),
+    cache: ref.watch(localCacheServiceProvider),
+  );
+});
+
+final supabaseManagerOperationsRepositoryProvider =
+    Provider<SupabaseManagerOperationsRepository>((ref) {
+  return SupabaseManagerOperationsRepository(
+    supabase: ref.watch(supabaseClientProvider),
+    cache: ref.watch(localCacheServiceProvider),
+  );
+});
+
+final supabaseBranchRepositoryProvider = Provider<SupabaseBranchRepository>((ref) {
+  return SupabaseBranchRepository(
+    supabase: ref.watch(supabaseClientProvider),
+    cache: ref.watch(localCacheServiceProvider),
+  );
+});
+
+final supabaseCustomerProfileRepositoryProvider =
+    Provider<SupabaseCustomerProfileRepository>((ref) {
+  return SupabaseCustomerProfileRepository(
+    supabase: ref.watch(supabaseClientProvider),
+    cache: ref.watch(localCacheServiceProvider),
+  );
 });

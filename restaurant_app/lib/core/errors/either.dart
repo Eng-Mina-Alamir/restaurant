@@ -13,6 +13,20 @@ sealed class Either<L, R> {
   bool get isLeft => this is Left<L, R>;
   bool get isRight => this is Right<L, R>;
 
+  R getOrElse(R Function(L failure) fallback) {
+    return switch (this) {
+      Left<L, R>(:final value) => fallback(value),
+      Right<L, R>(:final value) => value,
+    };
+  }
+
+  R? get valueOrNull {
+    return switch (this) {
+      Left<L, R>() => null,
+      Right<L, R>(:final value) => value,
+    };
+  }
+
   /// Pattern-matches this [Either], invoking [onLeft] for a [Left] value and
   /// [onRight] for a [Right] value.
   TResult when<TResult>({

@@ -1,23 +1,28 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../domain/entities/menu.dart';
 import '../../domain/entities/menu_item.dart';
 import '../../domain/repositories/menu_repository.dart';
-import '../menu_seed_data.dart';
 
-/// Supabase-backed [MenuRepository] with fallback to seed menu data.
+/// Supabase-backed [MenuRepository] with Hive cache-aside persistence.
 ///
 /// Uses PostgREST embedded selects to fetch menu items with their modifier
-/// groups and options in a single request (instead of 4 separate queries).
+/// groups and options in a single request, writes to Hive cache on success,
+/// and reads from Hive cache when network is offline.
 class SupabaseMenuRepositoryImpl implements MenuRepository {
-  SupabaseMenuRepositoryImpl(this._supabase);
+  SupabaseMenuRepositoryImpl(this._supabase, [this._cache]);
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
   Menu? _cachedMenu;
+
+  static const String _categoriesCacheKey = 'menu_categories_v1';
+  static const String _itemsCacheKey = 'menu_items_v1';
 
   /// PostgREST embedded select: fetches items with nested groups and options.
   static const String _menuItemsWithModifiers =
@@ -26,7 +31,7 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   @override
   Future<Either<Failure, Menu>> getMenu() async {
     try {
-      // Query 1: Fetch categories (small, stable table)
+      // Query 1: Fetch categories
       final catResponse = await _supabase
           .from(SupabaseConfig.categoriesTable)
           .select()
@@ -42,7 +47,6 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       }
 
       // Query 2: Fetch menu items WITH embedded modifier groups & options
-      // This replaces 3 separate queries (items + groups + options) with 1.
       final itemResponse = await _supabase
           .from(SupabaseConfig.menuItemsTable)
           .select(_menuItemsWithModifiers);
@@ -85,7 +89,7 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         items.add(
           MenuItem(
             id: itemId,
-            categoryId: map['category_id'] as String? ?? 'عام',
+            categoryId: map['category_id']?.toString() ?? 'عام',
             name: map['name'] as String? ?? '',
             description: map['description'] as String? ?? '',
             price: (map['price'] as num?)?.toDouble() ?? 0.0,
@@ -101,35 +105,80 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         );
       }
 
-      if (items.isEmpty && categories.isEmpty) {
-        final fallback = MenuSeedData.buildMenu();
-        _cachedMenu = fallback;
-        return Right<Failure, Menu>(fallback);
-      }
-
       final resolvedCategories = categories.isNotEmpty
           ? categories
           : items.map((e) => e.categoryId).toSet().toList();
 
       final menu = Menu(
-        restaurantId: 'restaurant-1',
+        restaurantId: SupabaseConfig.defaultRestaurantId,
         categories: resolvedCategories,
         items: items,
       );
       _cachedMenu = menu;
+
+      // Write-through cache to Hive
+      final cache = _cache;
+      if (cache != null) {
+        await cache.writeList(
+          _categoriesCacheKey,
+          resolvedCategories.map((c) => {'name': c}).toList(),
+        );
+        await cache.writeList(
+          _itemsCacheKey,
+          items.map((i) => i.toJson()).toList(),
+        );
+      }
+
       return Right<Failure, Menu>(menu);
-    } catch (e) {
+    } catch (e, st) {
       AppLogger.warning(
-        'Supabase getMenu failed: $e, falling back to cache or seed data',
+        'Supabase getMenu failed: $e, reading from local cache',
+        error: e,
+        stackTrace: st,
       );
-      final fallback = _cachedMenu ?? MenuSeedData.buildMenu();
-      _cachedMenu = fallback;
-      return Right<Failure, Menu>(fallback);
+
+      final cache = _cache;
+      if (cache != null) {
+        final cachedCats = cache.readList(_categoriesCacheKey);
+        final cachedItems = cache.readList(_itemsCacheKey);
+
+        if (cachedItems.isNotEmpty || cachedCats.isNotEmpty) {
+          final items = cachedItems
+              .map((map) => MenuItem.fromJson(map))
+              .toList();
+          final categories = cachedCats
+              .map((map) => map['name'] as String? ?? '')
+              .where((c) => c.isNotEmpty)
+              .toList();
+
+          final fallback = Menu(
+            restaurantId: SupabaseConfig.defaultRestaurantId,
+            categories: categories.isNotEmpty
+                ? categories
+                : items.map((e) => e.categoryId).toSet().toList(),
+            items: items,
+          );
+          _cachedMenu = fallback;
+          return Right<Failure, Menu>(fallback);
+        }
+      }
+
+      final emptyMenu = _cachedMenu ??
+          const Menu(
+            restaurantId: SupabaseConfig.defaultRestaurantId,
+            categories: [],
+            items: [],
+          );
+      return Right<Failure, Menu>(emptyMenu);
     }
   }
 
   void _ensureCache() {
-    _cachedMenu ??= MenuSeedData.buildMenu();
+    _cachedMenu ??= const Menu(
+      restaurantId: SupabaseConfig.defaultRestaurantId,
+      categories: [],
+      items: [],
+    );
   }
 
   @override
