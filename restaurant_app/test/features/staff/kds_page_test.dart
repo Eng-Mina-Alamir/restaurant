@@ -486,6 +486,7 @@ void main() {
             .status,
         OrderStatus.completed,
       );
+      await tester.pump();
     });
   });
 }

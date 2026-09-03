@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/logger.dart';
@@ -22,6 +22,10 @@ class NetworkPrinterService {
     int port = defaultPort,
     Duration timeout = defaultTimeout,
   }) async {
+    if (kIsWeb) {
+      AppLogger.info('NetworkPrinter: Raw TCP printing is not supported on web browser, skipped.');
+      return false;
+    }
     Socket? socket;
     try {
       AppLogger.info('NetworkPrinter: Connecting to printer at $ipAddress:$port...');
@@ -51,6 +55,7 @@ class NetworkPrinterService {
     int port = defaultPort,
     Duration timeout = const Duration(seconds: 2),
   }) async {
+    if (kIsWeb) return false;
     try {
       final socket = await Socket.connect(ipAddress, port, timeout: timeout);
       await socket.close();

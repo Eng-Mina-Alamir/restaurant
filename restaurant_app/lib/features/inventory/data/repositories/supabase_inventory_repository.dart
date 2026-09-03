@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
@@ -11,49 +12,19 @@ import '../../domain/entities/waste_log_entity.dart';
 import '../../domain/repositories/inventory_repository.dart';
 
 class SupabaseInventoryRepository implements InventoryRepository {
-  SupabaseInventoryRepository({required SupabaseClient supabase})
-    : _supabase = supabase;
+  SupabaseInventoryRepository({
+    required SupabaseClient supabase,
+    LocalCacheService? cache,
+  })  : _supabase = supabase,
+        _cache = cache;
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
 
-  static final List<InventoryItemEntity> _initialSeedItems = [
-    const InventoryItemEntity(
-      id: 'inv-01',
-      name: 'لحم أنجوس مفروم فاخر',
-      category: 'لحوم',
-      currentStock: 45.0,
-      minThreshold: 15.0,
-      unit: 'كجم',
-      costPerUnit: 120.0,
-    ),
-    const InventoryItemEntity(
-      id: 'inv-02',
-      name: 'أرز بسمتي فاخر',
-      category: 'حبوب',
-      currentStock: 80.0,
-      minThreshold: 25.0,
-      unit: 'كجم',
-      costPerUnit: 35.0,
-    ),
-    const InventoryItemEntity(
-      id: 'inv-03',
-      name: 'زيت قلي نباتي نقي',
-      category: 'زيوت',
-      currentStock: 8.0,
-      minThreshold: 12.0,
-      unit: 'لتر',
-      costPerUnit: 45.0,
-    ),
-    const InventoryItemEntity(
-      id: 'inv-04',
-      name: 'أجبان شيدر هولندية',
-      category: 'ألبان',
-      currentStock: 22.0,
-      minThreshold: 10.0,
-      unit: 'كجم',
-      costPerUnit: 65.0,
-    ),
-  ];
+  static const String _cacheKey = 'cached_inventory';
+
+  /// In-memory mirror of Supabase-loaded inventory for this session only.
+  /// Never seeded: empty Supabase table => empty list (truthful).
 
   List<InventoryItemEntity>? _cachedItems;
   final List<MenuItemRecipeEntity> _cachedRecipes = [];
@@ -73,19 +44,26 @@ class SupabaseInventoryRepository implements InventoryRepository {
         items.add(_mapToInventoryItemEntity(map));
       }
       if (items.isEmpty) {
-        _cachedItems = List.of(_initialSeedItems);
-        return Right(_cachedItems!);
+        _cachedItems = items;
+        return Right(items);
       }
       _cachedItems = items;
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          await cache.writeList(_cacheKey, items.map((i) => i.toJson()).toList());
+        } catch (e) {
+          AppLogger.warning('Failed to persist inventory to local cache: $e');
+        }
+      }
       return Right(items);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getInventoryItems fallback: $e',
+        'Supabase getInventoryItems error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedItems ??= List.of(_initialSeedItems);
-      return Right(List.unmodifiable(_cachedItems!));
+      return Left(ServerFailure('فشل تحميل المخزون من Supabase: $e'));
     }
   }
 
@@ -111,13 +89,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       return Right(item);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase addItem fallback: $e',
+        'Supabase addItem error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedItems ??= List.of(_initialSeedItems);
-      _cachedItems!.add(item);
-      return Right(item);
+      return Left(ServerFailure('فشل إضافة الصنف للمخزون: $e'));
     }
   }
 
@@ -146,17 +122,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       return Right(item);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase updateItem fallback: $e',
+        'Supabase updateItem error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedItems ??= List.of(_initialSeedItems);
-      final idx = _cachedItems!.indexWhere((i) => i.id == item.id);
-      if (idx != -1) {
-        _cachedItems![idx] = item;
-        return Right(item);
-      }
-      return const Left(NotFoundFailure('الصنف غير موجود في المخزون'));
+      return Left(ServerFailure('فشل تحديث صنف المخزون: $e'));
     }
   }
 
@@ -173,12 +143,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       return const Right(null);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase deleteItem fallback: $e',
+        'Supabase deleteItem error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedItems?.removeWhere((i) => i.id == id);
-      return const Right(null);
+      return Left(ServerFailure('فشل حذف صنف المخزون: $e'));
     }
   }
 
@@ -219,27 +188,11 @@ class SupabaseInventoryRepository implements InventoryRepository {
       return Right(updated);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase restock fallback: $e',
+        'Supabase restock error: $e',
         error: e,
         stackTrace: st,
       );
-      try {
-        final local = (_cachedItems ?? _initialSeedItems).firstWhere(
-          (i) => i.id == id,
-          orElse: () =>
-              throw const NotFoundFailure('الصنف غير موجود في المخزون'),
-        );
-        final newQuantity = (local.currentStock + amount).clamp(0.0, 999999.0);
-        final updated = local.copyWith(currentStock: newQuantity);
-        if (_cachedItems != null) {
-          final idx = _cachedItems!.indexWhere((i) => i.id == id);
-          if (idx != -1) _cachedItems![idx] = updated;
-        }
-        return Right(updated);
-      } catch (err) {
-        if (err is Failure) return Left(err);
-        return Left(ServerFailure('فشل إعادة تزويد المخزون: $e'));
-      }
+      return Left(ServerFailure('فشل إعادة تزويد المخزون: $e'));
     }
   }
 
@@ -247,7 +200,7 @@ class SupabaseInventoryRepository implements InventoryRepository {
   Future<Either<Failure, void>> deductStockForOrder(OrderEntity order) async {
     final itemsResult = await getInventoryItems();
     final items = itemsResult.when(
-      onLeft: (_) => _cachedItems ?? _initialSeedItems,
+      onLeft: (_) => const <InventoryItemEntity>[],
       onRight: (list) => list,
     );
 
@@ -306,13 +259,63 @@ class SupabaseInventoryRepository implements InventoryRepository {
 
   @override
   Future<Either<Failure, List<MenuItemRecipeEntity>>> getRecipes() async {
-    return Right(List.unmodifiable(_cachedRecipes));
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.recipesTable)
+          .select()
+          .order('menu_item_name');
+
+      final List<MenuItemRecipeEntity> recipes = [];
+      for (final raw in (response as List)) {
+        final map = Map<String, dynamic>.from(raw as Map);
+        recipes.add(_mapToRecipeEntity(map));
+      }
+      if (recipes.isNotEmpty) {
+        _cachedRecipes
+          ..clear()
+          ..addAll(recipes);
+        return Right(recipes);
+      }
+      return Right(List.unmodifiable(_cachedRecipes));
+    } catch (e, st) {
+      AppLogger.warning(
+        'Supabase getRecipes fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+      return Right(List.unmodifiable(_cachedRecipes));
+    }
   }
 
   @override
   Future<Either<Failure, MenuItemRecipeEntity?>> getRecipeForMenuItem(
     String menuItemId,
   ) async {
+    try {
+      final raw = await _supabase
+          .from(SupabaseConfig.recipesTable)
+          .select()
+          .eq('menu_item_id', menuItemId)
+          .maybeSingle();
+
+      if (raw != null) {
+        final recipe = _mapToRecipeEntity(Map<String, dynamic>.from(raw));
+        final idx = _cachedRecipes.indexWhere((r) => r.menuItemId == menuItemId);
+        if (idx == -1) {
+          _cachedRecipes.add(recipe);
+        } else {
+          _cachedRecipes[idx] = recipe;
+        }
+        return Right(recipe);
+      }
+    } catch (e, st) {
+      AppLogger.warning(
+        'Supabase getRecipeForMenuItem fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
+
     final match = _cachedRecipes.where((r) => r.menuItemId == menuItemId);
     if (match.isEmpty) return const Right(null);
     return Right(match.first);
@@ -322,14 +325,57 @@ class SupabaseInventoryRepository implements InventoryRepository {
   Future<Either<Failure, MenuItemRecipeEntity>> saveRecipe(
     MenuItemRecipeEntity recipe,
   ) async {
-    final idx = _cachedRecipes.indexWhere((r) => r.menuItemId == recipe.menuItemId);
     final updated = recipe.copyWith(lastUpdated: DateTime.now());
+    final idx = _cachedRecipes.indexWhere((r) => r.menuItemId == recipe.menuItemId);
     if (idx == -1) {
       _cachedRecipes.add(updated);
     } else {
       _cachedRecipes[idx] = updated;
     }
+
+    try {
+      final payload = {
+        'id': 'rec_${recipe.menuItemId}',
+        'restaurant_id': SupabaseConfig.defaultRestaurantId,
+        'menu_item_id': recipe.menuItemId,
+        'menu_item_name': recipe.menuItemName,
+        'menu_item_price': recipe.menuItemPrice,
+        'ingredients_json': recipe.ingredients.map((i) => i.toJson()).toList(),
+        'last_updated': updated.lastUpdated?.toIso8601String(),
+      };
+      await _supabase.from(SupabaseConfig.recipesTable).upsert(payload);
+    } catch (e, st) {
+      AppLogger.warning(
+        'Supabase saveRecipe fallback: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
+
     return Right(updated);
+  }
+
+  MenuItemRecipeEntity _mapToRecipeEntity(Map<String, dynamic> map) {
+    final List<RecipeIngredientEntity> ingredients = [];
+    final rawIngredients = map['ingredients_json'];
+    if (rawIngredients is List) {
+      for (final ing in rawIngredients) {
+        if (ing is Map) {
+          ingredients.add(
+            RecipeIngredientEntity.fromJson(Map<String, dynamic>.from(ing)),
+          );
+        }
+      }
+    }
+    return MenuItemRecipeEntity(
+      menuItemId: map['menu_item_id']?.toString() ?? '',
+      menuItemName: map['menu_item_name'] as String? ?? '',
+      menuItemPrice: (map['menu_item_price'] as num?)?.toDouble() ?? 0.0,
+      ingredients: ingredients,
+      lastUpdated: map['last_updated'] != null
+          ? DateTime.tryParse(map['last_updated'].toString())
+          : null,
+    );
   }
 
   @override

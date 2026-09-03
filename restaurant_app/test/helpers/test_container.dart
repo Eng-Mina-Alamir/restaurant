@@ -124,7 +124,10 @@ ProviderContainer createTestContainer({
       ),
       tableRepositoryProvider.overrideWithValue(InMemoryTableRepository()),
       tableControllerProvider.overrideWith(
-        (ref) => TableController(ref.watch(tableRepositoryProvider)),
+        (ref) => TableController(
+          ref.watch(tableRepositoryProvider),
+          realtimeService: ref.watch(supabaseRealtimeServiceProvider),
+        ),
       ),
       tableServiceControllerProvider.overrideWith(
         (ref) => TableServiceController(InMemoryTableServiceRepository()),

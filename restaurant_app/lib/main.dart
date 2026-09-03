@@ -52,18 +52,24 @@ Future<void> main() async {
         // await it below; both initializations then run concurrently.
         final cacheFuture = initAppCache();
 
-        // Initialize Supabase backend
-        try {
-          await Supabase.initialize(
-            url: SupabaseConfig.url,
-            publishableKey: SupabaseConfig.anonKey,
-          );
-          AppLogger.info('Supabase initialized successfully');
-        } catch (e, st) {
-          AppLogger.error(
-            'Failed to initialize Supabase: $e',
-            error: e,
-            stackTrace: st,
+        // Initialize Supabase backend if configured via build environment
+        if (SupabaseConfig.isConfigured) {
+          try {
+            await Supabase.initialize(
+              url: SupabaseConfig.url,
+              publishableKey: SupabaseConfig.anonKey,
+            );
+            AppLogger.info('Supabase initialized successfully');
+          } catch (e, st) {
+            AppLogger.error(
+              'Failed to initialize Supabase: $e',
+              error: e,
+              stackTrace: st,
+            );
+          }
+        } else {
+          AppLogger.warning(
+            'Supabase keys not injected in build environment. Running in offline/demo mode.',
           );
         }
 

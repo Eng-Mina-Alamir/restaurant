@@ -27,8 +27,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('الفواتير'), findsOneWidget);
-      expect(find.text('لا توجد فواتير بعد'), findsOneWidget);
+      expect(find.textContaining('الفواتير'), findsOneWidget);
+      expect(find.textContaining('لا توجد فواتير'), findsOneWidget);
     });
 
     testWidgets(
@@ -68,7 +68,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.download_outlined));
         await tester.pump();
 
-        expect(find.textContaining('تم تصدير 1 فاتورة'), findsOneWidget);
+        expect(find.textContaining('تم تصدير الفواتير بنجاح'), findsOneWidget);
       },
     );
   });

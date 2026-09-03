@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/theme_controller.dart';
 
 /// Reusable AppBar action button to toggle between Light and Dark theme modes.
@@ -9,6 +10,7 @@ class ThemeModeSwitchButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
     final brightness = Theme.of(context).brightness;
     final isDark =
@@ -16,7 +18,7 @@ class ThemeModeSwitchButton extends ConsumerWidget {
         (themeMode == ThemeMode.system && brightness == Brightness.dark);
 
     return IconButton(
-      tooltip: isDark ? 'التبديل إلى الوضع الفاتح' : 'التبديل إلى الوضع الداكن',
+      tooltip: isDark ? strings.switchToLight : strings.switchToDark,
       icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         transitionBuilder: (child, anim) => RotationTransition(

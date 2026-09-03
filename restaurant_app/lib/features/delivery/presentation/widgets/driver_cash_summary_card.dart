@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
+import '../../../../shared/widgets/humanized_feedback.dart';
 import '../controllers/driver_wallet_controller.dart';
 import 'change_calculator_dialog.dart';
 
@@ -14,86 +17,93 @@ class DriverCashSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wallet = ref.watch(driverWalletControllerProvider);
+    final theme = Theme.of(context);
+    final success = StatusColors.tone(
+      SemanticTone.success,
+      theme.brightness,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: 4,
+        vertical: AppSpacing.xs,
       ),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: 6,
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.account_balance_wallet_rounded,
-            color: Color(0xFF10B981),
-            size: 16,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            'عهدة الكاش: ${Formatters.formatCurrency(wallet.totalCashInHand)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 11.5,
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: success.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
             ),
-          ),
-          const Spacer(),
-          InkWell(
-            onTap: () => ChangeCalculatorDialog.show(context, orderTotal: 150.0),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calculate_outlined,
-                    color: Colors.white70,
-                    size: 14,
-                  ),
-                  SizedBox(width: 2),
-                  Text(
-                    'حاسبة',
-                    style: TextStyle(color: Colors.white70, fontSize: 10.5),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: () => _showSettleConfirmation(context, ref, wallet),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color:
-                    wallet.isSettled ? Colors.grey : const Color(0xFF10B981),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                wallet.isSettled ? 'مسلّم ✅' : 'تسليم للكاشير',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-            tooltip: 'تقرير الأرباح',
-            icon: const Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.white70,
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: success,
               size: 18,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'عهدة الكاش بأمان معك',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Text(
+                  Formatters.formatCurrency(wallet.totalCashInHand),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 48),
+            ),
+            onPressed: () {
+              AppHaptics.selectionTap();
+              ChangeCalculatorDialog.show(context, orderTotal: 150.0);
+            },
+            icon: const Icon(Icons.calculate_outlined, size: 18),
+            label: const Text('حاسبة الباقي'),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 48),
+            ),
+            onPressed: () => _showSettleConfirmation(context, ref, wallet),
+            child: Text(
+              wallet.isSettled ? 'تم التسليم — شكراً لك' : 'تسليم للكاشير',
+            ),
+          ),
+          IconButton(
+            tooltip: 'تقرير الأرباح والعمولات',
+            style: IconButton.styleFrom(
+              minimumSize: const Size(48, 48),
+            ),
+            icon: Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left_rounded
+                  : Icons.chevron_right_rounded,
+              size: 22,
             ),
             onPressed: () => context.push('/driver/earnings'),
           ),
@@ -111,20 +121,28 @@ class DriverCashSummaryCard extends ConsumerWidget {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.receipt_long_rounded, color: Color(0xFF10B981)),
-                SizedBox(width: 8),
-                Text('تصفية العهدة وتسليم الكاش'),
+                Icon(
+                  Icons.receipt_long_rounded,
+                  color: StatusColors.tone(
+                    SemanticTone.success,
+                    Theme.of(context).brightness,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Text('تصفية العهدة وتسليم الكاش بكل أمان'),
+                ),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'يرجى تسليم المبالغ التالية إلى كاشير المطعم لإغلاق حساب الشيفت:',
-                  style: TextStyle(fontSize: 13),
+                Text(
+                  'سلّم المبالغ التالية لكاشير المطعم لإغلاق حساب الوردية — شكراً لأمانتك:',
+                  style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(height: 1.6),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -151,13 +169,19 @@ class DriverCashSummaryCard extends ConsumerWidget {
                           wallet.remittanceDueToCashier,
                         ),
                         isBold: true,
-                        color: const Color(0xFF10B981),
+                        color: StatusColors.tone(
+                          SemanticTone.success,
+                          Theme.of(ctx).brightness,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       _buildRow(
-                        'أرباحك المحتفظ بها (عمولة + تبس):',
+                        'أرباحك المحتفظ بها (عمولة + إكرامية):',
                         Formatters.formatCurrency(wallet.totalDriverEarnings),
-                        color: const Color(0xFF3B82F6),
+                        color: StatusColors.tone(
+                          SemanticTone.info,
+                          Theme.of(ctx).brightness,
+                        ),
                       ),
                     ],
                   ),
@@ -171,13 +195,12 @@ class DriverCashSummaryCard extends ConsumerWidget {
               ),
               FilledButton(
                 onPressed: () {
+                  AppHaptics.milestoneSuccess();
                   ref.read(driverWalletControllerProvider.notifier).settleShift();
                   Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('تم تسليم العهدة وتصفية الشيفت بنجاح ✅'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
+                  HumanSnackBar.milestone(
+                    context,
+                    'تم تسليم العهدة بنجاح — شكراً لأمانتك وجهدك',
                   );
                 },
                 child: const Text('تأكيد التسليم للكاشير'),

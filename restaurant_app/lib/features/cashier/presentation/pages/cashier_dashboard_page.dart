@@ -36,7 +36,6 @@ class CashierDashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final isArabic = strings.isArabic;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -110,7 +109,7 @@ class CashierDashboardPage extends ConsumerWidget {
                   Row(
                     children: [
                       Text(
-                        isArabic ? 'نقطة البيع والكاشير' : 'Cashier POS Hub',
+                        strings.cashierPosHub,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -129,8 +128,8 @@ class CashierDashboardPage extends ConsumerWidget {
                         ),
                         child: Text(
                           activeShift != null
-                              ? (isArabic ? 'وردية نشطة' : 'Shift Active')
-                              : (isArabic ? 'الوردية مقفلة' : 'Shift Closed'),
+                              ? strings.activeShiftStatus
+                              : strings.shiftClosedStatus,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
@@ -143,7 +142,7 @@ class CashierDashboardPage extends ConsumerWidget {
                     ],
                   ),
                   Text(
-                    '${authUser?.name ?? (isArabic ? "كاشير الصالة" : "Cashier")} • ${activeBranch?.name ?? (isArabic ? "الفرع الرئيسي" : "Main Branch")}',
+                    '${authUser?.name ?? strings.fallbackCashierName} • ${activeBranch?.name ?? strings.fallbackMainBranch}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                       fontSize: 10,
@@ -173,12 +172,12 @@ class CashierDashboardPage extends ConsumerWidget {
             // ── 1. Active Shift & Cash Drawer Card ──────────────────────────
             if (activeShift == null)
               _CashierNoActiveShiftCard(
-                isArabic: isArabic,
+                strings: strings,
                 onOpenShift: () => _showOpenShiftDialog(context, ref, authUser?.name),
               )
             else
               _CashierActiveShiftCard(
-                isArabic: isArabic,
+                strings: strings,
                 shift: activeShift,
                 cashierName: authUser?.name,
                 completedOrdersCount: completedOrders.length,
@@ -195,7 +194,6 @@ class CashierDashboardPage extends ConsumerWidget {
                   cardSales,
                   walletSales,
                   completedOrders.length,
-                  isArabic,
                 ),
               ),
 
@@ -218,7 +216,7 @@ class CashierDashboardPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  isArabic ? 'العمليات السريعة ونقطة البيع' : 'POS Quick Operations',
+                  strings.posQuickOperations,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -244,10 +242,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.point_of_sale_rounded,
                       gradient: AppGradients.emerald,
-                      title: isArabic ? 'نقطة البيع السريعة' : 'Fast POS Counter',
-                      subtitle: isArabic
-                          ? 'محاسبة التيك أواي وحاسبة الباقي'
-                          : 'Quick Takeaway & Tender',
+                      title: strings.fastPosTitle,
+                      subtitle: strings.fastPosSubtitle,
                       onTap: () {
                         AppHaptics.selectionTap();
                         context.push('/cashier/pos');
@@ -256,10 +252,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.account_balance_wallet_rounded,
                       gradient: AppGradients.primary,
-                      title: isArabic ? 'حركات الدرج والمصروفات' : 'Petty Cash & In/Out',
-                      subtitle: isArabic
-                          ? 'تسجيل سحب أو إيداع نقدية'
-                          : 'Record Pay-In / Pay-Out',
+                      title: strings.pettyCashTitle,
+                      subtitle: strings.pettyCashSubtitle,
                       badge: drawerState.transactions.isNotEmpty
                           ? '${drawerState.transactions.length}'
                           : null,
@@ -274,10 +268,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.pause_circle_filled_rounded,
                       gradient: AppGradients.warning,
-                      title: isArabic ? 'الطلبات المعلقة' : 'Held / Parked Orders',
-                      subtitle: isArabic
-                          ? '${heldOrders.length} طلبات معلقة بالانتظار'
-                          : '${heldOrders.length} Parked Orders',
+                      title: strings.heldOrdersTitle,
+                      subtitle: strings.heldOrdersSubtitle(heldOrders.length),
                       badge: heldOrders.isNotEmpty ? '${heldOrders.length}' : null,
                       onTap: () {
                         AppHaptics.selectionTap();
@@ -287,10 +279,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.table_restaurant_rounded,
                       gradient: AppGradients.info,
-                      title: isArabic ? 'طاولات الصالة و POS' : 'Dine-In Tables',
-                      subtitle: isArabic
-                          ? '$occupiedTablesCount طاولة مشغولة'
-                          : '$occupiedTablesCount Occupied',
+                      title: strings.tablesTitle,
+                      subtitle: strings.occupiedTablesSubtitle(occupiedTablesCount),
                       badge: '${tables.length}',
                       onTap: () {
                         AppHaptics.selectionTap();
@@ -300,10 +290,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.receipt_long_rounded,
                       gradient: AppGradients.purple,
-                      title: isArabic ? 'الفواتير والتحصيل' : 'Invoices & Billing',
-                      subtitle: isArabic
-                          ? '${completedOrders.length} فاتورة مسجلة'
-                          : '${completedOrders.length} Invoices',
+                      title: strings.invoicesTitle,
+                      subtitle: strings.invoicesCountSubtitle(completedOrders.length),
                       onTap: () {
                         AppHaptics.selectionTap();
                         context.push('/manager/invoices');
@@ -312,10 +300,8 @@ class CashierDashboardPage extends ConsumerWidget {
                     _POSHubActionCard(
                       icon: Icons.history_edu_rounded,
                       gradient: AppGradients.primary,
-                      title: isArabic ? 'سجل الورديات و Z-Report' : 'Shifts & Z-Reports',
-                      subtitle: isArabic
-                          ? '${shiftState.shiftHistory.length} وردية مقفلة'
-                          : '${shiftState.shiftHistory.length} Past Shifts',
+                      title: strings.shiftsHistoryTitle,
+                      subtitle: strings.pastShiftsSubtitle(shiftState.shiftHistory.length),
                       onTap: () {
                         AppHaptics.selectionTap();
                         context.push('/manager/shifts');
@@ -348,7 +334,7 @@ class CashierDashboardPage extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      isArabic ? 'آخر فواتير الوردية المحصلة' : 'Recent Shift Receipts',
+                      strings.recentShiftReceipts,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -360,7 +346,7 @@ class CashierDashboardPage extends ConsumerWidget {
                     onPressed: () => context.push('/manager/invoices'),
                     icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                     label: Text(
-                      isArabic ? 'عرض الكل' : 'View All',
+                      strings.viewAll,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -398,18 +384,14 @@ class CashierDashboardPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      isArabic
-                          ? 'لا توجد فواتير محصلة في هذه الوردية بعد'
-                          : 'No completed orders in this shift yet',
+                      strings.noRecentReceipts,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      isArabic
-                          ? 'عند إتمام وتحصيل أي طلب سيظهر هنا مع إمكانية طباعة الإيصال فوراً'
-                          : 'Receipts will appear here as soon as orders are paid',
+                      strings.noReceiptsHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -428,7 +410,7 @@ class CashierDashboardPage extends ConsumerWidget {
                   final order = completedOrders[idx];
                   return _CashierOrderTile(
                     order: order,
-                    isArabic: isArabic,
+                    strings: strings,
                     onPrint: () => _printOrderTicket(context, ref, order),
                     onRefund: () => OrderRefundDialog.show(context, order: order),
                   );
@@ -444,11 +426,12 @@ class CashierDashboardPage extends ConsumerWidget {
 
   void _printOrderTicket(BuildContext context, WidgetRef ref, OrderEntity order) {
     AppHaptics.selectionTap();
+    final strings = ref.read(appStringsProvider);
     final printer = ref.read(ticketPrinterServiceProvider);
     unawaited(printer.printCustomerInvoice(order));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تم إرسال إيصال الطلب #${Formatters.formatOrderId(order.id)} للطابعة'),
+        content: Text(strings.receiptSentWithOrderId(Formatters.formatOrderId(order.id))),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -456,6 +439,7 @@ class CashierDashboardPage extends ConsumerWidget {
   }
 
   void _showOpenShiftDialog(BuildContext context, WidgetRef ref, String? defaultCashierName) {
+    final strings = ref.read(appStringsProvider);
     final floatCtrl = TextEditingController(text: '500');
     final nameCtrl = TextEditingController(text: defaultCashierName ?? 'حسام علي (كاشير)');
 
@@ -489,20 +473,20 @@ class CashierDashboardPage extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'فتح وردية واستلام الدرج',
-                            style: TextStyle(
+                            strings.openShiftTitle,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'تسجيل عهدة بداية اليوم وتفعيل نقطة البيع',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            strings.openShiftSubtitle,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ],
                       ),
@@ -512,9 +496,9 @@ class CashierDashboardPage extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
                 const Divider(),
                 const SizedBox(height: AppSpacing.sm),
-                const Text(
-                  'المسؤول عن الوردية',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                Text(
+                  strings.shiftResponsibleLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 TextField(
@@ -531,9 +515,9 @@ class CashierDashboardPage extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                const Text(
-                  'العهدة الافتتاحية (ج.م) النقد في الدرج',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                Text(
+                  strings.openingFloatHint,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 const SizedBox(height: 6),
                 TextField(
@@ -557,7 +541,7 @@ class CashierDashboardPage extends ConsumerWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('إلغاء'),
+                        child: Text(strings.cancel),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -572,19 +556,19 @@ class CashierDashboardPage extends ConsumerWidget {
                           final nameVal = nameCtrl.text.trim();
                           ref.read(shiftControllerProvider.notifier).openShift(
                                 cashierId: 'usr-cashier',
-                                cashierName: nameVal.isEmpty ? 'الكاشير' : nameVal,
+                                cashierName: nameVal.isEmpty ? strings.defaultCashierShortName : nameVal,
                                 openingFloat: floatVal,
                               );
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('تم فتح الوردية وتفعيل الصندوق بنجاح'),
+                            SnackBar(
+                              content: Text(strings.shiftStartedSuccess),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
                         },
                         icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('تأكيد وبدء الوردية'),
+                        label: Text(strings.confirmShiftStart),
                       ),
                     ),
                   ],
@@ -605,8 +589,8 @@ class CashierDashboardPage extends ConsumerWidget {
     double cardSales,
     double walletSales,
     int ordersCount,
-    bool isArabic,
   ) {
+    final strings = ref.read(appStringsProvider);
     final expectedTotalCash = shift.openingCashFloat + cashSales;
     final actualCashCtrl = TextEditingController(
       text: expectedTotalCash.toStringAsFixed(2),
@@ -650,20 +634,20 @@ class CashierDashboardPage extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
-                          const Expanded(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'إقفال الوردية وجرد الصندوق',
-                                  style: TextStyle(
+                                  strings.closeShiftTitle,
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 Text(
-                                  'Z-Report • تقفيل الحسابات ومطابقة النقدية',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                                  strings.closeShiftSubtitle,
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                                 ),
                               ],
                             ),
@@ -683,13 +667,13 @@ class CashierDashboardPage extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            _ReceiptRow('العهدة الافتتاحية:', Formatters.formatCurrency(shift.openingCashFloat)),
-                            _ReceiptRow('المبيعات النقدية (كاش):', Formatters.formatCurrency(cashSales)),
-                            _ReceiptRow('مبيعات مدى / بطاقات:', Formatters.formatCurrency(cardSales)),
-                            _ReceiptRow('مبيعات المحافظ الإلكترونية:', Formatters.formatCurrency(walletSales)),
+                            _ReceiptRow(strings.openingFloatRow, Formatters.formatCurrency(shift.openingCashFloat)),
+                            _ReceiptRow(strings.cashSalesRow, Formatters.formatCurrency(cashSales)),
+                            _ReceiptRow(strings.cardSalesRow, Formatters.formatCurrency(cardSales)),
+                            _ReceiptRow(strings.walletSalesRow, Formatters.formatCurrency(walletSales)),
                             const Divider(height: 12),
                             _ReceiptRow(
-                              'إجمالي النقد المتوقع في الدرج:',
+                              strings.expectedCash,
                               Formatters.formatCurrency(expectedTotalCash),
                               isBold: true,
                               color: AppColors.brand,
@@ -699,9 +683,9 @@ class CashierDashboardPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.md),
 
-                      const Text(
-                        'النقد الفعلي الموجود في الدرج (جرد الكاشير):',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      Text(
+                        strings.actualCashCount,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       const SizedBox(height: 6),
                       TextField(
@@ -720,13 +704,13 @@ class CashierDashboardPage extends ConsumerWidget {
 
                       // Difference indicator
                       if (diff.abs() < 0.01)
-                        const Row(
+                        Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green, size: 16),
-                            SizedBox(width: 4),
+                            const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                            const SizedBox(width: 4),
                             Text(
-                              'المبلغ مطابق تماماً للعهدة والمبيعات (لا يوجد عجز أو زيادة)',
-                              style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
+                              strings.cashMatched,
+                              style: const TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ],
                         )
@@ -736,7 +720,7 @@ class CashierDashboardPage extends ConsumerWidget {
                             const Icon(Icons.arrow_upward, color: Colors.blue, size: 16),
                             const SizedBox(width: 4),
                             Text(
-                              'يوجد فائض بالدرج بمقدار: +${Formatters.formatCurrency(diff)}',
+                              strings.cashSurplusWithAmount(Formatters.formatCurrency(diff)),
                               style: const TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -747,23 +731,23 @@ class CashierDashboardPage extends ConsumerWidget {
                             const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
                             const SizedBox(width: 4),
                             Text(
-                              'يوجد عجز بالدرج بمقدار: ${Formatters.formatCurrency(diff)}',
+                              strings.cashDeficitWithAmount(Formatters.formatCurrency(diff)),
                               style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
 
                       const SizedBox(height: AppSpacing.md),
-                      const Text(
-                        'ملاحظات إضافية (اختياري):',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      Text(
+                        strings.additionalNotes,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: notesCtrl,
                         maxLines: 2,
                         decoration: InputDecoration(
-                          hintText: 'أي ملاحظات خاصة بالوردية أو المصروفات النثرية...',
+                          hintText: strings.shiftNotesHint,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
@@ -776,7 +760,7 @@ class CashierDashboardPage extends ConsumerWidget {
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.of(ctx).pop(),
-                              child: const Text('إلغاء'),
+                              child: Text(strings.cancel),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -813,7 +797,7 @@ class CashierDashboardPage extends ConsumerWidget {
                                 }
                               },
                               icon: const Icon(Icons.lock_outline),
-                              label: const Text('إقفال وطباعة Z-Report'),
+                              label: Text(strings.closeAndPrintZReport),
                             ),
                           ),
                         ],
@@ -834,6 +818,7 @@ class CashierDashboardPage extends ConsumerWidget {
     ShiftEntity shift,
     WidgetRef ref,
   ) {
+    final strings = ref.read(appStringsProvider);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -860,14 +845,14 @@ class CashierDashboardPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const Icon(Icons.check_circle_rounded, color: Colors.green, size: 56),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'تم إقفال الوردية وحفظ تقرير Z-Report بنجاح',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              strings.zReportSuccess,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
-              'رقم الوردية: #${shift.id} • مسؤول الكاشير: ${shift.cashierName}',
+              strings.shiftInfoLine(shift.id, shift.cashierName),
               style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -875,14 +860,14 @@ class CashierDashboardPage extends ConsumerWidget {
               onPressed: () {
                 Navigator.of(ctx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم إرسال تقرير الـ Z-Report للطابعة الحرارية'),
+                  SnackBar(
+                    content: Text(strings.zReportSentToPrinter),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
               icon: const Icon(Icons.print_rounded),
-              label: const Text('طباعة التقرير المالي للوردية (Z-Report)'),
+              label: Text(strings.zReportPrint),
             ),
           ],
         ),
@@ -895,7 +880,7 @@ class CashierDashboardPage extends ConsumerWidget {
 
 class _CashierActiveShiftCard extends StatelessWidget {
   const _CashierActiveShiftCard({
-    required this.isArabic,
+    required this.strings,
     required this.shift,
     this.cashierName,
     required this.completedOrdersCount,
@@ -907,7 +892,8 @@ class _CashierActiveShiftCard extends StatelessWidget {
     required this.onCloseShift,
   });
 
-  final bool isArabic;
+  final AppStrings strings;
+  bool get isArabic => strings.isArabic;
   final ShiftEntity shift;
   final String? cashierName;
   final int completedOrdersCount;
@@ -975,7 +961,7 @@ class _CashierActiveShiftCard extends StatelessWidget {
                       const PulseBadge(color: emeraldColor, size: 8),
                       const SizedBox(width: 6),
                       Text(
-                        isArabic ? 'وردية نشطة حالياً' : 'Active Shift',
+                        strings.activeShiftStatus,
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -1015,11 +1001,11 @@ class _CashierActiveShiftCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${isArabic ? "المسؤول" : "Cashier"}: ${cashierName ?? shift.cashierName}',
+                          '${strings.cashierResponsible}: ${cashierName ?? shift.cashierName}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(
-                          '${isArabic ? "بدأت في" : "Started"}: ${Formatters.formatDate(shift.openedAt)} ${Formatters.formatTime(shift.openedAt)}',
+                          '${strings.startedAt}: ${Formatters.formatDate(shift.openedAt)} ${Formatters.formatTime(shift.openedAt)}',
                           style: TextStyle(
                             fontSize: 11,
                             color: colorScheme.onSurfaceVariant,
@@ -1036,7 +1022,7 @@ class _CashierActiveShiftCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetricTile(
-                        title: isArabic ? 'العهدة الافتتاحية' : 'Opening Float',
+                        title: strings.openingFloat,
                         value: Formatters.formatCurrency(shift.openingCashFloat),
                         color: Colors.blueGrey,
                         icon: Icons.account_balance_wallet_outlined,
@@ -1045,7 +1031,7 @@ class _CashierActiveShiftCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: _MetricTile(
-                        title: isArabic ? 'النقد بالدرج' : 'Cash in Drawer',
+                        title: strings.cashInDrawer,
                         value: Formatters.formatCurrency(totalCashInDrawer),
                         color: emeraldColor,
                         icon: Icons.payments_rounded,
@@ -1059,7 +1045,7 @@ class _CashierActiveShiftCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _MetricTile(
-                        title: isArabic ? 'إجمالي المبيعات' : 'Total Sales',
+                        title: strings.totalSales,
                         value: Formatters.formatCurrency(totalSales),
                         color: AppColors.brand,
                         icon: Icons.trending_up_rounded,
@@ -1068,8 +1054,8 @@ class _CashierActiveShiftCard extends StatelessWidget {
                     const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: _MetricTile(
-                        title: isArabic ? 'الطلبات المكتملة' : 'Paid Orders',
-                        value: '$completedOrdersCount ${isArabic ? "طلب" : "Orders"}',
+                        title: strings.completedOrders,
+                        value: '$completedOrdersCount ${strings.paidOrdersSuffix}',
                         color: Colors.indigo,
                         icon: Icons.check_circle_outline_rounded,
                       ),
@@ -1089,19 +1075,19 @@ class _CashierActiveShiftCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _MiniPaymentStat(
-                        label: isArabic ? 'كاش' : 'Cash',
+                        label: strings.cashShort,
                         amount: cashSales,
                         color: emeraldColor,
                         icon: Icons.money_rounded,
                       ),
                       _MiniPaymentStat(
-                        label: isArabic ? 'بطاقة' : 'Card',
+                        label: strings.cardShort,
                         amount: cardSales,
                         color: Colors.blue,
                         icon: Icons.credit_card_rounded,
                       ),
                       _MiniPaymentStat(
-                        label: isArabic ? 'محفظة' : 'Wallet',
+                        label: strings.walletShort,
                         amount: walletSales,
                         color: Colors.purple,
                         icon: Icons.account_balance_wallet_rounded,
@@ -1125,9 +1111,7 @@ class _CashierActiveShiftCard extends StatelessWidget {
                     onPressed: onCloseShift,
                     icon: const Icon(Icons.lock_clock_rounded, size: 20),
                     label: Text(
-                      isArabic
-                          ? 'إقفال الوردية وجرد الصندوق (Z-Report)'
-                          : 'Close Shift & Cash Audit (Z-Report)',
+                      strings.closeShiftButton,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
@@ -1143,11 +1127,11 @@ class _CashierActiveShiftCard extends StatelessWidget {
 
 class _CashierNoActiveShiftCard extends StatelessWidget {
   const _CashierNoActiveShiftCard({
-    required this.isArabic,
+    required this.strings,
     required this.onOpenShift,
   });
 
-  final bool isArabic;
+  final AppStrings strings;
   final VoidCallback onOpenShift;
 
   @override
@@ -1185,18 +1169,14 @@ class _CashierNoActiveShiftCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            isArabic
-                ? 'لا توجد وردية مفتوحة حالياً للكاشير'
-                : 'No Active Cashier Shift',
+            strings.noActiveShift,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            isArabic
-                ? 'يرجى تسجيل العهدة الافتتاحية وبدء الوردية لتفعيل نقطة البيع وتسجيل المدفوعات'
-                : 'Please open a shift and enter the opening float to start accepting payments',
+            strings.noActiveShiftSubtitle,
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -1217,9 +1197,7 @@ class _CashierNoActiveShiftCard extends StatelessWidget {
             onPressed: onOpenShift,
             icon: const Icon(Icons.lock_open_rounded),
             label: Text(
-              isArabic
-                  ? 'بدء وردية جديدة واستلام العهدة'
-                  : 'Start New Cashier Shift',
+              strings.openNewShift,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -1432,13 +1410,14 @@ class _POSHubActionCard extends StatelessWidget {
 class _CashierOrderTile extends StatelessWidget {
   const _CashierOrderTile({
     required this.order,
-    required this.isArabic,
+    required this.strings,
     required this.onPrint,
     this.onRefund,
   });
 
   final OrderEntity order;
-  final bool isArabic;
+  final AppStrings strings;
+  bool get isArabic => strings.isArabic;
   final VoidCallback onPrint;
   final VoidCallback? onRefund;
 
@@ -1484,15 +1463,15 @@ class _CashierOrderTile extends StatelessWidget {
               children: [
                 Text(
                   order.customerId != null
-                      ? 'طلب #${Formatters.formatOrderId(order.id)}'
-                      : (isArabic ? 'طلب صالة #${Formatters.formatOrderId(order.id)}' : 'Order #${Formatters.formatOrderId(order.id)}'),
+                      ? strings.customerOrderNumber(Formatters.formatOrderId(order.id))
+                      : strings.dineInOrderNumber(Formatters.formatOrderId(order.id)),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
                 Text(
-                  '${Formatters.formatTime(order.createdAt)} • ${order.paymentMethod?.labelAr ?? (isArabic ? "نقدي" : "Cash")}',
+                  '${Formatters.formatTime(order.createdAt)} • ${order.paymentMethod?.localizedLabel(isArabic) ?? strings.paymentCash}',
                   style: TextStyle(
                     fontSize: 11,
                     color: colorScheme.onSurfaceVariant,
@@ -1513,7 +1492,7 @@ class _CashierOrderTile extends StatelessWidget {
           if (onRefund != null)
             IconButton(
               onPressed: onRefund,
-              tooltip: isArabic ? 'استرجاع الفاتورة' : 'Refund Invoice',
+              tooltip: strings.refundInvoice,
               icon: const Icon(Icons.assignment_return_outlined, size: 20, color: Colors.orange),
               style: IconButton.styleFrom(
                 backgroundColor: Colors.orange.withValues(alpha: 0.1),
@@ -1521,7 +1500,7 @@ class _CashierOrderTile extends StatelessWidget {
             ),
           IconButton(
             onPressed: onPrint,
-            tooltip: isArabic ? 'طباعة الفاتورة' : 'Print Receipt',
+            tooltip: strings.printReceipt,
             icon: const Icon(Icons.print_outlined, size: 20),
             style: IconButton.styleFrom(
               backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),

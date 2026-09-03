@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/l10n/app_localizations.dart';
 import '../../../../core/l10n/app_strings.dart';
@@ -10,6 +9,8 @@ import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
+import '../../../../shared/animations/animated_counter.dart';
 import '../../../../shared/animations/animated_press_card.dart';
 import '../../../../shared/animations/pulse_badge.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
@@ -93,12 +94,11 @@ class ManagerDashboardPage extends ConsumerWidget {
                   Text(
                     isAdmin
                         ? (selectedBranchId == null
-                            ? (strings.isArabic ? 'إدارة كل الفروع (${branches.length})' : 'All Branches (${branches.length})')
-                            : (strings.isArabic ? 'متابعة ${activeBranch?.name ?? "الفرع"}' : 'Managing ${activeBranch?.name ?? "Branch"}'))
+                            ? strings.allBranchesCount(branches.length)
+                            : strings.managingBranch(activeBranch?.name ?? strings.fallbackBranchLabel))
                         : (activeBranch?.name ?? strings.managerSubtitle),
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontSize: 10,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -116,7 +116,7 @@ class ManagerDashboardPage extends ConsumerWidget {
           // Quick Switcher Menu for Admin
           if (isAdmin)
             PopupMenuButton<String>(
-              tooltip: strings.isArabic ? 'التبديل بين شاشات النظام' : 'Switch System Apps',
+              tooltip: strings.switchApps,
               icon: Container(
                 padding: const EdgeInsets.all(AppSpacing.xs + 2),
                 decoration: BoxDecoration(
@@ -129,33 +129,33 @@ class ManagerDashboardPage extends ConsumerWidget {
               ),
               onSelected: (route) => context.push(route),
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: '/kds',
                   child: Row(
                     children: [
-                      Icon(Icons.kitchen_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('شاشة المطبخ (KDS)'),
+                      const Icon(Icons.kitchen_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(strings.navKds),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: '/waiter',
                   child: Row(
                     children: [
-                      Icon(Icons.table_restaurant_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('شاشة الويتر / الصالة (POS)'),
+                      const Icon(Icons.table_restaurant_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(strings.navWaiterPos),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: '/driver',
                   child: Row(
                     children: [
-                      Icon(Icons.delivery_dining_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('شاشة السائق والتوصيل'),
+                      const Icon(Icons.delivery_dining_rounded, size: 20),
+                      const SizedBox(width: 8),
+                      Text(strings.navDriver),
                     ],
                   ),
                 ),
@@ -163,7 +163,7 @@ class ManagerDashboardPage extends ConsumerWidget {
             ),
 
           IconButton(
-            tooltip: 'مركز التنبيهات',
+            tooltip: strings.alertsCenter,
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -202,7 +202,7 @@ class ManagerDashboardPage extends ConsumerWidget {
           ),
 
           IconButton(
-            tooltip: AppConstants.allOrdersTitle,
+            tooltip: strings.allOrdersTitle,
             icon: Container(
               padding: const EdgeInsets.all(AppSpacing.xs + 2),
               decoration: BoxDecoration(
@@ -216,6 +216,21 @@ class ManagerDashboardPage extends ConsumerWidget {
             onPressed: () => context.push('/manager/orders'),
           ),
 
+          IconButton(
+            tooltip: strings.manageMenuTooltip,
+            icon: Container(
+              padding: const EdgeInsets.all(AppSpacing.xs + 2),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.surfaceContainerHigh
+                    : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.restaurant_menu_rounded, size: 20),
+            ),
+            onPressed: () => context.push('/manager/menu'),
+          ),
+
           const LogoutActionButton(),
           const SizedBox(width: AppSpacing.xs),
         ],
@@ -223,7 +238,7 @@ class ManagerDashboardPage extends ConsumerWidget {
       body: metrics.when(
         loading: () => const _DashboardSkeleton(),
         error: (e, _) => ErrorState(
-          message: AppConstants.errorLoadingData,
+          message: strings.errorLoadingData,
           errorDetail: e,
           onRetry: () => ref.refresh(metricsControllerProvider),
         ),
@@ -234,7 +249,12 @@ class ManagerDashboardPage extends ConsumerWidget {
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1200),
-                child: ListView(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(metricsControllerProvider);
+                    ref.invalidate(branchesControllerProvider);
+                  },
+                  child: ListView(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.sm,
@@ -246,6 +266,7 @@ class ManagerDashboardPage extends ConsumerWidget {
                         branches: branches,
                         selectedBranchId: selectedBranchId,
                         onSelectBranch: (id) {
+                          AppHaptics.selectionTap();
                           ref.read(selectedBranchIdProvider.notifier).state = id;
                         },
                         onAddBranch: () => AddBranchDialog.show(context),
@@ -258,6 +279,116 @@ class ManagerDashboardPage extends ConsumerWidget {
                       isAdmin: isAdmin,
                       activeBranch: activeBranch,
                       activeOrdersCount: _activeOrdersCount(ref),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // ── Prominent Menu Management Shortcut Card ──
+                    InkWell(
+                      onTap: () => context.push('/manager/menu'),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.primaryContainer.withValues(alpha: 0.7),
+                              colorScheme.surfaceContainerHighest,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.restaurant_menu_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    strings.menuManagementCardTitle,
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    strings.menuManagementCardSubtitle,
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.arrow_back_ios_rounded
+                                  : Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                              color: colorScheme.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+
+                    // ── Prominent Restaurant Profile & Settings Shortcut Card ──
+                    InkWell(
+                      onTap: () => context.push('/manager/restaurant'),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                              colorScheme.surfaceContainerHighest,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          border: Border.all(color: colorScheme.secondary.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: colorScheme.secondary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'بيانات وإعدادات المطعم',
+                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'تعديل مواعيد العمل، الهاتف، الموقع، وعدد الطاولات المعلن',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Directionality.of(context) == TextDirection.rtl
+                                  ? Icons.arrow_back_ios_rounded
+                                  : Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                              color: colorScheme.secondary,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.md),
 
@@ -279,7 +410,8 @@ class ManagerDashboardPage extends ConsumerWidget {
                   ],
                 ),
               ),
-            );
+            ),
+          );
           },
         ),
       ),
@@ -294,7 +426,7 @@ class ManagerDashboardPage extends ConsumerWidget {
 
 // ── Multi-Branch Tabs Bar ──────────────────────────────────────────────────────
 
-class _BranchTabsBar extends StatelessWidget {
+class _BranchTabsBar extends ConsumerWidget {
   const _BranchTabsBar({
     required this.branches,
     required this.selectedBranchId,
@@ -308,7 +440,8 @@ class _BranchTabsBar extends StatelessWidget {
   final VoidCallback onAddBranch;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -319,7 +452,7 @@ class _BranchTabsBar extends StatelessWidget {
         children: [
           // All Branches Tab (السلسلة بالكامل)
           _BranchTabPill(
-            label: '🌐 كل الفروع (السلسلة)',
+            label: strings.allBranches,
             isSelected: selectedBranchId == null,
             badgeCount: branches.length,
             onTap: () => onSelectBranch(null),
@@ -341,7 +474,7 @@ class _BranchTabsBar extends StatelessWidget {
 
           // Add New Branch Button
           IconButton(
-            tooltip: 'إضافة فرع جديد',
+            tooltip: strings.addBranchTooltip,
             style: IconButton.styleFrom(
               backgroundColor: isDark
                   ? colorScheme.surfaceContainerHigh
@@ -521,7 +654,7 @@ class _HeroGreetingBanner extends ConsumerWidget {
                       child: Text(
                         isAdmin
                             ? strings.welcomeAdmin
-                            : '${strings.welcomeManager} ${activeBranch?.name ?? (strings.isArabic ? "الفرع" : "Branch")}',
+                            : '${strings.welcomeManager} ${activeBranch?.name ?? strings.fallbackBranchLabel}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -538,9 +671,7 @@ class _HeroGreetingBanner extends ConsumerWidget {
                   isAdmin && activeBranch == null
                       ? strings.centralView
                       : (activeOrdersCount > 0
-                          ? (strings.isArabic
-                              ? 'لديك $activeOrdersCount طلبات جارية الآن في هذا الفرع'
-                              : 'You have $activeOrdersCount active orders in this branch')
+                          ? strings.activeOrdersInBranchMessage(activeOrdersCount)
                           : strings.readyAndReceiving),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -558,27 +689,39 @@ class _HeroGreetingBanner extends ConsumerWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              color: StatusColors.tone(
+                SemanticTone.success,
+                theme.brightness,
+              ).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(
-                color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                color: StatusColors.tone(
+                  SemanticTone.success,
+                  theme.brightness,
+                ).withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const PulseBadge(
-                  color: Color(0xFF10B981),
+                PulseBadge(
+                  color: StatusColors.tone(
+                    SemanticTone.success,
+                    theme.brightness,
+                  ),
                   size: 8,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   activeBranch != null
                       ? (activeBranch!.isOpen ? strings.open : strings.closed)
                       : strings.live,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF047857),
+                    color: StatusColors.tone(
+                      SemanticTone.success,
+                      theme.brightness,
+                    ),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -612,9 +755,11 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final salesValue = activeBranch?.todaySales ?? data.totalSales;
-    final ordersCount = activeBranch?.totalOrdersToday ?? data.totalOrders;
-    final activeOrdersCount = activeBranch?.activeOrdersCount ?? _activeOrders(ref);
+    // Real live sales derived directly from placed & completed orders
+    final salesValue = data.totalSales;
+    final ordersCount = data.totalOrders;
+    final allOrders = ref.watch(ordersControllerProvider);
+    final int activeOrdersCount = allOrders.where((o) => !o.status.isTerminal).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,7 +784,11 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.todaySalesBranch,
                   icon: Icons.payments_rounded,
                   gradient: AppGradients.emerald,
-                  accentColor: const Color(0xFF10B981),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.success,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: salesValue,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -650,7 +799,11 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.totalOrdersBranch,
                   icon: Icons.receipt_long_rounded,
                   gradient: AppGradients.info,
-                  accentColor: const Color(0xFF0284C7),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.info,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: ordersCount,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -663,20 +816,27 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.avgCart,
                   icon: Icons.pie_chart_rounded,
                   gradient: AppGradients.warning,
-                  accentColor: const Color(0xFFD97706),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.warning,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: ordersCount > 0 ? (salesValue / ordersCount) : 0.0,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _MetricCard(
                   title: strings.metricsActiveTitle,
-                  value: '$activeOrdersCount',
+                  value: activeOrdersCount.toString(),
                   subtitle: strings.inProgressBranch,
                   icon: Icons.pending_actions_rounded,
                   gradient: AppGradients.purple,
-                  accentColor: const Color(0xFF8B5CF6),
-                  isLive: int.tryParse('$activeOrdersCount') != null &&
-                      int.parse('$activeOrdersCount') > 0,
+                  accentColor: StatusColors.delivery(
+                    DeliveryStatus.inTransit,
+                    Theme.of(context).brightness,
+                  ),
+                  isLive: activeOrdersCount > 0,
+                  numericValue: activeOrdersCount,
                 ),
               ),
             ],
@@ -691,7 +851,11 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.todaySalesBranch,
                   icon: Icons.payments_rounded,
                   gradient: AppGradients.emerald,
-                  accentColor: const Color(0xFF10B981),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.success,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: salesValue,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -702,7 +866,11 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.totalOrdersBranch,
                   icon: Icons.receipt_long_rounded,
                   gradient: AppGradients.info,
-                  accentColor: const Color(0xFF0284C7),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.info,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: ordersCount,
                 ),
               ),
             ],
@@ -719,20 +887,27 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
                   subtitle: strings.avgCart,
                   icon: Icons.pie_chart_rounded,
                   gradient: AppGradients.warning,
-                  accentColor: const Color(0xFFD97706),
+                  accentColor: StatusColors.tone(
+                    SemanticTone.warning,
+                    Theme.of(context).brightness,
+                  ),
+                  numericValue: ordersCount > 0 ? (salesValue / ordersCount) : 0.0,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: _MetricCard(
                   title: strings.metricsActiveTitle,
-                  value: '$activeOrdersCount',
+                  value: activeOrdersCount.toString(),
                   subtitle: strings.inProgressBranch,
                   icon: Icons.pending_actions_rounded,
                   gradient: AppGradients.purple,
-                  accentColor: const Color(0xFF8B5CF6),
-                  isLive: int.tryParse('$activeOrdersCount') != null &&
-                      int.parse('$activeOrdersCount') > 0,
+                  accentColor: StatusColors.delivery(
+                    DeliveryStatus.inTransit,
+                    Theme.of(context).brightness,
+                  ),
+                  isLive: activeOrdersCount > 0,
+                  numericValue: activeOrdersCount,
                 ),
               ),
             ],
@@ -772,13 +947,13 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         SalesLineChart(
           salesData: {
-            strings.isArabic ? 'السبت' : 'Sat': salesValue * 0.12,
-            strings.isArabic ? 'الأحد' : 'Sun': salesValue * 0.14,
-            strings.isArabic ? 'الإثنين' : 'Mon': salesValue * 0.10,
-            strings.isArabic ? 'الثلاثاء' : 'Tue': salesValue * 0.15,
-            strings.isArabic ? 'الأربعاء' : 'Wed': salesValue * 0.18,
-            strings.isArabic ? 'الخميس' : 'Thu': salesValue * 0.22,
-            strings.isArabic ? 'الجمعة' : 'Fri': salesValue * 0.25,
+            strings.weekdaySat: salesValue * 0.12,
+            strings.weekdaySun: salesValue * 0.14,
+            strings.weekdayMon: salesValue * 0.10,
+            strings.weekdayTue: salesValue * 0.15,
+            strings.weekdayWed: salesValue * 0.18,
+            strings.weekdayThu: salesValue * 0.22,
+            strings.weekdayFri: salesValue * 0.25,
           },
         ),
         const SizedBox(height: AppSpacing.md),
@@ -835,15 +1010,15 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
 
         const SizedBox(height: AppSpacing.lg),
         _BreakdownSection(
-          title: AppConstants.metricsItemsSold,
+          title: strings.metricsItemsSold,
           icon: Icons.shopping_bag_rounded,
           data: data.itemsSold,
           tone: SemanticTone.success,
-          formatValue: (value) => '$value ${strings.isArabic ? "صنف" : "items"}',
+          formatValue: (value) => '$value ${strings.itemsCount}',
         ),
         const SizedBox(height: AppSpacing.md),
         _BreakdownSection(
-          title: AppConstants.metricsByCategory,
+          title: strings.metricsByCategory,
           icon: Icons.category_rounded,
           data: data.categoryRevenue,
           tone: SemanticTone.info,
@@ -851,7 +1026,7 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         _BreakdownSection(
-          title: AppConstants.metricsByPayment,
+          title: strings.metricsByPayment,
           icon: Icons.credit_card_rounded,
           data: data.paymentMethodRevenue,
           tone: SemanticTone.neutral,
@@ -859,11 +1034,6 @@ class _SingleBranchDashboardContent extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  String _activeOrders(WidgetRef ref) {
-    final orders = ref.watch(ordersControllerProvider);
-    return '${orders.where((o) => !o.status.isTerminal).length}';
   }
 }
 
@@ -911,9 +1081,8 @@ class _SectionHeader extends StatelessWidget {
             ),
             child: Text(
               badgeText!,
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: badgeColor ?? colorScheme.primary,
-                fontSize: 10,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -935,6 +1104,7 @@ class _MetricCard extends StatelessWidget {
     required this.gradient,
     required this.accentColor,
     this.isLive = false,
+    this.numericValue,
   });
 
   final String title;
@@ -944,6 +1114,9 @@ class _MetricCard extends StatelessWidget {
   final LinearGradient gradient;
   final Color accentColor;
   final bool isLive;
+
+  /// When provided, renders an [AnimatedCounter] instead of static text.
+  final num? numericValue;
 
   @override
   Widget build(BuildContext context) {
@@ -1037,20 +1210,27 @@ class _MetricCard extends StatelessWidget {
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
-                    child: Text(
-                      value,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
+                    child: numericValue != null
+                        ? AnimatedCounter(
+                            value: numericValue!,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          )
+                        : Text(
+                            value,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                      fontSize: 10,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -1142,16 +1322,16 @@ class _DispatchHealthCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             board.when(
-              loading: () => const Row(
+              loading: () => Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  SizedBox(width: AppSpacing.sm),
-                  Text(AppConstants.dispatchHealthLoading),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(strings.dispatchHealthLoading),
                 ],
               ),
               error: (_, _) => Row(
@@ -1162,8 +1342,8 @@ class _DispatchHealthCard extends ConsumerWidget {
                     color: theme.colorScheme.error,
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  const Expanded(
-                    child: Text(AppConstants.dispatchHealthUnavailable),
+                  Expanded(
+                    child: Text(strings.dispatchHealthUnavailable),
                   ),
                 ],
               ),
@@ -1280,13 +1460,14 @@ class _DispatchHealthStat extends StatelessWidget {
 
 // ── Live Order Pipeline / Status Breakdown ─────────────────────────────────────
 
-class _StatusBreakdown extends StatelessWidget {
+class _StatusBreakdown extends ConsumerWidget {
   const _StatusBreakdown({required this.orders});
 
   final List<OrderEntity> orders;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -1323,14 +1504,14 @@ class _StatusBreakdown extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'لا توجد طلبات جارية الآن',
+              strings.noActiveOrders,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 2),
             Text(
-              'ستظهر جميع مراحل وإحصائيات الطلبات فور تسجيلها في النظام',
+              strings.ordersWillAppear,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -1528,25 +1709,25 @@ class _QuickActionsGrid extends ConsumerWidget {
       ),
       _ActionData(
         icon: Icons.query_stats_rounded,
-        label: strings.isArabic ? 'تقرير المالك 🌟' : 'Owner Digest 🌟',
+        label: strings.ownerDigest,
         gradient: AppGradients.purple,
         route: '/manager/owner-digest',
       ),
       _ActionData(
         icon: Icons.analytics_outlined,
-        label: strings.isArabic ? 'هندسة المنيو' : 'Menu Matrix',
+        label: strings.menuMatrix,
         gradient: AppGradients.emerald,
         route: '/manager/menu-engineering',
       ),
       _ActionData(
         icon: Icons.menu_book_rounded,
-        label: strings.isArabic ? 'الوصفات والتكلفة' : 'Recipes & BOM',
+        label: strings.recipesAndBom,
         gradient: AppGradients.primary,
         route: '/manager/recipes',
       ),
       _ActionData(
         icon: Icons.delete_sweep_rounded,
-        label: strings.isArabic ? 'سجل الهالك' : 'Waste Logs',
+        label: strings.wasteLogsTitle,
         gradient: AppGradients.warning,
         route: '/manager/waste-logs',
       ),
@@ -1564,31 +1745,37 @@ class _QuickActionsGrid extends ConsumerWidget {
       ),
       _ActionData(
         icon: Icons.timer_outlined,
-        label: strings.isArabic ? 'ساعات الموظفين والأجور' : 'Staff Timesheet',
+        label: strings.staffTimesheetTitle,
         gradient: AppGradients.primary,
         route: '/manager/timesheet',
       ),
       _ActionData(
         icon: Icons.local_shipping_outlined,
-        label: strings.isArabic ? 'أوامر الشراء والموردين' : 'Purchase Orders',
+        label: strings.purchaseOrdersTitle,
         gradient: AppGradients.info,
         route: '/manager/purchase-orders',
       ),
       _ActionData(
         icon: Icons.security_rounded,
-        label: strings.isArabic ? 'سجل التدقيق الأمني' : 'Security Audit',
+        label: strings.securityAuditTitle,
         gradient: AppGradients.warning,
         route: '/manager/security-audit',
       ),
       _ActionData(
         icon: Icons.stars_rounded,
-        label: strings.isArabic ? 'تقييمات وشكاوى العملاء' : 'Guest Feedback',
+        label: strings.guestFeedbackTitle,
         gradient: AppGradients.emerald,
         route: '/manager/guest-feedback',
       ),
       _ActionData(
+        icon: Icons.storefront_rounded,
+        label: strings.restaurantSettingsTitle,
+        gradient: AppGradients.primary,
+        route: '/manager/restaurant',
+      ),
+      _ActionData(
         icon: Icons.speed_rounded,
-        label: strings.isArabic ? 'تارجت المبيعات والسرعة' : 'Sales Target',
+        label: strings.salesTargetTitle,
         gradient: AppGradients.purple,
         route: '/manager/sales-target',
       ),
@@ -1687,7 +1874,7 @@ class _QuickActionTile extends StatelessWidget {
 
 // ── Metric Breakdown Section ───────────────────────────────────────────────────
 
-class _BreakdownSection extends StatelessWidget {
+class _BreakdownSection extends ConsumerWidget {
   const _BreakdownSection({
     required this.title,
     required this.icon,
@@ -1703,7 +1890,8 @@ class _BreakdownSection extends StatelessWidget {
   final String Function(num value) formatValue;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -1750,7 +1938,7 @@ class _BreakdownSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Center(
                 child: Text(
-                  AppConstants.metricsNoData,
+                  strings.metricsNoData,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

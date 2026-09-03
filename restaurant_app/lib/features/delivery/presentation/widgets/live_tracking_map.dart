@@ -287,6 +287,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> {
       final current = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 3),
         ),
       );
       if (!mounted) return;

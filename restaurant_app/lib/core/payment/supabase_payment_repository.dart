@@ -26,15 +26,34 @@ class SupabasePaymentRepository {
     required DateTime paidAt,
   }) async {
     try {
-      await _supabase.from(SupabaseConfig.paymentsTable).upsert({
-        'id': transactionRef,
-        'order_id': orderId,
-        'payment_method': method.name,
-        'amount': amount,
-        'status': 'completed',
-        'transaction_ref': transactionRef,
-        'paid_at': paidAt.toIso8601String(),
-      });
+      final numericOrderId = int.tryParse(orderId);
+      final existing = await _supabase
+          .from(SupabaseConfig.paymentsTable)
+          .select('id')
+          .eq('transaction_ref', transactionRef)
+          .limit(1);
+
+      if ((existing as List).isNotEmpty) {
+        await _supabase
+            .from(SupabaseConfig.paymentsTable)
+            .update({
+              'order_id': ?numericOrderId,
+              'payment_method': method.name,
+              'amount': amount,
+              'status': 'completed',
+              'paid_at': paidAt.toIso8601String(),
+            })
+            .eq('transaction_ref', transactionRef);
+      } else {
+        await _supabase.from(SupabaseConfig.paymentsTable).insert({
+          'order_id': ?numericOrderId,
+          'payment_method': method.name,
+          'amount': amount,
+          'status': 'completed',
+          'transaction_ref': transactionRef,
+          'paid_at': paidAt.toIso8601String(),
+        });
+      }
       return const Right<Failure, void>(null);
     } catch (e) {
       AppLogger.error('SupabasePaymentRepository.recordPayment error: $e');

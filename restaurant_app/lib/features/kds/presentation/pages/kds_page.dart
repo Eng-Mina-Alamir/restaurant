@@ -3,17 +3,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/notifications/kds_alert_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/humanized_feedback.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../../shared/widgets/stale_data_banner.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
@@ -34,15 +38,18 @@ class KdsPage extends ConsumerStatefulWidget {
 }
 
 enum KitchenStation {
-  all('الكل', Icons.apps_rounded),
-  grill('الشواية واللحوم', Icons.local_fire_department_rounded),
-  bakery('الفرن والمخبوزات', Icons.local_pizza_rounded),
-  bar('المشروبات والبار', Icons.local_cafe_rounded),
-  expo('شاشة التجميع (Expo)', Icons.inventory_2_rounded);
+  all('الكل', 'All', Icons.apps_rounded),
+  grill('الشواية واللحوم', 'Grill & Meats', Icons.local_fire_department_rounded),
+  bakery('الفرن والمخبوزات', 'Oven & Bakery', Icons.local_pizza_rounded),
+  bar('المشروبات والبار', 'Drinks & Bar', Icons.local_cafe_rounded),
+  expo('شاشة التجميع (Expo)', 'Expo Screen', Icons.inventory_2_rounded);
 
   final String titleAr;
+  final String titleEn;
   final IconData icon;
-  const KitchenStation(this.titleAr, this.icon);
+  const KitchenStation(this.titleAr, this.titleEn, this.icon);
+
+  String localizedTitle(bool isArabic) => isArabic ? titleAr : titleEn;
 }
 
 class _KdsPageState extends ConsumerState<KdsPage> {
@@ -117,6 +124,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final orders = ref.watch(ordersControllerProvider);
     final badge = ref.watch(
       newOrderNotifierProvider.select((n) => n.alertCount),
@@ -135,11 +143,13 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final active = orders.where((o) => !o.status.isTerminal).toList();
 
     // KDS multi-chef: each chef only sees unclaimed tickets plus the ones
-    // they personally claimed (استلام الطلب).
-    active.retainWhere(
-      (o) =>
-          o.assignedKitchenId == null || o.assignedKitchenId == currentUserId,
-    );
+    // they personally claimed (استلام الطلب). Expo station sees ALL tickets for assembly.
+    if (_selectedStation != KitchenStation.expo) {
+      active.retainWhere(
+        (o) =>
+            o.assignedKitchenId == null || o.assignedKitchenId == currentUserId,
+      );
+    }
 
     // Filter by Kitchen Station
     final filteredActive =
@@ -168,52 +178,84 @@ class _KdsPageState extends ConsumerState<KdsPage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            children: [
-              const Text(AppConstants.kdsTitle),
-              const SizedBox(width: AppSpacing.sm),
-              // Station Selector Menu
-              PopupMenuButton<KitchenStation>(
-                initialValue: _selectedStation,
-                tooltip: 'اختيار محطة المطبخ',
-                onSelected: (st) => setState(() => _selectedStation = st),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _selectedStation.icon,
-                        size: 14,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _selectedStation.titleAr,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
+          title: AppBreakpoints.isMobile(context)
+              ? Text(strings.kdsTitle)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(strings.kdsTitle),
+                    const SizedBox(width: AppSpacing.sm),
+                    // Station Selector Menu
+                    PopupMenuButton<KitchenStation>(
+                      initialValue: _selectedStation,
+                      tooltip: strings.selectKitchenStation,
+                      onSelected: (st) => setState(() => _selectedStation = st),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        constraints: const BoxConstraints(minHeight: 48),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _selectedStation.icon,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              _selectedStation.localizedTitle(strings.isArabic),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const Icon(Icons.arrow_drop_down_rounded, size: 20),
+                          ],
                         ),
                       ),
-                      const Icon(Icons.arrow_drop_down_rounded, size: 16),
-                    ],
-                  ),
+                      itemBuilder:
+                          (ctx) =>
+                              KitchenStation.values
+                                  .map(
+                                    (s) => PopupMenuItem(
+                                      value: s,
+                                      child: Row(
+                                        children: [
+                                          Icon(s.icon, size: 18),
+                                          const SizedBox(width: 8),
+                                          Text(s.localizedTitle(strings.isArabic)),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                    ),
+                  ],
                 ),
+          actions: [
+            if (AppBreakpoints.isMobile(context))
+              PopupMenuButton<KitchenStation>(
+                initialValue: _selectedStation,
+                tooltip: strings.stationTooltip(
+                  _selectedStation.localizedTitle(strings.isArabic),
+                ),
+                onSelected: (st) => setState(() => _selectedStation = st),
+                icon: Icon(_selectedStation.icon),
                 itemBuilder:
                     (ctx) =>
                         KitchenStation.values
@@ -224,16 +266,13 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                                   children: [
                                     Icon(s.icon, size: 18),
                                     const SizedBox(width: 8),
-                                    Text(s.titleAr),
+                                    Text(s.localizedTitle(strings.isArabic)),
                                   ],
                                 ),
                               ),
                             )
                             .toList(),
               ),
-            ],
-          ),
-          actions: [
             if (badge > 0)
               Padding(
                 padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
@@ -243,26 +282,35 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(AppRadius.full),
                       onTap: () {
+                        AppHaptics.selectionTap();
                         ref.read(newOrderNotifierProvider).reset();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('تم تأكيد مراجعة $badge تنبيهات للطلبات الجديدة 🛎️'),
-                            duration: const Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        HumanSnackBar.success(
+                          context,
+                          HumanCopy.alertsReviewed,
                         );
                       },
                       child: Padding(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(AppSpacing.xs),
                         child: Badge(
                           label: Text('$badge'),
-                          child: const Icon(Icons.notifications_active, color: Color(0xFFF59E0B)),
+                          child: Icon(
+                            Icons.notifications_active_outlined,
+                            color: StatusColors.tone(
+                              SemanticTone.warning,
+                              Theme.of(context).brightness,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
+            IconButton(
+              icon: const Icon(Icons.history_rounded),
+              tooltip: strings.recentCompletedOrdersTitle,
+              onPressed: () => _showRecentCompletedOrdersSheet(context, ref),
+            ),
             const LogoutActionButton(),
           ],
           bottom: AppBreakpoints.isMobile(context) && filteredActive.isNotEmpty
@@ -270,20 +318,46 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                   tabs: [
                     Tab(
                       text:
-                          '${AppConstants.kdsPending} (${pendingList.length})',
+                          '${strings.kdsPending} (${pendingList.length})',
                     ),
                     Tab(
                       text:
-                          '${AppConstants.kdsPreparing} (${preparingList.length})',
+                          '${strings.kdsPreparing} (${preparingList.length})',
                     ),
-                    Tab(text: '${AppConstants.kdsReady} (${readyList.length})'),
+                    Tab(text: '${strings.kdsReady} (${readyList.length})'),
                   ],
                 )
               : null,
         ),
-        body: active.isEmpty
-            ? const EmptyOrdersState()
-            : Builder(
+        body: Column(
+          children: [
+            if (!ref.watch(isOnlineProvider))
+              StaleDataBanner(
+                lastUpdated: DateTime.now(),
+                onRetry: () {
+                  ref.invalidate(ordersControllerProvider);
+                  ref.invalidate(tableControllerProvider);
+                },
+              ),
+            Expanded(
+              child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(ordersControllerProvider);
+            ref.invalidate(tableControllerProvider);
+          },
+          child: active.isEmpty
+              ? const SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: 500,
+                    child: EmptyState(
+                      message: HumanCopy.kitchenCalmSubtitle,
+                      title: HumanCopy.kitchenCalmTitle,
+                      icon: Icons.sentiment_satisfied_alt_outlined,
+                    ),
+                  ),
+                )
+              : Builder(
                 builder: (context) {
                   final theme = Theme.of(context);
                   final pendingColor = KdsColors.statusColor(
@@ -303,7 +377,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                     mobile: TabBarView(
                       children: [
                         _KdsColumn(
-                          title: AppConstants.kdsPending,
+                          title: strings.kdsPending,
                           color: pendingColor,
                           icon: Icons.schedule,
                           orders: pendingList,
@@ -319,7 +393,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                           isExpanded: false,
                         ),
                         _KdsColumn(
-                          title: AppConstants.kdsPreparing,
+                          title: strings.kdsPreparing,
                           color: preparingColor,
                           icon: Icons.soup_kitchen_outlined,
                           orders: preparingList,
@@ -335,7 +409,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                           isExpanded: false,
                         ),
                         _KdsColumn(
-                          title: AppConstants.kdsReady,
+                          title: strings.kdsReady,
                           color: readyColor,
                           icon: Icons.check_circle_outline,
                           orders: readyList,
@@ -355,7 +429,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                     tablet: Row(
                       children: [
                         _KdsColumn(
-                          title: AppConstants.kdsPending,
+                          title: strings.kdsPending,
                           color: pendingColor,
                           icon: Icons.schedule,
                           orders: pendingList,
@@ -370,7 +444,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                           tableNumberById: tableNumberById,
                         ),
                         _KdsColumn(
-                          title: AppConstants.kdsPreparing,
+                          title: strings.kdsPreparing,
                           color: preparingColor,
                           icon: Icons.soup_kitchen_outlined,
                           orders: preparingList,
@@ -385,7 +459,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                           tableNumberById: tableNumberById,
                         ),
                         _KdsColumn(
-                          title: AppConstants.kdsReady,
+                          title: strings.kdsReady,
                           color: readyColor,
                           icon: Icons.check_circle_outline,
                           orders: readyList,
@@ -404,16 +478,24 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                   );
                 },
               ),
+            ),
+          ),
+        ],
       ),
+    ),
     );
   }
 
   /// Claims [order] for [currentUserId], resetting any new-order badge.
   Future<void> _claim(OrderEntity order, String? currentUserId) async {
     ref.read(newOrderNotifierProvider).reset();
+    AppHaptics.actionSuccess();
     await ref
         .read(ordersControllerProvider.notifier)
         .claim(order.id, kitchenUserId: currentUserId);
+    if (mounted) {
+      HumanSnackBar.success(context, HumanCopy.claimedWarm);
+    }
   }
 
   /// Shows the guarded revert confirmation for [order], then applies the
@@ -424,18 +506,21 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     OrderStatus target,
     String actorId,
   ) async {
+    final strings = ref.read(appStringsProvider);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('تراجع إلى ${target.labelAr}؟'),
+        title: Text(
+          strings.kdsRevertPrompt(target.localizedLabel(strings.isArabic)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(AppConstants.ok),
+            child: Text(strings.cancel),
           ),
           FilledButton.tonal(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text(AppConstants.kdsRevertConfirmAction),
+            child: Text(strings.kdsRevertConfirmAction),
           ),
         ],
       ),
@@ -454,23 +539,250 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   ) async {
     ref.read(newOrderNotifierProvider).reset();
 
-    // When advancing a delivery order to ready or when ready without a driver,
-    // prompt the chef to select the delivery driver directly.
+    // When advancing a delivery order without a driver, prompt chef to select driver.
+    // If the chef dismisses or cancels the sheet (assigned != true), abort and do not advance.
     if (order.orderType == OrderType.delivery && order.driverId == null) {
       final assigned = await KdsDriverAssignmentSheet.show(context, order: order);
-      if (assigned == true) return;
+      if (assigned != true) return;
     }
 
-    final next = _nextStatus(order.status);
+    final prevStatus = order.status;
+    final next = _nextStatus(order.status, order.orderType);
     if (next == null) return;
     ref.read(kdsAlertServiceProvider).alertOrderReady();
+    AppHaptics.actionSuccess();
     await ref
         .read(ordersControllerProvider.notifier)
         .updateStatus(order.id, next);
+
+    if (context.mounted && (next == OrderStatus.served || next == OrderStatus.completed)) {
+      final orderShortId = order.id.length > 6 ? order.id.substring(order.id.length - 4) : order.id;
+      ScaffoldMessenger.of(context).clearSnackBars();
+      final successBg = StatusColors.tone(
+        SemanticTone.success,
+        Theme.of(context).brightness,
+      );
+      // Terminal orders are immutable: served→completed has no legal undo,
+      // so only offer "تراجع" when the backward move is allowed
+      // (e.g. ready→served can go back to ready).
+      final canUndo = next.canRevertTo(prevStatus);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 8),
+          backgroundColor: successBg,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          content: Text(
+            'أحسنت يا شيف! الطلب #$orderShortId أصبح جاهزاً للتقديم',
+            style: const TextStyle(color: Colors.white),
+          ),
+          action: canUndo
+              ? SnackBarAction(
+                  label: 'تراجع',
+                  textColor: Colors.white,
+                  onPressed: () async {
+                    final authUser = ref.read(authControllerProvider).user;
+                    final reverted = await ref
+                        .read(ordersControllerProvider.notifier)
+                        .revertStatus(order.id, prevStatus, actorId: authUser?.id ?? 'chef');
+                    if (context.mounted) {
+                      if (reverted != null) {
+                        HumanSnackBar.info(context, 'أعدنا الطلب إلى المطبخ — لا عليك');
+                      } else {
+                        HumanSnackBar.error(
+                          context,
+                          ref.read(appStringsProvider).orderRevertFailed(orderShortId),
+                        );
+                      }
+                    }
+                  },
+                )
+              : null,
+        ),
+      );
+    } else if (context.mounted) {
+      HumanSnackBar.success(context, HumanCopy.advancedWarm);
+    }
   }
 
-  /// Maps a status to the next KDS stage, or null when terminal.
-  OrderStatus? _nextStatus(OrderStatus status) {
+  void _showRecentCompletedOrdersSheet(BuildContext context, WidgetRef ref) {
+    final strings = ref.read(appStringsProvider);
+    final allOrders = ref.read(ordersControllerProvider);
+    final completedOrders = allOrders
+        .where((o) => o.status == OrderStatus.served || o.status == OrderStatus.completed)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (ctx, scrollController) {
+          final theme = Theme.of(ctx);
+          final colorScheme = theme.colorScheme;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+            ),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.history_rounded, color: colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          strings.recentDeliveredWithCount(completedOrders.length),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  strings.revertHint,
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Expanded(
+                  child: completedOrders.isEmpty
+                      ? Center(
+                          child: Text(
+                            strings.noRecentDelivered,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          itemCount: completedOrders.length,
+                          separatorBuilder: (_, index) => const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (ctx, index) {
+                            final order = completedOrders[index];
+                            final orderIdShort = order.id.length > 6
+                                ? order.id.substring(order.id.length - 4)
+                                : order.id;
+
+                            return Card(
+                              elevation: 0,
+                              color: colorScheme.surfaceContainerLow,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppRadius.md),
+                                side: BorderSide(color: colorScheme.outlineVariant),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  foregroundColor: const Color(0xFF10B981),
+                                  child: const Icon(Icons.done_all_rounded),
+                                ),
+                                title: Text(
+                                  strings.orderWithType(
+                                    orderIdShort,
+                                    order.orderType.localizedLabel(strings.isArabic),
+                                  ),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  strings.itemsWithStatus(
+                                    order.items.fold<int>(0, (s, i) => s + i.quantity),
+                                    order.status.localizedLabel(strings.isArabic),
+                                  ),
+                                ),
+                                trailing: Builder(
+                                  builder: (_) {
+                                    // Only served→ready is a legal revert. Terminal
+                                    // orders (completed/cancelled) are immutable,
+                                    // so they get a disabled badge instead of an
+                                    // action that would silently fail.
+                                    final canRevert = order.status.canRevertTo(OrderStatus.ready);
+                                    if (!canRevert) {
+                                      return Tooltip(
+                                        message: strings.orderFinalNoRevert,
+                                        child: FilledButton.tonalIcon(
+                                          icon: const Icon(Icons.lock_outline_rounded, size: 16),
+                                          label: Text(strings.orderFinalNoRevert),
+                                          onPressed: null,
+                                        ),
+                                      );
+                                    }
+                                    return FilledButton.tonalIcon(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: colorScheme.primaryContainer,
+                                        foregroundColor: colorScheme.onPrimaryContainer,
+                                      ),
+                                      icon: const Icon(Icons.undo_rounded, size: 16),
+                                      label: Text(strings.backToKitchen),
+                                      onPressed: () async {
+                                        final authUser = ref.read(authControllerProvider).user;
+                                        final reverted = await ref
+                                            .read(ordersControllerProvider.notifier)
+                                            .revertStatus(order.id, OrderStatus.ready, actorId: authUser?.id ?? 'chef');
+                                        if (!sheetContext.mounted) return;
+                                        if (reverted != null) {
+                                          Navigator.of(sheetContext).pop();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(strings.orderBackToReady(orderIdShort)),
+                                              backgroundColor: const Color(0xFF10B981),
+                                            ),
+                                          );
+                                        } else {
+                                          HumanSnackBar.error(
+                                            sheetContext,
+                                            strings.orderRevertFailed(orderIdShort),
+                                          );
+                                        }
+                                      },
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Maps a status to the next KDS stage based on order type, or null when terminal.
+  OrderStatus? _nextStatus(OrderStatus status, OrderType orderType) {
     switch (status) {
       case OrderStatus.pending:
         return OrderStatus.preparing;
@@ -486,7 +798,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   }
 }
 
-class _KdsColumn extends StatelessWidget {
+class _KdsColumn extends ConsumerWidget {
   const _KdsColumn({
     required this.title,
     required this.color,
@@ -514,7 +826,8 @@ class _KdsColumn extends StatelessWidget {
   final bool isExpanded;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final content = Container(
       margin: const EdgeInsets.all(AppSpacing.xs),
@@ -561,13 +874,14 @@ class _KdsColumn extends StatelessWidget {
             child: orders.isEmpty
                 ? Center(
                     child: Text(
-                      AppConstants.kdsEmptyColumn,
+                      strings.kdsEmptyColumn,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   )
                 : ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     children: [
                       for (final order in orders)
                         _OrderCard(
@@ -593,7 +907,7 @@ class _KdsColumn extends StatelessWidget {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   const _OrderCard({
     required this.order,
     required this.onAdvance,
@@ -632,23 +946,24 @@ class _OrderCard extends StatelessWidget {
     _ => Icons.error_outline,
   };
 
-  /// Arabic urgency label for the badge (emoji-free).
-  static String _urgencyLabel(int minutes, SemanticTone tone) => switch (tone) {
-    SemanticTone.success => 'في الوقت ($minutes د)',
-    SemanticTone.warning => 'تنبيه ($minutes د)',
-    _ => 'متأخر! ($minutes د)',
+  /// Bilingual urgency label for the badge (emoji-free).
+  static String _urgencyLabel(AppStrings strings, int minutes, SemanticTone tone) => switch (tone) {
+    SemanticTone.success => strings.onTimeMinutes(minutes),
+    SemanticTone.warning => strings.warningMinutes(minutes),
+    _ => strings.lateMinutes(minutes),
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final buttonLabel = switch (order.status) {
-      OrderStatus.pending => AppConstants.kdsPreparing,
-      OrderStatus.preparing => AppConstants.kdsReady,
+      OrderStatus.pending => strings.kdsPreparing,
+      OrderStatus.preparing => strings.kdsReady,
       OrderStatus.ready => order.orderType == OrderType.delivery
-          ? (order.driverId == null ? 'تسليم للمندوب' : 'تم التسليم للمندوب')
-          : AppConstants.kdsCompleting,
-      _ => AppConstants.ok,
+          ? (order.driverId == null ? strings.handoverToDriver : strings.handedToDriver)
+          : strings.kdsCompleting,
+      _ => strings.ok,
     };
 
     // Semantic keys so tests can target the advance action without fragile
@@ -719,7 +1034,7 @@ class _OrderCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
-                          AppConstants.kdsNewBadge,
+                          strings.kdsNewBadge,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
@@ -729,14 +1044,14 @@ class _OrderCard extends StatelessWidget {
                     if (displayTable != null)
                       Chip(
                         label: Text(
-                          '${AppConstants.orderTablePrefix} $displayTable',
+                          '${strings.orderTablePrefix} $displayTable',
                         ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
                     else if (order.orderType == OrderType.takeaway)
-                      const Chip(
-                        label: Text('سفري'),
+                      Chip(
+                        label: Text(strings.takeawayShort),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
@@ -753,8 +1068,8 @@ class _OrderCard extends StatelessWidget {
                         ),
                         label: Text(
                           order.driverId != null
-                              ? 'المندوب معيّن 🛵'
-                              : 'تعيين مندوب',
+                              ? strings.driverAssignedChip
+                              : strings.assignDriverChip,
                         ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -791,7 +1106,7 @@ class _OrderCard extends StatelessWidget {
                     start: AppSpacing.md,
                   ),
                   child: Text(
-                    '${AppConstants.specialNotesLabel}: ${item.specialNotes}',
+                    '${strings.specialNotesLabel}: ${item.specialNotes}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.error,
                       fontWeight: FontWeight.bold,
@@ -805,7 +1120,7 @@ class _OrderCard extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    '${AppConstants.itemCountLabel}: ${order.items.fold<int>(0, (sum, i) => sum + i.quantity)}',
+                    strings.itemCountLine(order.items.fold<int>(0, (sum, i) => sum + i.quantity)),
                     style: theme.textTheme.labelMedium,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -826,7 +1141,7 @@ class _OrderCard extends StatelessWidget {
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: StatusBadge.tone(
-                    label: _urgencyLabel(elapsed, urgencyTone),
+                    label: _urgencyLabel(strings, elapsed, urgencyTone),
                     semanticTone: urgencyTone,
                     icon: _urgencyIcon(urgencyTone),
                   ),
@@ -842,7 +1157,7 @@ class _OrderCard extends StatelessWidget {
                     minWidth: 48,
                     minHeight: 48,
                   ),
-                  tooltip: 'طباعة تذكرة المطبخ',
+                  tooltip: strings.printKitchenTicket,
                   icon: const Icon(Icons.print_outlined, size: 18),
                   onPressed: () => TicketPrintDialog.show(
                     context,
@@ -863,7 +1178,7 @@ class _OrderCard extends StatelessWidget {
                       ),
                       onPressed: () => onClaim(order),
                       child: Text(
-                        AppConstants.kdsClaimOrder,
+                        strings.kdsClaimOrder,
                         style: theme.textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -902,7 +1217,7 @@ class _OrderCard extends StatelessWidget {
                       minWidth: 48,
                       minHeight: 48,
                     ),
-                    tooltip: AppConstants.kdsRevertTooltip,
+                    tooltip: strings.kdsRevertTooltip,
                     icon: const Icon(Icons.undo, size: 18),
                     onPressed: () => onRevert(order, revertTarget),
                   ),

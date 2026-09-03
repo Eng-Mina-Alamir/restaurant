@@ -116,29 +116,76 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     .read(chatControllerProvider(widget.orderId).notifier)
                     .retry(),
               ),
-              data: (messages) => messages.isEmpty
-                  ? EmptyState(
-                      icon: Icons.chat_bubble_outline,
-                      message: 'لا توجد رسائل بعد',
-                      actionLabel: 'ابدأ المحادثة',
-                      onAction: _inputFocus.requestFocus,
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
+              data: (messages) => RefreshIndicator(
+                onRefresh: () async => ref
+                    .read(chatControllerProvider(widget.orderId).notifier)
+                    .retry(),
+                child: messages.isEmpty
+                    ? SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: 350,
+                          alignment: Alignment.center,
+                          child: EmptyState(
+                            icon: Icons.chat_bubble_outline,
+                            message: 'لا توجد رسائل بعد',
+                            actionLabel: 'ابدأ المحادثة',
+                            onAction: _inputFocus.requestFocus,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
+                        ),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) => _MessageBubble(
+                          key: ValueKey<String>(messages[index].id),
+                          message: messages[index],
+                          isMine:
+                              messages[index].senderId ==
+                              ref.watch(chatCurrentUserIdProvider),
+                        ),
                       ),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) => _MessageBubble(
-                        key: ValueKey<String>(messages[index].id),
-                        message: messages[index],
-                        isMine:
-                            messages[index].senderId ==
-                            ref.watch(chatCurrentUserIdProvider),
-                      ),
-                    ),
+              ),
             ),
           ),
           const Divider(height: 1),
+
+          // Quick preset reply chips for instant driver ↔ customer communication
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              children: [
+                for (final preset in const [
+                  'أنا عند الباب 🚪',
+                  'وصلت لموقعك 📍',
+                  'يرجى الخروج للاستلام 🛵',
+                  'أنا في الطريق إليك ⚡',
+                  'سأكون متواجداً خلال دقائق 👍',
+                  'شكراً جزيلاً لك 🙏',
+                ])
+                  Padding(
+                    padding:
+                        const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                    child: ActionChip(
+                      label:
+                          Text(preset, style: const TextStyle(fontSize: 11.5)),
+                      onPressed: () {
+                        _inputController.text = preset;
+                        _send();
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
           SafeArea(
             top: false,
             child: Padding(

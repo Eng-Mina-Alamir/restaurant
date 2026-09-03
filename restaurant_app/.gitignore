@@ -44,6 +44,9 @@ app.*.map.json
 .env.*
 *.env
 !env.example
+env.json
+*.env.json
+!env.json.example
 
 # Android Studio will place build artifacts here
 /android/app/debug

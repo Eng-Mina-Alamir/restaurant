@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -36,16 +35,7 @@ class LocaleController extends StateNotifier<Locale> {
 
   /// Resolves device language: Arabic -> Arabic (RTL), otherwise -> English (LTR)
   static Locale _resolveDefaultLocale() {
-    try {
-      final deviceLocale = ui.PlatformDispatcher.instance.locale;
-      if (deviceLocale.languageCode.toLowerCase().startsWith('ar')) {
-        return const Locale('ar');
-      } else {
-        return const Locale('en');
-      }
-    } catch (_) {
-      return const Locale('ar');
-    }
+    return const Locale('ar');
   }
 
   void _load() {

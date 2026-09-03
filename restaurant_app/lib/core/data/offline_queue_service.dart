@@ -295,3 +295,7 @@ class OfflineQueueService {
 final offlineQueueServiceProvider = Provider<OfflineQueueService>((ref) {
   return OfflineQueueService();
 });
+
+final pendingSyncCountProvider = Provider<int>((ref) {
+  return ref.watch(offlineQueueServiceProvider).pendingCount;
+});

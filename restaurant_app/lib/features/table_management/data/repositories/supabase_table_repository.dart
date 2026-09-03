@@ -1,23 +1,54 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
-import '../table_seed_data.dart';
 
-/// Supabase-backed [TableRepository] with fallback to seed data.
+/// Supabase-backed [TableRepository].
+///
+/// Single source of truth is Supabase. Empty table => empty list (truthful),
+/// failure with no Supabase-loaded session data => [Left] (error + retry).
+/// The Hive mirror holds only previously fetched Supabase rows (stale-safe),
+/// never seed data.
 class SupabaseTableRepository implements TableRepository {
-  SupabaseTableRepository(this._supabase);
+  SupabaseTableRepository(this._supabase, [this._cache]);
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
   List<RestaurantTable>? _cachedTables;
 
+  static const String _cacheKey = 'cached_tables';
+
   void _ensureCache() {
-    _cachedTables ??= TableSeedData.buildTables();
+    _cachedTables ??= _loadFromPersistentCache() ?? <RestaurantTable>[];
+  }
+
+  List<RestaurantTable>? _loadFromPersistentCache() {
+    final cache = _cache;
+    if (cache == null) return null;
+    try {
+      final list = cache.readList(_cacheKey);
+      if (list.isEmpty) return null;
+      return list.map(RestaurantTable.fromJson).toList();
+    } catch (e) {
+      AppLogger.warning('Failed to read tables from local cache: $e');
+      return null;
+    }
+  }
+
+  Future<void> _persistCache() async {
+    final cache = _cache;
+    final tables = _cachedTables;
+    if (cache != null && tables != null) {
+      try {
+        await cache.writeList(_cacheKey, tables.map((t) => t.toJson()).toList());
+      } catch (_) {}
+    }
   }
 
   @override
@@ -48,18 +79,18 @@ class SupabaseTableRepository implements TableRepository {
       }
 
       if (tables.isEmpty) {
-        final fallback = TableSeedData.buildTables();
-        _cachedTables = fallback;
-        return Right<Failure, List<RestaurantTable>>(fallback);
+        _cachedTables = tables;
+        return Right<Failure, List<RestaurantTable>>(tables);
       }
 
       _cachedTables = tables;
+      await _persistCache();
       return Right<Failure, List<RestaurantTable>>(tables);
     } catch (e) {
-      AppLogger.warning('Supabase getTables failed: $e, using seed tables');
-      final fallback = _cachedTables ?? TableSeedData.buildTables();
-      _cachedTables = fallback;
-      return Right<Failure, List<RestaurantTable>>(fallback);
+      AppLogger.warning('Supabase getTables failed: $e');
+      return Left<Failure, List<RestaurantTable>>(
+        ServerFailure('فشل تحميل الطاولات من Supabase: $e'),
+      );
     }
   }
 

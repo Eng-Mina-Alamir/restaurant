@@ -13,6 +13,7 @@ abstract final class DemoAuthDataSource {
     UserRole.customer: 'customer@demo.com',
     UserRole.waiter: 'waiter@demo.com',
     UserRole.kitchen: 'kitchen@demo.com',
+    UserRole.managerChef: 'chef_manager@demo.com',
     UserRole.manager: 'manager@demo.com',
     UserRole.admin: 'admin@demo.com',
     UserRole.driver: 'driver@demo.com',
@@ -24,6 +25,7 @@ abstract final class DemoAuthDataSource {
     UserRole.customer,
     UserRole.waiter,
     UserRole.kitchen,
+    UserRole.managerChef,
     UserRole.manager,
     UserRole.admin,
     UserRole.driver,
@@ -65,7 +67,9 @@ abstract final class DemoAuthDataSource {
       case UserRole.waiter:
         return 'مينا الأمير (كابتن صالة)';
       case UserRole.kitchen:
-        return 'الشيف محمود الشناوي (رئيس المطبخ)';
+        return 'الشيف محمود الشناوي (طاهي المطبخ)';
+      case UserRole.managerChef:
+        return 'الشيف التنفيذي (Manager Chef)';
       case UserRole.manager:
         return 'م. كيرلس الأمير (مدير المطعم)';
       case UserRole.admin:
@@ -85,6 +89,8 @@ abstract final class DemoAuthDataSource {
         return '01234567890';
       case UserRole.kitchen:
         return '01122334455';
+      case UserRole.managerChef:
+        return '01199887766';
       case UserRole.manager:
         return '01098765432';
       case UserRole.admin:

@@ -16,7 +16,7 @@ void main() {
 
       expect(req.orderId, 'ORD-101');
       expect(req.amount, 85.5);
-      expect(req.currency, 'SAR');
+      expect(req.currency, 'EGP');
       expect(req.method, PaymentMethod.card);
       expect(req.customerPhone, '0501234567');
       expect(req.metadata['promo'], 'SUMMER10');

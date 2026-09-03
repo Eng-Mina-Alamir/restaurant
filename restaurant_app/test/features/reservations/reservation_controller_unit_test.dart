@@ -35,7 +35,7 @@ void main() {
           reservationControllerProvider.notifier,
         );
         final tables = container.read(tableControllerProvider);
-        final table = tables.first;
+        final table = tables.firstWhere((t) => t.capacity >= 4);
 
         final success = await controller.createReservation(
           customerName: 'سارة',
@@ -56,6 +56,25 @@ void main() {
         );
       },
     );
+
+    test('createReservation rejects overcapacity bookings', () async {
+      final controller = container.read(
+        reservationControllerProvider.notifier,
+      );
+      final tables = container.read(tableControllerProvider);
+      final table = tables.firstWhere((t) => t.capacity == 2);
+
+      final success = await controller.createReservation(
+        customerName: 'أحمد',
+        customerPhone: '0512345678',
+        tableId: table.id,
+        tableNumber: table.tableNumber,
+        guestCount: 6, // 6 > 2 capacity
+        reservationTime: DateTime.now().add(const Duration(hours: 2)),
+      );
+
+      expect(success, isFalse);
+    });
 
     test('seatCustomer updates status to seated and occupies table', () async {
       final controller = container.read(reservationControllerProvider.notifier);

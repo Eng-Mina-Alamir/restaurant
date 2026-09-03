@@ -26,6 +26,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _submitting = false;
+  late bool _showDemoAccounts = AppConfig.useDemoAuth;
 
   @override
   void dispose() {
@@ -62,6 +63,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final themed = Theme.of(context);
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Tooltip(
+            message: 'الحسابات المعتمدة للأدوار (Demo Roles)',
+            child: InkResponse(
+              radius: 24,
+              onTap: () {
+                setState(() => _showDemoAccounts = !_showDemoAccounts);
+              },
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Icon(Icons.badge_outlined),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -143,7 +163,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   _DemoAccounts(
-                    visible: AppConfig.useDemoAuth,
+                    visible: _showDemoAccounts,
                     onSelect: (role) {
                       _identifierController.text =
                           DemoAuthDataSource.accounts[role]!;
@@ -242,6 +262,8 @@ class _DemoAccounts extends StatelessWidget {
         return Icons.restaurant_menu;
       case UserRole.kitchen:
         return Icons.local_fire_department;
+      case UserRole.managerChef:
+        return Icons.soup_kitchen_rounded;
       case UserRole.manager:
         return Icons.insights;
       case UserRole.admin:

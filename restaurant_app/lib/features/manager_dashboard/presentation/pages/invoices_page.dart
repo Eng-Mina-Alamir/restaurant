@@ -74,7 +74,7 @@ class InvoicesPage extends ConsumerWidget {
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, i) => _InvoiceCard(
                 order: completedOrders[i],
-                isArabic: strings.isArabic,
+                strings: strings,
                 onTap: () => _showInvoiceDetail(context, completedOrders[i]),
               ),
             ),
@@ -95,12 +95,13 @@ class InvoicesPage extends ConsumerWidget {
 class _InvoiceCard extends StatelessWidget {
   const _InvoiceCard({
     required this.order,
-    required this.isArabic,
+    required this.strings,
     required this.onTap,
   });
 
   final OrderEntity order;
-  final bool isArabic;
+  final AppStrings strings;
+  bool get isArabic => strings.isArabic;
   final VoidCallback onTap;
 
   @override
@@ -134,7 +135,7 @@ class _InvoiceCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '#${Formatters.formatOrderId(order.id)}',
+                      order.id,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -146,7 +147,7 @@ class _InvoiceCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${order.items.length} ${isArabic ? "أصناف" : "Items"} · ${order.orderType.localizedLabel(isArabic)}',
+                      '${order.items.length} ${strings.itemsCount} · ${order.orderType.localizedLabel(isArabic)}',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],

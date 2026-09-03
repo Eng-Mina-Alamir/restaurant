@@ -35,14 +35,11 @@ class SupabaseRatingRepository implements RatingRepository {
       return Right(ratings);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getRatingsForTarget fallback: $e',
+        'Supabase getRatingsForTarget error: $e',
         error: e,
         stackTrace: st,
       );
-      final local = _cachedRatings
-          .where((r) => r.targetId == targetId)
-          .toList();
-      return Right(local);
+      return Left(ServerFailure('فشل تحميل التقييمات من Supabase: $e'));
     }
   }
 
@@ -68,12 +65,11 @@ class SupabaseRatingRepository implements RatingRepository {
       return Right(rating);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase submitRating fallback: $e',
+        'Supabase submitRating error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedRatings.insert(0, rating);
-      return Right(rating);
+      return Left(ServerFailure('فشل إرسال التقييم: $e'));
     }
   }
 
@@ -87,7 +83,11 @@ class SupabaseRatingRepository implements RatingRepository {
           .limit(500);
 
       final list = (response as List);
-      if (list.isEmpty) return const Right(5.0);
+      if (list.isEmpty) {
+        return const Left(
+          NotFoundFailure('لا توجد تقييمات لهذا العنصر بعد'),
+        );
+      }
 
       double sum = 0.0;
       for (final item in list) {
@@ -100,7 +100,7 @@ class SupabaseRatingRepository implements RatingRepository {
         error: e,
         stackTrace: st,
       );
-      return const Right(5.0);
+      return const Left(ServerFailure('فشل حساب متوسط التقييم'));
     }
   }
 

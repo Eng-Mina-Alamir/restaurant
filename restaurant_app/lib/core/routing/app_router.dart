@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/app_config.dart';
 import '../../core/domain/enums.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -50,10 +52,12 @@ import '../../features/manager_dashboard/presentation/pages/staff_timesheet_page
 import '../../features/manager_dashboard/presentation/pages/purchase_orders_page.dart';
 import '../../features/manager_dashboard/presentation/pages/security_audit_logs_page.dart';
 import '../../features/manager_dashboard/presentation/pages/guest_feedback_hub_page.dart';
+import '../../features/manager_dashboard/presentation/pages/restaurant_settings_page.dart';
 import '../../features/manager_dashboard/presentation/pages/sales_velocity_target_page.dart';
 import '../../features/customer/presentation/pages/group_order_room_page.dart';
 import '../../features/customer/presentation/pages/gift_cards_hub_page.dart';
 import '../../features/customer/presentation/pages/customer_dietary_profile_page.dart';
+import '../../features/customer/presentation/pages/customer_reservations_page.dart';
 import '../../shared/animations/page_transitions.dart';
 import '../../shared/widgets/not_found_page.dart';
 
@@ -77,9 +81,23 @@ const Map<String, Set<UserRole>> _roleProtectedPrefixes = {
   '/manager/shifts': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
   '/manager/invoices': {UserRole.cashier, UserRole.manager, UserRole.admin},
   '/manager/orders': {UserRole.cashier, UserRole.waiter, UserRole.manager, UserRole.admin},
+  '/manager/recipes': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/inventory': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/menu': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/waste-logs': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/menu-engineering': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/purchase-orders': {UserRole.managerChef, UserRole.manager, UserRole.admin},
+  '/manager/users': {UserRole.manager, UserRole.admin},
+  '/manager/financial-reports': {UserRole.manager, UserRole.admin},
+  '/manager/security-audit': {UserRole.manager, UserRole.admin},
+  '/manager/owner-digest': {UserRole.manager, UserRole.admin},
+  '/manager/timesheet': {UserRole.manager, UserRole.admin},
+  '/manager/sales-target': {UserRole.manager, UserRole.admin},
+  '/manager/restaurant': {UserRole.manager, UserRole.admin},
+  '/manager/staff': {UserRole.manager, UserRole.admin},
   '/manager': {UserRole.manager, UserRole.admin},
   '/waiter': {UserRole.waiter, UserRole.cashier, UserRole.manager, UserRole.admin},
-  '/kds': {UserRole.kitchen, UserRole.manager, UserRole.admin},
+  '/kds': {UserRole.kitchen, UserRole.managerChef, UserRole.manager, UserRole.admin},
   '/driver': {UserRole.driver, UserRole.manager, UserRole.admin},
 };
 
@@ -103,13 +121,14 @@ GoRouter createAppRouter({required WidgetRef ref}) {
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
 
-      // While the session is still being resolved (app bootstrap), stay put.
-      if (auth.status == AuthStatus.unknown) {
-        return null;
-      }
-
+      final isSplash = state.matchedLocation == '/';
       final loggingIn = state.matchedLocation == '/login';
       final registering = state.matchedLocation == '/register';
+
+      // While the session is still being resolved (app bootstrap), keep showing the splash gate.
+      if (auth.status == AuthStatus.unknown) {
+        return isSplash ? null : '/';
+      }
 
       if (auth.status == AuthStatus.unauthenticated) {
         return (loggingIn || registering) ? null : '/login';
@@ -120,8 +139,8 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         return (loggingIn || registering) ? null : '/login';
       }
 
-      // Authenticated users landing on /login (or / or /register) go to their role home.
-      if (loggingIn || registering || state.matchedLocation == '/') {
+      // Authenticated users landing on /login, /, or /register go to their role home.
+      if (loggingIn || registering || isSplash) {
         return user.role.homeRoute;
       }
 
@@ -133,7 +152,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', redirect: (context, state) => '/login'),
+      GoRoute(
+        path: '/',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const _AppSplashGatePage(),
+        ),
+      ),
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
@@ -204,7 +229,7 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
               key: state.pageKey,
               child: OrderTrackingPage(
-                orderId: state.pathParameters['orderId'] ?? 'ORD-0001',
+                orderId: state.pathParameters['orderId'] ?? '',
               ),
             ),
           ),
@@ -234,6 +259,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
             pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
               key: state.pageKey,
               child: const CustomerDietaryProfilePage(),
+            ),
+          ),
+          GoRoute(
+            path: 'reservations',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const CustomerReservationsPage(),
             ),
           ),
         ],
@@ -476,6 +508,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
               child: const SalesVelocityTargetPage(),
             ),
           ),
+          GoRoute(
+            path: 'restaurant',
+            pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+              key: state.pageKey,
+              child: const RestaurantSettingsPage(),
+            ),
+          ),
         ],
       ),
 
@@ -514,3 +553,74 @@ GoRouter createAppRouter({required WidgetRef ref}) {
     ],
   );
 }
+
+/// Brand loading splash gate shown while restoring user session on app launch/hot reload.
+class _AppSplashGatePage extends StatelessWidget {
+  const _AppSplashGatePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [colorScheme.primary, colorScheme.tertiary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.restaurant_rounded,
+                size: 42,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              AppConfig.appName,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              AppConfig.appTagline,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

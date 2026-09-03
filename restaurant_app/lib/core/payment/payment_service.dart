@@ -41,6 +41,7 @@ class PaymentService {
   final PaymentGateway _gateway;
   final SupabasePaymentRepository? _paymentRepo;
   final List<PaymentTransactionRecord> _transactions = [];
+  final Set<String> _inFlightOrderPayments = {};
 
   List<PaymentTransactionRecord> get transactions =>
       List.unmodifiable(_transactions);
@@ -56,67 +57,81 @@ class PaymentService {
     required PaymentMethod method,
     String? phone,
   }) async {
-    // Guard: prevent double payment
-    final repo = _paymentRepo;
-    if (repo != null) {
-      final alreadyPaid = await repo.hasCompletedPayment(orderId);
-      if (alreadyPaid) {
-        AppLogger.warning('payForOrder: duplicate payment blocked for $orderId');
-        return PaymentResult.failure(
-          'هذا الطلب تم دفعه بالفعل — لا يمكن الدفع مرتين',
-        );
-      }
+    if (amount <= 0) {
+      return PaymentResult.failure('مبلغ الدفع غير صالح (يجب أن يكون أكبر من الصفر)');
     }
 
-    AppLogger.info(
-      'Processing payment of $amount SAR for order $orderId via ${method.name}',
-    );
+    if (_inFlightOrderPayments.contains(orderId)) {
+      AppLogger.warning('payForOrder: concurrent payment attempt blocked for $orderId');
+      return PaymentResult.failure('جاري معالجة عملية دفع لهذا الطلب بالفعل، يرجى الانتظار');
+    }
 
-    final request = PaymentRequest(
-      orderId: orderId,
-      amount: amount,
-      method: method,
-      customerPhone: phone,
-    );
-
-    final result = await _gateway.processPayment(request);
-
-    if (result.isSuccess) {
-      final txnId =
-          result.transactionId ??
-          'TXN-${DateTime.now().millisecondsSinceEpoch}';
-      final record = PaymentTransactionRecord(
-        id: txnId,
-        orderId: orderId,
-        amount: amount,
-        method: method,
-        isSuccess: true,
-        authorizationCode: result.authorizationCode ?? '',
-        timestamp: result.timestamp,
-      );
-      _transactions.add(record);
-      AppLogger.info('Payment succeeded: $txnId');
-
-      // Persist to Supabase (best-effort — payment already succeeded)
+    _inFlightOrderPayments.add(orderId);
+    try {
+      // Guard: prevent double payment
+      final repo = _paymentRepo;
       if (repo != null) {
-        final persistResult = await repo.recordPayment(
-          orderId: orderId,
-          amount: amount,
-          method: method,
-          transactionRef: txnId,
-          paidAt: result.timestamp,
-        );
-        if (persistResult.isLeft) {
-          AppLogger.warning(
-            'Payment succeeded but Supabase persistence failed for $txnId',
+        final alreadyPaid = await repo.hasCompletedPayment(orderId);
+        if (alreadyPaid) {
+          AppLogger.warning('payForOrder: duplicate payment blocked for $orderId');
+          return PaymentResult.failure(
+            'هذا الطلب تم دفعه بالفعل — لا يمكن الدفع مرتين',
           );
         }
       }
-    } else {
-      AppLogger.warning('Payment failed: ${result.errorMessage}');
-    }
 
-    return result;
+      AppLogger.info(
+        'Processing payment of $amount EGP for order $orderId via ${method.name}',
+      );
+
+      final request = PaymentRequest(
+        orderId: orderId,
+        amount: amount,
+        method: method,
+        customerPhone: phone,
+      );
+
+      final result = await _gateway.processPayment(request);
+
+      if (result.isSuccess) {
+        final txnId =
+            result.transactionId ??
+            'TXN-${DateTime.now().millisecondsSinceEpoch}';
+        final record = PaymentTransactionRecord(
+          id: txnId,
+          orderId: orderId,
+          amount: amount,
+          method: method,
+          isSuccess: true,
+          authorizationCode: result.authorizationCode ?? '',
+          timestamp: result.timestamp,
+        );
+        _transactions.add(record);
+        AppLogger.info('Payment succeeded: $txnId');
+
+        // Persist to Supabase (best-effort — payment already succeeded)
+        if (repo != null) {
+          final persistResult = await repo.recordPayment(
+            orderId: orderId,
+            amount: amount,
+            method: method,
+            transactionRef: txnId,
+            paidAt: result.timestamp,
+          );
+          if (persistResult.isLeft) {
+            AppLogger.warning(
+              'Payment succeeded but Supabase persistence failed for $txnId',
+            );
+          }
+        }
+      } else {
+        AppLogger.warning('Payment failed: ${result.errorMessage}');
+      }
+
+      return result;
+    } finally {
+      _inFlightOrderPayments.remove(orderId);
+    }
   }
 
   /// Refunds a transaction.
@@ -125,7 +140,10 @@ class PaymentService {
     required double amount,
     String? reason,
   }) async {
-    AppLogger.info('Refunding $amount SAR for transaction $transactionId');
+    if (amount <= 0) {
+      return RefundResult.failure('مبلغ الاسترداد غير صالح');
+    }
+    AppLogger.info('Refunding $amount EGP for transaction $transactionId');
     final result = await _gateway.refund(transactionId, amount);
 
     // Persist refund to Supabase

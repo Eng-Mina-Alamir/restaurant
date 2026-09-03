@@ -7,6 +7,8 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../delivery/presentation/controllers/delivery_controller.dart';
+import '../../../loyalty/presentation/controllers/loyalty_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/user_entity.dart';
 
@@ -164,9 +166,17 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
 
     // Reset session-scoped controllers AFTER the auth state flip so UI
-    // rebuilds against clean, empty state.
+    // rebuilds against clean, empty state. Every provider that caches
+    // per-account data must be listed here — otherwise the next login
+    // inherits the previous account's cart, orders, loyalty ledger, or
+    // driver identity. (Chat uses an autoDispose family: it self-cleans.)
     ref.invalidate(cartControllerProvider);
     ref.invalidate(ordersControllerProvider);
+    ref.invalidate(deliveryControllerProvider);
+    ref.invalidate(loyaltyControllerProvider);
+    // Dropping the repository instance clears its in-memory per-user cache
+    // (_cachedAccounts), which invalidating the controller alone would keep.
+    ref.invalidate(loyaltyRepositoryProvider);
   }
 
   void _onFailure(Failure failure) {

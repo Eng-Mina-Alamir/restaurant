@@ -139,6 +139,7 @@ abstract final class OrderMapper {
     String? waiterId,
     PaymentMethod? paymentMethod,
     double discountAmount = 0.0,
+    String? deliveryNotes,
   }) {
     final items = cartItems
         .map((cart) => toOrderItem(cart, timestamp: createdAt))
@@ -162,6 +163,7 @@ abstract final class OrderMapper {
       taxAmount: totals.taxAmount,
       discountAmount: totals.discountAmount,
       totalAmount: totals.totalAmount,
+      deliveryNotes: deliveryNotes,
       createdAt: createdAt,
       estimatedMinutes: 20,
     );

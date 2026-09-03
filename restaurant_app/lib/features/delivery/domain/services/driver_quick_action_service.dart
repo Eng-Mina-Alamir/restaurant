@@ -1,4 +1,7 @@
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../../core/utils/logger.dart';
 
 class ChangeCalculationResult {
   const ChangeCalculationResult({
@@ -18,9 +21,25 @@ class ChangeCalculationResult {
   final double shortfall;
 }
 
-/// Service providing 1-Tap actions for drivers: WhatsApp, Phone Calls, Maps, and Change calculations.
+/// Service providing 1-Tap actions for drivers: WhatsApp, Phone Calls, Maps, OTP, and Change calculations.
 class DriverQuickActionService {
   const DriverQuickActionService._();
+
+  /// Legacy deterministic 4-digit PIN derived from the order id.
+  ///
+  /// Kept ONLY as an offline fallback when the per-order random verification
+  /// code (see `DeliveryPinService` / `delivery_verification_codes` table)
+  /// cannot be fetched. New orders must use a random code instead — this
+  /// fallback is predictable and must never be the primary mechanism.
+  @Deprecated('Use DeliveryPinRepository.ensurePin instead (random per order)')
+  static String getOrderDeliveryPin(String orderId) {
+    final numeric = orderId.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numeric.length >= 4) {
+      return numeric.substring(numeric.length - 4);
+    }
+    final code = (orderId.hashCode.abs() % 9000) + 1000;
+    return code.toString();
+  }
 
   static const List<String> defaultWhatsAppTemplates = [
     'أنا كابتن التوصيل ومعايا أوردر حضرتك وفي الطريق إليك 🛵',
@@ -56,6 +75,44 @@ class DriverQuickActionService {
   static String getTelUriString(String phone) {
     final cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
     return 'tel:$cleaned';
+  }
+
+  /// Parses [getTelUriString] into a launchable [Uri].
+  static Uri toTelUri(String phone) => Uri.parse(getTelUriString(phone));
+
+  /// Parses [getWhatsAppUriString] into a launchable [Uri].
+  static Uri toWhatsAppUri({required String phone, required String message}) =>
+      Uri.parse(getWhatsAppUriString(phone: phone, message: message));
+
+  /// Parses [getGoogleMapsDirectionsUrl] into a launchable [Uri].
+  static Uri toMapsUri({
+    required double latitude,
+    required double longitude,
+    String? label,
+  }) => Uri.parse(
+    getGoogleMapsDirectionsUrl(
+      latitude: latitude,
+      longitude: longitude,
+      label: label,
+    ),
+  );
+
+  /// Best-effort launcher for driver 1-tap actions.
+  ///
+  /// Tries [launchUrl] with [LaunchMode.externalApplication] first so the
+  /// native dialer / Google Maps / WhatsApp actually opens. Returns true on
+  /// success, false when nothing could handle the URI (caller should then
+  /// fall back to copying the raw string + snackbar).
+  static Future<bool> launchExternal(Uri uri) async {
+    try {
+      if (await canLaunchUrl(uri)) {
+        return launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+      return false;
+    } catch (e) {
+      AppLogger.warning('DriverQuickActionService.launchExternal failed: $e');
+      return false;
+    }
   }
 
   /// Generates external Google Maps directions URL

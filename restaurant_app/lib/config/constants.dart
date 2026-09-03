@@ -2,6 +2,10 @@
 ///
 /// Kept as pure Dart (no Flutter imports) so the strings can be consumed from
 /// any layer, including the domain layer and unit tests.
+///
+/// NOTE: New code must use `AppStrings` (lib/core/l10n/app_strings.dart) for
+/// bilingual AR/EN strings. This class is frozen for backwards compatibility
+/// only — every key here now has a bilingual counterpart in `AppStrings`.
 abstract final class AppConstants {
   AppConstants._();
 
@@ -14,10 +18,10 @@ abstract final class AppConstants {
   // ── Orders ─────────────────────────────────────────────────────────────────
   static const String orderNumberLabel = 'رقم الطلب';
   static const String orderTotalLabel = 'الإجمالي';
-  static const String emptyOrders = 'لا توجد طلبات حالياً';
+  static const String emptyOrders = 'لا توجد طلبات حالياً — استمتع بهدوء اللحظة';
   static const String orderConfirmationTitle = 'تأكيد الطلب';
   static const String orderPlacedMessage =
-      'تم استلام طلبك بنجاح! سنقوم بتحضيره قريباً.';
+      'تم استلام طلبك بنجاح! فريقنا يجهزه لك بحب، وسيصلك قريباً.';
   static const String orderSummaryLabel = 'ملخص الطلب';
   static const String itemCountLabel = 'عدد الأصناف';
   static const String subtotalLabel = 'المجموع الفرعي';
@@ -33,10 +37,10 @@ abstract final class AppConstants {
 
   // ── Cart ───────────────────────────────────────────────────────────────────
   static const String cartTitle = 'سلة الطلب';
-  static const String cartEmpty = 'العربة فارغة';
+  static const String cartEmpty = 'سلتك فارغة حالياً — ما رأيك بتصفح أطباقنا الشهية؟';
   static const String cartEmptyBrowse = 'تصفح القائمة';
   static const String clearCart = 'إفراغ السلة';
-  static const String cartCleared = 'تم إفراغ السلة';
+  static const String cartCleared = 'أفرغنا السلة — ويمكنك البدء من جديد متى شئت';
   static const String addToCart = 'أضف إلى السلة';
   static const String customizeOrder = 'تخصيص الطلب';
   static const String checkout = 'إتمام الطلب';
@@ -44,7 +48,7 @@ abstract final class AppConstants {
 
   // ── Menu ───────────────────────────────────────────────────────────────────
   static const String menuTitle = 'القائمة';
-  static const String noItemsFound = 'لا توجد أصناف مطابقة';
+  static const String noItemsFound = 'لم نجد طبقاً مطابقاً — جرّب كلمة مختلفة أو تصفح القائمة كاملة';
 
   // ── Common UI ──────────────────────────────────────────────────────────────
   static const String ok = 'حسناً';
@@ -84,7 +88,7 @@ abstract final class AppConstants {
   static const String orderItemsCount = 'عناصر';
   static const String orderTablePrefix = 'طاولة';
   static const String orderMoveTo = 'نقل إلى:';
-  static const String searchMenuHint = 'ابحث عن صنف...';
+  static const String searchMenuHint = 'دوّر على كبسة، برجر، مشويات...؟';
   static const String demoAccountsTitle = 'حسابات تجريبية';
   static const String demoPasswordHint = 'كلمة المرور: 123456';
   static const String specialNotesLabel = 'ملاحظات الطلب';
@@ -107,11 +111,12 @@ abstract final class AppConstants {
   static const String roleAdmin = 'مسؤول';
   static const String roleDriver = 'سائق';
   static const String roleCashier = 'كاشير';
+  static const String roleManagerChef = 'رئيس الطهاة';
   static const String cartEmptySend = 'أضف أصنافاً أولاً';
   static const String metricsByCategory = 'الإيرادات حسب الفئة';
   static const String deliveryEtaLabel = 'الوقت المتوقع للوصول';
   static const String kdsNewBadge = 'جديد';
-  static const String kdsEmptyColumn = 'لا توجد طلبات';
+  static const String kdsEmptyColumn = 'المطبخ هادئ الآن — أحسنتم العمل';
   static const String dietAll = 'الكل';
   static const String dietVegetarian = 'نباتي';
   static const String dietSpicy = 'حار';
@@ -135,20 +140,20 @@ abstract final class AppConstants {
   static const String kdsTitle = 'شاشة المطبخ';
   static const String kdsPending = 'بانتظار التحضير';
   static const String kdsPreparing = 'قيد التحضير';
-  static const String kdsReady = 'جاهز للتسليم';
+  static const String kdsReady = 'جاهز للتقديم';
   static const String kdsCompleting = 'استكمال';
-  static const String kdsClaimOrder = 'استلام الطلب';
+  static const String kdsClaimOrder = 'بدأت تحضيرها';
   static const String kdsRevertTooltip = 'تراجع عن الحالة';
   static const String kdsRevertConfirmAction = 'تأكيد التراجع';
 
   // ── Order audit trail ─────────────────────────────────────────────────────
   static const String orderAuditTrailTitle = 'سجل الحالة';
-  static const String orderAuditTrailEmpty = 'لا يوجد سجل لهذا الطلب';
+  static const String orderAuditTrailEmpty = 'لا يوجد سجل لهذا الطلب بعد — سيظهر هنا فور تحديثه';
   static const String orderAuditTrailReasonPrefix = 'السبب:';
   static const String orderAuditTrailActorPrefix = 'بواسطة:';
   static const String orderAuditTrailRevertBadge = 'تراجع';
-  static const String orderAuditTrailLoadFailed = 'تعذر تحميل سجل الحالة';
-  static const String orderAuditTrailRetryAction = 'إعادة المحاولة';
+  static const String orderAuditTrailLoadFailed = 'تعذّر تحميل سجل الحالة — حاول مجدداً';
+  static const String orderAuditTrailRetryAction = 'لنحاول مجدداً';
 
   // ── Manager ────────────────────────────────────────────────────────────────
   static const String managerTitle = 'لوحة المدير';
@@ -158,28 +163,28 @@ abstract final class AppConstants {
   static const String metricsActiveTitle = 'طلبات نشطة';
   static const String metricsOverview = 'نظرة عامة';
   static const String metricsItemsSold = 'الأصناف الأكثر مبيعاً';
-  static const String metricsNoData = 'لا توجد بيانات بعد';
-  static const String dispatchHealthPendingOrders = 'طلبات بانتظار سواق';
-  static const String dispatchHealthFailedAssignments = 'تكليفات فاشلة';
-  static const String dispatchHealthAvailableDrivers = 'سواق متاحون';
+  static const String metricsNoData = 'لا توجد بيانات بعد اليوم — أول طلب سيبدأ من هنا';
+  static const String dispatchHealthPendingOrders = 'طلبات بانتظار سائق';
+  static const String dispatchHealthFailedAssignments = 'تكليفات تحتاج متابعة';
+  static const String dispatchHealthAvailableDrivers = 'سائقون متاحون';
   static const String dispatchHealthLoading = 'جارٍ تحميل حالة التوصيل…';
-  static const String dispatchHealthUnavailable = 'تعذر تحميل حالة التوصيل';
+  static const String dispatchHealthUnavailable = 'تعذّر تحميل حالة التوصيل — تحقق من الاتصال وحاول مجدداً';
 
   // ── Driver / Delivery ────────────────────────────────────────────────────
   static const String driverTitle = 'شاشة السائق';
   static const String deliveryPending = 'بانتظار التوكيل';
   static const String deliveryAccepted = 'مقبول';
-  static const String deliveryInTransit = 'قيد التوصيل';
-  static const String deliveryDelivered = 'تم التسليم';
+  static const String deliveryInTransit = 'قيد التوصيل للعميل';
+  static const String deliveryDelivered = 'تم التوصيل بنجاح';
   static const String deliveryFailed = 'فشل التسليم';
-  static const String deliveryPickedUp = 'تم الاستلام';
-  static const String actionAccept = 'قبول التوصيل';
-  static const String actionStartDelivery = 'بدء التوصيل';
-  static const String actionCompleteDelivery = 'تسليم الطلب';
+  static const String deliveryPickedUp = 'استلمها المندوب من المطبخ';
+  static const String actionAccept = 'قبول المهمة بكل سرور';
+  static const String actionStartDelivery = 'انطلقت في الطريق';
+  static const String actionCompleteDelivery = 'تم التسليم بنجاح';
   static const String deliveryLocationLabel = 'العنوان';
   static const String customerPhoneLabel = 'رقم العميل';
   static const String deliveryFeeLabel = 'رسوم التوصيل';
-  static const String noDeliveryJobs = 'لا توجد مهام توصيل حالياً';
+  static const String noDeliveryJobs = 'لا توجد مهام حالياً — استرح قليلاً، والجديد سيصلك فور توفره';
   static const String driverNewAssignmentAlert = 'مهمة توصيل جديدة';
   static const String driverNewAssignmentOrderPrefix = 'طلب';
   static const String unreadChatMessagesLabel = 'رسائل غير مقروءة';
@@ -192,25 +197,38 @@ abstract final class AppConstants {
   static const String requiredField = 'هذا الحقل مطلوب';
 
   // ── Error messages ─────────────────────────────────────────────────────────
-  static const String errorConnection = 'خطأ في الاتصال';
-  static const String errorServer = 'حدث خطأ في الخادم';
-  static const String errorGeneric = 'حدث خطأ غير متوقع';
+  static const String errorConnection = 'انقطع الاتصال — تحقق من الإنترنت وحاول مجدداً، نحن معك';
+  static const String errorServer = 'حدث تعثر بسيط في الخادم — نحاول الإصلاح، حاول مجدداً بعد قليل';
+  static const String errorGeneric = 'حدث تعثر بسيط — لا تقلق، حاول مجدداً';
   static const String errorInvalidCredentials = 'بيانات الدخول غير صحيحة';
   static const String errorSessionExpired =
       'انتهت الجلسة، سجّل الدخول مرة أخرى';
-  static const String errorCartEmpty = 'العربة فارغة';
+  static const String errorCartEmpty = 'سلتك فارغة حالياً — أضف أطباقك المفضلة أولاً';
   static const String errorNoNetwork = 'لا يوجد اتصال بالإنترنت';
-  static const String errorCache = 'تعذر حفظ البيانات محلياً';
+  static const String errorCache = 'تعذّر الحفظ المؤقت — سنحاول مجدداً تلقائياً';
   static const String errorDemoUnavailable = 'غير متاح في وضع العرض';
   static const String errorInvalidToken = 'رمز غير صالح';
   static const String errorInvalidResponse = 'استجابة غير صالحة';
 
-  static const String errorLoadingData = 'تعذر تحميل البيانات';
-  static const String retryAction = 'إعادة المحاولة';
+  static const String errorLoadingData = 'تعذّر تحميل البيانات — تحقق من الاتصال وحاول مجدداً';
+  static const String retryAction = 'لنحاول مجدداً';
 
   /// Renders a UI error line with the exception detail appended, e.g.
   /// `خطأ: <err>`. Used by `.when(error: ...)` branches in pages.
   static String errorWithDetail(Object err) => 'خطأ: $err';
+
+  // ── Restaurant & Delivery Coordinates (Cairo) ──────────────────────────────
+  /// Restaurant base latitude (Downtown Cairo / Nile Corniche).
+  static const double defaultRestaurantLat = 30.0444;
+
+  /// Restaurant base longitude (Downtown Cairo / Nile Corniche).
+  static const double defaultRestaurantLng = 31.2357;
+
+  /// Default customer delivery latitude (Zamalek, Cairo).
+  static const double defaultCustomerLat = 30.0626;
+
+  /// Default customer delivery longitude (Zamalek, Cairo).
+  static const double defaultCustomerLng = 31.2497;
 }
 
 /// Arabic labels for order statuses.
@@ -226,6 +244,7 @@ abstract final class OrderStatusAr {
     'confirmed': 'مؤكد',
     'preparing': 'قيد التحضير',
     'ready': 'جاهز',
+    'served': 'تم التقديم',
     'delivering': 'قيد التوصيل',
     'delivered': 'تم التوصيل',
     'completed': 'مكتمل',

@@ -4,43 +4,7 @@ import '../../domain/entities/alert_entity.dart';
 
 /// Controller managing operational alerts for the manager.
 class AlertsController extends StateNotifier<List<AlertEntity>> {
-  AlertsController() : super(_initialSeedAlerts);
-
-  static final List<AlertEntity> _initialSeedAlerts = [
-    AlertEntity(
-      id: 'ALT-1',
-      title: 'انخفاض مخزون اللحم البقري',
-      message: 'المخزون المتبقي أقل من 5 كجم. يرجى طلب شحنة جديدة فوراً.',
-      severity: AlertSeverity.critical,
-      category: AlertCategory.inventory,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-    ),
-    AlertEntity(
-      id: 'ALT-2',
-      title: 'تأخر في تحضير الطلب #ORD-104',
-      message: 'تجاوز الطلب 25 دقيقة في المطبخ دون اكتمال.',
-      severity: AlertSeverity.warning,
-      category: AlertCategory.kitchenDelay,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 42)),
-    ),
-    AlertEntity(
-      id: 'ALT-3',
-      title: 'تأخر سائق التوصيل',
-      message: 'السائق أحمد تأخر 10 دقائق عن الموعد المتوقع للتوصيل.',
-      severity: AlertSeverity.warning,
-      category: AlertCategory.delivery,
-      createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 10)),
-    ),
-    AlertEntity(
-      id: 'ALT-4',
-      title: 'نسخ احتياطي مكتمل',
-      message: 'تم إتمام المزامنة السحابية الدورية بنجاح 100%.',
-      severity: AlertSeverity.info,
-      category: AlertCategory.system,
-      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-      isRead: true,
-    ),
-  ];
+  AlertsController() : super(const []);
 
   /// Emits a dynamic smart alert (e.g. from low stock, delayed order, or negative review).
   void addSmartAlert({

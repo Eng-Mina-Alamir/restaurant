@@ -6,17 +6,21 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/notifications/waiter_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../shared/animations/animated_counter.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
+import '../../../../shared/animations/pulse_badge.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/humanized_feedback.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../../shared/widgets/responsive_layout.dart';
+import '../../../../shared/widgets/stale_data_banner.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/table_controller.dart';
@@ -96,11 +100,21 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
               padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
               child: Center(
                 child: Tooltip(
-                  message: 'نداءات مساعدة من الطاولات (${activeServiceRequests.length})',
+                  message: 'نداءات ودية من الطاولات (${activeServiceRequests.length}) — بانتظار ترحيبك',
                   child: Badge(
-                    backgroundColor: Colors.amber.shade800,
+                    backgroundColor: StatusColors.tone(
+                      SemanticTone.warning,
+                      Theme.of(context).brightness,
+                    ),
                     label: Text('${activeServiceRequests.length}'),
-                    child: const Icon(Icons.notifications_active, color: Colors.amber),
+                    child: PulseBadge(
+                      color: StatusColors.tone(
+                        SemanticTone.warning,
+                        Theme.of(context).brightness,
+                      ),
+                      size: 8,
+                      child: const Icon(Icons.notifications_active_outlined),
+                    ),
                   ),
                 ),
               ),
@@ -130,56 +144,107 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
           ? const _TablesSkeleton()
           : Column(
               children: [
+                if (!ref.watch(isOnlineProvider))
+                  StaleDataBanner(
+                    lastUpdated: DateTime.now(),
+                    onRetry: () {
+                      ref.invalidate(tableControllerProvider);
+                      ref.invalidate(ordersControllerProvider);
+                    },
+                  ),
                 // ── Active Service Requests Alert Banner ──
                 if (activeServiceRequests.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, 0),
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: Colors.amber.shade700),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.notifications_active, color: Colors.amber, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'طاولة ${activeServiceRequests.first.tableNumber} تطلب: ${activeServiceRequests.first.type.labelAr}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade900,
-                            ),
+                  Builder(
+                    builder: (context) {
+                      final warning = StatusColors.tone(
+                        SemanticTone.warning,
+                        Theme.of(context).brightness,
+                      );
+                      final first = activeServiceRequests.first;
+                      final extra = activeServiceRequests.length > 1
+                          ? ' (+${activeServiceRequests.length - 1} أخرى بانتظارك)'
+                          : '';
+                      return Container(
+                        width: double.infinity,
+                        margin: const EdgeInsetsDirectional.only(
+                          start: AppSpacing.md,
+                          end: AppSpacing.md,
+                          top: AppSpacing.xs,
+                        ),
+                        padding: const EdgeInsetsDirectional.only(
+                          start: AppSpacing.md,
+                          end: AppSpacing.sm,
+                          top: AppSpacing.xs,
+                          bottom: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: warning.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: warning.withValues(alpha: 0.45),
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            ref
-                                .read(tableServiceControllerProvider.notifier)
-                                .acknowledgeService(activeServiceRequests.first.id);
-                          },
-                          child: const Text('تمت التلبية'),
+                        child: Row(
+                          children: [
+                            PulseBadge(
+                              color: warning,
+                              size: 8,
+                              child: Icon(
+                                Icons.notifications_active_outlined,
+                                color: warning,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'الطاولة ${first.tableNumber} ${HumanCopy.tableCallingTitle}: ${first.type.labelAr}$extra',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: warning,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                            FilledButton.tonal(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(0, 48),
+                              ),
+                              onPressed: () {
+                                AppHaptics.actionSuccess();
+                                ref
+                                    .read(tableServiceControllerProvider.notifier)
+                                    .acknowledgeService(first.id);
+                                HumanSnackBar.success(
+                                  context,
+                                  HumanCopy.callAcknowledged,
+                                );
+                              },
+                              child: const Text(HumanCopy.imComing),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
 
                 // ── Orders Summary Counter ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md,
-                    AppSpacing.xs,
-                    AppSpacing.md,
-                    0,
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                    end: AppSpacing.md,
+                    top: AppSpacing.xs,
                   ),
                   child: _OrdersSummary(orders: orders),
                 ),
 
                 // ── Interactive Status Statistics Filter Bar ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                    end: AppSpacing.md,
+                    top: AppSpacing.sm,
+                  ),
                   child: _TableStatusStatsBar(
                     tables: tables,
                     selectedStatus: _selectedStatusFilter,
@@ -194,7 +259,12 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
 
                 // ── Zone Tabs & Quick Search ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.xs),
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                    end: AppSpacing.md,
+                    top: AppSpacing.xs,
+                    bottom: AppSpacing.xs,
+                  ),
                   child: Row(
                     children: [
                       // Zone chips
@@ -255,25 +325,48 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
 
                 // ── Grid of Tables ──
                 Expanded(
-                  child: filteredTables.isEmpty
-                      ? const Center(
-                          child: EmptyState(
-                            message: 'لا توجد طاولات مطابقة للفلتر المختار',
-                            icon: Icons.table_restaurant_outlined,
-                          ),
-                        )
-                      : ResponsiveBuilder(
-                          builder: (context, screenType, constraints) {
-                            final cols = AppBreakpoints.gridColumnsForWidth(
-                              constraints.maxWidth,
-                              minColumns: 2,
-                              maxColumns: 5,
-                            );
-                            final ratio = screenType == ScreenType.mobile
-                                ? 1.05
-                                : 1.2;
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(tableControllerProvider);
+                      ref.invalidate(ordersControllerProvider);
+                      ref.invalidate(tableServiceControllerProvider);
+                    },
+                    child: filteredTables.isEmpty
+                        ? SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: Container(
+                              height: 350,
+                              alignment: Alignment.center,
+                              child: EmptyState(
+                                message: HumanCopy.noTablesSubtitle,
+                                title: HumanCopy.noTablesTitle,
+                                icon: Icons.table_restaurant_outlined,
+                                actionLabel: HumanCopy.clearFilter,
+                                onAction: () {
+                                  AppHaptics.selectionTap();
+                                  setState(() {
+                                    _selectedStatusFilter = null;
+                                    _selectedZoneFilter = 'الكل';
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                  });
+                                },
+                              ),
+                            ),
+                          )
+                        : ResponsiveBuilder(
+                            builder: (context, screenType, constraints) {
+                              final cols = AppBreakpoints.gridColumnsForWidth(
+                                constraints.maxWidth,
+                                minColumns: 2,
+                                maxColumns: 5,
+                              );
+                              final ratio = screenType == ScreenType.mobile
+                                  ? 1.05
+                                  : 1.2;
 
-                            return GridView.builder(
+                              return GridView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.md,
                                 vertical: AppSpacing.xs,
@@ -304,31 +397,53 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
                                     onAcknowledgeService: activeReq == null
                                         ? null
                                         : () {
+                                            AppHaptics.actionSuccess();
                                             ref
                                                 .read(
                                                   tableServiceControllerProvider
                                                       .notifier,
                                                 )
                                                 .acknowledgeService(activeReq.id);
+                                            HumanSnackBar.success(
+                                              context,
+                                              HumanCopy.callAcknowledged,
+                                            );
                                           },
                                     onTap: () {
+                                      AppHaptics.selectionTap();
                                       context.push('/waiter/table/${table.id}');
                                     },
                                     onTakeOrder: () {
+                                      AppHaptics.selectionTap();
                                       context.push('/waiter/order/${table.id}');
                                     },
-                                    onRelease: () => ref
-                                        .read(tableControllerProvider.notifier)
-                                        .release(table.id),
-                                    onReserve: () => ref
-                                        .read(tableControllerProvider.notifier)
-                                        .setReserved(table.id, reserved: true),
+                                    onRelease: () {
+                                      AppHaptics.actionSuccess();
+                                      ref
+                                          .read(tableControllerProvider.notifier)
+                                          .release(table.id);
+                                      HumanSnackBar.success(
+                                        context,
+                                        HumanCopy.tableReleased,
+                                      );
+                                    },
+                                    onReserve: () {
+                                      AppHaptics.selectionTap();
+                                      ref
+                                          .read(tableControllerProvider.notifier)
+                                          .setReserved(table.id, reserved: true);
+                                      HumanSnackBar.success(
+                                        context,
+                                        HumanCopy.tableReserved,
+                                      );
+                                    },
                                   ),
                                 );
                               },
                             );
                           },
                         ),
+                    ),
                 ),
               ],
             ),

@@ -8,6 +8,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/utils/financial_calculator.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/supabase_cart_repository.dart';
 import '../../domain/cart_totals.dart';
 import '../../domain/entities/cart_item.dart';
@@ -112,6 +113,7 @@ class CartController extends StateNotifier<List<CartItem>> {
     }
     final updated = existing.copyWith(quantity: existing.quantity - 1);
     state = [...state]..[index] = updated;
+    _scheduleCloudSync();
   }
 
   /// Removes the line matching [configKey].
@@ -131,10 +133,13 @@ class CartController extends StateNotifier<List<CartItem>> {
   ///
   /// Called once when a logged-in customer session starts; a no-op for
   /// anonymous users, offline mode, or when the cloud already matches.
+  /// Non-UUID identities (demo/guest) never touch the server: their rows
+  /// could never satisfy the `cart_items.user_id -> profiles(id)` FK.
   Future<void> restoreFromCloud() async {
     final repo = _cloud;
     final userId = _currentUserId?.call();
     if (repo == null || userId == null || userId.isEmpty) return;
+    if (!_isUuid(userId)) return;
     if (state.isNotEmpty) return;
     final result = await repo.loadCart(userId);
     result.when(
@@ -148,10 +153,15 @@ class CartController extends StateNotifier<List<CartItem>> {
   }
 
   /// Coalesces mutations into a single debounced server write.
+  ///
+  /// Skips demo/guest identities (non-UUID): persisting them server-side
+  /// would only produce FK/RLS rejections, and the debounce timer may
+  /// otherwise fire after a logout under the previous account's id.
   void _scheduleCloudSync() {
     final repo = _cloud;
     final userId = _currentUserId?.call();
     if (repo == null || userId == null || userId.isEmpty) return;
+    if (!_isUuid(userId)) return;
     _syncDebounce?.cancel();
     _syncDebounce = Timer(kCloudSyncDebounce, () {
       final snapshot = List<CartItem>.of(state);
@@ -188,6 +198,13 @@ class CartController extends StateNotifier<List<CartItem>> {
     _syncDebounce?.cancel();
     super.dispose();
   }
+
+  /// Strict UUID check shared by the cloud guards above.
+  static bool _isUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value);
+  }
 }
 
 /// Provider for [CartController].
@@ -201,7 +218,13 @@ final cartControllerProvider =
     StateNotifierProvider<CartController, List<CartItem>>((ref) {
       final controller = CartController(
         cloudRepository: _resolveCloudRepository(),
-        currentUserId: () => ref.read(supabaseCurrentUserProvider)?.id,
+        // Single source of truth: the authenticated domain user first,
+        // Supabase session as fallback. (These can diverge after a token
+        // expiry or a server-side sign-out; the domain session wins so the
+        // cart is never persisted under a stale identity.)
+        currentUserId: () =>
+            ref.read(authControllerProvider).user?.id ??
+            ref.read(supabaseCurrentUserProvider)?.id,
       );
       unawaited(controller.restoreFromCloud());
       return controller;

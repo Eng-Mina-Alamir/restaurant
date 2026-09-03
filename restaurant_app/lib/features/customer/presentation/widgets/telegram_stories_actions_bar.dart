@@ -113,6 +113,23 @@ class TelegramStoriesActionsBar extends ConsumerWidget {
         },
       ),
 
+      // 2b. Table Reservation
+      StoryActionItem(
+        id: 'reservations',
+        label: 'حجز طاولة',
+        tooltip: 'حجز طاولة مسبقاً في المطعم',
+        gradientColors: const [Color(0xFF0D9488), Color(0xFF2DD4BF)],
+        icon: const Icon(
+          Icons.event_seat_rounded,
+          size: 22,
+          color: Color(0xFF0D9488),
+        ),
+        onTap: () {
+          AppHaptics.selectionTap();
+          context.push('/customer/reservations');
+        },
+      ),
+
       // 3. Loyalty & Rewards Points
       StoryActionItem(
         id: 'loyalty',

@@ -1,8 +1,9 @@
 import '../../../../core/utils/financial_calculator.dart';
+import '../../../../core/utils/formatters.dart';
 
 enum CouponDiscountType {
   percentage('نسبة مئوية (%)'),
-  fixed('مبلغ ثابت (ريال)');
+  fixed('مبلغ ثابت نقدي');
 
   final String labelAr;
   const CouponDiscountType(this.labelAr);
@@ -55,7 +56,7 @@ class CouponEntity {
       return 'لقد تم الوصول للحد الأقصى لاستخدام هذا الكود';
     }
     if (subtotal < minOrderAmount) {
-      return 'الحد الأدنى لتطبيق هذا الكود هو $minOrderAmount ريال';
+      return 'الحد الأدنى لتطبيق هذا الكود هو ${Formatters.formatCurrency(minOrderAmount)}';
     }
     return null;
   }
@@ -109,4 +110,37 @@ class CouponEntity {
       isActive: isActive ?? this.isActive,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'code': code,
+    'title': title,
+    'discountType': discountType.name,
+    'discountValue': discountValue,
+    'minOrderAmount': minOrderAmount,
+    'maxDiscountAmount': maxDiscountAmount,
+    'validUntil': validUntil?.toIso8601String(),
+    'usageLimit': usageLimit,
+    'usageCount': usageCount,
+    'isActive': isActive,
+  };
+
+  factory CouponEntity.fromJson(Map<String, dynamic> json) => CouponEntity(
+    id: json['id'] as String,
+    code: json['code'] as String,
+    title: json['title'] as String,
+    discountType: CouponDiscountType.values.firstWhere(
+      (e) => e.name == json['discountType'],
+      orElse: () => CouponDiscountType.percentage,
+    ),
+    discountValue: (json['discountValue'] as num?)?.toDouble() ?? 0.0,
+    minOrderAmount: (json['minOrderAmount'] as num?)?.toDouble() ?? 0.0,
+    maxDiscountAmount: (json['maxDiscountAmount'] as num?)?.toDouble(),
+    validUntil: json['validUntil'] != null
+        ? DateTime.tryParse(json['validUntil'] as String)
+        : null,
+    usageLimit: (json['usageLimit'] as num?)?.toInt(),
+    usageCount: (json['usageCount'] as num?)?.toInt() ?? 0,
+    isActive: json['isActive'] as bool? ?? true,
+  );
 }

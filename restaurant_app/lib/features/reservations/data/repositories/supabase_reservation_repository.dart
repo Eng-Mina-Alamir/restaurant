@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
@@ -8,11 +9,16 @@ import '../../domain/entities/reservation_entity.dart';
 import '../../domain/repositories/reservation_repository.dart';
 
 class SupabaseReservationRepository implements ReservationRepository {
-  SupabaseReservationRepository({required SupabaseClient supabase})
-    : _supabase = supabase;
+  SupabaseReservationRepository({
+    required SupabaseClient supabase,
+    LocalCacheService? cache,
+  })  : _supabase = supabase,
+        _cache = cache;
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
 
+  static const String _cacheKey = 'cached_reservations';
   final List<ReservationEntity> _cachedReservations = [];
 
   @override
@@ -37,14 +43,22 @@ class SupabaseReservationRepository implements ReservationRepository {
       }
       _cachedReservations.clear();
       _cachedReservations.addAll(reservations);
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          await cache.writeList(_cacheKey, reservations.map((r) => r.toJson()).toList());
+        } catch (e) {
+          AppLogger.warning('Failed to persist reservations to local cache: $e');
+        }
+      }
       return Right(reservations);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getReservations fallback: $e',
+        'Supabase getReservations error: $e',
         error: e,
         stackTrace: st,
       );
-      return Right(List.unmodifiable(_cachedReservations));
+      return Left(ServerFailure('فشل تحميل الحجوزات من Supabase: $e'));
     }
   }
 

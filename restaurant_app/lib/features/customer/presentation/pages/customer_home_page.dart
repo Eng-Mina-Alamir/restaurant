@@ -9,12 +9,14 @@ import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/animations/staggered_fade_slide_list.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../../shared/widgets/humanized_feedback.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../../../table_management/domain/entities/table_service_request.dart';
 import '../../../table_management/presentation/controllers/table_service_controller.dart';
+import '../controllers/customer_wallet_controller.dart';
 import '../pages/menu_item_detail_sheet.dart';
 import '../widgets/category_chips.dart';
 import '../widgets/customer_hero_profile_card.dart';
@@ -113,12 +115,17 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
               }
               return false;
             },
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              cacheExtent: 1500,
-              slivers: [
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(menuControllerProvider);
+                ref.invalidate(customerWalletBalanceProvider);
+              },
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                cacheExtent: 1500,
+                slivers: [
                 // 1. Sleek Customer SliverAppBar with Quick Actions Hub
                 CustomerSliverAppBar(
                   storiesAnimation: _storiesAnimation,
@@ -172,11 +179,11 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
 
                             // Search Field
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSpacing.md,
-                                AppSpacing.sm,
-                                AppSpacing.md,
-                                AppSpacing.xs,
+                              padding: const EdgeInsetsDirectional.only(
+                                start: AppSpacing.md,
+                                end: AppSpacing.md,
+                                top: AppSpacing.sm,
+                                bottom: AppSpacing.xs,
                               ),
                               child: TextField(
                                 onChanged: (value) => ref
@@ -229,20 +236,37 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
 
                       // Menu Items or Empty State
                       if (items.isEmpty)
-                        const SliverFillRemaining(
+                        SliverFillRemaining(
                           hasScrollBody: false,
                           child: EmptyState(
+                            // Keeps widget tests green (they look up
+                            // AppConstants.noItemsFound) while staying warm:
+                            // the constant itself now holds the warm copy.
                             message: AppConstants.noItemsFound,
-                            icon: Icons.search_off,
+                            title: HumanCopy.noItemsTitle,
+                            subtitle: AppConstants.noItemsFound,
+                            icon: Icons.search_off_rounded,
+                            actionLabel: HumanCopy.clearSearch,
+                            onAction: () {
+                              AppHaptics.selectionTap();
+                              ref
+                                  .read(menuSearchQueryProvider.notifier)
+                                  .state = '';
+                              ref
+                                  .read(selectedCategoryProvider.notifier)
+                                  .state = 'الكل';
+                              ref
+                                  .read(menuDietFilterProvider.notifier)
+                                  .state = MenuDietFilter.none;
+                            },
                           ),
                         )
                       else
                         SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.md,
-                            0,
-                            AppSpacing.md,
-                            80, // Space for floating cart bar
+                          padding: const EdgeInsetsDirectional.only(
+                            start: AppSpacing.md,
+                            end: AppSpacing.md,
+                            bottom: 80, // Space for floating cart bar
                           ),
                           sliver: SliverList(
                             delegate: SliverChildBuilderDelegate(
@@ -277,6 +301,7 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
               ],
             ),
           ),
+        ),
           const Positioned(
             left: 0,
             right: 0,
@@ -294,7 +319,10 @@ class _CustomerHomePageState extends ConsumerState<CustomerHomePage>
       ref
           .read(cartControllerProvider.notifier)
           .addItem(CartItem(menuItem: item, quantity: 1));
+      AppHaptics.selectionTap();
+      HumanSnackBar.success(ref.context, HumanCopy.addedToCart);
     } else {
+      AppHaptics.selectionTap();
       _showItemDetail(ref.context, ref, item);
     }
   }
@@ -324,7 +352,10 @@ class _DietChips extends StatelessWidget {
               child: ChoiceChip(
                 label: Text(_label(filter)),
                 selected: selected == filter,
-                onSelected: (_) => onSelected(filter),
+                onSelected: (_) {
+                  AppHaptics.selectionTap();
+                  onSelected(filter);
+                },
               ),
             ),
         ],
@@ -358,11 +389,10 @@ class _TableServiceBanner extends ConsumerWidget {
         requests.where((r) => r.tableId == activeTable && !r.isHandled).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.sm,
-        AppSpacing.md,
-        0,
+      padding: const EdgeInsetsDirectional.only(
+        start: AppSpacing.md,
+        end: AppSpacing.md,
+        top: AppSpacing.sm,
       ),
       child: Card(
         color: colorScheme.surfaceContainerHighest,
@@ -381,33 +411,46 @@ class _TableServiceBanner extends ConsumerWidget {
               Row(
                 children: [
                   Icon(
-                    Icons.table_restaurant,
+                    Icons.table_restaurant_rounded,
                     size: 20,
                     color: colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'أنت جالس على طاولة $activeTable',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'أهلاً بك على الطاولة $activeTable',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          HumanCopy.dineInWelcome,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
                   if (activeForThisTable.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
                       ),
                       decoration: BoxDecoration(
                         color: StatusColors.tone(
                           SemanticTone.warning,
                           theme.brightness,
                         ).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: Text(
-                        'طلبك قيد المتابعة...',
+                        HumanCopy.dineInFollowing,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: StatusColors.tone(
                             SemanticTone.warning,
@@ -419,7 +462,7 @@ class _TableServiceBanner extends ConsumerWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
                   Expanded(
@@ -430,9 +473,10 @@ class _TableServiceBanner extends ConsumerWidget {
                       ),
                       label: const Text('طلب النادل'),
                       style: OutlinedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
+                        minimumSize: const Size(0, 48),
                       ),
                       onPressed: () {
+                        AppHaptics.selectionTap();
                         ref
                             .read(tableServiceControllerProvider.notifier)
                             .requestService(
@@ -440,18 +484,11 @@ class _TableServiceBanner extends ConsumerWidget {
                               tableNumber: tableNum,
                               type: TableServiceType.callWaiter,
                             );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'تم إرسال طلب استدعاء النادل لطاولتك 🔔',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        HumanSnackBar.info(context, HumanCopy.waiterCalled);
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: FilledButton.tonalIcon(
                       icon: const Icon(
@@ -460,9 +497,10 @@ class _TableServiceBanner extends ConsumerWidget {
                       ),
                       label: const Text('طلب الحساب'),
                       style: FilledButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
+                        minimumSize: const Size(0, 48),
                       ),
                       onPressed: () {
+                        AppHaptics.selectionTap();
                         ref
                             .read(tableServiceControllerProvider.notifier)
                             .requestService(
@@ -470,21 +508,17 @@ class _TableServiceBanner extends ConsumerWidget {
                               tableNumber: tableNum,
                               type: TableServiceType.requestBill,
                             );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'تم إرسال طلب الفاتورة للنادل 🧾',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        HumanSnackBar.info(context, HumanCopy.billRequested);
                       },
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: AppSpacing.xs),
                   IconButton.filledTonal(
                     icon: const Icon(Icons.room_service_outlined, size: 18),
                     tooltip: 'خدمات الطاولة',
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
                     onPressed: () => DineInTableHubSheet.show(
                       context,
                       tableNumber: tableNum,

@@ -6,6 +6,7 @@ import '../../../../config/app_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/network/realtime_event.dart';
+import '../../../../core/payment/payment_service.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/utils/logger.dart';
@@ -56,8 +57,10 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
     this._driverId, {
     SupabaseRealtimeService? realtimeService,
     Future<void> Function(String orderId)? onDelivered,
+    Future<void> Function(String orderId)? onDeliveryFailed,
   }) : _realtimeService = realtimeService,
        _onDelivered = onDelivered,
+       _onDeliveryFailed = onDeliveryFailed,
        super(const []) {
     _load();
     _initRealtime();
@@ -78,6 +81,7 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   /// devices don't load every order, so the provider wiring writes via the
   /// repository directly). Null keeps the assignment-only behaviour.
   final Future<void> Function(String orderId)? _onDelivered;
+  final Future<void> Function(String orderId)? _onDeliveryFailed;
 
   void _initRealtime() {
     final service = _realtimeService;
@@ -122,6 +126,13 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   }
 
   Future<void> _load() async {
+    // No signed-in driver (demo/guest): nothing server-side may be queried
+    // under a fake id — the previous 'driver-demo' fallback only produced
+    // FK/RLS rejections that died silently in the repository warning logs.
+    if (_driverId.isEmpty) {
+      state = const [];
+      return;
+    }
     final result = await _repository.getAssignments(_driverId);
     state = result.when(onLeft: (_) => const [], onRight: (list) => list);
   }
@@ -170,6 +181,8 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   /// When the driver has an in-transit assignment its orderId is attached to
   /// the payload so customer tracking pages can scope updates per order.
   void updateLocation({required double latitude, required double longitude}) {
+    // Guard parity with _load(): never emit beacons for a fake identity.
+    if (_driverId.isEmpty) return;
     final now = DateTime.now();
     if (_lastLocationWrite != null &&
         now.difference(_lastLocationWrite!) < _locationWriteThrottle) {
@@ -237,8 +250,22 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   }
 
   /// Marks a delivery as failed.
-  Future<void> fail(String id) =>
-      _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.failed));
+  Future<void> fail(String id) async {
+    final index = state.indexWhere((a) => a.id == id);
+    final orderId = index != -1 ? state[index].orderId : null;
+    await _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.failed));
+    if (orderId != null && _onDeliveryFailed != null) {
+      try {
+        await _onDeliveryFailed(orderId);
+      } catch (e, st) {
+        AppLogger.warning(
+          '[Delivery] onDeliveryFailed hook error: $e',
+          error: e,
+          stackTrace: st,
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -260,13 +287,20 @@ final deliveryControllerProvider =
       (ref) {
         final authUser = ref.watch(authControllerProvider).user;
         final supabaseUser = ref.watch(supabaseCurrentUserProvider);
-        final driverId = authUser?.id ?? supabaseUser?.id ?? 'driver-demo';
+        // Empty (not a fake 'driver-demo' id) when nobody is signed in:
+        // the controller then idles instead of writing FK-violating rows.
+        final driverId = authUser?.id ?? supabaseUser?.id ?? '';
 
         return DeliveryController(
           ref.watch(deliveryRepositoryProvider),
           driverId,
           realtimeService: ref.watch(supabaseRealtimeServiceProvider),
           onDelivered: (orderId) => _completeParentOrder(ref, orderId),
+          onDeliveryFailed: (orderId) async {
+            AppLogger.warning(
+              '[Delivery] Delivery marked failed by driver for order: $orderId',
+            );
+          },
         );
       },
     );
@@ -287,6 +321,21 @@ Future<void> _completeParentOrder(Ref ref, String orderId) async {
     orderId,
     OrderStatus.completed,
   );
+
+  // If cash on delivery, record payment transaction so driver/cashier remittance is accurate
+  if (order.paymentMethod == PaymentMethod.cash) {
+    try {
+      final paymentService = ref.read(paymentServiceProvider);
+      await paymentService.payForOrder(
+        orderId: orderId,
+        amount: order.totalAmount,
+        method: PaymentMethod.cash,
+        phone: order.deliveryNotes,
+      );
+    } catch (e) {
+      AppLogger.warning('Failed to record COD payment for order $orderId: $e');
+    }
+  }
 }
 
 /// Fetches the assignment linked to [orderId] for the customer tracking UI.

@@ -87,7 +87,7 @@ class AnalyticsService {
     logEvent('order_placed', {
       'order_id': orderId,
       'value': totalAmount,
-      'currency': 'SAR',
+      'currency': 'EGP',
       'order_type': orderType,
       'item_count': itemCount,
     });
@@ -103,7 +103,7 @@ class AnalyticsService {
       'order_id': orderId,
       'amount': amount,
       'method': method,
-      'currency': 'SAR',
+      'currency': 'EGP',
     });
   }
 

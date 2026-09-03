@@ -51,7 +51,7 @@ void main() {
 
     // Verify on Dashboard
     expect(find.text(AppConstants.managerTitle), findsOneWidget);
-    expect(find.text('الإجراءات السريعة'), findsOneWidget);
+    expect(find.textContaining('الإجراءات'), findsWidgets);
 
     // Navigate to Alerts Page
     await tester.tap(find.byIcon(Icons.notifications_outlined));

@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/app_config.dart';
 import '../../../../config/supabase_config.dart';
-import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
@@ -88,14 +87,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إنشاء حساب جديد'),
+        title: Text(strings.registerTitle),
         leading: IconButton(
-          tooltip: 'رجوع',
+          tooltip: strings.back,
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/login'),
         ),
@@ -113,7 +113,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'انضم إلى ${AppConfig.appName}',
+                      strings.joinRestaurant(strings.appName),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -121,7 +121,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      'سجل بياناتك للبدء في استخدام النظام بكل سهولة',
+                      strings.registerSubtitle,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
@@ -135,16 +135,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       textInputAction: TextInputAction.next,
                       textCapitalization: TextCapitalization.words,
                       autofillHints: const [AutofillHints.name],
-                      decoration: const InputDecoration(
-                        labelText: 'الاسم بالكامل',
-                        prefixIcon: Icon(Icons.badge_outlined),
+                      decoration: InputDecoration(
+                        labelText: strings.nameLabel,
+                        prefixIcon: const Icon(Icons.badge_outlined),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'يرجى إدخال الاسم';
+                          return strings.requiredField;
                         }
                         if (!Validators.isValidName(value)) {
-                          return 'يرجى إدخال اسم صحيح';
+                          return strings.requiredField;
                         }
                         return null;
                       },
@@ -157,16 +157,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: AppConstants.emailLabel,
-                        prefixIcon: Icon(Icons.email_outlined),
+                      decoration: InputDecoration(
+                        labelText: strings.emailLabel,
+                        prefixIcon: const Icon(Icons.email_outlined),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return AppConstants.requiredField;
+                          return strings.requiredField;
                         }
                         if (!Validators.isValidEmail(value)) {
-                          return 'بريد إلكتروني غير صالح';
+                          return strings.errorInvalidResponse;
                         }
                         return null;
                       },
@@ -180,9 +180,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       keyboardType: TextInputType.phone,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.telephoneNumber],
-                      decoration: const InputDecoration(
-                        labelText: 'رقم الهاتف',
-                        prefixIcon: Icon(Icons.phone_outlined),
+                      decoration: InputDecoration(
+                        labelText: strings.phoneLabel,
+                        prefixIcon: const Icon(Icons.phone_outlined),
                       ),
                       validator: Validators.validatePhone,
                     ),
@@ -195,7 +195,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
-                        labelText: AppConstants.passwordLabel,
+                        labelText: strings.passwordLabel,
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           tooltip: _obscurePassword
@@ -229,7 +229,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       autofillHints: const [AutofillHints.newPassword],
                       onFieldSubmitted: (_) => _submit(),
                       decoration: InputDecoration(
-                        labelText: 'تأكيد كلمة المرور',
+                        labelText: strings.confirmPasswordLabel,
                         prefixIcon: const Icon(Icons.lock_reset),
                         suffixIcon: IconButton(
                           tooltip: _obscureConfirmPassword
@@ -264,7 +264,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('إنشاء الحساب والمتابعة'),
+                          : Text(strings.registerButton),
                     ),
                     const SizedBox(height: AppSpacing.md),
 
@@ -272,10 +272,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('لديك حساب بالفعل؟'),
+                        Text(strings.haveAccount),
                         TextButton(
                           onPressed: () => context.go('/login'),
-                          child: const Text('تسجيل الدخول'),
+                          child: Text(strings.loginButton),
                         ),
                       ],
                     ),

@@ -77,15 +77,28 @@ REVOKE EXECUTE ON FUNCTION public.is_manager_or_admin() FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.has_role(text[]) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.is_admin_for_restaurant(uuid) FROM PUBLIC, anon;
 
-REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.enforce_profile_insert_role() FROM PUBLIC, anon, authenticated;
-REVOKE EXECUTE ON FUNCTION public.enforce_profile_update_role() FROM PUBLIC, anon, authenticated;
+-- NOTE (2026-09-04): trigger-only functions below are CREATED by migration
+-- 20260904000000_account_linking_hardening. The guards use IF EXISTS checks
+-- so a fresh `supabase db reset` never fails on ordering.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'handle_new_user') THEN
+    REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+    GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'enforce_profile_insert_role') THEN
+    REVOKE EXECUTE ON FUNCTION public.enforce_profile_insert_role() FROM PUBLIC, anon, authenticated;
+    GRANT EXECUTE ON FUNCTION public.enforce_profile_insert_role() TO service_role;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'enforce_profile_update_role') THEN
+    REVOKE EXECUTE ON FUNCTION public.enforce_profile_update_role() FROM PUBLIC, anon, authenticated;
+    GRANT EXECUTE ON FUNCTION public.enforce_profile_update_role() TO service_role;
+  END IF;
+END $$;
 
 GRANT EXECUTE ON FUNCTION public.get_my_role() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_manager_or_admin() TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.has_role(text[]) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_admin_for_restaurant(uuid) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role;
-GRANT EXECUTE ON FUNCTION public.enforce_profile_insert_role() TO service_role;
-GRANT EXECUTE ON FUNCTION public.enforce_profile_update_role() TO service_role;
+-- (grants for handle_new_user/enforce_* live in 20260904000000, which creates them)

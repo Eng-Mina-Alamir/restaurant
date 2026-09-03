@@ -109,6 +109,46 @@ void main() {
         }
       });
 
+      test('managerChef can access kitchen operational routes but is blocked from executive manager routes', () {
+        const allowedChefRoutes = [
+          '/kds',
+          '/manager/recipes',
+          '/manager/inventory',
+          '/manager/menu',
+          '/manager/waste-logs',
+          '/manager/menu-engineering',
+          '/manager/purchase-orders',
+        ];
+        for (final route in allowedChefRoutes) {
+          expect(
+            canRoleAccess(UserRole.managerChef, route),
+            isTrue,
+            reason: 'managerChef should access operational route $route',
+          );
+        }
+
+        const forbiddenChefRoutes = [
+          '/manager',
+          '/manager/users',
+          '/manager/financial-reports',
+          '/manager/security-audit',
+          '/manager/owner-digest',
+          '/manager/timesheet',
+          '/manager/sales-target',
+          '/manager/staff',
+          '/waiter',
+          '/cashier',
+          '/driver',
+        ];
+        for (final route in forbiddenChefRoutes) {
+          expect(
+            canRoleAccess(UserRole.managerChef, route),
+            isFalse,
+            reason: 'managerChef must NOT access executive/isolated route $route',
+          );
+        }
+      });
+
       test('each role retains access to its own home area', () {
         for (final role in allRoles) {
           expect(

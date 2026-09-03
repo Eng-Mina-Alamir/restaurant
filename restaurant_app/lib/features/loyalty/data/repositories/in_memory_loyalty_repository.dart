@@ -9,8 +9,8 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
   static final List<LoyaltyReward> _defaultRewards = [
     const LoyaltyReward(
       id: 'rew-10',
-      title: 'خصم 10 ريال فوري',
-      description: 'خصم مباشر 10 ريال على أي طلب بقيمة 50 ريال أو أكثر',
+      title: 'خصم 10 ج.م فوري',
+      description: 'خصم مباشر 10 ج.م على أي طلب بقيمة 50 ج.م أو أكثر',
       pointsCost: 100,
       discountAmount: 10.0,
       minOrderAmount: 50.0,
@@ -18,8 +18,8 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
     ),
     const LoyaltyReward(
       id: 'rew-25',
-      title: 'خصم 25 ريال VIP',
-      description: 'خصم 25 ريال على طلبات العشاء والولائم فوق 100 ريال',
+      title: 'خصم 25 ج.م VIP',
+      description: 'خصم 25 ج.م على طلبات العشاء والولائم فوق 100 ج.م',
       pointsCost: 220,
       discountAmount: 25.0,
       minOrderAmount: 100.0,
@@ -27,9 +27,9 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
     ),
     const LoyaltyReward(
       id: 'rew-50',
-      title: 'وجبة مجانية / خصم 50 ريال',
+      title: 'وجبة مجانية / خصم 50 ج.م',
       description:
-          'قسيمة خصم بقيمة 50 ريال صالحة على جميع الأصناف بدون حد أدنى',
+          'قسيمة خصم بقيمة 50 ج.م صالحة على جميع الأصناف بدون حد أدنى',
       pointsCost: 400,
       discountAmount: 50.0,
       minOrderAmount: 0.0,
@@ -37,9 +37,9 @@ class InMemoryLoyaltyRepository implements LoyaltyRepository {
     ),
     const LoyaltyReward(
       id: 'rew-100',
-      title: 'قسيمة النخبة 100 ريال',
+      title: 'قسيمة النخبة 100 ج.م',
       description:
-          'أعلى مكافأة ولاء - خصم 100 ريال فوري لأعضاء الفئات الذهبية والبلاتينية',
+          'أعلى مكافأة ولاء - خصم 100 ج.م فوري لأعضاء الفئات الذهبية والبلاتينية',
       pointsCost: 750,
       discountAmount: 100.0,
       minOrderAmount: 0.0,

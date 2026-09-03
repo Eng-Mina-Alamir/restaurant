@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,7 +16,9 @@ import 'supabase_providers.dart';
 ///
 /// **Role-based channel filtering**: each user role subscribes only to the
 /// channels it needs, dramatically reducing concurrent connections:
-/// - Customer:  orders (1 channel)
+/// - Customer:  orders + delivery_assignments (2 channels: the assignment
+///   channel is RLS-scoped to the customer's own orders so the tracking
+///   page learns the driver the moment the kitchen dispatches)
 /// - Kitchen:   orders (1 channel)
 /// - Cashier:   orders (1 channel)
 /// - Waiter:    orders + tables + table_service_requests (3 channels)
@@ -31,6 +35,7 @@ class SupabaseRealtimeService {
   RealtimeChannel? _deliveryAssignmentsChannel;
   StreamController<RealtimeEvent>? _controller;
   bool _isSubscribed = false;
+  UserRole? _currentRole;
 
   /// Stream of live real-time events.
   Stream<RealtimeEvent> get stream {
@@ -49,8 +54,9 @@ class SupabaseRealtimeService {
   /// Only channels relevant to the user's role are opened, which reduces
   /// concurrent Realtime connections from 5 per user to 1–3 on average.
   void subscribeForRole(UserRole? role) {
-    if (_isSubscribed) return;
+    if (_isSubscribed && _currentRole == role) return;
     _controller ??= StreamController<RealtimeEvent>.broadcast();
+    _currentRole = role;
     _isSubscribed = true;
 
     try {
@@ -74,12 +80,15 @@ class SupabaseRealtimeService {
         _subscribeDriverLocations();
       }
 
-      // Delivery Assignments — needed by driver, manager, admin, cashier
+      // Delivery Assignments — needed by driver, manager, admin, cashier,
+      // and customer (RLS limits customers to their own orders' rows, so the
+      // tracking page flips from "searching" to the driver card live).
       if (role == null ||
           role == UserRole.driver ||
           role == UserRole.manager ||
           role == UserRole.admin ||
-          role == UserRole.cashier) {
+          role == UserRole.cashier ||
+          role == UserRole.customer) {
         _subscribeDeliveryAssignments();
       }
 
@@ -106,6 +115,7 @@ class SupabaseRealtimeService {
   // ── Channel setup helpers ──────────────────────────────────────────────
 
   void _subscribeOrders() {
+    if (_ordersChannel != null) return;
     _ordersChannel = _supabase.channel('public:${SupabaseConfig.ordersTable}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.insert,
@@ -153,6 +163,7 @@ class SupabaseRealtimeService {
   }
 
   void _subscribeTables() {
+    if (_tablesChannel != null) return;
     _tablesChannel = _supabase.channel('public:${SupabaseConfig.tablesTable}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
@@ -173,6 +184,7 @@ class SupabaseRealtimeService {
   }
 
   void _subscribeDriverLocations() {
+    if (_driverChannel != null) return;
     _driverChannel =
         _supabase.channel('public:${SupabaseConfig.driverLocationsTable}')
           ..onPostgresChanges(
@@ -192,6 +204,7 @@ class SupabaseRealtimeService {
   }
 
   void _subscribeTableServiceRequests() {
+    if (_tableServiceChannel != null) return;
     _tableServiceChannel =
         _supabase.channel('public:${SupabaseConfig.tableServiceRequestsTable}')
           ..onPostgresChanges(
@@ -230,6 +243,7 @@ class SupabaseRealtimeService {
   }
 
   void _subscribeDeliveryAssignments() {
+    if (_deliveryAssignmentsChannel != null) return;
     _deliveryAssignmentsChannel =
         _supabase.channel('public:${SupabaseConfig.deliveryAssignmentsTable}')
           ..onPostgresChanges(
@@ -275,15 +289,17 @@ class SupabaseRealtimeService {
     String? orderId,
   }) async {
     try {
-      await _supabase.from(SupabaseConfig.driverLocationsTable).upsert({
+      final numericOrderId = orderId != null ? int.tryParse(orderId) : null;
+      final payload = <String, dynamic>{
         'driver_id': driverId,
         'latitude': latitude,
         'longitude': longitude,
-        'order_id': orderId,
+        'order_id': ?numericOrderId,
         'updated_at': DateTime.now().toIso8601String(),
-      });
+      };
+      await _supabase.from(SupabaseConfig.driverLocationsTable).upsert(payload);
     } catch (e, st) {
-      AppLogger.error('Failed to update driver location: $e', error: e, stackTrace: st);
+      AppLogger.warning('Failed to update driver location: $e', error: e, stackTrace: st);
     }
   }
 
@@ -294,12 +310,14 @@ class SupabaseRealtimeService {
   }
 
   void dispose() {
-    _isSubscribed = false;
-    _ordersChannel?.unsubscribe();
-    _tablesChannel?.unsubscribe();
-    _driverChannel?.unsubscribe();
-    _tableServiceChannel?.unsubscribe();
-    _deliveryAssignmentsChannel?.unsubscribe();
+    if (_isSubscribed) {
+      _isSubscribed = false;
+      _ordersChannel?.unsubscribe();
+      _tablesChannel?.unsubscribe();
+      _driverChannel?.unsubscribe();
+      _tableServiceChannel?.unsubscribe();
+      _deliveryAssignmentsChannel?.unsubscribe();
+    }
     _controller?.close();
   }
 }
@@ -307,7 +325,15 @@ class SupabaseRealtimeService {
 /// Shared provider for [SupabaseRealtimeService].
 final supabaseRealtimeServiceProvider = Provider<SupabaseRealtimeService>((ref) {
   final service = SupabaseRealtimeService(ref.watch(supabaseClientProvider));
-  if (AppConfig.useSupabase) {
+  final isTestEnvironment = () {
+    try {
+      return Platform.environment.containsKey('FLUTTER_TEST');
+    } catch (_) {
+      return false;
+    }
+  }();
+
+  if (AppConfig.useSupabase && SupabaseConfig.isConfigured && !isTestEnvironment) {
     service.subscribe();
   }
   ref.onDispose(service.dispose);

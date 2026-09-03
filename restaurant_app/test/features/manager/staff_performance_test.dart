@@ -16,8 +16,8 @@ void main() {
       expect(find.text('أداء الموظفين'), findsOneWidget);
       expect(find.text('أفضل موظف اليوم'), findsOneWidget);
       expect(find.text('تفاصيل الأداء'), findsOneWidget);
-      expect(find.text('أحمد محمد'), findsOneWidget);
-      expect(find.text('سارة خالد'), findsOneWidget);
+      expect(find.text('سالم الشمري'), findsWidgets);
+      expect(find.text('شيف مصطفى كمال'), findsWidgets);
     });
   });
 }

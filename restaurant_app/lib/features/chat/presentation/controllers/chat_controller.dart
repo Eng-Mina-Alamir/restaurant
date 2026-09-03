@@ -7,6 +7,7 @@ import '../../../../config/app_config.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../data/repositories/in_memory_chat_repository.dart';
 import '../../data/repositories/supabase_chat_repository.dart';
 import '../../domain/entities/chat_message.dart';
@@ -25,9 +26,13 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
 
 /// Author id stamped on messages sent from this device.
 ///
-/// Falls back to a demo identity when no Supabase session exists so the
-/// customer ↔ driver conversation works in local/demo mode.
+/// Prefers the authenticated domain user (single source of truth), then the
+/// Supabase session. Falls back to a demo identity only so the customer ↔
+/// driver conversation works in local/demo mode — Supabase mode rejects
+/// non-UUID senders explicitly in `SupabaseChatRepository.send`.
 final chatCurrentUserIdProvider = Provider<String>((ref) {
+  final authId = ref.watch(authControllerProvider).user?.id;
+  if (authId != null && authId.isNotEmpty) return authId;
   final user = ref.watch(supabaseCurrentUserProvider);
   return user?.id ?? 'customer-demo';
 });

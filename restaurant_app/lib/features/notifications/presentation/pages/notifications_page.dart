@@ -79,76 +79,87 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
           const SizedBox(height: AppSpacing.xs),
 
           Expanded(
-            child: filtered.isEmpty
-                ? const EmptyState(
-                    message: 'لا توجد إشعارات حالياً',
-                    icon: Icons.notifications_off_outlined,
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      final isUnread = !item.isRead;
-                      final categoryColor = _categoryColor(
-                        item.category,
-                        theme.brightness,
-                      );
+            child: RefreshIndicator(
+              onRefresh: () async => setState(() {}),
+              child: filtered.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: 350,
+                        alignment: Alignment.center,
+                        child: const EmptyState(
+                          message: 'لا توجد إشعارات حالياً',
+                          icon: Icons.notifications_off_outlined,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        final isUnread = !item.isRead;
+                        final categoryColor = _categoryColor(
+                          item.category,
+                          theme.brightness,
+                        );
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        color: isUnread
-                            ? colorScheme.primaryContainer.withValues(
-                                alpha: 0.35,
-                              )
-                            : null,
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: categoryColor.withValues(
-                              alpha: 0.15,
-                            ),
-                            child: Icon(
-                              _categoryIcon(item.category),
-                              color: categoryColor,
-                            ),
-                          ),
-                          title: Text(
-                            item.title,
-                            style: TextStyle(
-                              fontWeight: isUnread
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 2),
-                              Text(item.body),
-                              const SizedBox(height: 4),
-                              Text(
-                                Formatters.formatDateTime(item.timestamp),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                          trailing: isUnread
-                              ? IconButton(
-                                  icon: const Icon(Icons.check, size: 18),
-                                  tooltip: 'تحديد كمقروء',
-                                  onPressed: () {
-                                    setState(() {
-                                      notificationService.markAsRead(item.id);
-                                    });
-                                  },
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          color: isUnread
+                              ? colorScheme.primaryContainer.withValues(
+                                  alpha: 0.35,
                                 )
                               : null,
-                        ),
-                      );
-                    },
-                  ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: categoryColor.withValues(
+                                alpha: 0.15,
+                              ),
+                              child: Icon(
+                                _categoryIcon(item.category),
+                                color: categoryColor,
+                              ),
+                            ),
+                            title: Text(
+                              item.title,
+                              style: TextStyle(
+                                fontWeight: isUnread
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 2),
+                                Text(item.body),
+                                const SizedBox(height: 4),
+                                Text(
+                                  Formatters.formatDateTime(item.timestamp),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: isUnread
+                                ? IconButton(
+                                    icon: const Icon(Icons.check, size: 18),
+                                    tooltip: 'تحديد كمقروء',
+                                    onPressed: () {
+                                      setState(() {
+                                        notificationService.markAsRead(item.id);
+                                      });
+                                    },
+                                  )
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+            ),
           ),
         ],
       ),

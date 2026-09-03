@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
@@ -8,50 +9,19 @@ import '../../domain/entities/coupon_entity.dart';
 import '../../domain/repositories/coupon_repository.dart';
 
 class SupabaseCouponRepository implements CouponRepository {
-  SupabaseCouponRepository({required SupabaseClient supabase})
-    : _supabase = supabase;
+  SupabaseCouponRepository({
+    required SupabaseClient supabase,
+    LocalCacheService? cache,
+  })  : _supabase = supabase,
+        _cache = cache;
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
 
-  static final List<CouponEntity> _initialSeedCoupons = [
-    const CouponEntity(
-      id: 'cpn-01',
-      code: 'WELCOME20',
-      title: 'خصم ترحيبي 20%',
-      discountType: CouponDiscountType.percentage,
-      discountValue: 20.0,
-      minOrderAmount: 50.0,
-      maxDiscountAmount: 40.0,
-      usageLimit: 100,
-      usageCount: 12,
-      isActive: true,
-    ),
-    const CouponEntity(
-      id: 'cpn-02',
-      code: 'SUMMER50',
-      title: 'عرض الصيف 50 ج.م',
-      discountType: CouponDiscountType.fixed,
-      discountValue: 50.0,
-      minOrderAmount: 150.0,
-      usageLimit: 50,
-      usageCount: 8,
-      isActive: true,
-    ),
-    const CouponEntity(
-      id: 'cpn-03',
-      code: 'VIP30',
-      title: 'خصم كبار العملاء 30%',
-      discountType: CouponDiscountType.percentage,
-      discountValue: 30.0,
-      minOrderAmount: 100.0,
-      maxDiscountAmount: 60.0,
-      usageLimit: 200,
-      usageCount: 45,
-      isActive: true,
-    ),
-  ];
+  static const String _cacheKey = 'cached_coupons';
 
-  List<CouponEntity>? _cachedCoupons;
+  /// In-memory mirror of Supabase-loaded coupons for this session only.
+  /// Never seeded with fake data: empty Supabase table => empty list.
 
   @override
   Future<Either<Failure, List<CouponEntity>>> getCoupons() async {
@@ -67,19 +37,24 @@ class SupabaseCouponRepository implements CouponRepository {
         coupons.add(_mapToCouponEntity(map));
       }
       if (coupons.isEmpty) {
-        _cachedCoupons = List.of(_initialSeedCoupons);
-        return Right(_cachedCoupons!);
+        return Right(coupons);
       }
-      _cachedCoupons = coupons;
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          await cache.writeList(_cacheKey, coupons.map((c) => c.toJson()).toList());
+        } catch (e) {
+          AppLogger.warning('Failed to persist coupons to local cache: $e');
+        }
+      }
       return Right(coupons);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getCoupons fallback: $e',
+        'Supabase getCoupons error: $e',
         error: e,
         stackTrace: st,
       );
-      _cachedCoupons ??= List.of(_initialSeedCoupons);
-      return Right(List.unmodifiable(_cachedCoupons!));
+      return Left(ServerFailure('فشل تحميل الكوبونات من Supabase: $e'));
     }
   }
 
@@ -96,22 +71,15 @@ class SupabaseCouponRepository implements CouponRepository {
           .eq('code', cleanCode)
           .maybeSingle();
 
-      CouponEntity coupon;
-      if (response != null) {
-        coupon = _mapToCouponEntity(Map<String, dynamic>.from(response));
-      } else {
-        final list = _cachedCoupons ?? _initialSeedCoupons;
-        final matched = list.where((c) => c.code.toUpperCase() == cleanCode);
-        if (matched.isEmpty) {
-          return const Left(
-            ValidationFailure(
-              'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
-            ),
-          );
-        }
-        coupon = matched.first;
+      if (response == null) {
+        return const Left(
+          ValidationFailure(
+            'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
+          ),
+        );
       }
 
+      final coupon = _mapToCouponEntity(Map<String, dynamic>.from(response));
       final error = coupon.validate(subtotal);
       if (error != null) {
         return Left(ValidationFailure(error));
@@ -120,26 +88,11 @@ class SupabaseCouponRepository implements CouponRepository {
       return Right(coupon);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase validateAndGetCoupon fallback: $e',
+        'Supabase validateAndGetCoupon error: $e',
         error: e,
         stackTrace: st,
       );
-      final cleanCode = code.trim().toUpperCase();
-      final list = _cachedCoupons ?? _initialSeedCoupons;
-      final matched = list.where((c) => c.code.toUpperCase() == cleanCode);
-      if (matched.isEmpty) {
-        return const Left(
-          ValidationFailure(
-            'كود الخصم المدخل غير صحيح، يرجى التأكد وإعادة المحاولة',
-          ),
-        );
-      }
-      final coupon = matched.first;
-      final error = coupon.validate(subtotal);
-      if (error != null) {
-        return Left(ValidationFailure(error));
-      }
-      return Right(coupon);
+      return Left(ServerFailure('تعذر التحقق من كود الخصم عبر الخادم: $e'));
     }
   }
 

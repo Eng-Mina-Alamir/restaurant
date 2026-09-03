@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/color_schemes.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/animated_press_card.dart';
 import '../../../../shared/animations/pulse_badge.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../restaurant/domain/entities/branch_entity.dart';
 import '../../../restaurant/presentation/controllers/branch_controller.dart';
 import 'add_branch_dialog.dart';
@@ -18,6 +20,8 @@ class BranchesOverviewSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final currentUser = ref.watch(authControllerProvider).user;
+    final isAdmin = currentUser?.role == UserRole.admin;
     final branches = ref.watch(branchesControllerProvider);
     final totalSales = ref.watch(totalChainSalesProvider);
     final totalOrders = ref.watch(totalChainOrdersProvider);
@@ -98,18 +102,19 @@ class BranchesOverviewSection extends ConsumerWidget {
                 ),
               ],
             ),
-            FilledButton.tonalIcon(
-              onPressed: () => AddBranchDialog.show(context),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('فرع جديد'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm + 4,
-                  vertical: AppSpacing.xs,
+            if (isAdmin)
+              FilledButton.tonalIcon(
+                onPressed: () => AddBranchDialog.show(context),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('فرع جديد'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm + 4,
+                    vertical: AppSpacing.xs,
+                  ),
+                  visualDensity: VisualDensity.compact,
                 ),
-                visualDensity: VisualDensity.compact,
               ),
-            ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),

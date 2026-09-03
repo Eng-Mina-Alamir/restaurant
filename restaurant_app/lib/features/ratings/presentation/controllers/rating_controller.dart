@@ -32,7 +32,9 @@ final targetAverageScoreProvider = FutureProvider.family<double, String>((
 ) async {
   final repo = ref.watch(ratingRepositoryProvider);
   final result = await repo.getAverageScore(targetId);
-  return result.when(onLeft: (_) => 5.0, onRight: (score) => score);
+  // Truthful fallback: no Supabase data => 0.0 (renders as "no rating yet"),
+  // never a fake perfect 5.0.
+  return result.when(onLeft: (_) => 0.0, onRight: (score) => score);
 });
 
 class RatingSubmissionController extends StateNotifier<AsyncValue<void>> {

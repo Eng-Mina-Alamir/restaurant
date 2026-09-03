@@ -333,6 +333,16 @@ class CustomerHeroProfileCard extends ConsumerWidget {
             ),
             ListTile(
               dense: true,
+              leading: const Icon(Icons.event_seat_rounded),
+              title: const Text('حجز طاولة مسبقاً'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/customer/reservations');
+              },
+            ),
+            ListTile(
+              dense: true,
               leading: const Icon(Icons.health_and_safety_rounded),
               title: const Text('الملف الصحي ومسببات الحساسية'),
               trailing: const Icon(Icons.chevron_left_rounded),
@@ -518,17 +528,7 @@ class _ServiceModePill extends ConsumerWidget {
       child: InkWell(
         onTap: () {
           AppHaptics.selectionTap();
-          if (isTable) {
-            final tableNum =
-                int.tryParse(activeTable!.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
-            DineInTableHubSheet.show(
-              context,
-              tableNumber: tableNum,
-              tableId: activeTable!,
-            );
-          } else if (orderType == OrderType.delivery) {
-            AddressMapPickerSheet.show(context);
-          }
+          _showServiceModeSelectorSheet(context, ref);
         },
         borderRadius: BorderRadius.circular(AppRadius.full),
         child: Container(
@@ -568,6 +568,152 @@ class _ServiceModePill extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  static void _showServiceModeSelectorSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        final currentType = ref.watch(selectedOrderTypeProvider);
+        final activeTable = ref.watch(activeTableIdProvider);
+        final deliveryAddress = ref.watch(selectedDeliveryAddressProvider);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+          ),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: colorScheme.outlineVariant,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text(
+                  'اختر نوع وطريقة استلام الطلب',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'حدد الطريقة المناسبة لك للاستمتاع بوجبتك',
+                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // 1. Delivery Option
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: currentType == OrderType.delivery
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerHighest,
+                    foregroundColor: currentType == OrderType.delivery
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurfaceVariant,
+                    child: const Icon(Icons.delivery_dining_rounded),
+                  ),
+                  title: const Text('توصيل إلى موقعك', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    deliveryAddress != null && deliveryAddress.isNotEmpty
+                        ? deliveryAddress
+                        : 'انقر لتحديد عنوان التوصيل على الخريطة',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: currentType == OrderType.delivery
+                      ? Icon(Icons.check_circle_rounded, color: colorScheme.primary)
+                      : null,
+                  onTap: () {
+                    ref.read(selectedOrderTypeProvider.notifier).state = OrderType.delivery;
+                    Navigator.of(sheetContext).pop();
+                    AddressMapPickerSheet.show(context);
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                // 2. Dine-in Option
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: currentType == OrderType.dineIn
+                        ? const Color(0xFF2E7D32)
+                        : colorScheme.surfaceContainerHighest,
+                    foregroundColor: currentType == OrderType.dineIn
+                        ? Colors.white
+                        : colorScheme.onSurfaceVariant,
+                    child: const Icon(Icons.table_restaurant_rounded),
+                  ),
+                  title: const Text('تناول في الصالة (محلي)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text(
+                    activeTable != null && activeTable.isNotEmpty
+                        ? 'طاولة رقم #${activeTable.replaceAll(RegExp(r'[^0-9]'), '')}'
+                        : 'انقر لتحديد رقم الطاولة أو فتح مركز الصالة',
+                  ),
+                  trailing: currentType == OrderType.dineIn
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32))
+                      : null,
+                  onTap: () {
+                    ref.read(selectedOrderTypeProvider.notifier).state = OrderType.dineIn;
+                    Navigator.of(sheetContext).pop();
+                    final tableNum = activeTable != null
+                        ? (int.tryParse(activeTable.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1)
+                        : 1;
+                    DineInTableHubSheet.show(
+                      context,
+                      tableNumber: tableNum,
+                      tableId: activeTable ?? 'table-1',
+                    );
+                  },
+                ),
+
+                const Divider(height: 1),
+
+                // 3. Takeaway Option
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: currentType == OrderType.takeaway
+                        ? const Color(0xFFD84315)
+                        : colorScheme.surfaceContainerHighest,
+                    foregroundColor: currentType == OrderType.takeaway
+                        ? Colors.white
+                        : colorScheme.onSurfaceVariant,
+                    child: const Icon(Icons.shopping_bag_rounded),
+                  ),
+                  title: const Text('استلام من الفرع (سفري)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('تجهيز الطلب للاستلام الفوري من كاونتر المطعم'),
+                  trailing: currentType == OrderType.takeaway
+                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD84315))
+                      : null,
+                  onTap: () {
+                    ref.read(selectedOrderTypeProvider.notifier).state = OrderType.takeaway;
+                    Navigator.of(sheetContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('تم تفعيل وضع الاستلام من الفرع (سفري) 🛍️'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

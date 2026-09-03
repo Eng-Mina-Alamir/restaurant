@@ -11,7 +11,7 @@ void main() {
       expect(ar.menu, 'القائمة');
       expect(ar.loyalty, 'برنامج الولاء');
       expect(ar.coupons, 'الكوبونات');
-      expect(ar.checkout, 'إتمام الطلب');
+      expect(ar.checkout, 'إتمام ودفع الطلب');
     });
 
     test('provides accurate English translations', () {
@@ -21,7 +21,7 @@ void main() {
       expect(en.menu, 'Menu');
       expect(en.loyalty, 'Loyalty Rewards');
       expect(en.coupons, 'Coupons');
-      expect(en.checkout, 'Checkout');
+      expect(en.checkout, 'Checkout & Pay');
     });
   });
 }

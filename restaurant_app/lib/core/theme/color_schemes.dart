@@ -13,13 +13,19 @@ abstract final class AppColors {
   static const Color brandDark = Color(0xFFFF9E58);
 
   /// Teal secondary accent used for success/positive affordances.
-  static const Color teal = Color(0xFF0F766E);
+  static const Color teal = Color(0xFF006A6B);
 
   /// Preferred clean modern warm-tinted background for the light theme.
   static const Color background = Color(0xFFFAFAF9);
 
   /// Pure crisp card surface in light mode.
   static const Color cardLight = Color(0xFFFFFFFF);
+
+  /// Warm hospitality gold (celebrations, loyalty, earnings accent).
+  static const Color gold = Color(0xFF8A6100);
+
+  /// Warm cream wash for welcoming banners and empty-state tints.
+  static const Color warmCream = Color(0xFFFFF7ED);
 
   /// Base surface for the dark theme.
   static const Color surfaceDark = Color(0xFF0F1216);
@@ -86,6 +92,20 @@ abstract final class AppGradients {
     colors: [Color(0xF51E293B), Color(0xE60F172A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  /// Warm Welcome Gradient (peach glow for hero / greeting cards).
+  static const LinearGradient warmWelcome = LinearGradient(
+    colors: [Color(0xFFFFEDD5), Color(0xFFFDBA74)],
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+  );
+
+  /// Sunset Hospitality Gradient (terracotta to brand for banners).
+  static const LinearGradient sunsetGlow = LinearGradient(
+    colors: [Color(0xFFF97316), Color(0xFF9A3412)],
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
   );
 }
 

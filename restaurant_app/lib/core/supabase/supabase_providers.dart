@@ -10,9 +10,15 @@ final supabaseClientProvider = Provider<SupabaseClient>((ref) {
   } catch (_) {
     // In widget tests or standalone unit test environments where Supabase.initialize
     // hasn't been invoked, construct a client instance safely with autoRefreshToken disabled.
+    final url = SupabaseConfig.url.isNotEmpty
+        ? SupabaseConfig.url
+        : 'https://placeholder.supabase.co';
+    final anon = SupabaseConfig.anonKey.isNotEmpty
+        ? SupabaseConfig.anonKey
+        : 'placeholder-anon-key';
     return SupabaseClient(
-      SupabaseConfig.url,
-      SupabaseConfig.anonKey,
+      url,
+      anon,
       authOptions: const AuthClientOptions(autoRefreshToken: false),
     );
   }

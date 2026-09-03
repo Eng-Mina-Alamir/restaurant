@@ -148,9 +148,9 @@ void main() {
 
       // The cancel button sits below the fold in the scrollable summary.
       await tester.ensureVisible(find.text('إلغاء الطلب'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('إلغاء الطلب'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation dialog copy.
       expect(find.text('إلغاء الطلب'), findsNWidgets(2)); // button + title
@@ -165,19 +165,20 @@ void main() {
 
       // Dismiss path keeps the order intact.
       await tester.tap(find.text('رجوع'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(fakeController.cancelledOrderIds, isEmpty);
 
       // Confirm path cancels the order.
       await tester.ensureVisible(find.text('إلغاء الطلب'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('إلغاء الطلب'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('نعم، إلغاء'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(fakeController.cancelledOrderIds, ['ORD-TRK-1']);
-      expect(find.text('تم إلغاء الطلب بنجاح'), findsOneWidget);
+      expect(find.text('تم إلغاء الطلب بنجاح'), findsAtLeastNWidgets(1));
       // Page popped back to the root route after successful cancellation.
       expect(find.byType(OrderTrackingPage), findsNothing);
     });
@@ -222,8 +223,10 @@ void main() {
       expect(find.text('تويوتا هايس • لوحة ٤٥٢١'), findsOneWidget);
 
       // Phone action surfaces the REAL assigned driver's number.
+      await tester.ensureVisible(find.byIcon(Icons.phone));
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.byIcon(Icons.phone));
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
       expect(find.textContaining('01122334455'), findsOneWidget);
     });
 

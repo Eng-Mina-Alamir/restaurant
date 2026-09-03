@@ -33,34 +33,8 @@ class LoyaltyCustomer {
 
   double get pointsValueInEgp => pointsBalance * kPointsToEgpRate;
 
-  /// Demo seeded loyal customers for fast phone lookup.
-  static final List<LoyaltyCustomer> demoCustomers = [
-    LoyaltyCustomer(
-      id: 'cust-1',
-      name: 'أحمد محمود العطار',
-      phoneNumber: '01012345678',
-      pointsBalance: 450, // 45 EGP
-      tier: LoyaltyTier.gold,
-      totalOrdersCount: 28,
-      lastVisitAt: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    LoyaltyCustomer(
-      id: 'cust-2',
-      name: 'سارة عبد الرحمن',
-      phoneNumber: '01198765432',
-      pointsBalance: 820, // 82 EGP
-      tier: LoyaltyTier.vip,
-      totalOrdersCount: 64,
-      lastVisitAt: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    LoyaltyCustomer(
-      id: 'cust-3',
-      name: 'طارق حسام الشريف',
-      phoneNumber: '01234567890',
-      pointsBalance: 180, // 18 EGP
-      tier: LoyaltyTier.silver,
-      totalOrdersCount: 12,
-      lastVisitAt: DateTime.now().subtract(const Duration(days: 5)),
-    ),
-  ];
+  /// Kept for API compatibility only and intentionally empty:
+  /// customer lookup is Supabase-only (profiles + loyalty_accounts).
+  /// Never add fake customers here.
+  static final List<LoyaltyCustomer> demoCustomers = [];
 }

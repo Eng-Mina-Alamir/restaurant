@@ -280,8 +280,8 @@ class CouponManagementPage extends ConsumerWidget {
                       const SizedBox(height: 2),
                       Text(
                         coupon.discountType == CouponDiscountType.percentage
-                            ? 'خصم ${coupon.discountValue}% (حد أقصى ${coupon.maxDiscountAmount ?? 'غير محدد'} ريال)'
-                            : 'خصم ثابت ${coupon.discountValue} ريال',
+                            ? 'خصم ${coupon.discountValue}% (حد أقصى ${coupon.maxDiscountAmount != null ? Formatters.formatCurrency(coupon.maxDiscountAmount!) : 'غير محدد'})'
+                            : 'خصم ثابت ${Formatters.formatCurrency(coupon.discountValue)}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -296,7 +296,7 @@ class CouponManagementPage extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'حد أدنى للطلب: ${coupon.minOrderAmount} ريال',
+                            'حد أدنى للطلب: ${Formatters.formatCurrency(coupon.minOrderAmount)}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -444,7 +444,7 @@ class CouponManagementPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: discountType == CouponDiscountType.percentage
                         ? 'نسبة الخصم (%) *'
-                        : 'قيمة الخصم الثابتة (ريال) *',
+                        : 'قيمة الخصم الثابتة (${Formatters.activeCurrencySymbol}) *',
                     prefixIcon: const Icon(Icons.monetization_on_outlined),
                   ),
                 ),
@@ -452,9 +452,9 @@ class CouponManagementPage extends ConsumerWidget {
                 TextField(
                   controller: minOrderCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'الحد الأدنى للطلب (ريال)',
-                    prefixIcon: Icon(Icons.shopping_cart_outlined),
+                  decoration: InputDecoration(
+                    labelText: 'الحد الأدنى للطلب (${Formatters.activeCurrencySymbol})',
+                    prefixIcon: const Icon(Icons.shopping_cart_outlined),
                   ),
                 ),
                 if (discountType == CouponDiscountType.percentage) ...[
@@ -462,9 +462,9 @@ class CouponManagementPage extends ConsumerWidget {
                   TextField(
                     controller: maxDiscountCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'الحد الأقصى للخصم (ريال)',
-                      prefixIcon: Icon(Icons.vertical_align_top),
+                    decoration: InputDecoration(
+                      labelText: 'الحد الأقصى للخصم (${Formatters.activeCurrencySymbol})',
+                      prefixIcon: const Icon(Icons.vertical_align_top),
                     ),
                   ),
                 ],

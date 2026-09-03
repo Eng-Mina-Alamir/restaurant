@@ -34,12 +34,14 @@ class CartPage extends ConsumerStatefulWidget {
 class _CartPageState extends ConsumerState<CartPage> {
   bool _placing = false;
   final _couponTextController = TextEditingController();
+  final _orderNotesController = TextEditingController();
   bool _validatingCoupon = false;
   bool _useWalletCredit = true;
 
   @override
   void dispose() {
     _couponTextController.dispose();
+    _orderNotesController.dispose();
     super.dispose();
   }
 
@@ -60,47 +62,67 @@ class _CartPageState extends ConsumerState<CartPage> {
       return;
     }
 
-    final walletState = ref.read(customerWalletProvider);
-    final cart = ref.read(cartControllerProvider);
-    final appliedCoupon = ref.read(appliedCouponProvider);
-    final rawSubtotal = cart.fold<double>(0, (sum, item) => sum + item.linePrice);
-    final discountAmount = appliedCoupon != null ? appliedCoupon.calculateDiscount(rawSubtotal) : 0.0;
-    final totals = CartTotals.fromItems(cart, discountAmount: discountAmount);
-    final walletDeduction = (_useWalletCredit && walletState.balance > 0)
-        ? walletState.balance.clamp(0.0, totals.totalAmount)
-        : 0.0;
+    setState(() => _placing = true);
 
-    final activeTable = ref.read(activeTableIdProvider);
-    final currentUserId = ref.read(authControllerProvider).user?.id;
-    final order = (orderType == OrderType.dineIn && activeTable != null)
-        ? await ref
-            .read(ordersControllerProvider.notifier)
-            .placeOrderForTable(
-              activeTable,
-              customerId: currentUserId,
-              paymentMethod: payment,
-            )
-        : await ref
-            .read(ordersControllerProvider.notifier)
-            .placeOrder(
-              customerId: currentUserId,
-              paymentMethod: payment,
-              orderType: orderType,
-              deliveryAddress: deliveryAddress,
-            );
+    try {
+      final walletState = ref.read(customerWalletProvider);
+      final cart = ref.read(cartControllerProvider);
+      final appliedCoupon = ref.read(appliedCouponProvider);
+      final rawSubtotal = cart.fold<double>(0, (sum, item) => sum + item.linePrice);
+      final discountAmount = appliedCoupon != null ? appliedCoupon.calculateDiscount(rawSubtotal) : 0.0;
+      final totals = CartTotals.fromItems(cart, discountAmount: discountAmount);
+      final walletDeduction = (_useWalletCredit && walletState.balance > 0)
+          ? walletState.balance.clamp(0.0, totals.totalAmount)
+          : 0.0;
 
-    if (!mounted) return;
-    setState(() => _placing = false);
+      final activeTable = ref.read(activeTableIdProvider);
+      final currentUserId = ref.read(authControllerProvider).user?.id;
+      final orderNotes = _orderNotesController.text.trim().isNotEmpty
+          ? _orderNotesController.text.trim()
+          : null;
+      final order = (orderType == OrderType.dineIn && activeTable != null)
+          ? await ref
+              .read(ordersControllerProvider.notifier)
+              .placeOrderForTable(
+                activeTable,
+                customerId: currentUserId,
+                paymentMethod: payment,
+                deliveryNotes: orderNotes,
+              )
+          : await ref
+              .read(ordersControllerProvider.notifier)
+              .placeOrder(
+                customerId: currentUserId,
+                paymentMethod: payment,
+                orderType: orderType,
+                deliveryAddress: deliveryAddress,
+                deliveryNotes: orderNotes,
+              );
 
-    if (order != null) {
-      if (walletDeduction > 0) {
-        ref.read(customerWalletProvider.notifier).deductFunds(
-              walletDeduction,
-              title: 'سداد طلب من رصيد المحفظة',
-            );
+      if (!mounted) return;
+
+      if (order != null) {
+        if (walletDeduction > 0) {
+          ref.read(customerWalletProvider.notifier).deductFunds(
+                walletDeduction,
+                title: 'سداد طلب من رصيد المحفظة',
+              );
+        }
+        AppHaptics.actionSuccess();
+        context.push('/customer/order-confirmation', extra: order);
+      } else {
+        final errorReason = ref.read(ordersControllerProvider.notifier).lastPlaceOrderError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorReason ?? 'تعذر إتمام الطلب، يرجى مراجعة الأصناف والمحاولة ثانية'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
-      AppHaptics.actionSuccess();
-      context.push('/customer/order-confirmation', extra: order);
+    } finally {
+      if (mounted) {
+        setState(() => _placing = false);
+      }
     }
   }
 
@@ -201,6 +223,7 @@ class _CartPageState extends ConsumerState<CartPage> {
       body: cart.isEmpty
           ? EmptyState(
               message: AppConstants.cartEmpty,
+              title: 'سلتك بانتظار أطباق شهية',
               icon: Icons.shopping_cart_outlined,
               actionLabel: AppConstants.cartEmptyBrowse,
               onAction: () => context.go('/customer'),
@@ -420,6 +443,96 @@ class _CartPageState extends ConsumerState<CartPage> {
 
                       const SizedBox(height: AppSpacing.sm),
 
+                      // ── 2.8 Order-Level Notes adapting to OrderType ──
+                      Builder(
+                        builder: (context) {
+                          final orderType = ref.watch(selectedOrderTypeProvider);
+                          final String sectionTitle;
+                          final String hintText;
+                          final List<String> chips;
+
+                          switch (orderType) {
+                            case OrderType.delivery:
+                              sectionTitle = 'ملاحظات التوصيل والعنوان';
+                              hintText = 'مثال: رقم العمارة، الشقة، علامة مميزة...';
+                              chips = const [
+                                'اترك الطلب عند الباب 🚪',
+                                'اتصل عند الوصول 📞',
+                                'لا ترن الجرس 🤫',
+                                'الدور الأرضي 🏢',
+                              ];
+                            case OrderType.dineIn:
+                              sectionTitle = 'ملاحظات الصالة والخدمة';
+                              hintText = 'أي طلب خاص بالتقديم على الطاولة...';
+                              chips = const [
+                                'تقديم الوجبات معاً 🍽️',
+                                'ملاعق وشوك إضافية 🍴',
+                                'مناديل مبللة إضافية 🧻',
+                                'مشروبات مع الوجبة 🥤',
+                              ];
+                            case OrderType.takeaway:
+                              sectionTitle = 'ملاحظات تجهيز واستلام الطلب';
+                              hintText = 'تعليمات التغليف والاستلام...';
+                              chips = const [
+                                'تغليف حراري محكم 📦',
+                                'أكياس إضافية 🛍️',
+                                'صوصات خارجية منفصلة 🥣',
+                                'تجهيز سريع للاستلام ⏱️',
+                              ];
+                          }
+
+                          return _SectionContainer(
+                            title: sectionTitle,
+                            icon: Icons.note_alt_outlined,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: chips.map((chip) {
+                                      final cleanChip = chip.replaceAll(
+                                        RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]', unicode: true),
+                                        '',
+                                      ).trim();
+                                      return Padding(
+                                        padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                                        child: ActionChip(
+                                          label: Text(chip, style: const TextStyle(fontSize: 11)),
+                                          onPressed: () {
+                                            final current = _orderNotesController.text.trim();
+                                            if (current.isEmpty) {
+                                              _orderNotesController.text = cleanChip;
+                                            } else if (!current.contains(cleanChip)) {
+                                              _orderNotesController.text = '$current، $cleanChip';
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                TextField(
+                                  controller: _orderNotesController,
+                                  maxLines: 2,
+                                  decoration: InputDecoration(
+                                    hintText: hintText,
+                                    prefixIcon: const Icon(Icons.edit_note_rounded),
+                                    isDense: true,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: AppSpacing.sm),
+
                       // ── 3. Coupon / Promo Code ──
                       _SectionContainer(
                         title: 'كوبون الخصم',
@@ -457,47 +570,72 @@ class _CartPageState extends ConsumerState<CartPage> {
                                   ),
                                 ],
                               )
-                            : Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: colorScheme.tertiary),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: colorScheme.tertiary,
-                                      size: 20,
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                      vertical: AppSpacing.sm,
                                     ),
-                                    const SizedBox(width: AppSpacing.xs),
-                                    Expanded(
-                                      child: Text(
-                                        'تم تطبيق: ${appliedCoupon.code} (${appliedCoupon.title})',
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          color: colorScheme.onTertiaryContainer,
-                                          fontWeight: FontWeight.bold,
+                                    decoration: BoxDecoration(
+                                      color: totals.subtotal >= appliedCoupon.minOrderAmount
+                                          ? colorScheme.tertiaryContainer.withValues(alpha: 0.5)
+                                          : colorScheme.errorContainer.withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
+                                      border: Border.all(
+                                        color: totals.subtotal >= appliedCoupon.minOrderAmount
+                                            ? colorScheme.tertiary
+                                            : colorScheme.error,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          totals.subtotal >= appliedCoupon.minOrderAmount
+                                              ? Icons.check_circle_rounded
+                                              : Icons.warning_amber_rounded,
+                                          color: totals.subtotal >= appliedCoupon.minOrderAmount
+                                              ? colorScheme.tertiary
+                                              : colorScheme.error,
+                                          size: 20,
                                         ),
-                                      ),
+                                        const SizedBox(width: AppSpacing.xs),
+                                        Expanded(
+                                          child: Text(
+                                            'تم تطبيق: ${appliedCoupon.code} (${appliedCoupon.title})',
+                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                              color: colorScheme.onSurface,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.close_rounded,
+                                            size: 18,
+                                            color: colorScheme.error,
+                                          ),
+                                          tooltip: 'إلغاء الكوبون',
+                                          onPressed: () {
+                                            ref.read(appliedCouponProvider.notifier).remove();
+                                            AppHaptics.selectionTap();
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.close_rounded,
-                                        size: 18,
+                                  ),
+                                  if (totals.subtotal < appliedCoupon.minOrderAmount) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'تنبيه: الحد الأدنى للكوبون ${Formatters.formatCurrency(appliedCoupon.minOrderAmount)} (أضف المزيد بقيمة ${Formatters.formatCurrency(appliedCoupon.minOrderAmount - totals.subtotal)} لتفعيل الخصم)',
+                                      style: theme.textTheme.bodySmall?.copyWith(
                                         color: colorScheme.error,
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                      tooltip: 'إلغاء الكوبون',
-                                      onPressed: () {
-                                        ref.read(appliedCouponProvider.notifier).remove();
-                                        AppHaptics.selectionTap();
-                                      },
                                     ),
                                   ],
-                                ),
+                                ],
                               ),
                       ),
 

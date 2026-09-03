@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../config/supabase_config.dart';
 import '../../../../core/data/app_cache.dart';
 import '../../../../core/data/offline_queue_service.dart';
 import '../../../../core/domain/enums.dart';
@@ -15,6 +15,7 @@ import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../../../core/utils/haptics.dart';
 import '../../../../core/utils/financial_calculator.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/domain/entities/cart_item.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
@@ -26,7 +27,7 @@ import '../../../delivery/domain/services/driver_assignment_service.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../../inventory/presentation/controllers/inventory_controller.dart';
 import '../../../loyalty/presentation/controllers/loyalty_controller.dart';
-import '../../../menu/data/menu_seed_data.dart';
+import '../../../table_management/presentation/controllers/table_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../../data/repositories/hive_order_repository.dart';
@@ -71,14 +72,20 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     CartDiscountResolver? discountResolver,
     MenuItem? Function(String menuItemId)? menuLookup,
     Future<void> Function(OrderEntity order)? onDeliveryOrderReady,
+    Future<void> Function(OrderEntity order)? onOrderConfirmedOrPreparing,
     Future<void> Function(OrderEntity order)? onOrderCompleted,
+    Future<void> Function(String tableId, String orderId)? onTableOccupied,
+    Future<void> Function(String tableId)? onTableVacated,
   }) : _realtimeService = realtimeService,
        _connectivityService = connectivityService,
        _offlineQueueService = offlineQueueService,
        _discountResolver = discountResolver,
        _menuLookup = menuLookup,
        _onDeliveryOrderReady = onDeliveryOrderReady,
+       _onOrderConfirmedOrPreparing = onOrderConfirmedOrPreparing,
        _onOrderCompleted = onOrderCompleted,
+       _onTableOccupied = onTableOccupied,
+       _onTableVacated = onTableVacated,
         super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -92,6 +99,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final ConnectivityService? _connectivityService;
   final OfflineQueueService? _offlineQueueService;
   final CartDiscountResolver? _discountResolver;
+  final Set<String> _inventoryDeductedOrderIds = {};
+  final Set<String> _loyaltyAwardedOrderIds = {};
 
   /// Loads existing active & recent orders from the repository.
   Future<void> loadOrders() async {
@@ -129,9 +138,18 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   /// [ordersControllerProvider]). Null disables auto-dispatch.
   final Future<void> Function(OrderEntity order)? _onDeliveryOrderReady;
 
+  /// Optional hook fired when an order enters preparing to deduct stock.
+  final Future<void> Function(OrderEntity order)? _onOrderConfirmedOrPreparing;
+
   /// Optional hook fired when an order lands on [OrderStatus.completed]
-  /// to automatically deduct stock from inventory.
+  /// to award loyalty points.
   final Future<void> Function(OrderEntity order)? _onOrderCompleted;
+
+  /// Optional hook fired when a table order is placed to mark table occupied.
+  final Future<void> Function(String tableId, String orderId)? _onTableOccupied;
+
+  /// Optional hook fired when a table order completes/cancels to mark table dirty.
+  final Future<void> Function(String tableId)? _onTableVacated;
 
   /// Human-readable reason the last [placeOrder]/[placeOrderForTable] call
   /// returned null (checkout-time revalidation failure). Null when the last
@@ -219,6 +237,25 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
             return true; // Poison payload — let the queue dead-letter it.
           }
         }
+        if (type == 'updateOrderStatus') {
+          try {
+            final orderId = payload['orderId']?.toString();
+            final statusStr = payload['status']?.toString();
+            if (orderId != null && statusStr != null) {
+              final status = OrderStatus.fromName(statusStr);
+              final result = await _repository.updateOrderStatus(orderId, status);
+              return result.isRight;
+            }
+            return true;
+          } catch (e, st) {
+            AppLogger.error(
+              'Offline sync: corrupt queued updateOrderStatus dropped',
+              error: e,
+              stackTrace: st,
+            );
+            return true;
+          }
+        }
         return true;
       });
       return;
@@ -295,6 +332,20 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
           final newStatus = OrderStatus.fromName(statusName);
           final index = state.indexWhere((o) => o.id == orderId);
+          // Driver mirror: kitchen/manager dispatch persists `driver_id` on
+          // the order row, often WITHOUT a status change — adopt it so the
+          // customer tracking page (which reads `orders.*.driverId`) learns
+          // the driver even before the assignment row arrives.
+          final eventDriverId =
+              (event.payload['driver_id'] ?? event.payload['driverId'])
+                  ?.toString();
+          if (index != -1 &&
+              eventDriverId != null &&
+              eventDriverId.isNotEmpty &&
+              state[index].driverId != eventDriverId) {
+            state = [...state]
+              ..[index] = state[index].copyWith(driverId: eventDriverId);
+          }
           if (index != -1) {
             final currentStatus = state[index].status;
             // Forward business transitions are always applied; intentional
@@ -351,27 +402,16 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     }
   }
 
-  /// Collision-proof order ID: combines timestamp + random suffix.
-  ///
-  /// Format: `ORD-YYMMDD-HHMMSS-XXXX` where XXXX is a 4-digit random.
-  /// This gives readable IDs for cashiers while guaranteeing uniqueness
-  /// even with concurrent devices at millisecond precision.
+  int get _nextNumber {
+    final maxNumber = state.fold<int>(0, (max, order) {
+      final n = Formatters.orderNumberFromId(order.id);
+      return (n ?? 0) > max ? (n ?? 0) : max;
+    });
+    return maxNumber + 1;
+  }
+
   String _generateOrderId() {
-    final now = DateTime.now();
-    final datePart = '${now.year % 100}'
-        '${now.month.toString().padLeft(2, '0')}'
-        '${now.day.toString().padLeft(2, '0')}';
-    final timePart = '${now.hour.toString().padLeft(2, '0')}'
-        '${now.minute.toString().padLeft(2, '0')}'
-        '${now.second.toString().padLeft(2, '0')}';
-    final randomSuffix = (Random().nextInt(9000) + 1000).toString();
-    final candidate = 'ORD-$datePart-$timePart-$randomSuffix';
-    // Double-check local state (exceedingly unlikely to collide)
-    if (!state.any((o) => o.id == candidate)) {
-      return candidate;
-    }
-    // Fallback with millisecond precision
-    return 'ORD-$datePart-${now.millisecondsSinceEpoch}';
+    return 'ORD-${_nextNumber.toString().padLeft(4, '0')}';
   }
 
   /// Checkout-time revalidation: returns a localized rejection reason when
@@ -432,7 +472,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForCustomer(
         orderId: _generateOrderId(),
-        restaurantId: MenuSeedData.restaurantId,
+        restaurantId: SupabaseConfig.defaultRestaurantId,
         cartItems: cartItems,
         createdAt: createdAt,
         customerId: customerId,
@@ -485,6 +525,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     String? customerId,
     String? waiterId,
     PaymentMethod? paymentMethod,
+    String? deliveryNotes,
   }) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
@@ -504,7 +545,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForTable(
         orderId: _generateOrderId(),
-        restaurantId: MenuSeedData.restaurantId,
+        restaurantId: SupabaseConfig.defaultRestaurantId,
         tableId: tableId,
         customerId: customerId,
         waiterId: waiterId,
@@ -512,6 +553,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         createdAt: createdAt,
         paymentMethod: paymentMethod,
         discountAmount: discountAmount,
+        deliveryNotes: deliveryNotes,
       );
 
       final isOffline = _connectivityService?.isOnline == false;
@@ -521,6 +563,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
         _cart.clear();
         _newOrderNotifier.notifyNewOrder();
         _offlineQueue.add(order);
+        if (_onTableOccupied != null) {
+          unawaited(_onTableOccupied(tableId, order.id));
+        }
         return order;
       }
 
@@ -535,6 +580,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _cart.clear();
           _offlineQueue.add(order);
           _newOrderNotifier.notifyNewOrder();
+          if (_onTableOccupied != null) {
+            unawaited(_onTableOccupied(tableId, order.id));
+          }
           return order;
         case Right(:final value):
           state = [...state, value];
@@ -542,6 +590,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           _newOrderNotifier.notifyNewOrder();
           // Milestone confirmation only — never on error/offline paths.
           AppHaptics.milestoneSuccess();
+          if (_onTableOccupied != null) {
+            unawaited(_onTableOccupied(tableId, value.id));
+          }
           return value;
       }
     } finally {
@@ -606,6 +657,21 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     return updated;
   }
 
+  /// Updates the linked table ID for an active dine-in order (e.g. when table is transferred).
+  Future<bool> updateOrderTableId(String orderId, String newTableId) async {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1) return false;
+
+    final updated = state[index].copyWith(tableId: newTableId);
+    state = [...state]..[index] = updated;
+
+    final repo = _repository;
+    if (repo is SupabaseOrderRepository) {
+      unawaited(repo.updateOrderTableId(orderId, newTableId));
+    }
+    return true;
+  }
+
   /// Completes and marks an order as paid, recording the payment method and timestamp.
   ///
   /// Uses [FinancialCalculator] for precise VAT/rounding to avoid halala
@@ -647,8 +713,18 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _statusEventAt[orderId] = stampedAt;
 
     await _repository.updateOrderStatus(orderId, OrderStatus.completed);
-    if (_onOrderCompleted != null) {
+
+    if (!_inventoryDeductedOrderIds.contains(orderId) &&
+        _onOrderConfirmedOrPreparing != null) {
+      _inventoryDeductedOrderIds.add(orderId);
+      unawaited(_onOrderConfirmedOrPreparing(updated));
+    }
+    if (!_loyaltyAwardedOrderIds.contains(orderId) && _onOrderCompleted != null) {
+      _loyaltyAwardedOrderIds.add(orderId);
       unawaited(_onOrderCompleted(updated));
+    }
+    if (updated.tableId != null && updated.tableId!.isNotEmpty && _onTableVacated != null) {
+      unawaited(_onTableVacated(updated.tableId!));
     }
     AppHaptics.milestoneSuccess();
     return updated;
@@ -673,14 +749,46 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       _statusEventAt[orderId] = stampedAt;
     }
 
-    // Persist the updated order status through the repository.
+    // Persist the updated order status through the repository or queue if offline.
+    final isOffline = _connectivityService?.isOnline == false;
+    if (isOffline && _offlineQueueService != null) {
+      unawaited(_offlineQueueService.enqueue(
+        operationType: 'updateOrderStatus',
+        payload: {'orderId': orderId, 'status': status.name},
+        idempotencyKey: 'status_${orderId}_${status.name}',
+      ));
+    }
+
     final result = await _repository.updateOrderStatus(orderId, status);
 
-    // Auto-deduct inventory on order completion
+    // Auto-deduct inventory as soon as kitchen prepares or completes order
+    if (result.isRight &&
+        (status == OrderStatus.preparing ||
+            status == OrderStatus.ready ||
+            status == OrderStatus.served ||
+            status == OrderStatus.completed) &&
+        !_inventoryDeductedOrderIds.contains(orderId) &&
+        _onOrderConfirmedOrPreparing != null) {
+      _inventoryDeductedOrderIds.add(orderId);
+      unawaited(_onOrderConfirmedOrPreparing(updated));
+    }
+
+    // Award loyalty points strictly when order reaches completed
     if (result.isRight &&
         status == OrderStatus.completed &&
+        !_loyaltyAwardedOrderIds.contains(orderId) &&
         _onOrderCompleted != null) {
+      _loyaltyAwardedOrderIds.add(orderId);
       unawaited(_onOrderCompleted(updated));
+    }
+
+    // When order is completed or cancelled: vacate table if dine-in
+    if (result.isRight &&
+        (status == OrderStatus.completed || status == OrderStatus.cancelled) &&
+        updated.tableId != null &&
+        updated.tableId!.isNotEmpty &&
+        _onTableVacated != null) {
+      unawaited(_onTableVacated(updated.tableId!));
     }
 
     // Auto-dispatch: once a delivery order is PERSISTED on "ready", hand it
@@ -891,6 +999,18 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     return null;
   }
 
+  /// Mirrors an externally-created dispatch assignment onto local order
+  /// state so KDS / tracking / dispatch board all see the SAME driver.
+  ///
+  /// Used by the auto-dispatch closure and the manager board hook — both
+  /// live outside this class and previously left `orders.driver_id`
+  /// untouched on those paths.
+  void syncDriverId(String orderId, String driverId) {
+    final index = state.indexWhere((o) => o.id == orderId);
+    if (index == -1 || state[index].driverId == driverId) return;
+    state = [...state]..[index] = state[index].copyWith(driverId: driverId);
+  }
+
   @override
   void dispose() {
     _realtimeSub?.cancel();
@@ -1001,6 +1121,33 @@ ordersControllerProvider = StateNotifierProvider((ref) {
                 '[Dispatch] outcome=assigned orderId=${order.id} '
                 'driverId=$driverId method=auto',
               );
+              // Mirror the winner onto the order row so every client
+              // (KDS chip, tracking page, dispatch board) sees the SAME
+              // driver — previously only the manual KDS path did this.
+              final ctrl = wiredController;
+              if (ctrl != null && ctrl.mounted) {
+                ctrl.syncDriverId(order.id, driverId);
+              }
+              final orderRepo = ref.read(orderRepositoryProvider);
+              if (orderRepo is SupabaseOrderRepository) {
+                unawaited(
+                  orderRepo.updateOrderDriverId(order.id, driverId),
+                );
+              }
+              try {
+                ref
+                    .read(supabaseRealtimeServiceProvider)
+                    .emit(
+                      RealtimeEvent(
+                        type: RealtimeEventType.deliveryAssignmentCreated,
+                        payload: created.toJson(),
+                      ),
+                    );
+              } catch (e) {
+                AppLogger.warning(
+                  '[Dispatch] outcome=broadcast-failed orderId=${order.id}: $e',
+                );
+              }
             },
           );
           return dispatched;
@@ -1096,10 +1243,11 @@ ordersControllerProvider = StateNotifierProvider((ref) {
       return null;
     },
     onDeliveryOrderReady: autoDispatchDeliveryOrder,
-    onOrderCompleted: (order) async {
+    onOrderConfirmedOrPreparing: (order) async {
       try {
         final invRepo = ref.read(inventoryRepositoryProvider);
         await invRepo.deductStockForOrder(order);
+        await ref.read(inventoryControllerProvider.notifier).load();
       } catch (e, st) {
         AppLogger.warning(
           'Failed to deduct inventory for order ${order.id}: $e',
@@ -1107,7 +1255,8 @@ ordersControllerProvider = StateNotifierProvider((ref) {
           stackTrace: st,
         );
       }
-
+    },
+    onOrderCompleted: (order) async {
       if (order.customerId != null && order.customerId!.isNotEmpty) {
         try {
           final loyaltyRepo = ref.read(loyaltyRepositoryProvider);
@@ -1116,11 +1265,26 @@ ordersControllerProvider = StateNotifierProvider((ref) {
             orderId: order.id,
             orderTotal: order.totalAmount,
           );
+          ref.invalidate(loyaltyControllerProvider);
         } catch (loyaltyError) {
           AppLogger.warning(
             'Failed to award loyalty points for order ${order.id}: $loyaltyError',
           );
         }
+      }
+    },
+    onTableOccupied: (tableId, orderId) async {
+      try {
+        await ref.read(tableControllerProvider.notifier).occupy(tableId, orderId: orderId);
+      } catch (e) {
+        AppLogger.warning('Failed to occupy table $tableId: $e');
+      }
+    },
+    onTableVacated: (tableId) async {
+      try {
+        await ref.read(tableControllerProvider.notifier).release(tableId, needsCleaning: true);
+      } catch (e) {
+        AppLogger.warning('Failed to release table $tableId: $e');
       }
     },
   );

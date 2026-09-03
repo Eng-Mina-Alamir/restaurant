@@ -77,10 +77,20 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       if (rows.isEmpty) {
         return const Right<Failure, DeliveryAssignment?>(null);
       }
-      return Right<Failure, DeliveryAssignment?>(
-        _assignmentFromRow(Map<String, dynamic>.from(rows.first as Map)),
+      var assignment = _assignmentFromRow(
+        Map<String, dynamic>.from(rows.first as Map),
       );
+      assignment = await _enrichDriverForCustomer(orderId, assignment);
+      return Right<Failure, DeliveryAssignment?>(assignment);
     } catch (e) {
+      // Text (pre-persistence) ids like `ORD-0042` can never match the
+      // BIGINT `order_id` column — Postgres raises 22P02. That simply means
+      // "no dispatch yet", not a failure, so return null quietly instead of
+      // surfacing an error to the customer tracking page.
+      final msg = e.toString();
+      if (msg.contains('22P02') || msg.contains('invalid input syntax')) {
+        return const Right<Failure, DeliveryAssignment?>(null);
+      }
       AppLogger.error(
         'Supabase getAssignmentByOrderId error: $e (orderId=$orderId)',
       );
@@ -230,6 +240,48 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
       return Left<Failure, DeliveryAssignment>(
         ServerFailure('فشل تحديث مهمة التوصيل: $e'),
       );
+    }
+  }
+
+  /// Backfills driver identity for customers.
+  ///
+  /// The `driver:profiles` join is hidden from customers by profiles RLS
+  /// (it guards the driver's email), so the join arrives null on customer
+  /// devices. This calls the SECURITY DEFINER `get_my_order_driver`
+  /// function, which returns ONLY the safe card columns and ONLY for the
+  /// caller's own orders. Drivers/managers (whose join already resolved)
+  /// skip the call. Best-effort: any failure keeps the unenriched row.
+  Future<DeliveryAssignment> _enrichDriverForCustomer(
+    String orderId,
+    DeliveryAssignment assignment,
+  ) async {
+    if (assignment.driverName != null || assignment.driverPhone != null) {
+      return assignment;
+    }
+    final numericOrderId = int.tryParse(orderId);
+    if (numericOrderId == null) return assignment;
+    try {
+      final response = await _supabase.rpc(
+        'get_my_order_driver',
+        params: {'p_order_id': numericOrderId},
+      );
+      final rows = response as List;
+      if (rows.isEmpty) return assignment;
+      final row = Map<String, dynamic>.from(rows.first as Map);
+      return assignment.copyWith(
+        driverName: row['name']?.toString() ?? assignment.driverName,
+        driverPhone: row['phone']?.toString() ?? assignment.driverPhone,
+        driverRating:
+            (row['rating'] as num?)?.toDouble() ?? assignment.driverRating,
+        vehicleInfo:
+            row['vehicle_info']?.toString() ?? assignment.vehicleInfo,
+      );
+    } catch (e) {
+      AppLogger.warning(
+        'Driver enrichment rpc failed for $orderId: $e '
+        '(function may be missing — showing generic driver card)',
+      );
+      return assignment;
     }
   }
 

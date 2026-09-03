@@ -10,8 +10,24 @@ class ZatcaQrCodec {
   /// - Tag number (1 byte)
   /// - Length of value (1 byte)
   /// - Value (N UTF-8 bytes)
+  /// Encodes individual TLV tag:
+  /// - Tag number (1 byte)
+  /// - Length of value (1 byte)
+  /// - Value (N UTF-8 bytes)
   static Uint8List _encodeTag(int tagNumber, String value) {
-    final valueBytes = utf8.encode(value);
+    var valueBytes = utf8.encode(value);
+    // ZATCA Phase 1 & 2 TLV length field is 1 byte (max 255 bytes)
+    if (valueBytes.length > 255) {
+      var end = 255;
+      // Ensure we don't break in the middle of a multi-byte UTF-8 sequence
+      while (end > 0 && (valueBytes[end - 1] & 0xC0) == 0x80) {
+        end--;
+      }
+      if (end > 0 && (valueBytes[end - 1] & 0x80) != 0) {
+        end--; // Drop the start byte of the clipped character
+      }
+      valueBytes = valueBytes.sublist(0, end);
+    }
     final length = valueBytes.length;
 
     final bytes = BytesBuilder(copy: false)
@@ -38,20 +54,25 @@ class ZatcaQrCodec {
   }) {
     final builder = BytesBuilder(copy: false);
 
+    final safeSeller = sellerName.trim().isEmpty ? 'مطعم' : sellerName.trim();
+    final safeVatNumber = vatNumber.trim().isEmpty ? '300000000000003' : vatNumber.trim();
+    final safeTotal = totalWithVat < 0 ? 0.0 : totalWithVat;
+    final safeVat = vatAmount < 0 ? 0.0 : (vatAmount > safeTotal ? safeTotal : vatAmount);
+
     // Tag 1: Seller's name
-    builder.add(_encodeTag(1, sellerName.trim()));
+    builder.add(_encodeTag(1, safeSeller));
 
     // Tag 2: VAT registration number
-    builder.add(_encodeTag(2, vatNumber.trim()));
+    builder.add(_encodeTag(2, safeVatNumber));
 
     // Tag 3: Timestamp (ISO 8601 string)
     builder.add(_encodeTag(3, invoiceTimestamp.toUtc().toIso8601String()));
 
     // Tag 4: Invoice total with VAT formatted with 2 decimals
-    builder.add(_encodeTag(4, totalWithVat.toStringAsFixed(2)));
+    builder.add(_encodeTag(4, safeTotal.toStringAsFixed(2)));
 
     // Tag 5: VAT total amount formatted with 2 decimals
-    builder.add(_encodeTag(5, vatAmount.toStringAsFixed(2)));
+    builder.add(_encodeTag(5, safeVat.toStringAsFixed(2)));
 
     return base64Encode(builder.toBytes());
   }

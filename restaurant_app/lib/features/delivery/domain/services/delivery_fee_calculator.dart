@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
+
 /// Structured result of dynamic delivery fee calculation.
 class DeliveryFeeBreakdown {
   final double distanceKm;
@@ -27,7 +29,7 @@ class DeliveryFeeBreakdown {
 
   @override
   String toString() =>
-      'DeliveryFeeBreakdown(distance: ${distanceKm.toStringAsFixed(1)}km, finalFee: $finalFee SAR)';
+      'DeliveryFeeBreakdown(distance: ${distanceKm.toStringAsFixed(1)}km, finalFee: $finalFee EGP)';
 }
 
 /// Service calculating dynamic delivery fees based on distance, order subtotal,
@@ -38,9 +40,9 @@ class DeliveryFeeCalculator {
   static const double perKmRate = 2.0;
   static const double freeDeliveryThreshold = 150.0;
 
-  /// Restaurant base coordinates (Riyadh central mock coordinates).
-  static const double restaurantLat = 24.7136;
-  static const double restaurantLng = 46.6753;
+  /// Restaurant base coordinates (Downtown Cairo / Nile Corniche).
+  static const double restaurantLat = AppConstants.defaultRestaurantLat;
+  static const double restaurantLng = AppConstants.defaultRestaurantLng;
 
   /// Calculates straight-line distance in kilometers using the Haversine formula.
   static double calculateDistanceKm({
@@ -49,6 +51,15 @@ class DeliveryFeeCalculator {
     required double endLat,
     required double endLng,
   }) {
+    // Guard against uninitialized (0,0) or impossible GPS coordinates
+    if (startLat.abs() > 90 ||
+        startLng.abs() > 180 ||
+        endLat.abs() > 90 ||
+        endLng.abs() > 180 ||
+        (endLat == 0.0 && endLng == 0.0)) {
+      return baseDistanceKm;
+    }
+
     const earthRadiusKm = 6371.0;
     final dLat = _degreesToRadians(endLat - startLat);
     final dLng = _degreesToRadians(endLng - startLng);

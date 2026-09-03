@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
@@ -28,23 +29,24 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final inventoryAsync = ref.watch(inventoryControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المخزون والتوريد'),
+        title: Text(strings.inventoryManagementTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined),
-            tooltip: 'تصدير تقرير المخزون CSV',
+            tooltip: strings.exportInventoryCsvTooltip,
             onPressed: () {
               final items = inventoryAsync.valueOrNull ?? [];
               if (items.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('لا توجد عناصر في المخزون لتصديرها'),
+                  SnackBar(
+                    content: Text(strings.noInventoryToExport),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -54,7 +56,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
               final _ = exportService.generateInventoryCsv(items);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('تم تصدير تقرير ${items.length} صنف بنجاح!'),
+                  content: Text(strings.inventoryExportSuccess(items.length)),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -62,10 +64,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ),
           PopupMenuButton<StockStatus?>(
             icon: const Icon(Icons.filter_list),
-            tooltip: 'تصفية حسب الحالة',
+            tooltip: strings.filterByStatusTooltip,
             onSelected: (val) => setState(() => _filterStatus = val),
             itemBuilder: (_) => [
-              const PopupMenuItem(value: null, child: Text('الكل')),
+              PopupMenuItem(value: null, child: Text(strings.filterAll)),
               PopupMenuItem(
                 value: StockStatus.outOfStock,
                 child: StatusBadge.stock(StockStatus.outOfStock),

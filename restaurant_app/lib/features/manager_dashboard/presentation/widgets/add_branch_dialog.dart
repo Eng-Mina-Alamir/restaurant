@@ -65,7 +65,7 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
       phone: _phoneController.text.trim(),
       managerName: _managerController.text.trim().isNotEmpty
           ? _managerController.text.trim()
-          : (strings.isArabic ? 'غير محدد' : 'Not Assigned'),
+          : strings.notAssigned,
       totalTables: int.tryParse(_tablesController.text) ?? 20,
       isOpen: true,
       todaySales: 0.0,
@@ -88,7 +88,6 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
   @override
   Widget build(BuildContext context) {
     final strings = ref.watch(appStringsProvider);
-    final isArabic = strings.isArabic;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -129,15 +128,13 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isArabic ? 'إضافة فرع جديد للسلسلة' : 'Add New Branch to Chain',
+                              strings.addBranchDialogTitle,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              isArabic
-                                  ? 'سجل بيانات الفرع الجديد وتفاصيل التشغيل'
-                                  : 'Enter new branch profile and operations',
+                              strings.addBranchDialogSubtitle,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -156,11 +153,11 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: '${strings.branchNameLabel} *',
-                      hintText: isArabic ? 'مثال: فرع مدينة نصر' : 'e.g. Downtown Branch',
+                      hintText: strings.branchNameHint,
                       prefixIcon: const Icon(Icons.storefront_rounded),
                     ),
                     validator: (v) =>
-                        v == null || v.trim().isEmpty ? (isArabic ? 'يرجى إدخال اسم الفرع' : 'Please enter branch name') : null,
+                        v == null || v.trim().isEmpty ? strings.branchNameRequired : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Row(
@@ -169,11 +166,11 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
                         child: TextFormField(
                           controller: _cityController,
                           decoration: InputDecoration(
-                            labelText: isArabic ? 'المدينة *' : 'City *',
+                            labelText: strings.cityLabel,
                             prefixIcon: const Icon(Icons.location_city_rounded),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty
-                              ? (isArabic ? 'يرجى إدخال المدينة' : 'Please enter city')
+                              ? strings.cityRequired
                               : null,
                         ),
                       ),
@@ -195,11 +192,11 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
                     controller: _addressController,
                     decoration: InputDecoration(
                       labelText: '${strings.branchAddressLabel} *',
-                      hintText: isArabic ? 'الشارع، المنطقة، أقرب علامة مميزة' : 'Street, district, landmark',
+                      hintText: strings.branchAddressHint,
                       prefixIcon: const Icon(Icons.place_rounded),
                     ),
                     validator: (v) => v == null || v.trim().isEmpty
-                        ? (isArabic ? 'يرجى إدخال عنوان الفرع' : 'Please enter branch address')
+                        ? strings.branchAddressRequired
                         : null,
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -229,7 +226,7 @@ class _AddBranchDialogState extends ConsumerState<AddBranchDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    isArabic ? 'اللون المميز للفرع في اللوحة:' : 'Branch Accent Color:',
+                    strings.branchAccentColor,
                     style: theme.textTheme.labelMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),

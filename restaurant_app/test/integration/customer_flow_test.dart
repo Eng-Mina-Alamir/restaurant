@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:restaurant_app/features/cart/presentation/pages/cart_page.dart';
 import 'package:restaurant_app/features/customer/presentation/pages/customer_home_page.dart';
+import 'package:restaurant_app/features/customer/presentation/widgets/floating_cart_bar.dart';
+import 'package:restaurant_app/features/customer/presentation/widgets/menu_item_tile.dart';
 import 'package:restaurant_app/features/menu/data/menu_seed_data.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
 import 'package:restaurant_app/features/orders/presentation/pages/order_confirmation_page.dart';
@@ -50,20 +52,25 @@ void main() {
     final simpleItem = MenuSeedData.items.firstWhere(
       (item) => item.modifierGroups.isEmpty,
     );
+    await tester.scrollUntilVisible(
+      find.text(simpleItem.name),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     final tile = find.ancestor(
       of: find.text(simpleItem.name).first,
-      matching: find.byType(Card),
+      matching: find.byType(MenuItemTile),
     );
     await tester.tap(
       find.descendant(of: tile, matching: find.byIcon(Icons.add)),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    // Cart badge reflects the new unit.
-    expect(find.text('1'), findsWidgets);
-
-    // Open the cart.
-    await tester.tap(find.byIcon(Icons.shopping_cart_outlined));
+    // Open the cart via FloatingCartBar.
+    expect(find.byType(FloatingCartBar), findsOneWidget);
+    await tester.tap(find.byType(FloatingCartBar));
     await tester.pumpAndSettle();
     expect(find.text('سلة الطلب'), findsOneWidget);
 

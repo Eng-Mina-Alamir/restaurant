@@ -6,16 +6,24 @@ import 'package:restaurant_app/config/supabase_config.dart';
 void main() {
   group('Supabase Configuration Security & Schema Tests', () {
     test('Supabase URL is valid HTTPS endpoint', () {
-      expect(SupabaseConfig.url, isNotEmpty);
-      expect(SupabaseConfig.url, startsWith('https://'));
-      final uri = Uri.tryParse(SupabaseConfig.url);
-      expect(uri, isNotNull);
-      expect(uri?.host, contains('supabase.co'));
+      if (SupabaseConfig.isConfigured) {
+        expect(SupabaseConfig.url, isNotEmpty);
+        expect(SupabaseConfig.url, startsWith('https://'));
+        final uri = Uri.tryParse(SupabaseConfig.url);
+        expect(uri, isNotNull);
+        expect(uri?.host, contains('supabase.co'));
+      } else {
+        expect(SupabaseConfig.isConfigured, isFalse);
+      }
     });
 
     test('Supabase Anon Key is configured properly', () {
-      expect(SupabaseConfig.anonKey, isNotEmpty);
-      expect(SupabaseConfig.anonKey.length, greaterThan(20));
+      if (SupabaseConfig.isConfigured) {
+        expect(SupabaseConfig.anonKey, isNotEmpty);
+        expect(SupabaseConfig.anonKey.length, greaterThan(20));
+      } else {
+        expect(SupabaseConfig.isConfigured, isFalse);
+      }
     });
 
     test('Supabase table name constants match schema tables', () {

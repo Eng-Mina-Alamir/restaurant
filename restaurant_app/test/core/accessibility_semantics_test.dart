@@ -14,6 +14,7 @@ import 'package:restaurant_app/features/delivery/presentation/controllers/delive
 import 'package:restaurant_app/features/delivery/presentation/pages/driver_home_page.dart';
 import 'package:restaurant_app/features/ratings/domain/entities/rating_entity.dart';
 import 'package:restaurant_app/features/ratings/presentation/widgets/rating_dialog.dart';
+import 'package:restaurant_app/shared/animations/animated_press_card.dart';
 import 'package:restaurant_app/shared/widgets/empty_state.dart';
 import 'package:restaurant_app/shared/widgets/language_switcher.dart';
 import 'package:restaurant_app/shared/widgets/theme_mode_switch_button.dart';
@@ -98,7 +99,7 @@ void main() {
         );
 
         expect(find.byType(LanguageSwitcherButton), findsOneWidget);
-        expect(find.byType(OutlinedButton), findsOneWidget);
+        expect(find.byType(AnimatedPressCard), findsOneWidget);
       },
     );
   });

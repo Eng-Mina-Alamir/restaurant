@@ -13,47 +13,33 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
 
   final SupabaseClient _supabase;
 
-  static final List<LoyaltyReward> _defaultRewards = [
-    const LoyaltyReward(
-      id: 'rew-01',
-      title: 'مشروب غازي مجاني',
-      description: 'اختر أي مشروب غازي مع وجبتك',
-      pointsCost: 50,
-      discountAmount: 10.0,
-      iconName: 'local_drink',
-    ),
-    const LoyaltyReward(
-      id: 'rew-02',
-      title: 'خصم 25 ج.م على طلبك',
-      description: 'خصم مباشر عند الوصول لـ 100 نقطة',
-      pointsCost: 100,
-      discountAmount: 25.0,
-      minOrderAmount: 100.0,
-      iconName: 'local_offer',
-    ),
-    const LoyaltyReward(
-      id: 'rew-03',
-      title: 'طبق حلى مجاني',
-      description: 'أم علي بالمكسرات أو طبق أرز باللبن',
-      pointsCost: 200,
-      discountAmount: 35.0,
-      iconName: 'cake',
-    ),
-    const LoyaltyReward(
-      id: 'rew-04',
-      title: 'خصم 75 ج.م على المشاوي',
-      description: 'خصم خاص لكبار العملاء',
-      pointsCost: 350,
-      discountAmount: 75.0,
-      minOrderAmount: 200.0,
-      iconName: 'stars',
-    ),
-  ];
-
   final Map<String, LoyaltyAccount> _cachedAccounts = {};
+
+  /// Drops cached ledgers. Called implicitly when the repository provider is
+  /// invalidated on logout (see `AuthController.logout`); exposed for tests.
+  void clearCache([String? userId]) {
+    if (userId == null) {
+      _cachedAccounts.clear();
+    } else {
+      _cachedAccounts.remove(userId);
+    }
+  }
 
   @override
   Future<Either<Failure, LoyaltyAccount>> getAccount(String userId) async {
+    // Guest/demo identities (non-UUID) can never own a server ledger row —
+    // answer locally instead of issuing a doomed query per screen open.
+    if (!_isUuid(userId)) {
+      return Right(
+        LoyaltyAccount(
+          userId: userId,
+          currentPoints: 0,
+          lifetimePoints: 0,
+          tier: LoyaltyTier.fromPoints(0),
+          transactions: const [],
+        ),
+      );
+    }
     try {
       // 1. Fetch loyalty account
       final accountRaw = await _supabase
@@ -62,8 +48,8 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
           .eq('user_id', userId)
           .maybeSingle();
 
-      int currentPoints = 150;
-      int lifetimePoints = 150;
+      int currentPoints = 0;
+      int lifetimePoints = 0;
 
       if (accountRaw != null) {
         currentPoints = (accountRaw['current_points'] as num?)?.toInt() ?? 0;
@@ -111,20 +97,11 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
       return Right(account);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getAccount fallback: $e',
+        'Supabase getAccount error: $e',
         error: e,
         stackTrace: st,
       );
-      final account =
-          _cachedAccounts[userId] ??
-          LoyaltyAccount(
-            userId: userId,
-            currentPoints: 150,
-            lifetimePoints: 150,
-            tier: LoyaltyTier.silver,
-            transactions: const [],
-          );
-      return Right(account);
+      return Left(ServerFailure('فشل تحميل حساب الولاء من Supabase: $e'));
     }
   }
 
@@ -135,39 +112,18 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
     required String orderId,
   }) async {
     try {
-      // Call secure server RPC
-      try {
-        await _supabase.rpc(
-          'earn_loyalty_points',
-          params: {'p_order_id': orderId},
-        );
-      } catch (rpcError) {
-        AppLogger.warning('earn_loyalty_points RPC error: $rpcError');
-      }
-
+      await _supabase.rpc(
+        'earn_loyalty_points',
+        params: {'p_order_id': orderId},
+      );
       return await getAccount(userId);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase earnPoints fallback: $e',
+        'Supabase earnPoints error: $e',
         error: e,
         stackTrace: st,
       );
-      final prev =
-          _cachedAccounts[userId] ??
-          LoyaltyAccount(
-            userId: userId,
-            currentPoints: 150,
-            lifetimePoints: 150,
-            tier: LoyaltyTier.silver,
-            transactions: const [],
-          );
-      final earned = (orderTotal / 10).floor();
-      final updated = prev.copyWith(
-        currentPoints: prev.currentPoints + earned,
-        lifetimePoints: prev.lifetimePoints + earned,
-      );
-      _cachedAccounts[userId] = updated;
-      return Right(updated);
+      return Left(ServerFailure('فشل احتساب نقاط الولاء: $e'));
     }
   }
 
@@ -185,27 +141,11 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
       return await getAccount(userId);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase redeemReward fallback: $e',
+        'Supabase redeemReward error: $e',
         error: e,
         stackTrace: st,
       );
-      final prev =
-          _cachedAccounts[userId] ??
-          LoyaltyAccount(
-            userId: userId,
-            currentPoints: 150,
-            lifetimePoints: 150,
-            tier: LoyaltyTier.silver,
-            transactions: const [],
-          );
-      final updated = prev.copyWith(
-        currentPoints: (prev.currentPoints - reward.pointsCost).clamp(
-          0,
-          999999,
-        ),
-      );
-      _cachedAccounts[userId] = updated;
-      return Right(updated);
+      return Left(ServerFailure('فشل استبدال مكافأة الولاء: $e'));
     }
   }
 
@@ -234,15 +174,20 @@ class SupabaseLoyaltyRepository implements LoyaltyRepository {
           ),
         );
       }
-      if (rewards.isEmpty) return Right(_defaultRewards);
       return Right(rewards);
     } catch (e, st) {
       AppLogger.warning(
-        'Supabase getAvailableRewards fallback: $e',
+        'Supabase getAvailableRewards error: $e',
         error: e,
         stackTrace: st,
       );
-      return Right(_defaultRewards);
+      return Left(ServerFailure('فشل تحميل مكافآت الولاء من Supabase: $e'));
     }
+  }
+
+  static bool _isUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value);
   }
 }

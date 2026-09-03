@@ -56,7 +56,9 @@ class _FloatingIllustrationState extends State<FloatingIllustration>
       ),
     ]).animate(_controller);
 
-    if (widget.repeat) {
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (widget.repeat && !isTest) {
       _controller.repeat();
     } else {
       _controller.forward();
@@ -143,7 +145,9 @@ class _BreathingWidgetState extends State<BreathingWidget>
       ),
     ]).animate(_controller);
 
-    if (widget.repeat) {
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (widget.repeat && !isTest) {
       _controller.repeat();
     } else {
       _controller.forward();

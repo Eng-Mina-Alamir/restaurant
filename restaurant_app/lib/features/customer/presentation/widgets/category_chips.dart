@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 
 /// Horizontal, scrollable set of category filter chips with visual emojis.
@@ -43,7 +44,10 @@ class CategoryChips extends StatelessWidget {
             ),
             selected: isSelected,
             showCheckmark: false,
-            onSelected: (_) => onSelected(category),
+            onSelected: (_) {
+              AppHaptics.selectionTap();
+              onSelected(category);
+            },
           );
         },
       ),

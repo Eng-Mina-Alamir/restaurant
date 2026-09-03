@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,9 +6,12 @@ import 'package:go_router/go_router.dart';
 
 import 'config/app_config.dart';
 import 'core/l10n/app_localizations.dart';
+import 'core/notifications/notification_handler.dart';
+import 'core/notifications/push_notification_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/utils/haptics.dart';
 import 'features/auth/presentation/controllers/auth_controller.dart';
 import 'shared/animations/radial_language_reveal.dart';
 
@@ -25,6 +29,7 @@ class RestaurantApp extends ConsumerStatefulWidget {
 
 class _RestaurantAppState extends ConsumerState<RestaurantApp> {
   late final GoRouter _router;
+  StreamSubscription<AppNotification>? _notificationSub;
 
   @override
   void initState() {
@@ -34,10 +39,26 @@ class _RestaurantAppState extends ConsumerState<RestaurantApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(authControllerProvider.notifier).bootstrap();
     });
+
+    // Listen globally for foreground push notifications
+    _notificationSub = ref
+        .read(pushNotificationServiceProvider)
+        .onNotification
+        .listen((notification) {
+      AppHaptics.actionSuccess();
+      if (!mounted) return;
+      final ctx = _router.routerDelegate.navigatorKey.currentContext;
+      if (ctx != null && ctx.mounted) {
+        ref
+            .read(notificationHandlerProvider)
+            .showInAppBanner(ctx, notification);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _notificationSub?.cancel();
     _router.dispose();
     super.dispose();
   }

@@ -9,10 +9,22 @@
 -- query fails with permission denied. See recursion_safe_role_helpers header.
 -- ============================================================================
 
-REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.earn_loyalty_points(text) FROM PUBLIC, anon;
-REVOKE EXECUTE ON FUNCTION public.redeem_loyalty_reward(text) FROM PUBLIC, anon;
-
-GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.earn_loyalty_points(text) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.redeem_loyalty_reward(text) TO authenticated, service_role;
+-- NOTE (2026-09-04): guarded with IF EXISTS. is_admin() never existed, and
+-- earn_loyalty_points / redeem_loyalty_reward are CREATED by migration
+-- 20260904000000_account_linking_hardening (which also sets their privileges),
+-- so a fresh `supabase db reset` must not fail here on ordering.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'is_admin') THEN
+    REVOKE EXECUTE ON FUNCTION public.is_admin() FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated, service_role;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'earn_loyalty_points') THEN
+    REVOKE EXECUTE ON FUNCTION public.earn_loyalty_points(text) FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION public.earn_loyalty_points(text) TO authenticated, service_role;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'redeem_loyalty_reward') THEN
+    REVOKE EXECUTE ON FUNCTION public.redeem_loyalty_reward(text) FROM PUBLIC, anon;
+    GRANT EXECUTE ON FUNCTION public.redeem_loyalty_reward(text) TO authenticated, service_role;
+  END IF;
+END $$;

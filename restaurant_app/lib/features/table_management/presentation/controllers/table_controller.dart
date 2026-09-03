@@ -11,16 +11,20 @@ import '../../../../core/supabase/supabase_realtime_service.dart';
 import '../../data/repositories/hive_table_repository.dart';
 import '../../data/repositories/in_memory_table_repository.dart';
 import '../../data/repositories/supabase_table_repository.dart';
-import '../../data/table_seed_data.dart';
 import '../../domain/entities/restaurant_table.dart';
 import '../../domain/repositories/table_repository.dart';
+import '../../../../core/utils/logger.dart';
+import '../../../orders/presentation/controllers/orders_controller.dart';
 
 /// Shared [TableRepository].
 ///
 /// Uses Supabase table repository when enabled, or falls back to Hive/In-memory.
 final tableRepositoryProvider = Provider<TableRepository>((ref) {
   if (AppConfig.useSupabase) {
-    return SupabaseTableRepository(ref.watch(supabaseClientProvider));
+    return SupabaseTableRepository(
+      ref.watch(supabaseClientProvider),
+      ref.watch(localCacheServiceProvider),
+    );
   }
   final cache = ref.watch(localCacheServiceProvider);
   if (cache != null) return HiveTableRepository(cache);
@@ -33,15 +37,20 @@ final tableRepositoryProvider = Provider<TableRepository>((ref) {
 /// table occupied with an active order. Changes flow back through the
 /// repository and are synchronized via Supabase Realtime Postgres Changes.
 class TableController extends StateNotifier<List<RestaurantTable>> {
-  TableController(this._repository, {SupabaseRealtimeService? realtimeService})
-    : _realtimeService = realtimeService,
-      super(TableSeedData.buildTables()) {
+  TableController(
+    this._repository, {
+    SupabaseRealtimeService? realtimeService,
+    Future<void> Function(String orderId, String newTableId)? onOrderTableTransferred,
+  }) : _realtimeService = realtimeService,
+       _onOrderTableTransferred = onOrderTableTransferred,
+       super(const []) {
     _load();
     _initRealtime();
   }
 
   final TableRepository _repository;
   final SupabaseRealtimeService? _realtimeService;
+  final Future<void> Function(String orderId, String newTableId)? _onOrderTableTransferred;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
   void _initRealtime() {
@@ -90,7 +99,19 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
   Future<void> _load() async {
     final result = await _repository.getTables();
     if (!mounted) return;
-    state = result.when(onLeft: (_) => const [], onRight: (tables) => tables);
+    result.when(
+      onLeft: (_) => null,
+      onRight: (tables) {
+        if (tables.isEmpty) return;
+        state = tables.map((remote) {
+          final local = tableById(remote.id);
+          if (local != null && local.lastUpdated != null) {
+            return local;
+          }
+          return remote;
+        }).toList();
+      },
+    );
   }
 
   RestaurantTable? tableById(String id) {
@@ -251,6 +272,9 @@ class TableController extends StateNotifier<List<RestaurantTable>> {
 
     await _repository.updateTable(updatedFrom);
     await _repository.updateTable(updatedTo);
+    if (activeOrderId != null && _onOrderTableTransferred != null) {
+      unawaited(_onOrderTableTransferred(activeOrderId, toTableId));
+    }
     return true;
   }
 
@@ -329,5 +353,14 @@ final tableControllerProvider =
       return TableController(
         ref.watch(tableRepositoryProvider),
         realtimeService: ref.watch(supabaseRealtimeServiceProvider),
+        onOrderTableTransferred: (orderId, newTableId) async {
+          try {
+            await ref
+                .read(ordersControllerProvider.notifier)
+                .updateOrderTableId(orderId, newTableId);
+          } catch (e) {
+            AppLogger.warning('Failed to sync order tableId after transfer: $e');
+          }
+        },
       );
     });

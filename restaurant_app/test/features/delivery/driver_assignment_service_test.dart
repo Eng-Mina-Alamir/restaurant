@@ -392,9 +392,10 @@ void main() {
 
         try {
           brokenCart.addItem(const CartItem(menuItem: burger, quantity: 1));
-          await breakingController.placeOrder(orderType: OrderType.delivery);
+          final order =
+              await breakingController.placeOrder(orderType: OrderType.delivery);
           final updated = await breakingController.updateStatus(
-            'ORD-0001',
+            order!.id,
             OrderStatus.ready,
           );
 

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/enums.dart';
 import '../../domain/entities/cashier_discount_entity.dart';
 import '../../domain/entities/loyalty_customer_entity.dart';
 import '../../domain/entities/split_tender_payment_entity.dart';
@@ -13,6 +14,8 @@ class CashierPOSState {
     this.redeemedPointsDiscountAmount = 0.0,
     this.splitTenderResult,
     this.tenderedCash = 0.0,
+    this.orderType = OrderType.takeaway,
+    this.selectedTableNumber,
   });
 
   final CashierDiscount? selectedDiscount;
@@ -21,6 +24,8 @@ class CashierPOSState {
   final double redeemedPointsDiscountAmount;
   final SplitTenderResult? splitTenderResult;
   final double tenderedCash;
+  final OrderType orderType;
+  final int? selectedTableNumber;
 
   /// Calculates total monetary discount (preset/comp discount + loyalty redeemed points discount).
   double calculateTotalDiscount(double subtotal) {
@@ -39,9 +44,12 @@ class CashierPOSState {
     double? redeemedPointsDiscountAmount,
     SplitTenderResult? splitTenderResult,
     double? tenderedCash,
+    OrderType? orderType,
+    int? selectedTableNumber,
     bool clearDiscount = false,
     bool clearCustomer = false,
     bool clearSplitTender = false,
+    bool clearTable = false,
   }) {
     return CashierPOSState(
       selectedDiscount: clearDiscount ? null : (selectedDiscount ?? this.selectedDiscount),
@@ -51,6 +59,8 @@ class CashierPOSState {
           clearCustomer ? 0.0 : (redeemedPointsDiscountAmount ?? this.redeemedPointsDiscountAmount),
       splitTenderResult: clearSplitTender ? null : (splitTenderResult ?? this.splitTenderResult),
       tenderedCash: tenderedCash ?? this.tenderedCash,
+      orderType: orderType ?? this.orderType,
+      selectedTableNumber: clearTable ? null : (selectedTableNumber ?? this.selectedTableNumber),
     );
   }
 }
@@ -58,6 +68,20 @@ class CashierPOSState {
 /// Controller managing discounts, customer loyalty linkage, and tender calculations for POS checkout.
 class CashierPOSController extends StateNotifier<CashierPOSState> {
   CashierPOSController() : super(const CashierPOSState());
+
+  /// Updates the order type (dine-in, takeaway, delivery).
+  void setOrderType(OrderType type) {
+    state = state.copyWith(orderType: type);
+  }
+
+  /// Sets or clears the table number for dine-in checkout.
+  void setSelectedTableNumber(int? tableNumber) {
+    if (tableNumber == null) {
+      state = state.copyWith(clearTable: true);
+    } else {
+      state = state.copyWith(selectedTableNumber: tableNumber);
+    }
+  }
 
   /// Applies a discount to the active checkout.
   void applyDiscount(CashierDiscount discount) {

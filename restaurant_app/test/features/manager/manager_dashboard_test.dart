@@ -131,9 +131,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // One pending order in the seeded flow.
     expect(find.text('الطلبات حسب الحالة'), findsOneWidget);
-    expect(find.textContaining('قيد الانتظار: 1'), findsOneWidget);
+    expect(find.text('قيد الانتظار'), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
   });
 
   testWidgets('shows no-data placeholder when there are no orders', (

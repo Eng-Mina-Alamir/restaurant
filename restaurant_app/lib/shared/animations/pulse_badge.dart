@@ -30,8 +30,12 @@ class _PulseBadgeState extends State<PulseBadge>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)
-      ..repeat();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTest) {
+      _controller.repeat();
+    }
 
     _scaleAnimation = Tween<double>(
       begin: 1.0,

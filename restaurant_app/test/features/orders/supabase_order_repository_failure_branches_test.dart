@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
@@ -141,7 +141,7 @@ void main() {
     );
 
     test(
-      'getOrders falls back to the local cache when the remote fetch fails after priming',
+      'getOrders returns Left(ServerFailure) on remote failure while staff mirror retains cached orders',
       timeout: testTimeout,
       () async {
         // Prime the cache exactly as an earlier successful sync would have.
@@ -151,29 +151,32 @@ void main() {
 
         final result = await repo.getOrders();
 
-        // Offline reads degrade gracefully to cache instead of failing.
+        // Honest commercial failure: remote failure returns Left(ServerFailure).
+        expect(result.isLeft, isTrue);
         expect(
-          result.isRight,
-          isTrue,
-          reason: 'getOrders must serve cached data when remote fails',
+          (result as Left<Failure, List<OrderEntity>>).value,
+          isA<ServerFailure>(),
         );
-        final orders = (result as Right<Failure, List<OrderEntity>>).value;
-        expect(orders.map((o) => o.id), contains('ORD-CACHED-1'));
-        expect(orders.single.totalAmount, 115.0);
+
+        // Staff operational continuity mirror retains cached rows.
+        final staffOrders = repo.getStaffOfflineOrdersMirror();
+        expect(staffOrders.map((o) => o.id), contains('ORD-CACHED-1'));
+        expect(staffOrders.single.totalAmount, 115.0);
       },
     );
 
     test(
-      'end-to-end offline flow: failed create is still readable via getOrders cache fallback',
+      'end-to-end offline flow: failed create returns Left but persists to staff mirror',
       timeout: testTimeout,
       () async {
         final createResult = await repo.createOrder(_order('ORD-OFFLINE-2'));
         expect(createResult.isLeft, isTrue);
 
         final listResult = await repo.getOrders();
-        expect(listResult.isRight, isTrue);
-        final orders = (listResult as Right<Failure, List<OrderEntity>>).value;
-        expect(orders.map((o) => o.id), contains('ORD-OFFLINE-2'));
+        expect(listResult.isLeft, isTrue);
+
+        final staffOrders = repo.getStaffOfflineOrdersMirror();
+        expect(staffOrders.map((o) => o.id), contains('ORD-OFFLINE-2'));
       },
     );
   });

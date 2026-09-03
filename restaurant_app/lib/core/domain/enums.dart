@@ -190,7 +190,7 @@ enum TableStatus {
       case TableStatus.reserved:
         return 'Reserved';
       case TableStatus.needsCleaning:
-        return 'Cleaning Needed';
+        return 'Needs Cleaning';
     }
   }
 
@@ -222,7 +222,8 @@ enum UserRole {
   manager,
   admin,
   driver,
-  cashier;
+  cashier,
+  managerChef;
 
   String get labelAr {
     switch (this) {
@@ -232,6 +233,8 @@ enum UserRole {
         return AppConstants.roleWaiter;
       case UserRole.kitchen:
         return AppConstants.roleKitchen;
+      case UserRole.managerChef:
+        return AppConstants.roleManagerChef;
       case UserRole.manager:
         return AppConstants.roleManager;
       case UserRole.admin:
@@ -251,10 +254,12 @@ enum UserRole {
         return 'Waiter';
       case UserRole.kitchen:
         return 'Kitchen Chef';
+      case UserRole.managerChef:
+        return 'Manager Chef';
       case UserRole.manager:
         return 'Branch Manager';
       case UserRole.admin:
-        return 'Super Admin';
+        return 'Chain Admin';
       case UserRole.driver:
         return 'Delivery Driver';
       case UserRole.cashier:
@@ -272,6 +277,7 @@ enum UserRole {
       case UserRole.waiter:
         return '/waiter';
       case UserRole.kitchen:
+      case UserRole.managerChef:
         return '/kds';
       case UserRole.manager:
       case UserRole.admin:
@@ -292,6 +298,11 @@ enum UserRole {
       case 'kitchen':
       case 'kds':
         return UserRole.kitchen;
+      case 'managerchef':
+      case 'manager_chef':
+      case 'headchef':
+      case 'head_chef':
+        return UserRole.managerChef;
       case 'manager':
         return UserRole.manager;
       case 'admin':

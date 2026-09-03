@@ -79,6 +79,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final model = await _remoteDataSource.verifyOtp(otp: otp, phone: phone);
       await _persistToken(model.token);
+      // Persist the full session just like login/register — otherwise the
+      // previous account's session survives an OTP account switch.
+      await _persistSession(model);
       return Right<Failure, UserEntity>(model.toEntity());
     } on AppException catch (error) {
       return Left<Failure, UserEntity>(_toFailure(error));
@@ -147,25 +150,28 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   /// Returns true when [token] is a structurally valid JWT whose `exp` claim
-  /// is in the past. Non-JWT tokens (demo mode) are never treated as expired.
+  /// is in the past. Non-JWT demo tokens (`demo-…`) are never treated as
+  /// expired. Any OTHER malformed/opaque value is untrusted and treated as
+  /// expired so a corrupt token can never keep a session alive.
   bool _isExpiredJwt(String? token) {
-    if (token == null || token.isEmpty) return false;
+    if (token == null || token.isEmpty) return true;
+    if (token.startsWith('demo-')) return false;
     final parts = token.split('.');
-    if (parts.length != 3) return false; // opaque/demo token — not a JWT
+    if (parts.length != 3) return true; // opaque/corrupt — untrusted
     try {
       final payload = jsonDecode(
         utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
       );
-      if (payload is! Map<String, dynamic>) return false;
+      if (payload is! Map<String, dynamic>) return true;
       final exp = payload['exp'];
-      if (exp is! num) return false;
+      if (exp is! num) return true;
       return DateTime.fromMillisecondsSinceEpoch(
             (exp * 1000).toInt(),
           ).isBefore(DateTime.now()) ==
           true;
     } catch (_) {
-      // Malformed JWT — treat as untrusted rather than expired.
-      return false;
+      // Malformed JWT — treat as untrusted rather than valid.
+      return true;
     }
   }
 

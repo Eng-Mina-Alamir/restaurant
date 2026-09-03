@@ -70,7 +70,9 @@ class DriverEarningsPage extends ConsumerWidget {
         ),
       ),
       body: ConstrainedContentView(
-        child: ListView(
+        child: RefreshIndicator(
+          onRefresh: () async => ref.invalidate(driverWalletControllerProvider),
+          child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
             // Top Earnings Header Banner
@@ -239,7 +241,8 @@ class DriverEarningsPage extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildWhiteStat(String label, String value, {Color? color}) {

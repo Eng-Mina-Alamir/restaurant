@@ -10,6 +10,7 @@ import '../../../delivery/domain/entities/delivery_assignment.dart';
 import '../../../delivery/domain/entities/driver_info.dart';
 import '../../../delivery/domain/repositories/delivery_repository.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
+import '../../../orders/data/repositories/supabase_order_repository.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 
@@ -84,7 +85,9 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     this._repository,
     this._realtimeService, {
     required List<OrderEntity> Function() ordersSource,
+    Future<void> Function(String orderId, String driverId)? onDriverAssigned,
   }) : _ordersSource = ordersSource,
+       _onDriverAssigned = onDriverAssigned,
        super(const AsyncValue.loading()) {
     // Realtime assignment changes re-classify the board after the debounce window.
     _realtimeSubscription = _realtimeService.events.listen((event) {
@@ -98,6 +101,12 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
   final DeliveryRepository _repository;
   final SupabaseRealtimeService _realtimeService;
   final List<OrderEntity> Function() _ordersSource;
+
+  /// Hook fired after a manual assignment lands so the order row mirrors the
+  /// driver (previously only the KDS path persisted `orders.driver_id`,
+  /// leaving board-assigned orders driverless everywhere else).
+  final Future<void> Function(String orderId, String driverId)?
+  _onDriverAssigned;
 
   StreamSubscription<RealtimeEvent>? _realtimeSubscription;
   Timer? _debounceTimer;
@@ -319,6 +328,21 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
         '[Dispatch] outcome=assigned orderId=$orderId '
         'driverId=$driverId method=manual',
       );
+      // Mirror the driver onto the order row (same as the KDS path) so
+      // tracking/KDS/board stay consistent. Best-effort: a hook failure
+      // must never unset the already-persisted assignment.
+      final hook = _onDriverAssigned;
+      if (hook != null) {
+        try {
+          await hook(orderId, driverId);
+        } catch (e, st) {
+          AppLogger.warning(
+            '[Dispatch] outcome=driver-mirror-failed orderId=$orderId: $e',
+            error: e,
+            stackTrace: st,
+          );
+        }
+      }
       await refresh();
     } finally {
       _assignInFlight = false;
@@ -342,6 +366,15 @@ final dispatchControllerProvider =
         ref.watch(deliveryRepositoryProvider),
         ref.watch(supabaseRealtimeServiceProvider),
         ordersSource: () => ref.read(ordersControllerProvider),
+        onDriverAssigned: (orderId, driverId) async {
+          ref
+              .read(ordersControllerProvider.notifier)
+              .syncDriverId(orderId, driverId);
+          final orderRepo = ref.read(orderRepositoryProvider);
+          if (orderRepo is SupabaseOrderRepository) {
+            await orderRepo.updateOrderDriverId(orderId, driverId);
+          }
+        },
       );
       // Orders advancing (e.g. realtime lands an order on "ready") must
       // re-classify the board without waiting for a manual pull-to-refresh.

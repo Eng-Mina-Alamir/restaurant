@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
+import '../../../../core/l10n/app_strings.dart';
+import '../../../../core/network/connectivity_service.dart';
 import '../../../../core/printing/ticket_printer_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
@@ -26,16 +27,18 @@ class TableDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final tables = ref.watch(tableControllerProvider);
+    final isOnline = ref.watch(isOnlineProvider);
     RestaurantTable? table;
     for (final t in tables) {
       if (t.id == tableId) table = t;
     }
     if (table == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text(AppConstants.tableDetailTitle)),
-        body: const EmptyState(
-          message: AppConstants.tableNoOrder,
+        appBar: AppBar(title: Text(strings.tableDetailTitle)),
+        body: EmptyState(
+          message: strings.noActiveTableOrder,
           icon: Icons.table_restaurant_outlined,
         ),
       );
@@ -52,8 +55,8 @@ class TableDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${AppConstants.tableDetailTitle} — '
-          '${AppConstants.seats} ${currentTable.tableNumber}',
+          '${strings.tableDetailTitle} — '
+          '${strings.seatsCount} ${currentTable.tableNumber}',
         ),
       ),
       body: ListView(
@@ -62,15 +65,15 @@ class TableDetailPage extends ConsumerWidget {
           _TableInfoRow(table: currentTable),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            AppConstants.tableActiveOrder,
+            strings.activeTableOrder,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppSpacing.sm),
           if (activeOrder == null)
-            const Card(
+            Card(
               child: Padding(
-                padding: EdgeInsets.all(AppSpacing.md),
-                child: Text(AppConstants.tableNoOrder),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(strings.noActiveTableOrder),
               ),
             )
           else
@@ -88,7 +91,7 @@ class TableDetailPage extends ConsumerWidget {
             FilledButton.icon(
               onPressed: () => context.push('/waiter/order/$tableId'),
               icon: const Icon(Icons.add_shopping_cart),
-              label: const Text('إضافة أصناف إضافية للطلب'),
+              label: Text(strings.addMoreItems),
             ),
             const SizedBox(height: AppSpacing.sm),
 
@@ -97,6 +100,15 @@ class TableDetailPage extends ConsumerWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
+                      if (!isOnline) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('لا يمكن تقسيم الفاتورة أو إغلاق الحساب في وضع عدم الاتصال منعاً للتعارضات'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
                       final order = activeOrder;
                       if (order == null) return;
                       final splitResult = await SplitBillDialog.show(
@@ -117,7 +129,7 @@ class TableDetailPage extends ConsumerWidget {
                       }
                     },
                     icon: const Icon(Icons.call_split_rounded, color: Color(0xFF3B82F6)),
-                    label: const Text('تقسيم الشيك (Split Bill)'),
+                    label: Text(strings.splitBill),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -133,7 +145,7 @@ class TableDetailPage extends ConsumerWidget {
                       );
                     },
                     icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF10B981)),
-                    label: const Text('نقل / دمج الطاولة'),
+                    label: Text(strings.tableTransferAction),
                   ),
                 ),
               ],
@@ -148,7 +160,7 @@ class TableDetailPage extends ConsumerWidget {
                 activeOrder!,
               ),
               icon: const Icon(Icons.point_of_sale),
-              label: const Text('محاسبة وإخلاء الطاولة (Checkout)'),
+              label: Text(strings.checkoutAndRelease),
             ),
             const SizedBox(height: AppSpacing.sm),
           ] else if (currentTable.status == TableStatus.needsCleaning) ...[
@@ -160,21 +172,21 @@ class TableDetailPage extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'تم تنظيف طاولة ${currentTable.tableNumber} وأصبحت متاحة للزبائن',
+                      strings.tableCleanedMessage(currentTable.tableNumber),
                     ),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
               icon: const Icon(Icons.cleaning_services),
-              label: const Text('تأكيد نظافة الطاولة وجاهزيتها'),
+              label: Text(strings.confirmTableClean),
             ),
             const SizedBox(height: AppSpacing.sm),
           ] else ...[
             FilledButton.icon(
               onPressed: () => context.push('/waiter/order/$tableId'),
               icon: const Icon(Icons.add),
-              label: const Text(AppConstants.tableActionTakeOrder),
+              label: Text(strings.takeOrder),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -186,7 +198,7 @@ class TableDetailPage extends ConsumerWidget {
                       .read(tableControllerProvider.notifier)
                       .release(tableId),
                   icon: const Icon(Icons.fullscreen_exit),
-                  label: const Text(AppConstants.tableActionRelease),
+                  label: Text(strings.releaseTable),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -201,8 +213,8 @@ class TableDetailPage extends ConsumerWidget {
                   icon: const Icon(Icons.event_available),
                   label: Text(
                     currentTable.status == TableStatus.reserved
-                        ? 'إلغاء الحجز'
-                        : AppConstants.tableActionReserve,
+                        ? strings.cancelReservation
+                        : strings.tableActionReserve,
                   ),
                 ),
               ),
@@ -226,13 +238,14 @@ class TableDetailPage extends ConsumerWidget {
   }
 }
 
-class _TableInfoRow extends StatelessWidget {
+class _TableInfoRow extends ConsumerWidget {
   const _TableInfoRow({required this.table});
 
   final RestaurantTable table;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -245,7 +258,7 @@ class _TableInfoRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${table.capacity} ${AppConstants.seats}',
+                  '${table.capacity} ${strings.seatsCount}',
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 2),
@@ -263,7 +276,7 @@ class _TableInfoRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  table.status.labelAr,
+                  table.status.localizedLabel(strings.isArabic),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: tableStatusColor(table.status, theme.brightness),
                   ),
@@ -277,13 +290,14 @@ class _TableInfoRow extends StatelessWidget {
   }
 }
 
-class _ActiveOrderCard extends StatelessWidget {
+class _ActiveOrderCard extends ConsumerWidget {
   const _ActiveOrderCard({required this.order});
 
   final OrderEntity order;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -300,7 +314,7 @@ class _ActiveOrderCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(order.status.labelAr),
+                Text(order.status.localizedLabel(strings.isArabic)),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -325,7 +339,7 @@ class _ActiveOrderCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  AppConstants.orderTotalLabel,
+                  strings.orderTotal,
                   style: theme.textTheme.titleSmall,
                 ),
                 Text(
@@ -342,11 +356,11 @@ class _ActiveOrderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    AppConstants.paymentMethodLabel,
+                    strings.paymentMethodLabel,
                     style: theme.textTheme.bodySmall,
                   ),
                   Text(
-                    order.paymentMethod!.labelAr,
+                    order.paymentMethod!.localizedLabel(strings.isArabic),
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -398,6 +412,16 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
   }
 
   Future<void> _handleConfirm() async {
+    final isOnline = ref.read(isOnlineProvider);
+    if (!isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يمكن إتمام الدفع أو إغلاق الحساب في وضع عدم الاتصال منعاً للتعارضات المالية'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     if (_processing) return;
     setState(() => _processing = true);
 
@@ -423,11 +447,15 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
           .release(widget.table.id, needsCleaning: true);
 
       if (!mounted) return;
+      final strings = ref.read(appStringsProvider);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'تمت المحاسبة بنجاح بمبلغ ${Formatters.formatCurrency(_finalTotal)} لطاولة ${widget.table.tableNumber}!',
+            strings.checkoutSuccess(
+              Formatters.formatCurrency(_finalTotal),
+              widget.table.tableNumber,
+            ),
           ),
           behavior: SnackBarBehavior.floating,
         ),
@@ -439,6 +467,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -447,7 +476,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
         children: [
           Icon(Icons.receipt_long, color: colorScheme.primary),
           const SizedBox(width: 8),
-          Text('محاسبة طاولة ${widget.table.tableNumber}'),
+          Text(strings.checkoutTableTitle(widget.table.tableNumber)),
         ],
       ),
       content: SingleChildScrollView(
@@ -466,7 +495,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('المجموع الفرعي:'),
+                      Text('${strings.subtotal}:'),
                       Text(Formatters.formatCurrency(widget.order.subtotal)),
                     ],
                   ),
@@ -474,7 +503,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('الضريبة المضافة (15%):'),
+                      Text(strings.taxAddedRow),
                       Text(Formatters.formatCurrency(widget.order.taxAmount)),
                     ],
                   ),
@@ -483,7 +512,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'الإجمالي المستحق:',
+                        strings.totalDue,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -501,16 +530,16 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            const Text(
-              'طريقة الدفع:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              '${strings.paymentMethodLabel}:',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('نقدي (Cash)'),
+                  label: Text(strings.paymentCashChip),
                   avatar: const Icon(Icons.money, size: 16),
                   selected: _selectedPayment == PaymentMethod.cash,
                   onSelected: (val) {
@@ -518,7 +547,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                   },
                 ),
                 ChoiceChip(
-                  label: const Text('بطاقة / شبكة (Card)'),
+                  label: Text(strings.paymentCardChip),
                   avatar: const Icon(Icons.credit_card, size: 16),
                   selected: _selectedPayment == PaymentMethod.card,
                   onSelected: (val) {
@@ -526,7 +555,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                   },
                 ),
                 ChoiceChip(
-                  label: const Text('محفظة (Wallet)'),
+                  label: Text(strings.paymentWalletChip),
                   avatar: const Icon(Icons.account_balance_wallet, size: 16),
                   selected: _selectedPayment == PaymentMethod.wallet,
                   onSelected: (val) {
@@ -539,10 +568,10 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
             TextField(
               controller: _discountCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'خصم استثنائي (ريال) - اختياري',
-                prefixIcon: Icon(Icons.discount_outlined),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: strings.exceptionalDiscountLabel(Formatters.activeCurrencySymbol),
+                prefixIcon: const Icon(Icons.discount_outlined),
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onChanged: (_) => setState(() {}),
@@ -550,7 +579,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
             const SizedBox(height: AppSpacing.sm),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('طباعة الفاتورة الضريبية للعميل'),
+              title: Text(strings.printTaxInvoice),
               value: _printInvoice,
               onChanged: (val) => setState(() => _printInvoice = val ?? true),
               controlAffinity: ListTileControlAffinity.leading,
@@ -561,7 +590,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
       actions: [
         TextButton(
           onPressed: _processing ? null : () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
+          child: Text(strings.cancel),
         ),
         FilledButton.icon(
           onPressed: _processing ? null : _handleConfirm,
@@ -572,7 +601,7 @@ class _TableCheckoutDialogState extends ConsumerState<_TableCheckoutDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.check_circle_outline),
-          label: const Text('تأكيد الدفع والإخلاء'),
+          label: Text(strings.confirmPaymentAndRelease),
         ),
       ],
     );

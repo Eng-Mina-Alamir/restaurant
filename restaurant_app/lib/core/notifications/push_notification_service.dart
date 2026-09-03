@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/app_config.dart';
+import '../../config/supabase_config.dart';
+import '../domain/enums.dart';
+import '../network/realtime_event.dart';
+import '../supabase/supabase_realtime_service.dart';
 import '../utils/logger.dart';
 
 /// Categories of push notifications in the restaurant app.
@@ -190,6 +195,66 @@ final pushNotificationServiceProvider = Provider<PushNotificationService>((
   ref,
 ) {
   final service = PushNotificationService();
-  ref.onDispose(service.dispose);
+
+  StreamSubscription<RealtimeEvent>? sub;
+  if (AppConfig.useSupabase && SupabaseConfig.isConfigured) {
+    final realtime = ref.watch(supabaseRealtimeServiceProvider);
+    sub = realtime.events.listen((event) {
+      try {
+        switch (event.type) {
+          case RealtimeEventType.orderStatusChanged:
+            final orderId = event.payload['order_id'] ??
+                event.payload['orderId'] ??
+                event.payload['id'];
+            final status = event.payload['status']?.toString();
+            if (orderId != null && status != null) {
+              final orderStatus = OrderStatus.fromName(status);
+              if (orderStatus == OrderStatus.cancelled) {
+                service.notifyKitchenCancelledOrder(orderId: orderId.toString());
+              } else {
+                service.notifyOrderStatus(
+                  orderId: orderId.toString(),
+                  statusAr: orderStatus.labelAr,
+                );
+              }
+            }
+            break;
+          case RealtimeEventType.tableServiceRequested:
+            final tableNum =
+                event.payload['tableNumber'] ?? event.payload['table_number'];
+            final reqType = event.payload['requestType'] ??
+                event.payload['request_type'] ??
+                'طلب خدمة من الكابتن';
+            service.showNotification(
+              title: 'نداء خدمة - طاولة $tableNum',
+              body: 'طلب العميل: $reqType',
+              category: NotificationCategory.tableAlert,
+              data: {'type': 'table', 'tableNumber': tableNum},
+            );
+            break;
+          case RealtimeEventType.deliveryAssignmentCreated:
+            final deliveryId =
+                event.payload['id'] ?? event.payload['deliveryId'] ?? 'DEL-1';
+            final dest = event.payload['deliveryLocation'] ??
+                event.payload['delivery_location'] ??
+                'عنوان العميل';
+            service.notifyDeliveryJob(
+              deliveryId: deliveryId.toString(),
+              destination: dest.toString(),
+            );
+            break;
+          default:
+            break;
+        }
+      } catch (e, st) {
+        AppLogger.warning('Error handling push notification event: $e\n$st');
+      }
+    });
+  }
+
+  ref.onDispose(() {
+    sub?.cancel();
+    service.dispose();
+  });
   return service;
 });

@@ -33,14 +33,18 @@ void main() {
 
     test('toggleAvailability updates cache and returns MenuItem', () async {
       // First prime the cache
-      await repository.getMenu();
+      final menuResult = await repository.getMenu();
+      final targetId = menuResult.when(
+        onLeft: (_) => 'item-burger-classic',
+        onRight: (m) => m.items.first.id,
+      );
 
-      final result = await repository.toggleAvailability('item-1', false);
+      final result = await repository.toggleAvailability(targetId, false);
       expect(result.isRight, isTrue);
       result.when(
         onLeft: (_) => fail('Expected right item'),
         onRight: (item) {
-          expect(item.id, 'item-1');
+          expect(item.id, targetId);
           expect(item.isAvailable, isFalse);
         },
       );

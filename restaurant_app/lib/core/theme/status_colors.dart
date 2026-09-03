@@ -134,3 +134,43 @@ abstract final class StatusColors {
   static Color starRating(Brightness brightness) =>
       tone(SemanticTone.warning, brightness);
 }
+
+/// Warm hospitality accents for HUMANIZE upgrades (user-approved palette
+/// expansion, Sep 2026).
+///
+/// These hues are reserved for welcoming / celebratory / empathetic moments —
+/// greetings, empty-state illustrations, delivery success, kitchen-calm —
+/// NOT for critical status (orders/tables/delivery keep using [StatusColors]
+/// / [KdsColors]). Light values target >= 4.5:1 on `#FFF8F3` (`#FAFAF9`
+/// family); dark values target >= 7:1 on `#0F1216` / `#151312`.
+abstract final class HospitalityColors {
+  HospitalityColors._();
+
+  // Warm gold for celebrations, loyalty, earnings (amber refined for text).
+  static const Color _goldLight = Color(0xFF8A6100); // ~5.6:1 on light
+  static const Color _goldDark = Color(0xFFFACC15); // ~11:1 on dark
+
+  // Soft rose for empathetic / reassuring moments (failed delivery, empty).
+  static const Color _roseLight = Color(0xFF9F1239); // ~7.5:1 on light
+  static const Color _roseDark = Color(0xFFFDA4AF); // ~10:1 on dark
+
+  // Fresh herb green for calm-kitchen / success-with-warmth.
+  static const Color _herbLight = Color(0xFF166534); // ~6.8:1 on light
+  static const Color _herbDark = Color(0xFF86EFAC); // ~11:1 on dark
+
+  // Warm terracotta greeting accent (welcome banners, dine-in hub).
+  static const Color _welcomeLight = Color(0xFF9A3412); // ~5.9:1 on light
+  static const Color _welcomeDark = Color(0xFFFDBA74); // ~10.8:1 on dark
+
+  static Color gold(Brightness brightness) =>
+      brightness == Brightness.dark ? _goldDark : _goldLight;
+
+  static Color rose(Brightness brightness) =>
+      brightness == Brightness.dark ? _roseDark : _roseLight;
+
+  static Color herb(Brightness brightness) =>
+      brightness == Brightness.dark ? _herbDark : _herbLight;
+
+  static Color welcome(Brightness brightness) =>
+      brightness == Brightness.dark ? _welcomeDark : _welcomeLight;
+}

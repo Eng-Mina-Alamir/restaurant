@@ -16,6 +16,7 @@ import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/menu/data/repositories/menu_repository_impl.dart';
 import '../../features/menu/data/repositories/supabase_menu_repository.dart';
 import '../../features/menu/domain/repositories/menu_repository.dart';
+import '../data/app_cache.dart';
 import '../network/dio_client.dart';
 import '../storage/in_memory_secure_storage_service.dart';
 import '../storage/secure_storage_service.dart';
@@ -105,7 +106,10 @@ final _fallbackMenuRepository = MenuRepositoryImpl();
 
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
   if (AppConfig.useSupabase) {
-    return SupabaseMenuRepositoryImpl(ref.watch(supabaseClientProvider));
+    return SupabaseMenuRepositoryImpl(
+      ref.watch(supabaseClientProvider),
+      ref.watch(localCacheServiceProvider),
+    );
   }
   return _fallbackMenuRepository;
 });

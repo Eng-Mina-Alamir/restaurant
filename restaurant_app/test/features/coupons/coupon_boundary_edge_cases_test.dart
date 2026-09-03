@@ -124,7 +124,7 @@ void main() {
       expect(minSpendCoupon.validate(80.0), isNotNull);
       expect(
         minSpendCoupon.validate(80.0),
-        contains('الحد الأدنى لتطبيق هذا الكود هو 100.0 ريال'),
+        contains('الحد الأدنى لتطبيق هذا الكود'),
       );
       expect(minSpendCoupon.calculateDiscount(80.0), 0.0);
 

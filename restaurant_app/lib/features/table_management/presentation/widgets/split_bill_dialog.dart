@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/domain/enums.dart';
+import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../controllers/waiter_shift_controller.dart';
@@ -110,6 +111,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
 
   @override
   Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
     final activeResult =
         _tabController.index == 0 ? _equalSplitResult : _seatSplitResult;
@@ -130,7 +132,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'تقسيم شيك طاولة ${widget.tableNumber}',
+                  strings.splitBillTitle(widget.tableNumber),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -138,7 +140,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
               ),
               IconButton(
                 icon: const Icon(Icons.close, size: 20),
-                tooltip: 'إغلاق',
+                tooltip: strings.close,
                 onPressed: () => Navigator.pop(context),
               ),
             ],
@@ -148,7 +150,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'إجمالي الفاتورة الأصلية:',
+                strings.originalBillTotal,
                 style: theme.textTheme.bodySmall,
               ),
               Text(
@@ -164,14 +166,14 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
           TabBar(
             controller: _tabController,
             onTap: (_) => setState(() {}),
-            tabs: const [
+            tabs: [
               Tab(
-                icon: Icon(Icons.people_outline, size: 18),
-                text: 'تقسيم متساوي',
+                icon: const Icon(Icons.people_outline, size: 18),
+                text: strings.equalSplit,
               ),
               Tab(
-                icon: Icon(Icons.event_seat_outlined, size: 18),
-                text: 'حسب المقاعد والأصناف',
+                icon: const Icon(Icons.event_seat_outlined, size: 18),
+                text: strings.bySeatSplit,
               ),
             ],
           ),
@@ -292,7 +294,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء'),
+          child: Text(strings.cancel),
         ),
         FilledButton.icon(
           onPressed: () {
@@ -311,8 +313,10 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
           icon: const Icon(Icons.check_circle_outline, size: 18),
           label: Text(
             activeResult.isFullySettled
-                ? 'تأكيد السداد الكامل (${Formatters.formatCurrency(activeResult.originalTotal)})'
-                : 'حفظ وتأكيد التقسيم',
+                ? strings.confirmFullSettlement(
+                    Formatters.formatCurrency(activeResult.originalTotal),
+                  )
+                : strings.saveAndConfirmSplit,
           ),
         ),
       ],
@@ -324,6 +328,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
     required void Function(bool isPaid, PaymentMethod method) onPaymentChanged,
     bool showItems = false,
   }) {
+    final strings = ref.read(appStringsProvider);
     final isPaid = share.isPaid;
 
     return Container(
@@ -385,14 +390,14 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
                 value: share.paymentMethod,
                 isDense: true,
                 style: const TextStyle(fontSize: 12, color: Colors.black87),
-                items: const [
+                items: [
                   DropdownMenuItem(
                     value: PaymentMethod.cash,
-                    child: Text('💵 كاش'),
+                    child: Text(strings.splitCashOption),
                   ),
                   DropdownMenuItem(
                     value: PaymentMethod.card,
-                    child: Text('💳 بطاقة / فيزا'),
+                    child: Text(strings.splitCardOption),
                   ),
                 ],
                 onChanged: (method) {
@@ -404,7 +409,7 @@ class _SplitBillDialogState extends ConsumerState<SplitBillDialog>
               const Spacer(),
               ChoiceChip(
                 label: Text(
-                  isPaid ? 'تم الدفع ✅' : 'سداد الحصة',
+                  isPaid ? strings.sharePaid : strings.payShare,
                   style: TextStyle(
                     fontSize: 11,
                     color: isPaid ? Colors.white : null,

@@ -63,17 +63,23 @@ class _CustomerUnreachableDialogState extends State<CustomerUnreachableDialog> {
     super.dispose();
   }
 
-  void _recordCallAttempt() {
+  Future<void> _recordCallAttempt() async {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _callAttempts++);
-    if (widget.customerPhone != null) {
-      final telUri = DriverQuickActionService.getTelUriString(
-        widget.customerPhone!,
+    final phone = widget.customerPhone;
+    if (phone == null || phone.isEmpty) return;
+    final uri = DriverQuickActionService.toTelUri(phone);
+    final opened = await DriverQuickActionService.launchExternal(uri);
+    if (opened) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('تم تسجيل محاولة الاتصال #$_callAttempts')),
       );
-      DriverQuickActionService.copyToClipboard(widget.customerPhone!);
-      ScaffoldMessenger.of(context).showSnackBar(
+    } else {
+      await DriverQuickActionService.copyToClipboard(phone);
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'تم تسجيل محاولة الاتصال #$_callAttempts ورقم الهاتف بالحافظة ($telUri)',
+            'تم تسجيل محاولة الاتصال #$_callAttempts — تعذر فتح Dialer وتم نسخ الرقم',
           ),
         ),
       );

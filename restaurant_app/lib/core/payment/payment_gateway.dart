@@ -5,7 +5,7 @@ class PaymentRequest {
   const PaymentRequest({
     required this.orderId,
     required this.amount,
-    this.currency = 'SAR',
+    this.currency = 'EGP',
     required this.method,
     this.customerPhone,
     this.metadata = const {},

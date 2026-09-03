@@ -1,16 +1,21 @@
 /// Configuration constants for the Supabase backend.
 abstract final class SupabaseConfig {
-  /// Supabase project URL.
+  /// Supabase project URL injected via build environment (--dart-define=SUPABASE_URL=...).
   static const String url = String.fromEnvironment(
     'SUPABASE_URL',
     defaultValue: 'https://iovxfvkaswdediephqep.supabase.co',
   );
 
-  /// Supabase anon / publishable public key.
+  /// Supabase anon / publishable public key injected via build environment (--dart-define=SUPABASE_ANON_KEY=...).
   static const String anonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'sb_publishable_WBFVGk_OwNur8_U0KE3-Fw_XbbNTcii',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvdnhmdmthc3dkZWRpZXBocWVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNDQ4MjIsImV4cCI6MjEwMjYyMDgyMn0.0sgTyN2P0bsOGSIyrncDQaDStXlW_BmZ5A5oMT5lCFs',
   );
+
+  /// Whether Supabase credentials were provided in the build environment.
+  static bool get isConfigured =>
+      url.trim().isNotEmpty && anonKey.trim().isNotEmpty;
 
   // ── Database Table Names ──────────────────────────────────────────────────
   static const String profilesTable = 'profiles';
@@ -37,6 +42,9 @@ abstract final class SupabaseConfig {
   static const String tableServiceRequestsTable = 'table_service_requests';
   static const String paymentsTable = 'payments';
   static const String deliveryExceptionsTable = 'delivery_exceptions';
+  static const String deliveryVerificationCodesTable =
+      'delivery_verification_codes';
+  static const String recipesTable = 'recipes';
 
   // ── Storage Buckets ───────────────────────────────────────────────────────
   static const String menuBucket = 'menu-images';
@@ -47,4 +55,7 @@ abstract final class SupabaseConfig {
   /// The single restaurant UUID this app instance is tied to.
   static const String defaultRestaurantId =
       '1e08b47c-15be-4604-a913-431af7fbd54f';
+
+  // ── Restaurant Profile (single-row setup, edited by manager) ──────────────
+  static const String restaurantsTable = 'restaurants';
 }

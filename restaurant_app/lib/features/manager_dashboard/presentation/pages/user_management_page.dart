@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/app_config.dart';
 import '../../../../config/constants.dart';
+import '../../../../config/supabase_config.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../../../core/theme/spacing.dart';
@@ -36,7 +37,8 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
               email: map['email']?.toString() ?? '',
               phone: map['phone']?.toString() ?? '',
               role: UserRole.fromName(map['role']?.toString()),
-              restaurantId: map['restaurant_id']?.toString() ?? 'branch-1',
+              restaurantId: map['restaurant_id']?.toString() ??
+                  SupabaseConfig.defaultRestaurantId,
               createdAt:
                   DateTime.tryParse(map['created_at']?.toString() ?? '') ??
                   DateTime.now(),
@@ -58,69 +60,8 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
   }
 
   void _seed() {
-    final now = DateTime.now();
-    state = [
-      UserEntity(
-        id: 'usr-1',
-        name: 'سالم الشمري',
-        email: 'salem@restaurant.com',
-        phone: '0501112233',
-        role: UserRole.waiter,
-        restaurantId: 'branch-1',
-        createdAt: now.subtract(const Duration(days: 90)),
-        isActive: true,
-      ),
-      UserEntity(
-        id: 'usr-2',
-        name: 'شيف مصطفى كمال',
-        email: 'mustafa@restaurant.com',
-        phone: '0502223344',
-        role: UserRole.kitchen,
-        restaurantId: 'branch-1',
-        createdAt: now.subtract(const Duration(days: 120)),
-        isActive: true,
-      ),
-      UserEntity(
-        id: 'usr-3',
-        name: 'خالد العتيبي',
-        email: 'khaled@restaurant.com',
-        phone: '0503334455',
-        role: UserRole.driver,
-        restaurantId: 'branch-2',
-        createdAt: now.subtract(const Duration(days: 45)),
-        isActive: true,
-      ),
-      UserEntity(
-        id: 'usr-4',
-        name: 'فاطمة الدوسري',
-        email: 'fatima@restaurant.com',
-        phone: '0504445566',
-        role: UserRole.manager,
-        restaurantId: 'branch-1',
-        createdAt: now.subtract(const Duration(days: 200)),
-        isActive: true,
-      ),
-      UserEntity(
-        id: 'usr-5',
-        name: 'محمود سامي',
-        email: 'mahmoud@restaurant.com',
-        phone: '0505556677',
-        role: UserRole.manager,
-        restaurantId: 'branch-2',
-        createdAt: now.subtract(const Duration(days: 110)),
-        isActive: true,
-      ),
-      UserEntity(
-        id: 'usr-6',
-        name: 'عمر ياسين',
-        email: 'omar@restaurant.com',
-        phone: '0506667788',
-        role: UserRole.waiter,
-        restaurantId: 'branch-3',
-        createdAt: now.subtract(const Duration(days: 15)),
-        isActive: true,
-      ),
-    ];
+    // Supabase-only: never show fake staff. Empty table / error => empty list.
+    state = [];
   }
 
   Future<void> addUser({
@@ -128,7 +69,7 @@ class UserManagementController extends StateNotifier<List<UserEntity>> {
     required String email,
     required String phone,
     required UserRole role,
-    String restaurantId = 'branch-1',
+    String restaurantId = SupabaseConfig.defaultRestaurantId,
   }) async {
     final newUser = UserEntity(
       id: 'usr-${DateTime.now().millisecondsSinceEpoch}',
@@ -236,7 +177,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة الموظفين وتعيين الفروع'),
+        title: const Text('إدارة الموظفين والمستخدمين'),
         actions: [
           IconButton(
             tooltip: 'إضافة موظف',
@@ -524,6 +465,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         return const Color(0xFF0284C7);
       case UserRole.kitchen:
         return const Color(0xFFD97706);
+      case UserRole.managerChef:
+        return const Color(0xFFEA580C);
       case UserRole.manager:
         return colorScheme.primary;
       case UserRole.admin:
@@ -543,6 +486,8 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
         return Icons.room_service_outlined;
       case UserRole.kitchen:
         return Icons.soup_kitchen_outlined;
+      case UserRole.managerChef:
+        return Icons.outdoor_grill_outlined;
       case UserRole.manager:
         return Icons.manage_accounts_outlined;
       case UserRole.admin:
@@ -559,7 +504,9 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
     final emailCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     UserRole role = UserRole.waiter;
-    String selectedBranch = branches.isNotEmpty ? branches.first.id : 'branch-1';
+    String selectedBranch = branches.isNotEmpty
+        ? branches.first.id
+        : SupabaseConfig.defaultRestaurantId;
 
     showModalBottomSheet<void>(
       context: context,
@@ -581,10 +528,12 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'إضافة موظف جديد وتعيين الفرع',
-                      style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'إضافة موظف جديد',
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
@@ -622,6 +571,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: selectedBranch,
                   items: branches
                       .map(
@@ -680,7 +630,7 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
                         );
                     Navigator.pop(ctx);
                   },
-                  child: const Text('إضافة الموظف للفرع'),
+                  child: const Text('إضافة الموظف'),
                 ),
               ],
             ),
@@ -700,7 +650,9 @@ class _UserManagementPageState extends ConsumerState<UserManagementPage> {
     final phoneCtrl = TextEditingController(text: user.phone);
     UserRole role = user.role;
     String selectedBranch = user.restaurantId ??
-        (branches.isNotEmpty ? branches.first.id : 'branch-1');
+        (branches.isNotEmpty
+            ? branches.first.id
+            : SupabaseConfig.defaultRestaurantId);
 
     showModalBottomSheet<void>(
       context: context,

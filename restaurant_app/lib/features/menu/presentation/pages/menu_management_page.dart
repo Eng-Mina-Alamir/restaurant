@@ -123,12 +123,23 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
 
               // Items List
               Expanded(
-                child: items.isEmpty
-                    ? const EmptyState(
-                        message: 'لا توجد أصناف مطابقة',
-                        icon: Icons.restaurant_menu,
-                      )
-                    : ListView.builder(
+                child: RefreshIndicator(
+                  onRefresh: () async =>
+                      ref.invalidate(menuControllerProvider),
+                  child: items.isEmpty
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Container(
+                            height: 350,
+                            alignment: Alignment.center,
+                            child: const EmptyState(
+                              message: 'لا توجد أصناف مطابقة',
+                              icon: Icons.restaurant_menu,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(
                           AppSpacing.md,
                           AppSpacing.xs,
@@ -304,6 +315,7 @@ class _MenuManagementPageState extends ConsumerState<MenuManagementPage> {
                           );
                         },
                       ),
+                ),
               ),
             ],
           );

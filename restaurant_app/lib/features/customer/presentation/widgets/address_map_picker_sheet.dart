@@ -208,6 +208,7 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 3),
         ),
       );
 
@@ -236,6 +237,31 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
   }
 
   bool get _isWithinRange => _distanceKm <= widget.maxDeliveryRadiusKm;
+
+  Widget _buildQuickLocationChip(String label, LatLng target) {
+    final isSelected =
+        (_selectedLatLng.latitude - target.latitude).abs() < 0.005 &&
+        (_selectedLatLng.longitude - target.longitude).abs() < 0.005;
+    return ActionChip(
+      avatar: const Icon(Icons.near_me, size: 14),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      backgroundColor: isSelected
+          ? Theme.of(context).colorScheme.primaryContainer
+          : null,
+      onPressed: () {
+        setState(() {
+          _selectedLatLng = target;
+          _resolvedAddress = '$label، القاهرة';
+          _searchCtrl.text = label;
+          _autocompleteResults = [];
+        });
+        _mapController?.moveTo(
+          MhjMapsLatLng(lat: target.latitude, lng: target.longitude),
+          zoom: 15,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -383,6 +409,26 @@ class _AddressMapPickerSheetState extends State<AddressMapPickerSheet>
                       },
                     ),
                   ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+
+          // Quick Neighborhood Shortcuts (Cairo)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Row(
+              children: [
+                _buildQuickLocationChip('الزمالك', const LatLng(30.0626, 31.2497)),
+                const SizedBox(width: 6),
+                _buildQuickLocationChip('وسط البلد', const LatLng(30.0444, 31.2357)),
+                const SizedBox(width: 6),
+                _buildQuickLocationChip('الدقي', const LatLng(30.0384, 31.2124)),
+                const SizedBox(width: 6),
+                _buildQuickLocationChip('المعادي', const LatLng(29.9602, 31.2566)),
+                const SizedBox(width: 6),
+                _buildQuickLocationChip('مصر الجديدة', const LatLng(30.0911, 31.3236)),
               ],
             ),
           ),

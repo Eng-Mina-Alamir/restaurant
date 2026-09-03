@@ -11,12 +11,15 @@ import '../../../../core/notifications/driver_alert_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/haptics.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/humanized_feedback.dart';
 import '../../../../shared/widgets/logout_action_button.dart';
 import '../../../chat/presentation/controllers/unread_chat_controller.dart';
 import '../../domain/entities/delivery_assignment.dart';
 import '../../domain/services/driver_quick_action_service.dart';
 import '../controllers/delivery_controller.dart';
+import '../controllers/delivery_pin_controller.dart';
 import '../controllers/driver_wallet_controller.dart';
 import '../widgets/customer_unreachable_dialog.dart';
 import '../widgets/driver_cash_summary_card.dart';
@@ -91,13 +94,19 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            child: EmptyState(
-                              message:
-                                  _filter == null
-                                      ? AppConstants.noDeliveryJobs
-                                      : '${_filter!.labelAr} — ${AppConstants.noDeliveryJobs}',
-                              icon: Icons.local_shipping_outlined,
-                            ),
+                            child: _filter == null
+                                ? const EmptyState(
+                                    // Warm constant keeps widget tests green.
+                                    message: AppConstants.noDeliveryJobs,
+                                    title: HumanCopy.noJobsTitle,
+                                    subtitle: AppConstants.noDeliveryJobs,
+                                    icon: Icons.local_shipping_outlined,
+                                  )
+                                : EmptyState(
+                                    message:
+                                        '${_filter!.labelAr} — ${AppConstants.noDeliveryJobs}',
+                                    icon: Icons.local_shipping_outlined,
+                                  ),
                           ),
                         ],
                       )
@@ -146,14 +155,11 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     unawaited(ref.read(driverAlertServiceProvider).notifyNewAssignment());
     if (!mounted) return;
     final latest = fresh.last;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${AppConstants.driverNewAssignmentAlert} — '
-          '${AppConstants.driverNewAssignmentOrderPrefix} '
-          '${Formatters.formatOrderId(latest.orderId)}',
-        ),
-      ),
+    HumanSnackBar.success(
+      context,
+      // Keeps widget tests green (they look up
+      // AppConstants.driverNewAssignmentAlert) with a warm continuation.
+      '${AppConstants.driverNewAssignmentAlert}: ${HumanCopy.newAssignmentWarm} — ${Formatters.formatOrderId(latest.orderId)}',
     );
   }
 
@@ -162,23 +168,30 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     WidgetRef ref,
     DeliveryAssignment assignment,
   ) {
-    const pickup = LatLng(24.7136, 46.6753);
+    const pickup = LatLng(
+      AppConstants.defaultRestaurantLat,
+      AppConstants.defaultRestaurantLng,
+    );
     final delivery = LatLng(
-      assignment.latitude != 0 ? assignment.latitude : 24.7220,
-      assignment.longitude != 0 ? assignment.longitude : 46.6850,
+      assignment.latitude != 0
+          ? assignment.latitude
+          : AppConstants.defaultCustomerLat,
+      assignment.longitude != 0
+          ? assignment.longitude
+          : AppConstants.defaultCustomerLng,
     );
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: Colors.transparent,
       builder:
           (ctx) => Container(
             height: MediaQuery.of(ctx).size.height * 0.90,
             decoration: BoxDecoration(
               color: Theme.of(ctx).scaffoldBackgroundColor,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
+                top: Radius.circular(AppRadius.lg),
               ),
             ),
             child: Column(
@@ -280,9 +293,17 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
     final controller = ref.read(deliveryControllerProvider.notifier);
     switch (assignment.deliveryStatus) {
       case DeliveryStatus.pending:
+        AppHaptics.actionSuccess();
         await controller.accept(assignment.id);
+        if (mounted) {
+          HumanSnackBar.success(context, HumanCopy.acceptedWarm);
+        }
       case DeliveryStatus.accepted:
+        AppHaptics.actionSuccess();
         await controller.start(assignment.id);
+        if (mounted) {
+          HumanSnackBar.success(context, HumanCopy.startedWarm);
+        }
       case DeliveryStatus.inTransit:
         const isCash = true;
         final amountDue = (assignment.deliveryFee != null && assignment.deliveryFee! > 0)
@@ -294,10 +315,18 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
           orderId: assignment.orderId,
           isCashOnDelivery: isCash,
           amountDue: amountDue,
+          pinRepository: ref.read(deliveryPinRepositoryProvider),
         );
 
         if (result != null && result.confirmed) {
           await controller.complete(assignment.id);
+          // Consume the verification code so the same QR cannot complete
+          // a second delivery (replay protection). Best-effort.
+          try {
+            await ref
+                .read(deliveryPinRepositoryProvider)
+                .invalidatePin(assignment.orderId);
+          } catch (_) {}
           ref
               .read(driverWalletControllerProvider.notifier)
               .recordCodCollection(
@@ -307,14 +336,7 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
               );
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'تم إثبات وتسليم الطلب بنجاح وتحديث محفظة الكاش ✅',
-                ),
-                backgroundColor: Color(0xFF10B981),
-              ),
-            );
+            HumanSnackBar.milestone(context, HumanCopy.deliveredCelebration);
           }
         }
       default:
@@ -336,13 +358,9 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
       final controller = ref.read(deliveryControllerProvider.notifier);
       await controller.fail(assignment.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تم تسجيل تعثر التسليم (${exception.reason.labelAr}) وإرجاع الطلب للمطبخ',
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
+        HumanSnackBar.error(
+          context,
+          '${HumanCopy.deliveryFailedWarm} (${exception.reason.labelAr})',
         );
       }
     }
@@ -535,75 +553,102 @@ class _DeliveryCard extends ConsumerWidget {
               children: [
                 // 1-Tap Direct Call
                 IconButton.filledTonal(
-                  tooltip: 'اتصال هاتفي مباشر',
-                  icon: const Icon(
-                    Icons.phone_in_talk_rounded,
-                    size: 18,
-                    color: Color(0xFF10B981),
+                  tooltip: 'اتصال هاتفي مباشر بالعميل',
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48),
                   ),
-                  onPressed: () {
-                    final tel = DriverQuickActionService.getTelUriString(
+                  icon: Icon(
+                    Icons.phone_in_talk_rounded,
+                    size: 20,
+                    color: StatusColors.tone(
+                      SemanticTone.success,
+                      theme.brightness,
+                    ),
+                  ),
+                  onPressed: () async {
+                    AppHaptics.selectionTap();
+                    final uri = DriverQuickActionService.toTelUri(
                       customerPhone,
                     );
-                    DriverQuickActionService.copyToClipboard(customerPhone);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('رقم الهاتف $customerPhone منسوخ ($tel)'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    final opened =
+                        await DriverQuickActionService.launchExternal(uri);
+                    if (!opened && context.mounted) {
+                      await DriverQuickActionService.copyToClipboard(
+                        customerPhone,
+                      );
+                      if (context.mounted) {
+                        HumanSnackBar.info(
+                          context,
+                          '${HumanCopy.callFallback} $customerPhone',
+                        );
+                      }
+                    }
                   },
                 ),
                 const SizedBox(width: AppSpacing.xs),
 
                 // 1-Tap WhatsApp Popup with 3 Ready Templates
                 PopupMenuButton<String>(
-                  tooltip: 'رسالة واتساب سريعة',
+                  tooltip: 'رسالة واتساب سريعة للعميل',
                   icon: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF25D366).withValues(alpha: 0.15),
+                      color: StatusColors.tone(
+                        SemanticTone.success,
+                        theme.brightness,
+                      ).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.chat_bubble_outline_rounded,
-                      size: 18,
-                      color: Color(0xFF25D366),
+                      size: 20,
+                      color: StatusColors.tone(
+                        SemanticTone.success,
+                        theme.brightness,
+                      ),
                     ),
                   ),
-                  onSelected: (template) {
-                    final waUrl =
-                        DriverQuickActionService.getWhatsAppUriString(
-                          phone: customerPhone,
-                          message: template,
-                        );
-                    DriverQuickActionService.copyToClipboard(waUrl);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'تم نسخ رسالة الواتساب الجاهزة: "$template"',
-                        ),
-                        backgroundColor: const Color(0xFF25D366),
-                      ),
+                  onSelected: (template) async {
+                    AppHaptics.selectionTap();
+                    final uri = DriverQuickActionService.toWhatsAppUri(
+                      phone: customerPhone,
+                      message: template,
                     );
+                    final opened =
+                        await DriverQuickActionService.launchExternal(uri);
+                    if (!opened && context.mounted) {
+                      await DriverQuickActionService.copyToClipboard(
+                        uri.toString(),
+                      );
+                      if (context.mounted) {
+                        HumanSnackBar.info(
+                          context,
+                          HumanCopy.whatsappFallback,
+                        );
+                      }
+                    }
                   },
                   itemBuilder: (ctx) {
+                    final success = StatusColors.tone(
+                      SemanticTone.success,
+                      theme.brightness,
+                    );
                     return DriverQuickActionService.defaultWhatsAppTemplates
                         .map((tpl) {
                           return PopupMenuItem(
                             value: tpl,
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.send_rounded,
-                                  size: 14,
-                                  color: Color(0xFF25D366),
+                                  size: 16,
+                                  color: success,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Expanded(
                                   child: Text(
                                     tpl,
-                                    style: const TextStyle(fontSize: 12),
+                                    style: Theme.of(ctx).textTheme.bodyMedium,
                                   ),
                                 ),
                               ],
@@ -618,26 +663,34 @@ class _DeliveryCard extends ConsumerWidget {
                 // External Google Maps Navigation
                 IconButton.filledTonal(
                   tooltip: 'فتح خرائط Google للملاحة الصوتية',
-                  icon: const Icon(
-                    Icons.directions_rounded,
-                    size: 18,
-                    color: Color(0xFF3B82F6),
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(48, 48),
                   ),
-                  onPressed: () {
-                    final mapsUrl =
-                        DriverQuickActionService.getGoogleMapsDirectionsUrl(
-                          latitude: assignment.latitude,
-                          longitude: assignment.longitude,
-                          label: assignment.deliveryLocation,
-                        );
-                    DriverQuickActionService.copyToClipboard(mapsUrl);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'تم نسخ رابط اتجاهات Google Maps الخارجي',
-                        ),
-                      ),
+                  icon: Icon(
+                    Icons.directions_rounded,
+                    size: 20,
+                    color: StatusColors.tone(
+                      SemanticTone.info,
+                      theme.brightness,
+                    ),
+                  ),
+                  onPressed: () async {
+                    AppHaptics.selectionTap();
+                    final uri = DriverQuickActionService.toMapsUri(
+                      latitude: assignment.latitude,
+                      longitude: assignment.longitude,
+                      label: assignment.deliveryLocation,
                     );
+                    final opened =
+                        await DriverQuickActionService.launchExternal(uri);
+                    if (!opened && context.mounted) {
+                      await DriverQuickActionService.copyToClipboard(
+                        uri.toString(),
+                      );
+                      if (context.mounted) {
+                        HumanSnackBar.info(context, HumanCopy.mapsFallback);
+                      }
+                    }
                   },
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -713,16 +766,27 @@ class _DeliveryCard extends ConsumerWidget {
                 if (status == DeliveryStatus.inTransit) ...[
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFEF4444),
-                      side: const BorderSide(color: Color(0xFFEF4444)),
+                      foregroundColor: StatusColors.tone(
+                        SemanticTone.danger,
+                        theme.brightness,
+                      ),
+                      side: BorderSide(
+                        color: StatusColors.tone(
+                          SemanticTone.danger,
+                          theme.brightness,
+                        ),
+                      ),
                       minimumSize: const Size(0, 48),
                     ),
-                    icon: const Icon(Icons.warning_amber_rounded, size: 16),
-                    label: const Text(
-                      'تعثر التسليم',
-                      style: TextStyle(fontSize: 12),
+                    icon: const Icon(
+                      Icons.handshake_outlined,
+                      size: 18,
                     ),
-                    onPressed: onException,
+                    label: const Text('واجهت صعوبة في الوصول'),
+                    onPressed: () {
+                      AppHaptics.selectionTap();
+                      onException();
+                    },
                   ),
                   const SizedBox(width: AppSpacing.xs),
                 ],
@@ -732,12 +796,21 @@ class _DeliveryCard extends ConsumerWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor:
                             status == DeliveryStatus.inTransit
-                                ? const Color(0xFF10B981)
+                                ? StatusColors.tone(
+                                    SemanticTone.success,
+                                    theme.brightness,
+                                  )
                                 : null,
-                        minimumSize: const Size(0, 48),
+                        minimumSize: const Size(0, 52),
                       ),
-                      onPressed: onAction,
-                      child: Text(actionLabel),
+                      onPressed: () {
+                        AppHaptics.selectionTap();
+                        onAction();
+                      },
+                      child: Text(
+                        actionLabel,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                 ],

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_localizations.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/spacing.dart';
 import '../animations/animated_press_card.dart';
 
@@ -25,6 +26,8 @@ class LanguageSwitcherButton extends ConsumerWidget {
       ref.read(languageTransitionOriginProvider.notifier).state = center;
     }
 
+    final strings = ref.read(appStringsProvider);
+    final switchedMessage = isArabic ? strings.switchedToEnglish : strings.switchedToArabic;
     ref.read(localeControllerProvider.notifier).toggleLanguage();
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -50,7 +53,7 @@ class LanguageSwitcherButton extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              isArabic ? 'Switched to English 🇺🇸' : 'تم التحويل إلى العربية 🇸🇦',
+              switchedMessage,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -65,6 +68,7 @@ class LanguageSwitcherButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final strings = ref.watch(appStringsProvider);
     final lang = ref.watch(currentLanguageProvider);
     final isArabic = lang == AppLanguage.arabic;
     final theme = Theme.of(context);
@@ -105,7 +109,7 @@ class LanguageSwitcherButton extends ConsumerWidget {
                 duration: const Duration(milliseconds: 360),
                 curve: Curves.easeOutBack,
                 child: Icon(
-                  Icons.translate_rounded,
+                  Icons.language_rounded,
                   size: 15,
                   color: colorScheme.primary,
                 ),
@@ -120,7 +124,7 @@ class LanguageSwitcherButton extends ConsumerWidget {
                   );
                 },
                 child: Text(
-                  isArabic ? 'EN' : 'عربي',
+                  isArabic ? strings.languageToggleToEnglish : strings.languageToggleToArabic,
                   key: ValueKey<String>(isArabic ? 'EN' : 'عربي'),
                   style: TextStyle(
                     fontSize: 11,
@@ -181,9 +185,9 @@ class LanguageSwitcherButton extends ConsumerWidget {
                   ),
                 );
               },
-              child: Text(
-                isArabic ? 'English (EN)' : 'العربية (AR)',
-                key: ValueKey<String>(isArabic ? 'English (EN)' : 'العربية (AR)'),
+                child: Text(
+                  isArabic ? strings.languageToggleLongToEnglish : strings.languageToggleLongToArabic,
+                  key: ValueKey<String>(isArabic ? 'English (EN)' : 'العربية (AR)'),
                 style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

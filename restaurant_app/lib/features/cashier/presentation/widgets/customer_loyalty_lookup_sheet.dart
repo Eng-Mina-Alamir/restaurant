@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/logger.dart';
 import '../../domain/entities/loyalty_customer_entity.dart';
 
 /// Modal bottom sheet for searching customer loyalty accounts and redeeming points for discounts.
@@ -55,20 +57,73 @@ class _CustomerLoyaltyLookupSheetState
     super.dispose();
   }
 
-  void _searchCustomer(String query) {
+  void _searchCustomer(String query) async {
     final clean = query.trim();
     if (clean.length < 3) return;
 
-    final matches = LoyaltyCustomer.demoCustomers.where(
-      (c) => c.phoneNumber.contains(clean) || c.name.contains(clean),
-    );
-
-    setState(() {
-      if (matches.isNotEmpty) {
-        _foundCustomer = matches.first;
-        _pointsToRedeem = 0;
+    // Supabase-only lookup: profiles matched by phone + live loyalty points.
+    // No demo customers are ever shown: no match => no customer (truthful).
+    try {
+      final client = Supabase.instance.client;
+      final row = await client
+          .from('profiles')
+          .select('id, name, phone')
+          .ilike('phone', '%$clean%')
+          .limit(1)
+          .maybeSingle();
+      if (row == null) {
+        if (mounted) {
+          setState(() {
+            _foundCustomer = null;
+            _pointsToRedeem = 0;
+          });
+        }
+        return;
       }
-    });
+      final map = Map<String, dynamic>.from(row as Map);
+      int points = 0;
+      try {
+        final acc = await client
+            .from('loyalty_accounts')
+            .select('current_points')
+            .eq('user_id', map['id'].toString())
+            .maybeSingle();
+        if (acc != null) {
+          points =
+              ((acc as Map)['current_points'] as num?)?.toInt() ?? 0;
+        }
+      } catch (e) {
+        AppLogger.warning('Loyalty lookup points fallback: $e');
+      }
+      if (!mounted) return;
+      setState(() {
+        _foundCustomer = LoyaltyCustomer(
+          id: map['id']?.toString() ?? '',
+          name: (map['name'] as String?)?.isNotEmpty == true
+              ? map['name'] as String
+              : 'عميل',
+          phoneNumber: map['phone'] as String? ?? clean,
+          pointsBalance: points,
+          tier: _tierForPoints(points),
+        );
+        _pointsToRedeem = 0;
+      });
+    } catch (e) {
+      AppLogger.warning('Loyalty lookup Supabase error: $e');
+      if (mounted) {
+        setState(() {
+          _foundCustomer = null;
+          _pointsToRedeem = 0;
+        });
+      }
+    }
+  }
+
+  static LoyaltyTier _tierForPoints(int points) {
+    if (points >= 800) return LoyaltyTier.vip;
+    if (points >= 400) return LoyaltyTier.gold;
+    if (points >= 150) return LoyaltyTier.silver;
+    return LoyaltyTier.bronze;
   }
 
   @override

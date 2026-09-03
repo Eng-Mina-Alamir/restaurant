@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../domain/entities/reservation_entity.dart';
 import '../../domain/repositories/reservation_repository.dart';
@@ -12,6 +13,7 @@ final reservationRepositoryProvider = Provider<ReservationRepository>((ref) {
   if (AppConfig.useSupabase) {
     return SupabaseReservationRepository(
       supabase: ref.watch(supabaseClientProvider),
+      cache: ref.watch(localCacheServiceProvider),
     );
   }
   return InMemoryReservationRepository();
@@ -46,6 +48,15 @@ class ReservationController
     required DateTime reservationTime,
     String? notes,
   }) async {
+    // Guard: Prevent overcapacity
+    final tables = _ref.read(tableControllerProvider);
+    final matchingTable = tables.where(
+      (t) => t.id == tableId || t.tableNumber == tableNumber,
+    );
+    if (matchingTable.isNotEmpty && guestCount > matchingTable.first.capacity) {
+      return false;
+    }
+
     final reservation = ReservationEntity(
       id: 'res-${DateTime.now().millisecondsSinceEpoch}',
       customerName: customerName,
@@ -63,10 +74,14 @@ class ReservationController
     return result.when(
       onLeft: (_) => false,
       onRight: (created) {
-        // Also update table status to reserved
-        _ref
-            .read(tableControllerProvider.notifier)
-            .setReserved(tableId, reserved: true);
+        // Only block table today if reservation is within 2 hours
+        final isWithinTwoHours =
+            reservationTime.difference(DateTime.now()).inHours <= 2;
+        if (isWithinTwoHours) {
+          _ref
+              .read(tableControllerProvider.notifier)
+              .setReserved(tableId, reserved: true);
+        }
         loadReservations();
         return true;
       },

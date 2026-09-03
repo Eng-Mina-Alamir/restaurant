@@ -66,13 +66,14 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     UserRole role = UserRole.customer,
   }) async {
     try {
+      final safeRestaurantId = _resolveRestaurantId(restaurantId);
       final response = await _supabase.auth.signUp(
         email: email.trim(),
         password: password,
         data: {
           'name': name.trim(),
           'phone': phone.trim(),
-          'restaurant_id': restaurantId,
+          'restaurant_id': safeRestaurantId,
         },
       );
 
@@ -83,18 +84,32 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         );
       }
 
-      // Profile is auto-created by the `on_auth_user_created` trigger on auth.users
-      // which calls handle_new_user() — no client-side insert needed.
+      // When email confirmation is enabled, Supabase returns a user WITHOUT a
+      // session. Persisting that as an authenticated session would leave the
+      // app "logged in" with a null token while every RLS-gated call fails.
+      // Surface it as an explicit message instead.
+      if (response.session?.accessToken == null) {
+        // Best-effort profile self-heal for the confirmation-pending user so
+        // the row exists once they confirm and sign in.
+        await _ensureProfileRow(
+          user,
+          name: name,
+          phone: phone,
+          restaurantId: safeRestaurantId,
+        );
+        throw const ServerException(
+          'تم إنشاء الحساب بنجاح، يرجى تأكيد البريد الإلكتروني ثم تسجيل الدخول',
+        );
+      }
 
-      return UserModel(
-        id: user.id,
-        name: name,
-        email: email,
-        phone: phone,
-        role: UserRole.customer,
-        token: response.session?.accessToken,
-        createdAt: DateTime.now(),
+      // Profile is auto-created by the `on_auth_user_created` trigger on
+      // auth.users (see migration 20260904000000_account_linking_hardening).
+      // _fetchOrConstructProfile self-heals the row if the trigger lagged.
+      final profile = await _fetchOrConstructProfile(
+        user,
+        response.session?.accessToken,
       );
+      return profile.copyWith(restaurantId: safeRestaurantId);
     } on AuthException catch (e) {
       AppLogger.warning('Supabase register AuthException: ${e.message}');
       throw ServerException(e.message);
@@ -142,6 +157,9 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<String> refreshToken(String refreshToken) async {
+    // NOTE: the [refreshToken] argument is legacy from the Dio backend. In
+    // Supabase mode the SDK owns refresh-token persistence (and auto-refresh)
+    // internally, so the session is refreshed from the SDK store directly.
     try {
       final response = await _supabase.auth.refreshSession();
       final token = response.session?.accessToken;
@@ -170,13 +188,20 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   /// Fetches the profile from the `profiles` table or falls back to `userMetadata`.
+  ///
+  /// When the row is missing (e.g. the `on_auth_user_created` trigger lagged
+  /// or predates the hardening migration), one self-heal insert is attempted
+  /// before degrading to the minimal identity below — so a missing row can
+  /// never silently strand the account's cart/orders/loyalty linkage.
   Future<UserModel> _fetchOrConstructProfile(User user, String? token) async {
     try {
-      final data = await _supabase
+      var data = await _supabase
           .from(SupabaseConfig.profilesTable)
           .select()
           .eq('id', user.id)
           .maybeSingle();
+
+      data ??= await _ensureProfileRow(user);
 
       if (data != null) {
         return UserModel(
@@ -195,6 +220,9 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           // Signup metadata (`user_metadata`) is client-controlled and must
           // never grant privileges. Missing role degrades to customer.
           role: UserRole.fromName(data['role'] as String?),
+          restaurantId:
+              data['restaurant_id'] as String? ??
+              user.userMetadata?['restaurant_id'] as String?,
           token: token,
           createdAt: data['created_at'] != null
               ? DateTime.tryParse(data['created_at'] as String) ??
@@ -221,8 +249,67 @@ class SupabaseAuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       email: user.email ?? (meta['email'] as String?) ?? '',
       phone: user.phone ?? (meta['phone'] as String?) ?? '',
       role: UserRole.customer,
+      restaurantId:
+          (meta['restaurant_id'] as String?) ?? SupabaseConfig.defaultRestaurantId,
       token: token,
       createdAt: DateTime.now(),
     );
+  }
+
+  /// Best-effort self-heal for a missing `profiles` row.
+  ///
+  /// Succeeds only for the caller's own row (`id = auth.uid()` per RLS) and is
+  /// a no-op when the row already exists. Returns the row when one is (now)
+  /// present, else null. Role is intentionally omitted: the server trigger
+  /// `enforce_profile_insert_role` forces `customer` regardless.
+  Future<Map<String, dynamic>?> _ensureProfileRow(
+    User user, {
+    String? name,
+    String? phone,
+    String? restaurantId,
+  }) async {
+    try {
+      final meta = user.userMetadata ?? {};
+      final resolvedName =
+          name?.trim().isNotEmpty == true ? name!.trim() : null;
+      final resolvedPhone =
+          phone?.trim().isNotEmpty == true ? phone!.trim() : null;
+      await _supabase.from(SupabaseConfig.profilesTable).upsert(
+        {
+          'id': user.id,
+          'name':
+              resolvedName ?? (meta['name'] as String?) ?? 'مستخدم جديد',
+          'email': user.email ?? (meta['email'] as String?),
+          'phone': resolvedPhone ?? user.phone ?? (meta['phone'] as String?),
+          'restaurant_id':
+              restaurantId ?? (meta['restaurant_id'] as String?),
+        },
+        onConflict: 'id',
+        ignoreDuplicates: true,
+      );
+      return await _supabase
+          .from(SupabaseConfig.profilesTable)
+          .select()
+          .eq('id', user.id)
+          .maybeSingle()
+          .then((row) => row == null ? null : Map<String, dynamic>.from(row as Map));
+    } catch (e) {
+      AppLogger.warning('Profile self-heal skipped for ${user.id}: $e');
+      return null;
+    }
+  }
+
+  /// Accepts [restaurantId] only when it is a well-formed UUID; anything else
+  /// (empty, demo ids, garbage) falls back to the configured default so the
+  /// server trigger never receives a value that would orphan the profile.
+  String _resolveRestaurantId(String restaurantId) {
+    if (_isValidUuid(restaurantId)) return restaurantId;
+    return SupabaseConfig.defaultRestaurantId;
+  }
+
+  bool _isValidUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value);
   }
 }

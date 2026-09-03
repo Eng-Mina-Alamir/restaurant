@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_config.dart';
+import '../../../../core/data/app_cache.dart';
 import '../../../../core/supabase/supabase_providers.dart';
 import '../../data/repositories/in_memory_inventory_repository.dart';
 import '../../data/repositories/supabase_inventory_repository.dart';
@@ -11,6 +12,7 @@ final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
   if (AppConfig.useSupabase) {
     return SupabaseInventoryRepository(
       supabase: ref.watch(supabaseClientProvider),
+      cache: ref.watch(localCacheServiceProvider),
     );
   }
   return InMemoryInventoryRepository();
@@ -28,6 +30,7 @@ class InventoryController
   Future<void> load() async {
     state = const AsyncValue.loading();
     final result = await _repository.getInventoryItems();
+    if (!mounted) return;
     state = result.when(
       onLeft: (f) => AsyncValue.error(f.message, StackTrace.current),
       onRight: (items) => AsyncValue.data(items),

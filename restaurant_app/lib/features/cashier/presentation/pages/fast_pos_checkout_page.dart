@@ -18,6 +18,7 @@ import '../../../customer/presentation/pages/menu_item_detail_sheet.dart';
 import '../../../manager_dashboard/presentation/controllers/shift_controller.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
+import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../controllers/cashier_pos_controller.dart';
 import '../controllers/held_orders_controller.dart';
@@ -79,10 +80,18 @@ class _FastPOSCheckoutPageState extends ConsumerState<FastPOSCheckoutPage> {
       final finalTotal = (rawTotals.totalAmount - discountAmount).clamp(0.0, rawTotals.totalAmount);
 
       final orderNotifier = ref.read(ordersControllerProvider.notifier);
-      final order = await orderNotifier.placeOrder(
-        orderType: OrderType.takeaway,
-        paymentMethod: paymentMethod,
-      );
+      final OrderEntity? order;
+      if (posState.orderType == OrderType.dineIn && posState.selectedTableNumber != null) {
+        order = await orderNotifier.placeOrderForTable(
+          't${posState.selectedTableNumber}',
+          paymentMethod: paymentMethod,
+        );
+      } else {
+        order = await orderNotifier.placeOrder(
+          orderType: posState.orderType,
+          paymentMethod: paymentMethod,
+        );
+      }
 
       if (order != null) {
         // Auto print invoice ticket
@@ -836,6 +845,75 @@ class _POSCartPanel extends ConsumerWidget {
                       }
                     : null,
               ),
+            ],
+          ),
+        ),
+
+        // Order Type & Table Selector (Takeaway / Dine-in / Delivery)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          child: Row(
+            children: [
+              Expanded(
+                child: SegmentedButton<OrderType>(
+                  style: const ButtonStyle(
+                    visualDensity: VisualDensity.compact,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  segments: const [
+                    ButtonSegment(
+                      value: OrderType.takeaway,
+                      label: Text('سفري', style: TextStyle(fontSize: 11)),
+                      icon: Icon(Icons.takeout_dining, size: 14),
+                    ),
+                    ButtonSegment(
+                      value: OrderType.dineIn,
+                      label: Text('صالة', style: TextStyle(fontSize: 11)),
+                      icon: Icon(Icons.table_restaurant, size: 14),
+                    ),
+                    ButtonSegment(
+                      value: OrderType.delivery,
+                      label: Text('توصيل', style: TextStyle(fontSize: 11)),
+                      icon: Icon(Icons.delivery_dining, size: 14),
+                    ),
+                  ],
+                  selected: {posState.orderType},
+                  onSelectionChanged: (set) {
+                    ref.read(cashierPOSControllerProvider.notifier).setOrderType(set.first);
+                  },
+                ),
+              ),
+              if (posState.orderType == OrderType.dineIn) ...[
+                const SizedBox(width: 6),
+                PopupMenuButton<int>(
+                  tooltip: 'اختر رقم الطاولة',
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Text(
+                      posState.selectedTableNumber != null
+                          ? 'طاولة ${posState.selectedTableNumber}'
+                          : 'طاولة؟',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                  onSelected: (tableNum) {
+                    ref.read(cashierPOSControllerProvider.notifier).setSelectedTableNumber(tableNum);
+                  },
+                  itemBuilder: (ctx) => [
+                    for (int i = 1; i <= 20; i++)
+                      PopupMenuItem(value: i, child: Text('طاولة $i')),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

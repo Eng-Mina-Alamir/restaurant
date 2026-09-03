@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 import '../domain/enums.dart';
 import 'payment_gateway.dart';
@@ -20,6 +21,10 @@ class MockPaymentGateway implements PaymentGateway {
 
   @override
   Future<PaymentResult> processPayment(PaymentRequest request) async {
+    if (kReleaseMode) {
+      return PaymentResult.failure('بوابة الدفع التجريبية محظورة في بيئة الإنتاج');
+    }
+
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
     }
@@ -52,6 +57,10 @@ class MockPaymentGateway implements PaymentGateway {
 
   @override
   Future<RefundResult> refund(String transactionId, double amount) async {
+    if (kReleaseMode) {
+      return RefundResult.failure('بوابة الدفع التجريبية محظورة في بيئة الإنتاج');
+    }
+
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
     }

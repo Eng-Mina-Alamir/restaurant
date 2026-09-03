@@ -1,23 +1,35 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/supabase_config.dart';
+import '../../../../core/data/local_cache_service.dart';
 import '../../../../core/errors/either.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../domain/entities/menu.dart';
 import '../../domain/entities/menu_item.dart';
 import '../../domain/repositories/menu_repository.dart';
-import '../menu_seed_data.dart';
 
-/// Supabase-backed [MenuRepository] with fallback to seed menu data.
+/// Supabase-backed [MenuRepository].
+///
+/// Single source of truth is Supabase. No seed data is ever shown:
+/// - empty tables => empty [Menu] (truthful empty, not fake items)
+/// - network failure with no prior Supabase-loaded session data =>
+///   [Left] so the UI shows an error + retry instead of fake content.
+/// Previously persisted Hive mirror (which originated from Supabase) is kept
+/// only as a stale fallback for staff continuity and is never mixed with seed.
 ///
 /// Uses PostgREST embedded selects to fetch menu items with their modifier
 /// groups and options in a single request (instead of 4 separate queries).
 class SupabaseMenuRepositoryImpl implements MenuRepository {
-  SupabaseMenuRepositoryImpl(this._supabase);
+  SupabaseMenuRepositoryImpl(this._supabase, [this._cache]);
 
   final SupabaseClient _supabase;
+  final LocalCacheService? _cache;
   Menu? _cachedMenu;
+
+  static const String _cacheKey = 'cached_menu';
 
   /// PostgREST embedded select: fetches items with nested groups and options.
   static const String _menuItemsWithModifiers =
@@ -102,9 +114,13 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       }
 
       if (items.isEmpty && categories.isEmpty) {
-        final fallback = MenuSeedData.buildMenu();
-        _cachedMenu = fallback;
-        return Right<Failure, Menu>(fallback);
+        const empty = Menu(
+          restaurantId: SupabaseConfig.defaultRestaurantId,
+          categories: [],
+          items: [],
+        );
+        _cachedMenu = empty;
+        return const Right<Failure, Menu>(empty);
       }
 
       final resolvedCategories = categories.isNotEmpty
@@ -112,24 +128,52 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
           : items.map((e) => e.categoryId).toSet().toList();
 
       final menu = Menu(
-        restaurantId: 'restaurant-1',
+        restaurantId: SupabaseConfig.defaultRestaurantId,
         categories: resolvedCategories,
         items: items,
       );
       _cachedMenu = menu;
+      await _persistCache();
       return Right<Failure, Menu>(menu);
     } catch (e) {
-      AppLogger.warning(
-        'Supabase getMenu failed: $e, falling back to cache or seed data',
+      AppLogger.warning('Supabase getMenu failed: $e');
+      return Left<Failure, Menu>(
+        ServerFailure('فشل تحميل القائمة من Supabase: $e'),
       );
-      final fallback = _cachedMenu ?? MenuSeedData.buildMenu();
-      _cachedMenu = fallback;
-      return Right<Failure, Menu>(fallback);
+    }
+  }
+
+  Menu? _loadFromPersistentCache() {
+    final cache = _cache;
+    if (cache == null) return null;
+    try {
+      final raw = cache.readString(_cacheKey);
+      if (raw == null || raw.isEmpty) return null;
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return Menu.fromJson(json);
+    } catch (e) {
+      AppLogger.warning('Failed to read menu from local cache: $e');
+      return null;
+    }
+  }
+
+  Future<void> _persistCache() async {
+    final cache = _cache;
+    final menu = _cachedMenu;
+    if (cache != null && menu != null) {
+      try {
+        await cache.writeString(_cacheKey, jsonEncode(menu.toJson()));
+      } catch (_) {}
     }
   }
 
   void _ensureCache() {
-    _cachedMenu ??= MenuSeedData.buildMenu();
+    _cachedMenu ??= _loadFromPersistentCache() ??
+        const Menu(
+          restaurantId: SupabaseConfig.defaultRestaurantId,
+          categories: [],
+          items: [],
+        );
   }
 
   @override
@@ -290,18 +334,6 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         ),
       );
     } catch (e) {
-      final index = _cachedMenu!.items.indexWhere((i) => i.id == itemId);
-      if (index != -1) {
-        final updated = _cachedMenu!.items[index].copyWith(
-          isAvailable: isAvailable,
-        );
-        _cachedMenu = _cachedMenu!.copyWith(
-          items: _cachedMenu!.items
-              .map((i) => i.id == itemId ? updated : i)
-              .toList(),
-        );
-        return Right<Failure, MenuItem>(updated);
-      }
       return Left<Failure, MenuItem>(
         ServerFailure('فشل تغيير حالة التوفر: $e'),
       );

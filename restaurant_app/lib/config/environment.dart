@@ -33,7 +33,10 @@ abstract final class EnvironmentConfig {
       case Environment.staging:
         return 'https://staging-api.restaurant.example.com';
       case Environment.production:
-        return '${SupabaseConfig.url}/rest/v1';
+        final url = SupabaseConfig.url.isNotEmpty
+            ? SupabaseConfig.url
+            : 'https://iovxfvkaswdediephqep.supabase.co';
+        return '$url/rest/v1';
     }
   }
 }

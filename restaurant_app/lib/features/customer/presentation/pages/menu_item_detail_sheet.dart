@@ -44,12 +44,47 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
   final TextEditingController _notesController = TextEditingController();
   int _quantity = 1;
 
-  static const List<String> _quickNotes = [
-    'بدون بصل 🧅',
-    'صوص جانبي 🥣',
-    'حار إضافي 🌶️',
-    'بدون ملح 🧂',
-  ];
+  static List<String> _getQuickNotesForCategory(String categoryId) {
+    final cat = categoryId.toLowerCase();
+    if (cat.contains('مشروب') || cat.contains('عصير') || cat.contains('drink') || cat.contains('beverage') || cat.contains('بار')) {
+      return const [
+        'بدون سكر 🚫',
+        'ثلج إضافي 🧊',
+        'بدون ثلج 🥤',
+        'بارد جداً ❄️',
+      ];
+    } else if (cat.contains('حلو') || cat.contains('dessert') || cat.contains('كيك') || cat.contains('cake')) {
+      return const [
+        'سكر خفيف 🍯',
+        'بدون مكسرات 🥜',
+        'صوص إضافي 🍫',
+        'تقديم دافئ ♨️',
+      ];
+    } else if (cat.contains('بيتزا') || cat.contains('pizza')) {
+      return const [
+        'جبنة إضافية 🧀',
+        'أطراف مقرمشة 🍕',
+        'بدون بصل 🧅',
+        'حار إضافي 🌶️',
+      ];
+    } else {
+      return const [
+        'بدون بصل 🧅',
+        'صوص جانبي 🥣',
+        'حار إضافي 🌶️',
+        'بدون ملح 🧂',
+      ];
+    }
+  }
+
+  static String _cleanNote(String note) {
+    return note
+        .replaceAll(
+          RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]', unicode: true),
+          '',
+        )
+        .trim();
+  }
 
   @override
   void dispose() {
@@ -308,8 +343,8 @@ class _MenuItemDetailSheetState extends ConsumerState<MenuItemDetailSheet> {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: _quickNotes.map((note) {
-                          final cleanNote = note.split(' ').first;
+                        children: _getQuickNotesForCategory(item.categoryId).map((note) {
+                          final cleanNote = _cleanNote(note);
                           return Padding(
                             padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
                             child: ActionChip(
