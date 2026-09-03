@@ -267,18 +267,18 @@ class SupabaseOrderRepository implements OrderRepository {
       waiterId: (map['waiter_id'] ?? map['waiterId'])?.toString(),
       assignedKitchenId: (map['assigned_kitchen_id'] ?? map['assignedKitchenId'])?.toString(),
       driverId: (map['driver_id'] ?? map['driverId'])?.toString(),
-      orderType: OrderType.fromName((map['order_type'] ?? map['orderType']) as String?),
+      orderType: OrderType.fromName((map['order_type'] ?? map['orderType'])?.toString()),
       items: items,
-      status: OrderStatus.fromName(map['status'] as String?),
+      status: OrderStatus.fromName(map['status']?.toString()),
       subtotal: ((map['subtotal'] ?? map['subTotal']) as num?)?.toDouble() ?? 0.0,
       taxAmount: ((map['tax_amount'] ?? map['taxAmount']) as num?)?.toDouble() ?? 0.0,
       discountAmount: ((map['discount_amount'] ?? map['discountAmount']) as num?)?.toDouble() ?? 0.0,
       totalAmount: ((map['total_amount'] ?? map['totalAmount']) as num?)?.toDouble() ?? 0.0,
       paymentMethod: (map['payment_method'] ?? map['paymentMethod']) != null
-          ? PaymentMethod.fromName((map['payment_method'] ?? map['paymentMethod']) as String)
+          ? PaymentMethod.fromName((map['payment_method'] ?? map['paymentMethod']).toString())
           : null,
-      deliveryAddress: (map['delivery_address'] ?? map['deliveryAddress']) as String?,
-      deliveryNotes: (map['delivery_notes'] ?? map['deliveryNotes']) as String?,
+      deliveryAddress: (map['delivery_address'] ?? map['deliveryAddress'])?.toString(),
+      deliveryNotes: (map['delivery_notes'] ?? map['deliveryNotes'])?.toString(),
       createdAt: rawCreatedAt != null
           ? DateTime.tryParse(rawCreatedAt.toString()) ?? DateTime.now()
           : DateTime.now(),

@@ -29,6 +29,9 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   final LocalCacheService? _cache;
   Menu? _cachedMenu;
 
+  final Map<String, String> _categoryIdToName = {};
+  final Map<String, int> _categoryNameToId = {};
+
   static const String _cacheKey = 'cached_menu';
 
   /// PostgREST embedded select: fetches items with nested groups and options.
@@ -45,11 +48,24 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
           .order('sort_order', ascending: true);
 
       final List<String> categories = [];
+      _categoryIdToName.clear();
+      _categoryNameToId.clear();
+
       for (final raw in (catResponse as List)) {
         final map = Map<String, dynamic>.from(raw as Map);
         final catName = (map['name_ar'] ?? map['name'])?.toString();
+        final rawId = map['id'];
         if (catName != null && catName.isNotEmpty) {
           categories.add(catName);
+          if (rawId != null) {
+            _categoryIdToName[rawId.toString()] = catName;
+            if (rawId is int) {
+              _categoryNameToId[catName] = rawId;
+            } else {
+              final parsed = int.tryParse(rawId.toString());
+              if (parsed != null) _categoryNameToId[catName] = parsed;
+            }
+          }
         }
       }
 
@@ -78,36 +94,69 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
             final optMap = Map<String, dynamic>.from(optRaw as Map);
             options.add(MenuModifierOption(
               id: optMap['id']?.toString() ?? '',
-              name: optMap['name'] as String? ?? '',
-              extraPrice: (optMap['extra_price'] as num?)?.toDouble() ?? 0.0,
-              isAvailable: optMap['is_available'] as bool? ?? true,
+              name: optMap['name']?.toString() ?? '',
+              extraPrice: (optMap['extra_price'] is num)
+                  ? (optMap['extra_price'] as num).toDouble()
+                  : (double.tryParse(optMap['extra_price']?.toString() ?? '') ??
+                      0.0),
+              isAvailable: optMap['is_available'] is bool
+                  ? (optMap['is_available'] as bool)
+                  : (optMap['is_available']?.toString().toLowerCase() !=
+                      'false'),
             ));
           }
 
           modifierGroups.add(MenuModifierGroup(
             id: groupMap['id']?.toString() ?? '',
-            title: groupMap['title'] as String? ?? '',
-            description: groupMap['description'] as String?,
-            isRequired: groupMap['is_required'] as bool? ?? false,
-            maxSelection: (groupMap['max_selection'] as num?)?.toInt() ?? 1,
+            title: groupMap['title']?.toString() ?? '',
+            description: groupMap['description']?.toString(),
+            isRequired: groupMap['is_required'] is bool
+                ? (groupMap['is_required'] as bool)
+                : false,
+            maxSelection: (groupMap['max_selection'] is num)
+                ? (groupMap['max_selection'] as num).toInt()
+                : (int.tryParse(groupMap['max_selection']?.toString() ?? '') ??
+                    1),
             options: options,
           ));
         }
 
+        // Map integer category_id to human-readable category name so that UI
+        // filtering by category name (e.g. 'مشويات', 'مقبلات') works seamlessly.
+        final rawCat = map['category_id']?.toString();
+        final resolvedCategory =
+            (rawCat != null && _categoryIdToName.containsKey(rawCat))
+                ? _categoryIdToName[rawCat]!
+                : (rawCat ?? 'عام');
+
         items.add(
           MenuItem(
             id: itemId,
-            categoryId: map['category_id'] as String? ?? 'عام',
-            name: map['name'] as String? ?? '',
-            description: map['description'] as String? ?? '',
-            price: (map['price'] as num?)?.toDouble() ?? 0.0,
-            imageUrl: map['image_url'] as String?,
-            isAvailable: map['is_available'] as bool? ?? true,
-            isVegetarian: map['is_vegetarian'] as bool? ?? false,
-            isSpicy: map['is_spicy'] as bool? ?? false,
-            preparationTime: (map['preparation_time'] as num?)?.toDouble(),
-            rating: (map['rating'] as num?)?.toDouble() ?? 5.0,
-            orderCount: (map['order_count'] as num?)?.toInt() ?? 0,
+            categoryId: resolvedCategory,
+            name: map['name']?.toString() ?? '',
+            description: map['description']?.toString() ?? '',
+            price: (map['price'] is num)
+                ? (map['price'] as num).toDouble()
+                : (double.tryParse(map['price']?.toString() ?? '') ?? 0.0),
+            imageUrl: map['image_url']?.toString(),
+            isAvailable: map['is_available'] is bool
+                ? (map['is_available'] as bool)
+                : (map['is_available']?.toString().toLowerCase() != 'false'),
+            isVegetarian: map['is_vegetarian'] is bool
+                ? (map['is_vegetarian'] as bool)
+                : (map['is_vegetarian']?.toString().toLowerCase() == 'true'),
+            isSpicy: map['is_spicy'] is bool
+                ? (map['is_spicy'] as bool)
+                : (map['is_spicy']?.toString().toLowerCase() == 'true'),
+            preparationTime: (map['preparation_time'] is num)
+                ? (map['preparation_time'] as num).toDouble()
+                : double.tryParse(map['preparation_time']?.toString() ?? ''),
+            rating: (map['rating'] is num)
+                ? (map['rating'] as num).toDouble()
+                : (double.tryParse(map['rating']?.toString() ?? '') ?? 5.0),
+            orderCount: (map['order_count'] is num)
+                ? (map['order_count'] as num).toInt()
+                : (int.tryParse(map['order_count']?.toString() ?? '') ?? 0),
             modifierGroups: modifierGroups,
           ),
         );
@@ -137,6 +186,11 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
       return Right<Failure, Menu>(menu);
     } catch (e) {
       AppLogger.warning('Supabase getMenu failed: $e');
+      final fallback = _loadFromPersistentCache();
+      if (fallback != null && fallback.items.isNotEmpty) {
+        _cachedMenu = fallback;
+        return Right<Failure, Menu>(fallback);
+      }
       return Left<Failure, Menu>(
         ServerFailure('فشل تحميل القائمة من Supabase: $e'),
       );
@@ -180,9 +234,22 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   Future<Either<Failure, MenuItem>> addMenuItem(MenuItem item) async {
     _ensureCache();
     try {
-      await _supabase.from(SupabaseConfig.menuItemsTable).insert({
-        'id': item.id,
-        'category_id': item.categoryId,
+      int? catId = _categoryNameToId[item.categoryId] ??
+          int.tryParse(item.categoryId);
+      if (catId == null && item.categoryId.isNotEmpty) {
+        final existingCat = await _supabase
+            .from(SupabaseConfig.categoriesTable)
+            .select('id')
+            .or('name.eq.${item.categoryId},name_ar.eq.${item.categoryId}')
+            .maybeSingle();
+        if (existingCat != null && existingCat['id'] != null) {
+          catId = int.tryParse(existingCat['id'].toString());
+        }
+      }
+      catId ??= 1;
+
+      final insertData = <String, dynamic>{
+        'category_id': catId,
         'name': item.name,
         'description': item.description,
         'price': item.price,
@@ -190,12 +257,28 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
         'is_available': item.isAvailable,
         'is_vegetarian': item.isVegetarian,
         'is_spicy': item.isSpicy,
-        'preparation_time': item.preparationTime,
-      });
+      };
+      if (item.preparationTime != null) {
+        insertData['preparation_time'] = item.preparationTime;
+      }
+
+      final response = await _supabase
+          .from(SupabaseConfig.menuItemsTable)
+          .insert(insertData)
+          .select('id')
+          .single();
+
+      final generatedId = response['id']?.toString() ?? item.id;
+      final savedItem = item.copyWith(id: generatedId);
+
       _cachedMenu = _cachedMenu!.copyWith(
-        items: [..._cachedMenu!.items.where((i) => i.id != item.id), item],
+        items: [
+          ..._cachedMenu!.items.where((i) => i.id != savedItem.id),
+          savedItem
+        ],
       );
-      return Right<Failure, MenuItem>(item);
+      await _persistCache();
+      return Right<Failure, MenuItem>(savedItem);
     } catch (e) {
       AppLogger.error('Supabase addMenuItem error: $e');
       return Left<Failure, MenuItem>(
@@ -208,25 +291,43 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   Future<Either<Failure, MenuItem>> updateMenuItem(MenuItem item) async {
     _ensureCache();
     try {
-      await _supabase
-          .from(SupabaseConfig.menuItemsTable)
-          .update({
-            'category_id': item.categoryId,
-            'name': item.name,
-            'description': item.description,
-            'price': item.price,
-            'image_url': item.imageUrl,
-            'is_available': item.isAvailable,
-            'is_vegetarian': item.isVegetarian,
-            'is_spicy': item.isSpicy,
-            'preparation_time': item.preparationTime,
-          })
-          .eq('id', item.id);
+      int? catId = _categoryNameToId[item.categoryId] ??
+          int.tryParse(item.categoryId);
+      final updateData = <String, dynamic>{
+        'name': item.name,
+        'description': item.description,
+        'price': item.price,
+        'image_url': item.imageUrl,
+        'is_available': item.isAvailable,
+        'is_vegetarian': item.isVegetarian,
+        'is_spicy': item.isSpicy,
+      };
+      if (catId != null) {
+        updateData['category_id'] = catId;
+      }
+      if (item.preparationTime != null) {
+        updateData['preparation_time'] = item.preparationTime;
+      }
+
+      final parsedId = int.tryParse(item.id);
+      if (parsedId != null) {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .update(updateData)
+            .eq('id', parsedId);
+      } else {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .update(updateData)
+            .eq('id', item.id);
+      }
+
       _cachedMenu = _cachedMenu!.copyWith(
         items: _cachedMenu!.items
             .map((i) => i.id == item.id ? item : i)
             .toList(),
       );
+      await _persistCache();
       return Right<Failure, MenuItem>(item);
     } catch (e) {
       AppLogger.error('Supabase updateMenuItem error: $e');
@@ -240,13 +341,22 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   Future<Either<Failure, void>> deleteMenuItem(String itemId) async {
     _ensureCache();
     try {
-      await _supabase
-          .from(SupabaseConfig.menuItemsTable)
-          .delete()
-          .eq('id', itemId);
+      final parsedId = int.tryParse(itemId);
+      if (parsedId != null) {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .delete()
+            .eq('id', parsedId);
+      } else {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .delete()
+            .eq('id', itemId);
+      }
       _cachedMenu = _cachedMenu!.copyWith(
         items: _cachedMenu!.items.where((i) => i.id != itemId).toList(),
       );
+      await _persistCache();
       return const Right<Failure, void>(null);
     } catch (e) {
       AppLogger.error('Supabase deleteMenuItem error: $e');
@@ -306,10 +416,18 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
   ) async {
     _ensureCache();
     try {
-      await _supabase
-          .from(SupabaseConfig.menuItemsTable)
-          .update({'is_available': isAvailable})
-          .eq('id', itemId);
+      final parsedId = int.tryParse(itemId);
+      if (parsedId != null) {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .update({'is_available': isAvailable})
+            .eq('id', parsedId);
+      } else {
+        await _supabase
+            .from(SupabaseConfig.menuItemsTable)
+            .update({'is_available': isAvailable})
+            .eq('id', itemId);
+      }
 
       final index = _cachedMenu!.items.indexWhere((i) => i.id == itemId);
       if (index != -1) {
@@ -321,6 +439,7 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
               .map((i) => i.id == itemId ? updated : i)
               .toList(),
         );
+        await _persistCache();
         return Right<Failure, MenuItem>(updated);
       }
       return Right<Failure, MenuItem>(
@@ -340,3 +459,4 @@ class SupabaseMenuRepositoryImpl implements MenuRepository {
     }
   }
 }
+

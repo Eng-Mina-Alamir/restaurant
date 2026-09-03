@@ -141,7 +141,21 @@ class _WaiterDashboardPageState extends ConsumerState<WaiterDashboardPage> {
         ],
       ),
       body: tables.isEmpty
-          ? const _TablesSkeleton()
+          ? RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(tableControllerProvider);
+                ref.invalidate(ordersControllerProvider);
+                ref.invalidate(tableServiceControllerProvider);
+              },
+              child: const CustomScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverFillRemaining(
+                    child: _TablesSkeleton(),
+                  ),
+                ],
+              ),
+            )
           : Column(
               children: [
                 if (!ref.watch(isOnlineProvider))
@@ -765,8 +779,30 @@ IconData tableStatusIcon(TableStatus status) {
 }
 
 /// Shimmer placeholder mirroring the table-card grid while tables load.
-class _TablesSkeleton extends StatelessWidget {
+class _TablesSkeleton extends ConsumerStatefulWidget {
   const _TablesSkeleton();
+
+  @override
+  ConsumerState<_TablesSkeleton> createState() => _TablesSkeletonState();
+}
+
+class _TablesSkeletonState extends ConsumerState<_TablesSkeleton> {
+  bool _showRetry = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _showRetry = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -779,20 +815,39 @@ class _TablesSkeleton extends StatelessWidget {
         );
         final ratio = screenType == ScreenType.mobile ? 1.05 : 1.2;
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cols,
-            childAspectRatio: ratio,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-          ),
-          itemCount: cols * 3,
-          itemBuilder: (context, index) => const SkeletonBox(
-            width: double.infinity,
-            height: double.infinity,
-            borderRadius: AppRadius.md,
-          ),
+        return Column(
+          children: [
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  childAspectRatio: ratio,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                ),
+                itemCount: cols * 3,
+                itemBuilder: (context, index) => const SkeletonBox(
+                  width: double.infinity,
+                  height: double.infinity,
+                  borderRadius: AppRadius.md,
+                ),
+              ),
+            ),
+            if (_showRetry)
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: FilledButton.tonalIcon(
+                  onPressed: () {
+                    ref.invalidate(tableControllerProvider);
+                    ref.invalidate(ordersControllerProvider);
+                    ref.invalidate(tableServiceControllerProvider);
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة محاولة الاتصال'),
+                ),
+              ),
+          ],
         );
       },
     );
