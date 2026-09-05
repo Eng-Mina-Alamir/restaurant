@@ -102,8 +102,12 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
   final Set<String> _inventoryDeductedOrderIds = {};
   final Set<String> _loyaltyAwardedOrderIds = {};
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
   /// Loads existing active & recent orders from the repository.
   Future<void> loadOrders() async {
+    _isLoading = true;
     try {
       final result = await _repository.getOrders();
       result.when(
@@ -123,6 +127,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       );
     } catch (e, st) {
       AppLogger.error('OrdersController.loadOrders exception: $e', error: e, stackTrace: st);
+    } finally {
+      _isLoading = false;
     }
   }
 
@@ -815,19 +821,27 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     String assignmentMethod = 'manual',
     String? driverName,
     String? driverPhone,
+    String? customerPhone,
   }) async {
     final index = state.indexWhere((o) => o.id == orderId);
     if (index == -1) return false;
 
     final order = state[index];
     final now = DateTime.now();
+    final resolvedCustomerPhone = customerPhone ??
+        (order.deliveryNotes != null &&
+                RegExp(r'^(01[0-25]\d{8}|\+201[0-25]\d{8})$')
+                    .hasMatch(order.deliveryNotes!.trim())
+            ? order.deliveryNotes!.trim()
+            : null);
+
     final assignment = DeliveryAssignment(
       id: 'ASG-${order.id}-${now.millisecondsSinceEpoch}',
       orderId: order.id,
       driverId: driverId,
       pickupTime: now,
       deliveryLocation: order.deliveryAddress ?? '',
-      customerPhone: order.deliveryNotes,
+      customerPhone: resolvedCustomerPhone,
       deliveryStatus: DeliveryStatus.pending,
       assignmentMethod: assignmentMethod,
       assignedAt: now,

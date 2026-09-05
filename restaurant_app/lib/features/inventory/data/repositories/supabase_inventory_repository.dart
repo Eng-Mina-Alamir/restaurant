@@ -63,6 +63,28 @@ class SupabaseInventoryRepository implements InventoryRepository {
         error: e,
         stackTrace: st,
       );
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          final cached = cache.readList(_cacheKey);
+          if (cached.isNotEmpty) {
+            final fallback = cached
+                .map((raw) => InventoryItemEntity.fromJson(
+                    Map<String, dynamic>.from(raw as Map)))
+                .toList();
+            _cachedItems = fallback;
+            return Right(fallback);
+          }
+        } catch (cacheErr) {
+          AppLogger.warning(
+            'Failed to read inventory from local cache fallback: $cacheErr',
+          );
+        }
+      }
+      final inMemory = _cachedItems;
+      if (inMemory != null && inMemory.isNotEmpty) {
+        return Right(List.unmodifiable(inMemory));
+      }
       return Left(ServerFailure('فشل تحميل المخزون من Supabase: $e'));
     }
   }

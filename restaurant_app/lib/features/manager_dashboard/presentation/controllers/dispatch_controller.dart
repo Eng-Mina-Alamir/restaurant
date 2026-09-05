@@ -277,6 +277,12 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
     }
 
     final now = DateTime.now();
+    final resolvedCustomerPhone = (order.deliveryNotes != null &&
+            RegExp(r'^(01[0-25]\d{8}|\+201[0-25]\d{8})$')
+                .hasMatch(order.deliveryNotes!.trim()))
+        ? order.deliveryNotes!.trim()
+        : null;
+
     final DeliveryAssignment assignment;
     if (existing == null) {
       assignment = DeliveryAssignment(
@@ -285,6 +291,7 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
         driverId: driverId,
         pickupTime: now,
         deliveryLocation: order.deliveryAddress ?? '',
+        customerPhone: resolvedCustomerPhone,
         deliveryStatus: DeliveryStatus.pending,
         assignmentMethod: 'manual',
         assignedAt: now,
@@ -294,6 +301,7 @@ class DispatchController extends StateNotifier<AsyncValue<DispatchBoardState>> {
       // failed row instead of forking a second one for the same order.
       assignment = existing.copyWith(
         driverId: driverId,
+        customerPhone: resolvedCustomerPhone ?? existing.customerPhone,
         deliveryStatus: DeliveryStatus.pending,
         assignmentMethod: 'manual',
         assignedAt: now,

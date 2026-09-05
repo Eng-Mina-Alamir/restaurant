@@ -68,6 +68,8 @@ MenuItem _menuItem(String id) => MenuItem(
 CartItem _cartItem(String menuItemId, {int quantity = 1}) =>
     CartItem(menuItem: _menuItem(menuItemId), quantity: quantity);
 
+const _kTestUuid = 'a0000000-0000-0000-0000-000000000001';
+
 CartController _controller(
   _RecordingCloudRepo? repo,
   String? Function()? user,
@@ -81,7 +83,7 @@ void main() {
     test(
       'is a no-op when no cloud repository is wired (offline/demo mode)',
       () async {
-        final controller = _controller(null, () => 'user-1');
+        final controller = _controller(null, () => _kTestUuid);
         addTearDown(controller.dispose);
 
         await controller.restoreFromCloud();
@@ -103,7 +105,7 @@ void main() {
 
     test('keeps the local cart untouched when it is not empty', () async {
       final repo = _RecordingCloudRepo(storedItems: [_cartItem('m-cloud')]);
-      final controller = _controller(repo, () => 'user-1');
+      final controller = _controller(repo, () => _kTestUuid);
       addTearDown(controller.dispose);
       controller.addItem(_cartItem('m-local', quantity: 2));
 
@@ -118,7 +120,7 @@ void main() {
       final repo = _RecordingCloudRepo(
         storedItems: [_cartItem('m1', quantity: 3), _cartItem('m2')],
       );
-      final controller = _controller(repo, () => 'user-1');
+      final controller = _controller(repo, () => _kTestUuid);
       addTearDown(controller.dispose);
 
       await controller.restoreFromCloud();
@@ -136,7 +138,7 @@ void main() {
       'coalesces rapid mutations into a single saveCart after the debounce window',
       (tester) async {
         final repo = _RecordingCloudRepo();
-        final controller = _controller(repo, () => 'user-1');
+        final controller = _controller(repo, () => _kTestUuid);
         addTearDown(controller.dispose);
 
         controller.addItem(_cartItem('m1'));
@@ -163,7 +165,7 @@ void main() {
       tester,
     ) async {
       final repo = _RecordingCloudRepo()..failSaves = true;
-      final controller = _controller(repo, () => 'user-1');
+      final controller = _controller(repo, () => _kTestUuid);
       addTearDown(controller.dispose);
 
       controller.addItem(_cartItem('m1'));

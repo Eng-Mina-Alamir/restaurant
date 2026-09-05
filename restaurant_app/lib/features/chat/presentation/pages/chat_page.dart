@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../delivery/presentation/controllers/delivery_controller.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../controllers/unread_chat_controller.dart';
@@ -88,6 +90,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final messagesAsync = ref.watch(chatControllerProvider(widget.orderId));
+    final assignment = ref.watch(deliveryAssignmentForOrderProvider(widget.orderId)).valueOrNull;
+    final isAssignmentPending = assignment != null && assignment.deliveryStatus == DeliveryStatus.pending;
 
     return Scaffold(
       appBar: AppBar(
@@ -153,71 +157,108 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           const Divider(height: 1),
 
-          // Quick preset reply chips for instant driver ↔ customer communication
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            child: Row(
-              children: [
-                for (final preset in const [
-                  'أنا عند الباب 🚪',
-                  'وصلت لموقعك 📍',
-                  'يرجى الخروج للاستلام 🛵',
-                  'أنا في الطريق إليك ⚡',
-                  'سأكون متواجداً خلال دقائق 👍',
-                  'شكراً جزيلاً لك 🙏',
-                ])
-                  Padding(
-                    padding:
-                        const EdgeInsetsDirectional.only(end: AppSpacing.xs),
-                    child: ActionChip(
-                      label:
-                          Text(preset, style: const TextStyle(fontSize: 11.5)),
-                      onPressed: () {
-                        _inputController.text = preset;
-                        _send();
-                      },
-                    ),
+          if (isAssignmentPending)
+            SafeArea(
+              top: false,
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
-              ],
-            ),
-          ),
-
-          SafeArea(
-            top: false,
-            child: Padding(
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.lock_clock_outlined,
+                      size: 20,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'المحادثة مقفلة ومتاحة فقط بعد قبول السائق للمهمة 🛵',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            // Quick preset reply chips for instant driver ↔ customer communication
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
+                vertical: AppSpacing.xs,
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _inputController,
-                      focusNode: _inputFocus,
-                      decoration: const InputDecoration(
-                        hintText: 'اكتب رسالة…',
-                        border: OutlineInputBorder(),
-                        isDense: true,
+                  for (final preset in const [
+                    'أنا عند الباب 🚪',
+                    'وصلت لموقعك 📍',
+                    'يرجى الخروج للاستلام 🛵',
+                    'أنا في الطريق إليك ⚡',
+                    'سأكون متواجداً خلال دقائق 👍',
+                    'شكراً جزيلاً لك 🙏',
+                  ])
+                    Padding(
+                      padding:
+                          const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                      child: ActionChip(
+                        label:
+                            Text(preset, style: const TextStyle(fontSize: 11.5)),
+                        onPressed: () {
+                          _inputController.text = preset;
+                          _send();
+                        },
                       ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  IconButton.filled(
-                    onPressed: _canSend ? _send : null,
-                    icon: const Icon(Icons.send),
-                    tooltip: 'إرسال',
-                  ),
                 ],
               ),
             ),
-          ),
+
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _inputController,
+                        focusNode: _inputFocus,
+                        decoration: const InputDecoration(
+                          hintText: 'اكتب رسالة…',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _send(),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    IconButton.filled(
+                      onPressed: _canSend ? _send : null,
+                      icon: const Icon(Icons.send),
+                      tooltip: 'إرسال',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

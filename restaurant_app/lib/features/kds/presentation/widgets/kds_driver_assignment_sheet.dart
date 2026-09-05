@@ -65,7 +65,7 @@ class _KdsDriverAssignmentSheetState
         AppHaptics.milestoneSuccess();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('تم تسليم الطلب للمندوب: ${driver.name} بنجاح ✅'),
+            content: Text('تم إسناد الطلب للمندوب: ${driver.name} وبانتظار قبوله واستلامه 🛵'),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
           ),

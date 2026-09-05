@@ -259,7 +259,9 @@ class _OrderHistoryCard extends ConsumerWidget {
               runSpacing: AppSpacing.xs,
               children: [
                 // Chat with the assigned driver (delivery orders only).
-                if (assignment != null)
+                if (assignment != null &&
+                    assignment.deliveryStatus != DeliveryStatus.pending &&
+                    assignment.deliveryStatus != DeliveryStatus.failed)
                   Semantics(
                     label: 'محادثة السائق',
                     button: true,

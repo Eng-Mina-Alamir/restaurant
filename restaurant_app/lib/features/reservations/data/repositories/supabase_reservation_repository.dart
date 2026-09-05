@@ -58,6 +58,28 @@ class SupabaseReservationRepository implements ReservationRepository {
         error: e,
         stackTrace: st,
       );
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          final cached = cache.readList(_cacheKey);
+          if (cached.isNotEmpty) {
+            final fallback = cached
+                .map((raw) => ReservationEntity.fromJson(
+                    Map<String, dynamic>.from(raw as Map)))
+                .toList();
+            _cachedReservations.clear();
+            _cachedReservations.addAll(fallback);
+            return Right(fallback);
+          }
+        } catch (cacheErr) {
+          AppLogger.warning(
+            'Failed to read reservations from local cache fallback: $cacheErr',
+          );
+        }
+      }
+      if (_cachedReservations.isNotEmpty) {
+        return Right(List.unmodifiable(_cachedReservations));
+      }
       return Left(ServerFailure('فشل تحميل الحجوزات من Supabase: $e'));
     }
   }

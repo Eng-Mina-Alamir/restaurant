@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:restaurant_app/config/constants.dart';
 import 'package:restaurant_app/config/supabase_config.dart';
 import 'package:restaurant_app/core/domain/enums.dart';
 import 'package:restaurant_app/core/network/realtime_event.dart';
@@ -232,6 +233,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('#'), findsWidgets);
-    expect(find.text('قبول التوصيل'), findsWidgets);
+    expect(find.text(AppConstants.actionAccept), findsWidgets);
   });
 }

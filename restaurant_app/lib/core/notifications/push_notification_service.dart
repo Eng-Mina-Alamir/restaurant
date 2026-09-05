@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/app_config.dart';
 import '../../config/supabase_config.dart';
@@ -83,6 +84,33 @@ class PushNotificationService {
     _permissionGranted = true;
     AppLogger.info('Push notification permissions granted');
     return true;
+  }
+
+  /// Registers device push token to Supabase `user_device_tokens` table.
+  Future<void> registerDeviceToken({
+    required SupabaseClient supabase,
+    required String userId,
+    required String token,
+    required String platform,
+  }) async {
+    try {
+      await supabase.from('user_device_tokens').upsert(
+        {
+          'user_id': userId,
+          'device_token': token,
+          'platform': platform,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'user_id,device_token',
+      );
+      AppLogger.info('PushNotificationService: Device token registered in Supabase for user $userId');
+    } catch (e, st) {
+      AppLogger.warning(
+        'PushNotificationService: Failed to register device token in Supabase: $e',
+        error: e,
+        stackTrace: st,
+      );
+    }
   }
 
   /// Emits a local or received notification into the active stream.

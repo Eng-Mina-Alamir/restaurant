@@ -39,73 +39,90 @@ class DriverCashSummaryCard extends ConsumerWidget {
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            decoration: BoxDecoration(
-              color: success.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_rounded,
-              color: success,
-              size: 18,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: success.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: success,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'عهدة الكاش بأمان معك',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      Formatters.formatCurrency(wallet.totalCashInHand),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'تقرير الأرباح والعمولات',
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                ),
+                icon: Icon(
+                  Directionality.of(context) == TextDirection.rtl
+                      ? Icons.chevron_left_rounded
+                      : Icons.chevron_right_rounded,
+                  size: 22,
+                ),
+                onPressed: () => context.push('/driver/earnings'),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'عهدة الكاش بأمان معك',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  ),
+                  onPressed: () {
+                    AppHaptics.selectionTap();
+                    ChangeCalculatorDialog.show(context, orderTotal: 150.0);
+                  },
+                  icon: const Icon(Icons.calculate_outlined, size: 16),
+                  label: const Text('حاسبة الباقي'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  ),
+                  onPressed: () => _showSettleConfirmation(context, ref, wallet),
+                  child: Text(
+                    wallet.isSettled ? 'تم التسليم — شكراً' : 'تسليم للكاشير',
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Text(
-                  Formatters.formatCurrency(wallet.totalCashInHand),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton.icon(
-            style: TextButton.styleFrom(
-              minimumSize: const Size(0, 48),
-            ),
-            onPressed: () {
-              AppHaptics.selectionTap();
-              ChangeCalculatorDialog.show(context, orderTotal: 150.0);
-            },
-            icon: const Icon(Icons.calculate_outlined, size: 18),
-            label: const Text('حاسبة الباقي'),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(0, 48),
-            ),
-            onPressed: () => _showSettleConfirmation(context, ref, wallet),
-            child: Text(
-              wallet.isSettled ? 'تم التسليم — شكراً لك' : 'تسليم للكاشير',
-            ),
-          ),
-          IconButton(
-            tooltip: 'تقرير الأرباح والعمولات',
-            style: IconButton.styleFrom(
-              minimumSize: const Size(48, 48),
-            ),
-            icon: Icon(
-              Directionality.of(context) == TextDirection.rtl
-                  ? Icons.chevron_left_rounded
-                  : Icons.chevron_right_rounded,
-              size: 22,
-            ),
-            onPressed: () => context.push('/driver/earnings'),
+              ),
+            ],
           ),
         ],
       ),

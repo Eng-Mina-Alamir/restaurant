@@ -245,10 +245,20 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
       );
     }
 
-    final currentStep = _getStepIndex(order.status);
+    final assignment = assignmentAsync.valueOrNull;
     final isDelivery = order.orderType == OrderType.delivery;
     final isDineIn = order.orderType == OrderType.dineIn;
     final isTakeaway = order.orderType == OrderType.takeaway;
+
+    final isDriverConfirmed = assignment != null &&
+        assignment.deliveryStatus != DeliveryStatus.pending &&
+        assignment.deliveryStatus != DeliveryStatus.failed;
+
+    final currentStep = _getStepIndex(
+      order.status,
+      assignment: assignment,
+      isDelivery: isDelivery,
+    );
 
     final List<String> stages;
     if (isDineIn) {
@@ -256,7 +266,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     } else if (isTakeaway) {
       stages = const ['تم الطلب', 'تأكيد المطبخ', 'جاري التجهيز', 'جاهز للاستلام', 'تم الاستلام'];
     } else {
-      stages = const ['تم الطلب', 'مؤكد', 'قيد الإعداد', 'في الطريق', 'تم التسليم'];
+      stages = const ['تم الطلب', 'قيد الإعداد', 'جاهز بالمطعم', 'في الطريق', 'تم التسليم'];
     }
 
     final canCancel = (order.status == OrderStatus.pending || order.status == OrderStatus.confirmed) &&
@@ -266,11 +276,12 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
         !order.status.isTerminal;
 
     // Driver identity comes exclusively from the fetched assignment
-    final assignment = assignmentAsync.valueOrNull;
     final String driverTitle;
     final Widget driverSubtitle;
-    if (assignmentAsync.isLoading || assignment == null) {
-      driverTitle = 'جارٍ البحث عن مندوب…';
+    if (assignmentAsync.isLoading || assignment == null || !isDriverConfirmed) {
+      driverTitle = assignment != null && assignment.deliveryStatus == DeliveryStatus.pending
+          ? 'بانتظار تأكيد الكابتن ⏳'
+          : 'جارٍ البحث عن مندوب…';
       driverSubtitle = assignmentAsync.isLoading
           ? SizedBox(
               height: 14,
@@ -281,7 +292,9 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
               ),
             )
           : Text(
-              'لم يتم تعيين مندوب لهذا الطلب بعد',
+              assignment != null && assignment.deliveryStatus == DeliveryStatus.pending
+                  ? 'تم إرسال الطلب للمندوب وبانتظار موافقته'
+                  : 'لم يتم تعيين مندوب لهذا الطلب بعد',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -435,9 +448,9 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                       _restaurantLatLng.lng,
                     ),
                     deliveryLatLng: LatLng(_customerLatLng.lat, _customerLatLng.lng),
-                    driverLatLng: (assignment != null && (assignment.latitude != 0 || assignment.longitude != 0))
+                    driverLatLng: (isDriverConfirmed && (assignment.latitude != 0 || assignment.longitude != 0))
                         ? LatLng(assignment.latitude, assignment.longitude)
-                        : LatLng(_driverLatLng.lat, _driverLatLng.lng),
+                        : null,
                     trackDeviceGps: false,
                     pickupLabel: 'المطعم',
                     deliveryLabel: 'عنوانك',
@@ -751,7 +764,7 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
                       ),
                     ),
 
-                    if (assignment != null) ...[
+                    if (isDriverConfirmed) ...[
                       const SizedBox(height: AppSpacing.sm),
                       SizedBox(
                         width: double.infinity,
@@ -1111,7 +1124,28 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
     }
   }
 
-  int _getStepIndex(OrderStatus status) {
+  int _getStepIndex(
+    OrderStatus status, {
+    DeliveryAssignment? assignment,
+    bool isDelivery = false,
+  }) {
+    if (isDelivery) {
+      if (status == OrderStatus.completed) return 4;
+      if (status == OrderStatus.cancelled) return 0;
+      if (assignment != null &&
+          (assignment.deliveryStatus == DeliveryStatus.inTransit ||
+              assignment.deliveryStatus == DeliveryStatus.pickedUp)) {
+        return 3;
+      }
+      if (status == OrderStatus.ready || status == OrderStatus.served) {
+        return 2;
+      }
+      if (status == OrderStatus.preparing) {
+        return 1;
+      }
+      return 0;
+    }
+
     switch (status) {
       case OrderStatus.pending:
         return 0;

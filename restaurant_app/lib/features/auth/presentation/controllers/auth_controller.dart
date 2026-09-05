@@ -7,9 +7,8 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/logger.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
-import '../../../delivery/presentation/controllers/delivery_controller.dart';
-import '../../../loyalty/presentation/controllers/loyalty_controller.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../../../table_management/presentation/controllers/table_controller.dart';
 import '../../domain/entities/user_entity.dart';
 
 /// Authentication lifecycle status.
@@ -80,9 +79,7 @@ class AuthController extends StateNotifier<AuthState> {
       onLeft: (_) {
         state = const AuthState(status: AuthStatus.unauthenticated);
       },
-      onRight: (user) {
-        state = AuthState(status: AuthStatus.authenticated, user: user);
-      },
+      onRight: _onAuthenticated,
     );
   }
 
@@ -95,9 +92,7 @@ class AuthController extends StateNotifier<AuthState> {
     if (!mounted) return;
     result.when(
       onLeft: _onFailure,
-      onRight: (user) {
-        state = AuthState(status: AuthStatus.authenticated, user: user);
-      },
+      onRight: _onAuthenticated,
     );
   }
 
@@ -124,9 +119,7 @@ class AuthController extends StateNotifier<AuthState> {
     if (!mounted) return;
     result.when(
       onLeft: _onFailure,
-      onRight: (user) {
-        state = AuthState(status: AuthStatus.authenticated, user: user);
-      },
+      onRight: _onAuthenticated,
     );
   }
 
@@ -139,10 +132,18 @@ class AuthController extends StateNotifier<AuthState> {
     if (!mounted) return;
     result.when(
       onLeft: _onFailure,
-      onRight: (user) {
-        state = state.copyWith(status: AuthStatus.authenticated, user: user);
-      },
+      onRight: _onAuthenticated,
     );
+  }
+
+  void _onAuthenticated(UserEntity user) {
+    state = AuthState(status: AuthStatus.authenticated, user: user);
+    // Defer invalidations to a microtask to ensure AuthController state transition
+    // is committed first, preventing Riverpod CircularDependencyError.
+    Future.microtask(() {
+      ref.invalidate(ordersControllerProvider);
+      ref.invalidate(tableControllerProvider);
+    });
   }
 
   /// Logs out the current user.
@@ -165,18 +166,17 @@ class AuthController extends StateNotifier<AuthState> {
     if (!mounted) return;
     state = const AuthState(status: AuthStatus.unauthenticated);
 
-    // Reset session-scoped controllers AFTER the auth state flip so UI
-    // rebuilds against clean, empty state. Every provider that caches
-    // per-account data must be listed here — otherwise the next login
-    // inherits the previous account's cart, orders, loyalty ledger, or
-    // driver identity. (Chat uses an autoDispose family: it self-cleans.)
-    ref.invalidate(cartControllerProvider);
-    ref.invalidate(ordersControllerProvider);
-    ref.invalidate(deliveryControllerProvider);
-    ref.invalidate(loyaltyControllerProvider);
-    // Dropping the repository instance clears its in-memory per-user cache
-    // (_cachedAccounts), which invalidating the controller alone would keep.
-    ref.invalidate(loyaltyRepositoryProvider);
+    // Reset session-scoped controllers AFTER the auth state flip in a microtask.
+    // Note: loyaltyControllerProvider already watches authControllerProvider,
+    // so it automatically rebuilds with the unauthenticated/guest state.
+    Future.microtask(() {
+      try {
+        ref.invalidate(cartControllerProvider);
+        ref.invalidate(ordersControllerProvider);
+      } catch (e) {
+        AppLogger.warning('logout: controller invalidation issue: $e');
+      }
+    });
   }
 
   void _onFailure(Failure failure) {

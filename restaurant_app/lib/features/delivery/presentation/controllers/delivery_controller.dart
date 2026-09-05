@@ -209,7 +209,14 @@ class DeliveryController extends StateNotifier<List<DeliveryAssignment>> {
   Future<void> accept(String id) =>
       _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.accepted));
 
-  /// Marks an accepted assignment as picked up / in transit.
+  /// Declines / rejects a pending assignment so it can be re-dispatched.
+  Future<void> decline(String id) => fail(id);
+
+  /// Marks an accepted assignment as picked up from the restaurant kitchen.
+  Future<void> pickUp(String id) =>
+      _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.pickedUp));
+
+  /// Marks an accepted/picked-up assignment as in transit to customer.
   Future<void> start(String id) =>
       _apply(id, (a) => a.copyWith(deliveryStatus: DeliveryStatus.inTransit));
 
@@ -287,12 +294,14 @@ final deliveryControllerProvider =
       (ref) {
         final authUser = ref.watch(authControllerProvider).user;
         final supabaseUser = ref.watch(supabaseCurrentUserProvider);
-        // Empty (not a fake 'driver-demo' id) when nobody is signed in:
-        // the controller then idles instead of writing FK-violating rows.
-        final driverId = authUser?.id ?? supabaseUser?.id ?? '';
+        final repo = ref.watch(deliveryRepositoryProvider);
+        // Fallback to 'driver-demo' only in in-memory test fixtures when nobody is signed in;
+        // production keep empty string to prevent foreign key errors on live database.
+        final fallbackId = repo is InMemoryDeliveryRepository ? 'driver-demo' : '';
+        final driverId = authUser?.id ?? supabaseUser?.id ?? fallbackId;
 
         return DeliveryController(
-          ref.watch(deliveryRepositoryProvider),
+          repo,
           driverId,
           realtimeService: ref.watch(supabaseRealtimeServiceProvider),
           onDelivered: (orderId) => _completeParentOrder(ref, orderId),
@@ -330,7 +339,10 @@ Future<void> _completeParentOrder(Ref ref, String orderId) async {
         orderId: orderId,
         amount: order.totalAmount,
         method: PaymentMethod.cash,
-        phone: order.deliveryNotes,
+        phone: (order.deliveryNotes != null &&
+                RegExp(r'^(01[0-25]\d{8}|\+201[0-25]\d{8})$').hasMatch(order.deliveryNotes!.trim()))
+            ? order.deliveryNotes!.trim()
+            : null,
       );
     } catch (e) {
       AppLogger.warning('Failed to record COD payment for order $orderId: $e');

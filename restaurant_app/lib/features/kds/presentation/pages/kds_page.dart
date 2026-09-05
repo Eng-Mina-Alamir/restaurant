@@ -537,18 +537,33 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     WidgetRef ref,
     OrderEntity order,
   ) async {
-    ref.read(newOrderNotifierProvider).reset();
-
-    // When advancing a delivery order without a driver, prompt chef to select driver.
-    // If the chef dismisses or cancels the sheet (assigned != true), abort and do not advance.
-    if (order.orderType == OrderType.delivery && order.driverId == null) {
-      final assigned = await KdsDriverAssignmentSheet.show(context, order: order);
-      if (assigned != true) return;
-    }
-
     final prevStatus = order.status;
     final next = _nextStatus(order.status, order.orderType);
     if (next == null) return;
+
+    // When dealing with delivery orders:
+    // 1. If moving preparing -> ready, advance to ready and offer driver assignment sheet.
+    // 2. If already ready, advancing means handing over to the driver. Only allow if a driver is assigned!
+    if (order.orderType == OrderType.delivery && order.status == OrderStatus.ready) {
+      if (order.driverId == null) {
+        // Must assign a driver before handing over
+        await KdsDriverAssignmentSheet.show(context, order: order);
+        return;
+      }
+    } else if (order.orderType == OrderType.delivery &&
+        next == OrderStatus.ready &&
+        order.driverId == null) {
+      ref.read(kdsAlertServiceProvider).alertOrderReady();
+      AppHaptics.actionSuccess();
+      await ref
+          .read(ordersControllerProvider.notifier)
+          .updateStatus(order.id, OrderStatus.ready);
+      if (context.mounted) {
+        await KdsDriverAssignmentSheet.show(context, order: order);
+      }
+      return;
+    }
+
     ref.read(kdsAlertServiceProvider).alertOrderReady();
     AppHaptics.actionSuccess();
     await ref
@@ -566,16 +581,20 @@ class _KdsPageState extends ConsumerState<KdsPage> {
       // so only offer "تراجع" when the backward move is allowed
       // (e.g. ready→served can go back to ready).
       final canUndo = next.canRevertTo(prevStatus);
+      final message = (order.orderType == OrderType.delivery && next == OrderStatus.served)
+          ? 'تم تسليم الطلب #$orderShortId للمندوب بنجاح 🛵'
+          : 'أحسنت يا شيف! الطلب #$orderShortId أصبح جاهزاً للتقديم';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          duration: const Duration(seconds: 8),
+          duration: const Duration(seconds: 4),
           backgroundColor: successBg,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           content: Text(
-            'أحسنت يا شيف! الطلب #$orderShortId أصبح جاهزاً للتقديم',
+            message,
             style: const TextStyle(color: Colors.white),
           ),
           action: canUndo
@@ -961,7 +980,7 @@ class _OrderCard extends ConsumerWidget {
       OrderStatus.pending => strings.kdsPreparing,
       OrderStatus.preparing => strings.kdsReady,
       OrderStatus.ready => order.orderType == OrderType.delivery
-          ? (order.driverId == null ? strings.handoverToDriver : strings.handedToDriver)
+          ? (order.driverId == null ? strings.assignDriverChip : strings.handoverToDriver)
           : strings.kdsCompleting,
       _ => strings.ok,
     };
@@ -1056,26 +1075,39 @@ class _OrderCard extends ConsumerWidget {
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
                     else if (order.orderType == OrderType.delivery)
-                      ActionChip(
-                        avatar: Icon(
-                          order.driverId != null
-                              ? Icons.two_wheeler_rounded
-                              : Icons.person_add_alt_1_rounded,
-                          size: 16,
-                          color: order.driverId != null
-                              ? const Color(0xFF10B981)
-                              : theme.colorScheme.primary,
+                      if (order.status == OrderStatus.ready || order.driverId != null)
+                        ActionChip(
+                          avatar: Icon(
+                            order.driverId != null
+                                ? Icons.two_wheeler_rounded
+                                : Icons.person_add_alt_1_rounded,
+                            size: 16,
+                            color: order.driverId != null
+                                ? const Color(0xFF10B981)
+                                : theme.colorScheme.primary,
+                          ),
+                          label: Text(
+                            order.driverId != null
+                                ? strings.driverAssignedChip
+                                : strings.assignDriverChip,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onPressed: () =>
+                              KdsDriverAssignmentSheet.show(context, order: order),
+                        )
+                      else
+                        Chip(
+                          avatar: const Icon(
+                            Icons.two_wheeler_outlined,
+                            size: 16,
+                          ),
+                          label: Text(
+                            order.orderType.localizedLabel(strings.isArabic),
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        label: Text(
-                          order.driverId != null
-                              ? strings.driverAssignedChip
-                              : strings.assignDriverChip,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onPressed: () =>
-                            KdsDriverAssignmentSheet.show(context, order: order),
-                      ),
                   ],
                 ),
               ],

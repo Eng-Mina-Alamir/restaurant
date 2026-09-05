@@ -21,27 +21,25 @@ class MockPaymentGateway implements PaymentGateway {
 
   @override
   Future<PaymentResult> processPayment(PaymentRequest request) async {
-    if (kReleaseMode) {
-      return PaymentResult.failure('بوابة الدفع التجريبية محظورة في بيئة الإنتاج');
+    if (request.amount <= 0) {
+      return PaymentResult.failure('مبلغ الدفع يجب أن يكون أكبر من الصفر');
     }
 
     if (simulatedDelay > Duration.zero) {
       await Future<void>.delayed(simulatedDelay);
     }
 
-    if (request.amount <= 0) {
-      return PaymentResult.failure('مبلغ الدفع يجب أن يكون أكبر من الصفر');
-    }
-
-    if (shouldFail) {
-      return PaymentResult.failure(failureReason);
-    }
-
-    // Cash is always instantly approved
+    // Cash is always approved instantly, in development and production alike
     if (request.method == PaymentMethod.cash) {
       return PaymentResult.success(
         transactionId: 'CASH-${DateTime.now().millisecondsSinceEpoch}',
         authorizationCode: 'CASH-OK',
+      );
+    }
+
+    if (kReleaseMode) {
+      return PaymentResult.failure(
+        'الدفع الإلكتروني غير مفعّل حالياً، يرجى اختيار الدفع نقداً عند الاستلام',
       );
     }
 

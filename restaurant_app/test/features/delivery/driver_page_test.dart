@@ -80,8 +80,8 @@ void main() {
         child: const MaterialApp(home: DriverHomePage()),
       ),
     );
-    await tester.pump();
-    expect(find.text('لا توجد مهام توصيل حالياً'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text(AppConstants.noDeliveryJobs), findsOneWidget);
   });
 
   testWidgets('renders assignment cards with location, pickup and distance', (
@@ -106,8 +106,9 @@ void main() {
     // Delivery fee uses its own label rather than the generic total label.
     expect(find.textContaining('رسوم التوصيل:'), findsWidgets);
     expect(find.textContaining('الإجمالي:'), findsNothing);
-    // Customer phone is shown for coordination.
-    expect(find.textContaining('رقم العميل: 0551234567'), findsOneWidget);
+    // Customer phone is masked for pending, shown for accepted assignment.
+    expect(find.textContaining('يظهر بعد قبول المهمة 🔒'), findsOneWidget);
+    expect(find.textContaining('0559876543'), findsOneWidget);
   });
 
   testWidgets('shows a contextual empty message for a status with no jobs', (
@@ -197,7 +198,7 @@ void main() {
     );
     expect(acceptButton, findsOneWidget);
     expect(
-      find.text(AppConstants.actionStartDelivery),
+      find.text('استلام الطلب من المطعم 🛍️'),
       findsOneWidget, // second assignment is already accepted
     );
 
@@ -209,7 +210,7 @@ void main() {
       find.widgetWithText(FilledButton, AppConstants.actionAccept),
       findsNothing,
     );
-    expect(find.text(AppConstants.actionStartDelivery), findsNWidgets(2));
+    expect(find.text('استلام الطلب من المطعم 🛍️'), findsNWidgets(2));
   });
 
   testWidgets('announces a broadcast assignment exactly once', (tester) async {

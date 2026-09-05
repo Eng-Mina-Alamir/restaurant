@@ -54,6 +54,23 @@ class SupabaseCouponRepository implements CouponRepository {
         error: e,
         stackTrace: st,
       );
+      final cache = _cache;
+      if (cache != null) {
+        try {
+          final cached = cache.readList(_cacheKey);
+          if (cached.isNotEmpty) {
+            final fallback = cached
+                .map((raw) => CouponEntity.fromJson(
+                    Map<String, dynamic>.from(raw as Map)))
+                .toList();
+            return Right(fallback);
+          }
+        } catch (cacheErr) {
+          AppLogger.warning(
+            'Failed to read coupons from local cache fallback: $cacheErr',
+          );
+        }
+      }
       return Left(ServerFailure('فشل تحميل الكوبونات من Supabase: $e'));
     }
   }

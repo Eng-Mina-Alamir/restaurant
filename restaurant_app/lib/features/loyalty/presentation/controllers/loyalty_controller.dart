@@ -41,6 +41,7 @@ class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
   Future<void> loadAccount() async {
     state = const AsyncValue.loading();
     final result = await _repository.getAccount(_userId);
+    if (!mounted) return;
     result.when(
       onLeft: (failure) =>
           state = AsyncValue.error(failure.message, StackTrace.current),
@@ -53,6 +54,7 @@ class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
       userId: _userId,
       reward: reward,
     );
+    if (!mounted) return false;
     return result.when(
       onLeft: (failure) => false,
       onRight: (updated) {
@@ -71,6 +73,7 @@ class LoyaltyController extends StateNotifier<AsyncValue<LoyaltyAccount>> {
       orderTotal: orderTotal,
       orderId: orderId,
     );
+    if (!mounted) return;
     result.when(
       onLeft: (_) {},
       onRight: (updated) => state = AsyncValue.data(updated),

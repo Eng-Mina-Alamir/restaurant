@@ -14,6 +14,7 @@ import 'package:restaurant_app/features/orders/data/repositories/in_memory_order
 import 'package:restaurant_app/features/orders/domain/entities/order_entity.dart';
 import 'package:restaurant_app/features/orders/domain/entities/order_item.dart';
 import 'package:restaurant_app/features/orders/presentation/controllers/orders_controller.dart';
+import 'package:restaurant_app/shared/widgets/humanized_feedback.dart';
 import '../../helpers/spy_kds_alert_service.dart';
 import '../../helpers/test_container.dart';
 
@@ -80,7 +81,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('لا توجد طلبات حالياً'), findsOneWidget);
+    expect(find.text(HumanCopy.kitchenCalmTitle), findsOneWidget);
   });
 
   testWidgets('shows a sent order and advances its status', (tester) async {
@@ -109,14 +110,14 @@ void main() {
     expect(find.textContaining('برجر كلاسيك'), findsOneWidget);
     expect(find.textContaining('بانتظار التحضير'), findsOneWidget);
     // Empty columns show a contextual placeholder.
-    expect(find.text('لا توجد طلبات'), findsWidgets);
+    expect(find.textContaining('المطبخ هادئ الآن'), findsWidgets);
     // One pending batch arrived since the board opened → exactly one chime.
     expect(spy.newOrderAlerts, 1);
 
     // Advance to preparing.
     await tester.tap(find.text('قيد التحضير').last);
     await tester.pumpAndSettle();
-    expect(find.text('جاهز للتسليم'), findsOneWidget);
+    expect(find.text('جاهز للتقديم'), findsOneWidget);
     expect(spy.orderReadyAlerts, 1);
   });
 
@@ -147,10 +148,10 @@ void main() {
     // pending -> preparing
     await tester.tap(find.text('قيد التحضير').last);
     await tester.pumpAndSettle();
-    expect(find.text('جاهز للتسليم'), findsOneWidget);
+    expect(find.text('جاهز للتقديم'), findsOneWidget);
 
     // preparing -> ready
-    await tester.tap(find.text('جاهز للتسليم').last);
+    await tester.tap(find.text('جاهز للتقديم').last);
     await tester.pumpAndSettle();
     expect(find.text('استكمال'), findsOneWidget);
 
@@ -331,7 +332,7 @@ void main() {
 
       // Only our unclaimed ticket is visible; chef-2's claim is filtered out.
       expect(find.textContaining('برجر كلاسيك'), findsOneWidget);
-      expect(find.text('استلام الطلب'), findsOneWidget);
+      expect(find.text('استلام وبدء التحضير'), findsOneWidget);
       expect(
         container
             .read(ordersControllerProvider)
@@ -361,7 +362,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('استلام الطلب'));
+      await tester.tap(find.text('استلام وبدء التحضير'));
       await tester.pumpAndSettle();
 
       final claimed = container.read(ordersControllerProvider).first;

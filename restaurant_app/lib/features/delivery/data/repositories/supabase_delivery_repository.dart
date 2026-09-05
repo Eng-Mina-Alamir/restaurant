@@ -48,10 +48,41 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
           ValidationFailure('معرّف السائق غير صالح للإرسال للسيرفر'),
         );
       }
-      await _supabase
-          .from(SupabaseConfig.deliveryAssignmentsTable)
-          .upsert(_assignmentToRow(assignment, driverId));
-      return Right<Failure, DeliveryAssignment>(assignment);
+
+      final numericOrderId = int.tryParse(assignment.orderId);
+      final row = _assignmentToRow(assignment, driverId);
+      // Remove text id so postgres identity column generates it
+      row.remove('id');
+      if (numericOrderId != null) {
+        row['order_id'] = numericOrderId;
+      }
+
+      // Check if an assignment already exists for this order
+      final dynamic query = _supabase.from(SupabaseConfig.deliveryAssignmentsTable);
+      final existing = await query
+          .select('id')
+          .eq('order_id', numericOrderId ?? assignment.orderId)
+          .maybeSingle();
+
+      dynamic response;
+      if (existing != null && existing['id'] != null) {
+        response = await _supabase
+            .from(SupabaseConfig.deliveryAssignmentsTable)
+            .update(row)
+            .eq('id', existing['id'])
+            .select()
+            .single();
+      } else {
+        response = await _supabase
+            .from(SupabaseConfig.deliveryAssignmentsTable)
+            .insert(row)
+            .select()
+            .single();
+      }
+
+      final generatedId = response['id']?.toString() ?? assignment.id;
+      final savedAssignment = assignment.copyWith(id: generatedId);
+      return Right<Failure, DeliveryAssignment>(savedAssignment);
     } catch (e) {
       AppLogger.error(
         'Supabase createAssignment error: $e '
@@ -288,22 +319,29 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
   Map<String, dynamic> _assignmentToRow(
     DeliveryAssignment a,
     String sanitizedDriverId,
-  ) => <String, dynamic>{
-    'id': a.id,
-    'order_id': a.orderId,
-    'driver_id': sanitizedDriverId,
-    'pickup_time': a.pickupTime.toIso8601String(),
-    'delivered_time': a.deliveredTime?.toIso8601String(),
-    'delivery_location': a.deliveryLocation,
-    'customer_phone': a.customerPhone,
-    'latitude': a.latitude,
-    'longitude': a.longitude,
-    'delivery_status': a.deliveryStatus.name,
-    'delivery_fee': a.deliveryFee,
-    'route_distance_meters': a.routeDistanceMeters,
-    if (a.assignedAt != null) 'assigned_at': a.assignedAt!.toIso8601String(),
-    'assignment_method': a.assignmentMethod,
-  };
+  ) {
+    final numericOrderId = int.tryParse(a.orderId);
+    final row = <String, dynamic>{
+      'order_id': numericOrderId ?? a.orderId,
+      'driver_id': sanitizedDriverId,
+      'pickup_time': a.pickupTime.toIso8601String(),
+      'delivered_time': a.deliveredTime?.toIso8601String(),
+      'delivery_location': a.deliveryLocation,
+      'customer_phone': a.customerPhone,
+      'latitude': a.latitude,
+      'longitude': a.longitude,
+      'delivery_status': a.deliveryStatus.name,
+      'delivery_fee': a.deliveryFee,
+      'route_distance_meters': a.routeDistanceMeters,
+      if (a.assignedAt != null) 'assigned_at': a.assignedAt!.toIso8601String(),
+      'assignment_method': a.assignmentMethod,
+    };
+    final numericId = int.tryParse(a.id);
+    if (numericId != null) {
+      row['id'] = numericId;
+    }
+    return row;
+  }
 
   static DeliveryAssignment _assignmentFromRow(Map<String, dynamic> map) {
     final dynamic driverRaw = map['driver'];
