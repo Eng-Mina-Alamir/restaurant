@@ -13,11 +13,46 @@ import '../../../restaurant/domain/entities/restaurant_entity.dart';
 /// No insert/delete, no logo upload (per product decision).
 /// Source of truth is always Supabase — no seed, no Hive mirror.
 class SupabaseRestaurantRepository {
-  SupabaseRestaurantRepository(this._supabase);
+  SupabaseRestaurantRepository(
+    this._supabase, {
+    String Function()? restaurantIdProvider,
+  }) : _restaurantIdProvider = restaurantIdProvider;
 
   final SupabaseClient _supabase;
+  final String Function()? _restaurantIdProvider;
 
-  String get _restaurantId => SupabaseConfig.defaultRestaurantId;
+  String get _restaurantId =>
+      _restaurantIdProvider?.call() ?? SupabaseConfig.defaultRestaurantId;
+
+  /// Registers a new SaaS restaurant tenant and assigns the current user as admin.
+  Future<Either<Failure, Map<String, dynamic>>> registerNewTenant({
+    required String name,
+    String? address,
+    String? phone,
+    String currency = 'ج.م',
+    String? vatNumber,
+  }) async {
+    try {
+      final response = await _supabase.rpc(
+        'register_new_tenant',
+        params: {
+          'p_name': name,
+          'p_address': address ?? 'الفرع الرئيسي',
+          'p_phone': phone ?? '0000000000',
+          'p_currency': currency,
+          'p_vat_number': vatNumber,
+        },
+      );
+      return Right(Map<String, dynamic>.from(response as Map));
+    } catch (e, st) {
+      AppLogger.error(
+        'Supabase registerNewTenant error: $e',
+        error: e,
+        stackTrace: st,
+      );
+      return Left(ServerFailure('فشل إنشاء المطعم الجديد: $e'));
+    }
+  }
 
   Future<Either<Failure, RestaurantEntity>> getRestaurant() async {
     try {

@@ -26,6 +26,7 @@ import '../../features/manager_dashboard/presentation/pages/invoices_page.dart';
 import '../../features/coupons/presentation/pages/coupon_management_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/onboarding/presentation/pages/restaurant_onboarding_page.dart';
 import '../../features/manager_dashboard/presentation/pages/financial_reports_page.dart';
 import '../../features/manager_dashboard/presentation/pages/manager_dashboard_page.dart';
 import '../../features/manager_dashboard/presentation/pages/qr_generator_page.dart';
@@ -124,6 +125,8 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       final isSplash = state.matchedLocation == '/';
       final loggingIn = state.matchedLocation == '/login';
       final registering = state.matchedLocation == '/register';
+      final registeringRestaurant =
+          state.matchedLocation == '/register-restaurant';
 
       // While the session is still being resolved (app bootstrap), keep showing the splash gate.
       if (auth.status == AuthStatus.unknown) {
@@ -131,12 +134,16 @@ GoRouter createAppRouter({required WidgetRef ref}) {
       }
 
       if (auth.status == AuthStatus.unauthenticated) {
-        return (loggingIn || registering) ? null : '/login';
+        return (loggingIn || registering || registeringRestaurant)
+            ? null
+            : '/login';
       }
 
       final user = auth.user;
       if (user == null) {
-        return (loggingIn || registering) ? null : '/login';
+        return (loggingIn || registering || registeringRestaurant)
+            ? null
+            : '/login';
       }
 
       // Authenticated users landing on /login, /, or /register go to their role home.
@@ -185,6 +192,13 @@ GoRouter createAppRouter({required WidgetRef ref}) {
         pageBuilder: (context, state) => AppPageTransitions.scaleFade(
           key: state.pageKey,
           child: const OnboardingPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/register-restaurant',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const RestaurantOnboardingPage(),
         ),
       ),
       GoRoute(

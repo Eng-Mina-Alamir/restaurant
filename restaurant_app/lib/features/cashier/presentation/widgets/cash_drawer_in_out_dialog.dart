@@ -275,6 +275,26 @@ class _CashDrawerInOutDialogState extends ConsumerState<CashDrawerInOutDialog>
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
+                // Manager PIN (required for audit; never logged).
+                const Text(
+                  'الرقم السري للمدير (للرقابة)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _pinCtrl,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.lock_outline_rounded),
+                    hintText: 'PIN المدير المعتمد',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
                 // Action Buttons
                 Row(
                   children: [

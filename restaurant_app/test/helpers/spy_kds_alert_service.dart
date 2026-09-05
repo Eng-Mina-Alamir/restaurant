@@ -8,6 +8,12 @@ class SpyKdsAlertService implements KdsAlertService {
   bool disposed = false;
 
   @override
+  bool isMuted = false;
+
+  @override
+  void toggleMute() => isMuted = !isMuted;
+
+  @override
   Future<void> alertNewOrder() async => newOrderAlerts++;
 
   @override

@@ -17,6 +17,25 @@ class SupabasePaymentRepository {
 
   final SupabaseClient _supabase;
 
+  /// Resolves text order identifiers (order_number) to the numeric
+  /// `orders.id` required by the bigint `payments.order_id` column.
+  Future<int?> _resolveNumericOrderId(String orderId) async {
+    final direct = int.tryParse(orderId);
+    if (direct != null) return direct;
+    try {
+      final rows = await _supabase
+          .from(SupabaseConfig.ordersTable)
+          .select('id')
+          .eq('order_number', orderId)
+          .limit(1);
+      final list = rows as List;
+      if (list.isEmpty) return null;
+      return int.tryParse((list.first as Map)['id']?.toString() ?? '');
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Persists a successful payment transaction.
   Future<Either<Failure, void>> recordPayment({
     required String orderId,
@@ -26,7 +45,12 @@ class SupabasePaymentRepository {
     required DateTime paidAt,
   }) async {
     try {
-      final numericOrderId = int.tryParse(orderId);
+      final numericOrderId = await _resolveNumericOrderId(orderId);
+      if (numericOrderId == null) {
+        return Left<Failure, void>(
+          ServerFailure('تعذر تسجيل الدفع: الطلب غير محفوظ على السيرفر بعد ($orderId)'),
+        );
+      }
       final existing = await _supabase
           .from(SupabaseConfig.paymentsTable)
           .select('id')
@@ -37,7 +61,7 @@ class SupabasePaymentRepository {
         await _supabase
             .from(SupabaseConfig.paymentsTable)
             .update({
-              'order_id': ?numericOrderId,
+              'order_id': numericOrderId,
               'payment_method': method.name,
               'amount': amount,
               'status': 'completed',
@@ -46,7 +70,7 @@ class SupabasePaymentRepository {
             .eq('transaction_ref', transactionRef);
       } else {
         await _supabase.from(SupabaseConfig.paymentsTable).insert({
-          'order_id': ?numericOrderId,
+          'order_id': numericOrderId,
           'payment_method': method.name,
           'amount': amount,
           'status': 'completed',
@@ -91,10 +115,12 @@ class SupabasePaymentRepository {
   /// Checks if a payment already exists for [orderId] to prevent double-payment.
   Future<bool> hasCompletedPayment(String orderId) async {
     try {
+      final numericOrderId = await _resolveNumericOrderId(orderId);
+      if (numericOrderId == null) return false;
       final response = await _supabase
           .from(SupabaseConfig.paymentsTable)
           .select('id')
-          .eq('order_id', orderId)
+          .eq('order_id', numericOrderId)
           .eq('status', 'completed')
           .limit(1);
       return (response as List).isNotEmpty;

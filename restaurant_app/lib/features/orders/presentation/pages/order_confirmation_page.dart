@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/constants.dart';
+import '../../../../core/domain/enums.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../shared/animations/animated_success_checkmark.dart';
 import '../../../../shared/animations/fade_slide_transition.dart';
-import '../../../../shared/animations/scale_button.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../domain/entities/order_entity.dart';
 
@@ -22,6 +22,8 @@ class OrderConfirmationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCancelled = order.status == OrderStatus.cancelled;
+    final totalQty = order.items.fold<int>(0, (s, i) => s + i.quantity);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,11 +33,17 @@ class OrderConfirmationPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          const Center(
-            child: AnimatedSuccessCheckmark(
-              size: 80,
-              duration: Duration(milliseconds: 900),
-            ),
+          Center(
+            child: isCancelled
+                ? Icon(
+                    Icons.cancel_outlined,
+                    size: 80,
+                    color: theme.colorScheme.error,
+                  )
+                : const AnimatedSuccessCheckmark(
+                    size: 80,
+                    duration: Duration(milliseconds: 900),
+                  ),
           ),
           const SizedBox(height: AppSpacing.md),
           FadeSlideTransitionWidget(
@@ -87,12 +95,17 @@ class OrderConfirmationPage extends StatelessWidget {
               rows: [
                 _Row(
                   label: AppConstants.itemCountLabel,
-                  value: '${order.items.length}',
+                  value: '$totalQty',
                 ),
                 _Row(
                   label: AppConstants.subtotalLabel,
                   value: Formatters.formatCurrency(order.subtotal),
                 ),
+                if (order.discountAmount > 0)
+                  _Row(
+                    label: 'خصم الكوبون',
+                    value: '- ${Formatters.formatCurrency(order.discountAmount)}',
+                  ),
                 _Row(
                   label: AppConstants.taxLabel,
                   value: Formatters.formatCurrency(order.taxAmount),
@@ -103,9 +116,21 @@ class OrderConfirmationPage extends StatelessWidget {
                   emphasized: true,
                 ),
                 _Row(
+                  label: 'نوع الطلب',
+                  value: order.orderType.localizedLabel(
+                    Localizations.localeOf(context).languageCode == 'ar',
+                  ),
+                ),
+                if (order.orderType == OrderType.dineIn && order.tableId != null)
+                  _Row(label: 'الطاولة', value: '${order.tableId}'),
+                if (order.orderType == OrderType.delivery &&
+                    order.deliveryAddress != null)
+                  _Row(label: 'عنوان التوصيل', value: order.deliveryAddress!),
+                _Row(
                   label: AppConstants.estimatedTimeLabel,
-                  value:
-                      '${order.estimatedMinutes ?? 0} ${AppConstants.minutes}',
+                  value: order.estimatedMinutes != null && order.estimatedMinutes! > 0
+                      ? '${order.estimatedMinutes} ${AppConstants.minutes}'
+                      : '—',
                 ),
                 if (order.paymentMethod != null)
                   _Row(
@@ -136,35 +161,29 @@ class OrderConfirmationPage extends StatelessWidget {
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
-                  child: ScaleButton(
-                    onTap: () => context.push('/customer/track/${order.id}'),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () =>
-                          context.push('/customer/track/${order.id}'),
-                      icon: const Icon(Icons.location_on),
-                      label: const Text(
-                        'تتبع الطلب مباشرة',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () =>
+                        context.push('/customer/track/${order.id}'),
+                    icon: const Icon(Icons.location_on),
+                    label: const Text(
+                      'تتبع الطلب مباشرة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 SizedBox(
                   width: double.infinity,
-                  child: ScaleButton(
-                    onTap: () => context.go('/customer'),
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: () => context.go('/customer'),
-                      icon: const Icon(Icons.restaurant),
-                      label: const Text(AppConstants.backToMenu),
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
+                    onPressed: () => context.go('/customer'),
+                    icon: const Icon(Icons.restaurant),
+                    label: const Text(AppConstants.backToMenu),
                   ),
                 ),
               ],
@@ -227,7 +246,15 @@ class _Row extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: theme.textTheme.bodyMedium),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
           Text(value, style: style),
         ],
       ),

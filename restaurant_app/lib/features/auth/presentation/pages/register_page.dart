@@ -279,6 +279,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/register-restaurant'),
+                      icon: const Icon(Icons.storefront_rounded),
+                      label: const Text('هل أنت صاحب مطعم؟ سجّل مطعمك السحابي هنا'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -228,18 +228,52 @@ class _OrderTrackingPageState extends ConsumerState<OrderTrackingPage> {
           title: Text('تتبع الطلب ${Formatters.formatOrderId(widget.orderId)}'),
         ),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: colorScheme.primary),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                'جارٍ تحديث بيانات الطلب…',
-                style: theme.textTheme.bodyMedium?.copyWith(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
                   color: colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'تعذر العثور على الطلب',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'قد يكون الرقم غير صحيح أو تم حذف الطلب',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () => ref
+                          .read(ordersControllerProvider.notifier)
+                          .refreshOrders(),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/customer'),
+                      icon: const Icon(Icons.home_outlined),
+                      label: const Text('الرئيسية'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       );

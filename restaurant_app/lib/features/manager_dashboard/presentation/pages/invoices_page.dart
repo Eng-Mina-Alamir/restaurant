@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../../../config/app_config.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/printing/ticket_printer_service.dart';
@@ -48,15 +49,28 @@ class InvoicesPage extends ConsumerWidget {
                 return;
               }
               final exportService = ref.read(reportExportServiceProvider);
-              final _ = exportService.generateInvoicesCsv(completedOrders);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${strings.exportCsvSuccess} (${completedOrders.length})',
+              try {
+                final csv = exportService.generateInvoicesCsv(completedOrders);
+                if (!context.mounted) return;
+                if (csv.isEmpty) throw StateError('empty csv');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${strings.exportCsvSuccess} (${completedOrders.length})',
+                    ),
+                    behavior: SnackBarBehavior.floating,
                   ),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${strings.exportCsv} — فشل التصدير: $e'),
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -309,8 +323,8 @@ class _InvoiceDialog extends ConsumerWidget {
                       ),
                       child: QrImageView(
                         data: ZatcaQrCodec.generateBase64Qr(
-                          sellerName: 'مطعم الأصالة والنكهة',
-                          vatNumber: '300123456700003',
+                          sellerName: AppConfig.zatcaSellerName,
+                          vatNumber: AppConfig.zatcaVatNumber,
                           invoiceTimestamp: order.createdAt,
                           totalWithVat: order.totalAmount,
                           vatAmount: order.taxAmount,
@@ -349,13 +363,27 @@ class _InvoiceDialog extends ConsumerWidget {
                       label: Text(strings.printReceipt),
                       onPressed: () async {
                         Navigator.pop(context);
-                        await ref
-                            .read(ticketPrinterServiceProvider)
-                            .printCustomerInvoice(order);
+                        bool printed = false;
+                        try {
+                          printed = await ref
+                              .read(ticketPrinterServiceProvider)
+                              .printCustomerInvoice(order);
+                        } catch (e) {
+                          printed = false;
+                        }
                         if (context.mounted) {
+                          final colorScheme =
+                              Theme.of(context).colorScheme;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${strings.receiptSentToPrinter} 🖨️'),
+                              content: Text(
+                                printed
+                                    ? '${strings.receiptSentToPrinter} 🖨️'
+                                    : 'فشلت الطباعة — تحقق من الطابعة وحاول مجدداً',
+                              ),
+                              backgroundColor: printed
+                                  ? null
+                                  : colorScheme.error,
                               behavior: SnackBarBehavior.floating,
                             ),
                           );

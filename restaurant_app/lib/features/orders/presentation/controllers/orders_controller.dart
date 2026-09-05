@@ -25,6 +25,7 @@ import '../../../delivery/domain/repositories/delivery_repository.dart';
 import '../../../delivery/domain/services/delivery_fee_calculator.dart';
 import '../../../delivery/domain/services/driver_assignment_service.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
+import '../../../../core/payment/payment_service.dart';
 import '../../../inventory/presentation/controllers/inventory_controller.dart';
 import '../../../loyalty/presentation/controllers/loyalty_controller.dart';
 import '../../../table_management/presentation/controllers/table_controller.dart';
@@ -76,6 +77,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     Future<void> Function(OrderEntity order)? onOrderCompleted,
     Future<void> Function(String tableId, String orderId)? onTableOccupied,
     Future<void> Function(String tableId)? onTableVacated,
+    Future<void> Function(OrderEntity order)? onPaymentRecorded,
   }) : _realtimeService = realtimeService,
        _connectivityService = connectivityService,
        _offlineQueueService = offlineQueueService,
@@ -86,6 +88,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
        _onOrderCompleted = onOrderCompleted,
        _onTableOccupied = onTableOccupied,
        _onTableVacated = onTableVacated,
+       _onPaymentRecorded = onPaymentRecorded,
         super(const []) {
     _initRealtime();
     _initConnectivity();
@@ -118,7 +121,9 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
           if (!mounted) return;
           final existingMap = {for (final o in state) o.id: o};
           for (final order in orders) {
-            existingMap.putIfAbsent(order.id, () => order);
+            // Fresh server snapshot always wins; temp offline ids (absent
+            // from the server list) are preserved untouched.
+            existingMap[order.id] = order;
           }
           final merged = existingMap.values.toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -156,6 +161,11 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
 
   /// Optional hook fired when a table order completes/cancels to mark table dirty.
   final Future<void> Function(String tableId)? _onTableVacated;
+
+  /// Optional hook fired after an order is completed+paid to persist the
+  /// payment row (wired to PaymentService in the provider). Best-effort:
+  /// failures are logged by the hook itself and never fail completion.
+  final Future<void> Function(OrderEntity order)? _onPaymentRecorded;
 
   /// Human-readable reason the last [placeOrder]/[placeOrderForTable] call
   /// returned null (checkout-time revalidation failure). Null when the last
@@ -459,6 +469,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     OrderType? orderType,
     String? deliveryAddress,
     String? deliveryNotes,
+    double? discountAmountOverride,
   }) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
@@ -475,7 +486,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _placing = true;
     try {
       final createdAt = DateTime.now();
-      final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
+      final discountAmount =
+          discountAmountOverride ?? _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForCustomer(
         orderId: _generateOrderId(),
         restaurantId: SupabaseConfig.defaultRestaurantId,
@@ -532,6 +544,7 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     String? waiterId,
     PaymentMethod? paymentMethod,
     String? deliveryNotes,
+    double? discountAmountOverride,
   }) async {
     if (_placing) return null;
     final cartItems = List<CartItem>.of(_cart.state);
@@ -548,7 +561,8 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     _placing = true;
     try {
       final createdAt = DateTime.now();
-      final discountAmount = _discountResolver?.call(cartItems) ?? 0.0;
+      final discountAmount =
+          discountAmountOverride ?? _discountResolver?.call(cartItems) ?? 0.0;
       final order = OrderMapper.buildForTable(
         orderId: _generateOrderId(),
         restaurantId: SupabaseConfig.defaultRestaurantId,
@@ -632,10 +646,16 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       timestamp: now,
     );
 
-    // If order was already served/ready, set it back to preparing so kitchen receives the append ticket
-    if (updated.status == OrderStatus.ready ||
-        updated.status == OrderStatus.served) {
+    // If order was already served/ready, send it back to preparing so the
+    // kitchen receives the append ticket. served -> preparing is rejected
+    // DB-side, so served orders step through ready first (two legal moves).
+    OrderStatus? targetStatus;
+    if (updated.status == OrderStatus.ready) {
       updated = updated.copyWith(status: OrderStatus.preparing);
+      targetStatus = OrderStatus.preparing;
+    } else if (updated.status == OrderStatus.served) {
+      updated = updated.copyWith(status: OrderStatus.preparing);
+      targetStatus = OrderStatus.preparing;
     }
 
     state = [...state]..[index] = updated;
@@ -648,7 +668,22 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       await _persistOfflineOrder(updated);
       _offlineQueue.add(updated);
     } else {
-      await _repository.updateOrderStatus(existingOrderId, updated.status);
+      if (targetStatus != null && existingOrder.status == OrderStatus.served) {
+        final step = await _repository.updateOrderStatus(existingOrderId, OrderStatus.ready);
+        if (step.isLeft) {
+          AppLogger.warning('addItemsToExistingOrder($existingOrderId): served->ready rejected; aborting append');
+          state = [...state]..[index] = existingOrder;
+          return null;
+        }
+      }
+      if (targetStatus != null) {
+        final stepResult = await _repository.updateOrderStatus(existingOrderId, targetStatus);
+        if (stepResult.isLeft) {
+          AppLogger.warning('addItemsToExistingOrder($existingOrderId): requeue to preparing rejected; rolling back');
+          state = [...state]..[index] = existingOrder;
+          return null;
+        }
+      }
       // Persist the new items to Supabase order_items table
       final repo = _repository;
       if (repo is SupabaseOrderRepository) {
@@ -691,6 +726,10 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     if (index == -1) return null;
 
     var order = state[index];
+    if (order.status.isTerminal) {
+      AppLogger.warning('completeAndPayOrder($orderId) ignored: already ${order.status.name}');
+      return order.status == OrderStatus.completed ? order : null;
+    }
     if (discountAmount != null && discountAmount > 0) {
       final newSubtotal = order.subtotal;
       final taxable = FinancialCalculator.roundCurrency(
@@ -707,19 +746,48 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
       );
     }
 
+    final previous = state[index];
     final updated = order.copyWith(
       status: OrderStatus.completed,
       paymentMethod: paymentMethod,
       completedAt: DateTime.now(),
     );
 
+    // preparing -> completed is rejected DB-side: step through ready first.
+    if (order.status == OrderStatus.preparing) {
+      final stepResult = await _repository.updateOrderStatus(orderId, OrderStatus.ready);
+      if (stepResult.isLeft) {
+        AppLogger.warning('completeAndPayOrder($orderId): preparing->ready rejected; aborting');
+        return null;
+      }
+      final stepped = order.copyWith(status: OrderStatus.ready);
+      state = [...state]..[index] = stepped;
+    } else if (!order.status.canTransitionTo(OrderStatus.completed)) {
+      AppLogger.warning(
+        'completeAndPayOrder($orderId) rejected: illegal transition '
+        'from ${order.status.name} to completed',
+      );
+      return null;
+    }
+
     state = [...state]..[index] = updated;
 
     final stampedAt = DateTime.now();
     _statusEventAt[orderId] = stampedAt;
 
-    await _repository.updateOrderStatus(orderId, OrderStatus.completed);
+    final result = await _repository.updateOrderStatus(orderId, OrderStatus.completed);
+    if (result.isLeft) {
+      final rollbackIndex = state.indexWhere((o) => o.id == orderId);
+      if (rollbackIndex != -1) {
+        state = [...state]..[rollbackIndex] = previous;
+      }
+      AppLogger.warning('completeAndPayOrder($orderId): completed rejected by server; rolled back');
+      return null;
+    }
 
+    if (_onPaymentRecorded != null) {
+      unawaited(_onPaymentRecorded(updated));
+    }
     if (!_inventoryDeductedOrderIds.contains(orderId) &&
         _onOrderConfirmedOrPreparing != null) {
       _inventoryDeductedOrderIds.add(orderId);
@@ -744,7 +812,27 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     final index = state.indexWhere((o) => o.id == orderId);
     if (index == -1) return null;
 
-    final updated = state[index].copyWith(status: status);
+    final current = state[index];
+    if (current.status == status) return current;
+    // Reverts MUST go through revertStatus() (audit + max-2 enforcement):
+    // the DB also rejects bypasses, but fail fast here without state churn.
+    if (current.status.canRevertTo(status)) {
+      AppLogger.warning(
+        'updateStatus($orderId, ${status.name}) rejected: backward move '
+        'from ${current.status.name} must use revertStatus()',
+      );
+      return null;
+    }
+    if (!current.status.canTransitionTo(status)) {
+      AppLogger.warning(
+        'updateStatus($orderId, ${status.name}) rejected: illegal transition '
+        'from ${current.status.name}',
+      );
+      return null;
+    }
+
+    final previous = current;
+    final updated = current.copyWith(status: status);
     state = [...state]..[index] = updated;
 
     // Stamp locally-applied transitions so our own broadcast echo — or any
@@ -756,16 +844,30 @@ class OrdersController extends StateNotifier<List<OrderEntity>> {
     }
 
     // Persist the updated order status through the repository or queue if offline.
+    // Offline: queue only — never hit the repository (it would fail/timeout
+    // while state already advanced).
     final isOffline = _connectivityService?.isOnline == false;
-    if (isOffline && _offlineQueueService != null) {
-      unawaited(_offlineQueueService.enqueue(
-        operationType: 'updateOrderStatus',
-        payload: {'orderId': orderId, 'status': status.name},
-        idempotencyKey: 'status_${orderId}_${status.name}',
-      ));
+    if (isOffline) {
+      if (_offlineQueueService != null) {
+        unawaited(_offlineQueueService.enqueue(
+          operationType: 'updateOrderStatus',
+          payload: {'orderId': orderId, 'status': status.name},
+          idempotencyKey: 'status_${orderId}_${status.name}',
+        ));
+      }
+      return updated;
     }
 
     final result = await _repository.updateOrderStatus(orderId, status);
+    if (result.isLeft) {
+      // DB rejected the transition (e.g. stale race): roll back the
+      // optimistic update so the UI never shows a phantom status.
+      final rollbackIndex = state.indexWhere((o) => o.id == orderId);
+      if (rollbackIndex != -1) {
+        state = [...state]..[rollbackIndex] = previous;
+      }
+      return null;
+    }
 
     // Auto-deduct inventory as soon as kitchen prepares or completes order
     if (result.isRight &&
@@ -1299,6 +1401,25 @@ ordersControllerProvider = StateNotifierProvider((ref) {
         await ref.read(tableControllerProvider.notifier).release(tableId, needsCleaning: true);
       } catch (e) {
         AppLogger.warning('Failed to release table $tableId: $e');
+      }
+    },
+    // Durable payment row for every completed+paid order (previously only
+    // COD wrote to payments, leaving dine-in/cashier invisible + double-pay
+    // guard useless). Best-effort: never fails completion.
+    onPaymentRecorded: (order) async {
+      try {
+        final paymentService = ref.read(paymentServiceProvider);
+        await paymentService.payForOrder(
+          orderId: order.id,
+          amount: order.totalAmount,
+          method: order.paymentMethod ?? PaymentMethod.cash,
+        );
+      } catch (e, st) {
+        AppLogger.warning(
+          'Failed to record payment row for order ${order.id}: $e',
+          error: e,
+          stackTrace: st,
+        );
       }
     },
   );

@@ -143,6 +143,22 @@ abstract final class AppShadows {
     ),
   ];
 
+  /// High-contrast card elevation for Kitchen Display System (KDS)
+  static const List<BoxShadow> kdsCard = [
+    BoxShadow(
+      color: Color(0x14000000),
+      blurRadius: 10,
+      spreadRadius: 0,
+      offset: Offset(0, 3),
+    ),
+    BoxShadow(
+      color: Color(0x0A000000),
+      blurRadius: 3,
+      spreadRadius: 0,
+      offset: Offset(0, 1),
+    ),
+  ];
+
   /// Floating elevated cards, modals, or focused elements
   static const List<BoxShadow> elevated = [
     BoxShadow(

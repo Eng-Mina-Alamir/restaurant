@@ -47,7 +47,12 @@ class InMemoryOrderRepository implements OrderRepository {
   ) async {
     final index = _orders.indexWhere((o) => o.id == orderId);
     if (index == -1) {
-      return const Left(NotFoundFailure('الطلب غير موجود'));
+      // No-op success: the order lives in controller state (e.g. seeded via
+      // realtime from another client) but not in this local store — mirroring
+      // the Supabase repository, which updates by id directly and never
+      // fails on local-cache absence. Real NotFound is signaled by
+      // getOrderById returning null.
+      return const Right(null);
     }
     _orders[index] = _orders[index].copyWith(status: status);
     return const Right(null);

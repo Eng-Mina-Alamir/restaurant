@@ -35,8 +35,11 @@ void main() {
         final createdOrder = await ordersNotifier.placeOrder();
         expect(createdOrder, isNotNull);
 
-        // Kitchen prepares and marks ready
-        await ordersNotifier.updateStatus(createdOrder!.id, OrderStatus.ready);
+        // Kitchen prepares and marks ready (legal path: pending ->
+        // preparing -> ready).
+        await ordersNotifier.updateStatus(createdOrder!.id, OrderStatus.preparing);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await ordersNotifier.updateStatus(createdOrder.id, OrderStatus.ready);
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
         // ── Step 1: Driver accepts assignment and collects package from kitchen ─

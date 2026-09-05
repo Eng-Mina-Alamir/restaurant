@@ -31,4 +31,10 @@ abstract final class AppConfig {
 
   /// Whether to use live Supabase backend for database, realtime, and storage.
   static const bool useSupabase = true;
+
+  /// ZATCA e-invoicing seller identity (must match the branch's commercial
+  /// registration). TODO(backend): load per-branch from restaurant settings
+  /// instead of this static fallback.
+  static const String zatcaSellerName = appName;
+  static const String zatcaVatNumber = '300123456700003';
 }

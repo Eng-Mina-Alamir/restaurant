@@ -74,7 +74,9 @@ class HiveOrderRepository implements OrderRepository {
       final all = await _loadAll();
       final index = all.indexWhere((o) => o.id == orderId);
       if (index == -1) {
-        return const Left(NotFoundFailure('الطلب غير موجود'));
+        // No-op success (see InMemoryOrderRepository): the local box is a
+        // cache, not the source of truth.
+        return const Right(null);
       }
       all[index] = all[index].copyWith(status: status);
       await _saveAll(all);

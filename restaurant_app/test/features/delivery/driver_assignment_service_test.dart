@@ -369,7 +369,8 @@ void main() {
       cart.addItem(const CartItem(menuItem: burger, quantity: 1));
       final dineIn = await controller.placeOrderForTable('table-7');
 
-      await controller.updateStatus(dineIn!.id, OrderStatus.ready);
+      await controller.updateStatus(dineIn!.id, OrderStatus.preparing);
+      await controller.updateStatus(dineIn.id, OrderStatus.ready);
 
       expect(hookInvocations, 0);
       expect(deliveryRepo.createCallCount, 0);
@@ -394,8 +395,9 @@ void main() {
           brokenCart.addItem(const CartItem(menuItem: burger, quantity: 1));
           final order =
               await breakingController.placeOrder(orderType: OrderType.delivery);
+          await breakingController.updateStatus(order!.id, OrderStatus.preparing);
           final updated = await breakingController.updateStatus(
-            order!.id,
+            order.id,
             OrderStatus.ready,
           );
 

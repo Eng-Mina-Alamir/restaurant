@@ -320,7 +320,7 @@ class _KdsDriverAssignmentSheetState
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '⚡ تعيين تلقائي ذكي',
+                                        'تعيين تلقائي ذكي',
                                         style: theme.textTheme.titleSmall?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: theme.colorScheme.primary,

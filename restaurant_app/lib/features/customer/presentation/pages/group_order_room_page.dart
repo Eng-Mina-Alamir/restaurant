@@ -631,7 +631,7 @@ class _GroupOrderRoomPageState extends ConsumerState<GroupOrderRoomPage> {
                   ),
                   onPressed: () {
                     ref.read(groupOrderControllerProvider.notifier).lockRoom();
-                    context.push('/cart');
+                    context.push('/customer/cart');
                   },
                   icon: const Icon(Icons.shopping_cart_checkout_rounded),
                   label: const Text('اعتماد السلة والانتقال للدفع', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),

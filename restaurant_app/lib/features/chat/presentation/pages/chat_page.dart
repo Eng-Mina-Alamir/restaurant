@@ -9,7 +9,9 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../shared/animations/shimmer_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../delivery/presentation/controllers/delivery_controller.dart';
+import '../../../orders/presentation/controllers/orders_controller.dart';
 import '../../domain/entities/chat_message.dart';
 import '../controllers/chat_controller.dart';
 import '../controllers/unread_chat_controller.dart';
@@ -92,6 +94,54 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final messagesAsync = ref.watch(chatControllerProvider(widget.orderId));
     final assignment = ref.watch(deliveryAssignmentForOrderProvider(widget.orderId)).valueOrNull;
     final isAssignmentPending = assignment != null && assignment.deliveryStatus == DeliveryStatus.pending;
+
+    // Ownership guard (IDOR fix): customers and drivers may only open threads
+    // they participate in; staff roles keep access for support/dispatch.
+    final user = ref.watch(authControllerProvider).user;
+    if (user != null &&
+        (user.role == UserRole.customer || user.role == UserRole.driver)) {
+      final orders = ref.watch(ordersControllerProvider);
+      final order = orders.where((o) => o.id == widget.orderId).firstOrNull;
+      final isOrderOwner =
+          order != null && order.customerId != null && order.customerId == user.id;
+      final isAssignedDriver =
+          assignment != null && assignment.driverId == user.id;
+      final isStaffDriver = user.role == UserRole.driver && isAssignedDriver;
+      if (!isOrderOwner && !isAssignedDriver && !isStaffDriver) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('محادثة الطلب')),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'غير مصرح لك بعرض هذه المحادثة',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'المحادثة متاحة فقط لأطراف الطلب',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(

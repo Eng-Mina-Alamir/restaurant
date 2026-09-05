@@ -57,7 +57,7 @@ class SecurityAuditLogEntry {
       timestamp: DateTime.now().subtract(const Duration(minutes: 42)),
       severity: AuditSeverity.warning,
       monetaryAmount: 450.0,
-      managerPinUsed: '1234',
+      managerPinUsed: 'معتمد ✅',
     ),
     SecurityAuditLogEntry(
       id: 'SEC-2',
@@ -77,7 +77,7 @@ class SecurityAuditLogEntry {
       timestamp: DateTime.now().subtract(const Duration(hours: 3)),
       severity: AuditSeverity.critical,
       monetaryAmount: 780.0,
-      managerPinUsed: '9999',
+      managerPinUsed: 'معتمد ✅',
     ),
   ];
 }

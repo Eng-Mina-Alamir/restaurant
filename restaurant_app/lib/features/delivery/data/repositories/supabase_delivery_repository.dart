@@ -99,10 +99,29 @@ class SupabaseDeliveryRepository implements DeliveryRepository {
     String orderId,
   ) async {
     try {
+      // order_id is bigint: resolve order_number text to the numeric id first
+      // so legacy/text ids don't hit Postgres 22P02.
+      var orderKey = orderId;
+      if (int.tryParse(orderId) == null) {
+        try {
+          final orderRows = await _supabase
+              .from(SupabaseConfig.ordersTable)
+              .select('id')
+              .eq('order_number', orderId)
+              .limit(1);
+          final list = orderRows as List;
+          if (list.isEmpty) {
+            return const Right<Failure, DeliveryAssignment?>(null);
+          }
+          orderKey = (list.first as Map)['id']?.toString() ?? orderId;
+        } catch (_) {
+          return const Right<Failure, DeliveryAssignment?>(null);
+        }
+      }
       final response = await _supabase
           .from(SupabaseConfig.deliveryAssignmentsTable)
           .select(_selectWithDriver)
-          .eq('order_id', orderId)
+          .eq('order_id', orderKey)
           .limit(1);
       final rows = response as List;
       if (rows.isEmpty) {

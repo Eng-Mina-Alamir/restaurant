@@ -111,7 +111,11 @@ void main() {
     );
     expect(order, isNotNull);
 
-    final updated = await orders.updateStatus(order!.id, OrderStatus.ready);
+    // Legal path only: pending -> preparing -> ready (direct pending ->
+    // ready is rejected by the state machine + DB trigger).
+    final preparing = await orders.updateStatus(order!.id, OrderStatus.preparing);
+    expect(preparing, isNotNull);
+    final updated = await orders.updateStatus(order.id, OrderStatus.ready);
     expect(updated, isNotNull);
     expect(updated!.status, OrderStatus.ready);
     return order.id;

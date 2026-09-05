@@ -193,6 +193,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/register-restaurant'),
+                    icon: const Icon(Icons.rocket_launch_rounded),
+                    label: const Text('تسجيل مطعم جديد (تجربة مجانية 14 يوماً)'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: BorderSide(
+                        color: themed.colorScheme.primary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

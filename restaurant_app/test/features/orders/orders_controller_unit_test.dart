@@ -87,7 +87,11 @@ void main() {
       expect(updated!.status, OrderStatus.preparing);
       expect(controller.state.first.status, OrderStatus.preparing);
 
-      // Advance to completed
+      // Advance to completed via the legal path (preparing -> ready ->
+      // completed; direct preparing -> completed is rejected by the state
+      // machine + DB trigger).
+      await controller.updateStatus(order.id, OrderStatus.ready);
+      expect(controller.state.first.status, OrderStatus.ready);
       await controller.updateStatus(order.id, OrderStatus.completed);
       expect(controller.state.first.status, OrderStatus.completed);
     });

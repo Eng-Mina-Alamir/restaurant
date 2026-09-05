@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../config/constants.dart';
 import '../../../../core/domain/enums.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/network/connectivity_service.dart';
@@ -28,8 +29,8 @@ import '../widgets/ticket_print_dialog.dart';
 
 /// Kitchen Display System: live order columns (pending / preparing / ready).
 ///
-/// Watches [ordersControllerProvider] so orders sent by a waiter appear
-/// immediately, and the kitchen advances each order's status with a button.
+/// High-density, high-contrast operational screen designed for kitchen staff
+/// with fast readability from distance, touch targets >= 56px, and quick navigation.
 class KdsPage extends ConsumerStatefulWidget {
   const KdsPage({super.key});
 
@@ -52,12 +53,21 @@ enum KitchenStation {
   String localizedTitle(bool isArabic) => isArabic ? titleAr : titleEn;
 }
 
-class _KdsPageState extends ConsumerState<KdsPage> {
-  static const _elapsedRefreshInterval = Duration(minutes: 1);
+class _KdsPageState extends ConsumerState<KdsPage>
+    with SingleTickerProviderStateMixin {
+  static const _elapsedRefreshInterval = Duration(seconds: 30);
 
+  late final TabController _tabController;
   Timer? _elapsedTimer;
   int _lastOrderCount = 0;
   KitchenStation _selectedStation = KitchenStation.all;
+
+  // Search & Filter state
+  bool _isSearchExpanded = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  OrderType? _selectedOrderType;
+  bool _sortOldestFirst = true;
 
   bool _orderMatchesStation(OrderEntity order, KitchenStation station) {
     if (station == KitchenStation.all || station == KitchenStation.expo) {
@@ -70,6 +80,8 @@ class _KdsPageState extends ConsumerState<KdsPage> {
         case KitchenStation.grill:
           return cat.contains('grill') ||
               cat.contains('meat') ||
+              cat.contains('burger') ||
+              cat.contains('chicken') ||
               cat.contains('لحوم') ||
               cat.contains('مشويات') ||
               name.contains('كباب') ||
@@ -77,22 +89,28 @@ class _KdsPageState extends ConsumerState<KdsPage> {
               name.contains('لحم') ||
               name.contains('شيش') ||
               name.contains('برجر') ||
+              name.contains('burger') ||
               name.contains('دجاج') ||
               name.contains('فراخ') ||
               name.contains('شاورما');
         case KitchenStation.bakery:
           return cat.contains('pizza') ||
               cat.contains('bakery') ||
+              cat.contains('pastry') ||
               cat.contains('مخبوزات') ||
               cat.contains('بيتزا') ||
               cat.contains('فطائر') ||
               name.contains('بيتزا') ||
+              name.contains('pizza') ||
               name.contains('عيش') ||
               name.contains('طاجن') ||
               name.contains('حواوشي');
         case KitchenStation.bar:
           return cat.contains('drink') ||
               cat.contains('beverage') ||
+              cat.contains('coffee') ||
+              cat.contains('tea') ||
+              cat.contains('bar') ||
               cat.contains('مشروبات') ||
               cat.contains('عصائر') ||
               name.contains('عصير') ||
@@ -110,7 +128,10 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   @override
   void initState() {
     super.initState();
-    // Keep the "منذ N دقيقة" counters fresh even when no order changes occur.
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _elapsedTimer = Timer.periodic(_elapsedRefreshInterval, (_) {
       if (mounted) setState(() {});
     });
@@ -119,6 +140,8 @@ class _KdsPageState extends ConsumerState<KdsPage> {
   @override
   void dispose() {
     _elapsedTimer?.cancel();
+    _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -133,17 +156,25 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final tableNumberById = <String, int>{
       for (final t in tables) t.id: t.tableNumber,
     };
+    final theme = Theme.of(context);
+    final isMobile = AppBreakpoints.isMobile(context);
 
-    // Current chef identity (auth state first, Supabase session fallback) —
-    // same convention as the loyalty/ratings features.
+    // Current chef identity
     final currentUserId =
         ref.watch(authControllerProvider).user?.id ??
         ref.watch(supabaseCurrentUserProvider)?.id;
 
-    final active = orders.where((o) => !o.status.isTerminal).toList();
+    final active = orders
+        .where(
+          (o) =>
+              o.status == OrderStatus.pending ||
+              o.status == OrderStatus.confirmed ||
+              o.status == OrderStatus.preparing ||
+              o.status == OrderStatus.ready,
+        )
+        .toList();
 
-    // KDS multi-chef: each chef only sees unclaimed tickets plus the ones
-    // they personally claimed (استلام الطلب). Expo station sees ALL tickets for assembly.
+    // Multi-chef station visibility: Expo sees ALL, others see unclaimed + personal claims
     if (_selectedStation != KitchenStation.expo) {
       active.retainWhere(
         (o) =>
@@ -152,130 +183,201 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     }
 
     // Filter by Kitchen Station
-    final filteredActive =
+    final stationActive =
         active.where((o) => _orderMatchesStation(o, _selectedStation)).toList();
 
-    // Alert when new pending orders arrive
-    final pendingCount = filteredActive
-        .where((o) => o.status == OrderStatus.pending)
+    // Alert when new pending orders arrive (confirmed counts as pending)
+    final pendingCount = stationActive
+        .where(
+          (o) =>
+              o.status == OrderStatus.pending ||
+              o.status == OrderStatus.confirmed,
+        )
         .length;
     if (pendingCount > _lastOrderCount) {
       ref.read(kdsAlertServiceProvider).alertNewOrder();
     }
     _lastOrderCount = pendingCount;
 
-    final pendingList =
-        filteredActive.where((o) => o.status == OrderStatus.pending).toList()
-          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final preparingList =
-        filteredActive.where((o) => o.status == OrderStatus.preparing).toList()
-          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    final readyList =
-        filteredActive.where((o) => o.status == OrderStatus.ready).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Apply Operational Filters (Search Query + OrderType)
+    var operationalActive = stationActive;
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      operationalActive = operationalActive.where((o) {
+        final shortId = Formatters.formatOrderId(o.id).toLowerCase();
+        final rawId = o.id.toLowerCase();
+        final tableNum = o.tableId == null
+            ? ''
+            : (tableNumberById[o.tableId]?.toString() ?? '');
+        return shortId.contains(q) || rawId.contains(q) || tableNum.contains(q);
+      }).toList();
+    }
+    if (_selectedOrderType != null) {
+      operationalActive = operationalActive
+          .where((o) => o.orderType == _selectedOrderType)
+          .toList();
+    }
 
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: AppBreakpoints.isMobile(context)
-              ? Text(strings.kdsTitle)
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(strings.kdsTitle),
-                    const SizedBox(width: AppSpacing.sm),
-                    // Station Selector Menu
-                    PopupMenuButton<KitchenStation>(
-                      initialValue: _selectedStation,
-                      tooltip: strings.selectKitchenStation,
-                      onSelected: (st) => setState(() => _selectedStation = st),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm,
-                        ),
-                        constraints: const BoxConstraints(minHeight: 48),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _selectedStation.icon,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              _selectedStation.localizedTitle(strings.isArabic),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const Icon(Icons.arrow_drop_down_rounded, size: 20),
-                          ],
+    // Late orders count across station (> 10 minutes)
+    final lateCount = stationActive
+        .where((o) => Formatters.elapsedMinutes(o.createdAt) >= 10)
+        .length;
+
+    // Partition into Pending, Preparing, and Ready lists
+    final pendingList = operationalActive
+        .where(
+          (o) =>
+              o.status == OrderStatus.pending ||
+              o.status == OrderStatus.confirmed,
+        )
+        .toList();
+    final preparingList = operationalActive
+        .where((o) => o.status == OrderStatus.preparing)
+        .toList();
+    final readyList = operationalActive
+        .where((o) => o.status == OrderStatus.ready)
+        .toList();
+
+    // Sorting
+    if (_sortOldestFirst) {
+      pendingList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      preparingList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      readyList.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    } else {
+      pendingList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      preparingList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      readyList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+
+    final pendingColor = KdsColors.statusColor(
+      OrderStatus.pending,
+      theme.brightness,
+    );
+    final preparingColor = KdsColors.statusColor(
+      OrderStatus.preparing,
+      theme.brightness,
+    );
+    final readyColor = KdsColors.statusColor(
+      OrderStatus.ready,
+      theme.brightness,
+    );
+    final isSoundMuted = ref.watch(kdsAlertServiceProvider).isMuted;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                strings.kdsTitle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (!isMobile && lateCount > 0) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Tooltip(
+                message: strings.kdsDelayedAlert,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: StatusColors.tone(
+                      SemanticTone.danger,
+                      theme.brightness,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    boxShadow: AppShadows.glow(
+                      StatusColors.tone(SemanticTone.danger, theme.brightness),
+                      opacity: 0.35,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.timer_outlined,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        strings.kdsLateCountBadge(lateCount),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: [FontFeature.tabularFigures()],
                         ),
                       ),
-                      itemBuilder:
-                          (ctx) =>
-                              KitchenStation.values
-                                  .map(
-                                    (s) => PopupMenuItem(
-                                      value: s,
-                                      child: Row(
-                                        children: [
-                                          Icon(s.icon, size: 18),
-                                          const SizedBox(width: 8),
-                                          Text(s.localizedTitle(strings.isArabic)),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-          actions: [
-            if (AppBreakpoints.isMobile(context))
-              PopupMenuButton<KitchenStation>(
-                initialValue: _selectedStation,
-                tooltip: strings.stationTooltip(
-                  _selectedStation.localizedTitle(strings.isArabic),
-                ),
-                onSelected: (st) => setState(() => _selectedStation = st),
-                icon: Icon(_selectedStation.icon),
-                itemBuilder:
-                    (ctx) =>
-                        KitchenStation.values
-                            .map(
-                              (s) => PopupMenuItem(
-                                value: s,
-                                child: Row(
-                                  children: [
-                                    Icon(s.icon, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(s.localizedTitle(strings.isArabic)),
-                                  ],
-                                ),
-                              ),
-                            )
-                            .toList(),
               ),
+            ],
+          ],
+        ),
+        actions: [
+          // Search Toggle
+          IconButton(
+            icon: Icon(
+              _isSearchExpanded
+                  ? Icons.search_off_rounded
+                  : Icons.search_rounded,
+            ),
+            tooltip: strings.kdsSearchHint,
+            onPressed: () {
+              setState(() {
+                _isSearchExpanded = !_isSearchExpanded;
+                if (!_isSearchExpanded) {
+                  _searchController.clear();
+                  _searchQuery = '';
+                }
+              });
+            },
+          ),
+          // Sound Mute Toggle (Always 1-tap accessible for kitchen staff)
+          IconButton(
+            icon: Icon(
+              isSoundMuted
+                  ? Icons.volume_off_rounded
+                  : Icons.volume_up_rounded,
+            ),
+            tooltip: strings.kdsSoundToggle,
+            onPressed: () {
+              setState(() {
+                ref.read(kdsAlertServiceProvider).toggleMute();
+              });
+              HumanSnackBar.info(
+                context,
+                ref.read(kdsAlertServiceProvider).isMuted
+                    ? strings.kdsSoundMuted
+                    : strings.kdsSoundUnmuted,
+              );
+            },
+          ),
+          if (!isMobile) ...[
+            // Sort Toggle
+            IconButton(
+              icon: Icon(
+                _sortOldestFirst
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
+              ),
+              tooltip: _sortOldestFirst
+                  ? strings.kdsSortOldestFirst
+                  : strings.kdsSortNewestFirst,
+              onPressed: () {
+                AppHaptics.selectionTap();
+                setState(() => _sortOldestFirst = !_sortOldestFirst);
+              },
+            ),
+            // Incoming new orders badge
             if (badge > 0)
               Padding(
-                padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),
+                padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
                 child: Center(
                   child: Tooltip(
                     message: '$badge طلبات جديدة واردة للمطبخ',
@@ -297,7 +399,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                             Icons.notifications_active_outlined,
                             color: StatusColors.tone(
                               SemanticTone.warning,
-                              Theme.of(context).brightness,
+                              theme.brightness,
                             ),
                           ),
                         ),
@@ -306,183 +408,716 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                   ),
                 ),
               ),
+            // Completed tickets history
             IconButton(
               icon: const Icon(Icons.history_rounded),
               tooltip: strings.recentCompletedOrdersTitle,
               onPressed: () => _showRecentCompletedOrdersSheet(context, ref),
             ),
             const LogoutActionButton(),
-          ],
-          bottom: AppBreakpoints.isMobile(context) && filteredActive.isNotEmpty
-              ? TabBar(
-                  tabs: [
-                    Tab(
-                      text:
-                          '${strings.kdsPending} (${pendingList.length})',
-                    ),
-                    Tab(
-                      text:
-                          '${strings.kdsPreparing} (${preparingList.length})',
-                    ),
-                    Tab(text: '${strings.kdsReady} (${readyList.length})'),
-                  ],
-                )
-              : null,
-        ),
-        body: Column(
-          children: [
-            if (!ref.watch(isOnlineProvider))
-              StaleDataBanner(
-                lastUpdated: DateTime.now(),
-                onRetry: () {
-                  ref.invalidate(ordersControllerProvider);
-                  ref.invalidate(tableControllerProvider);
-                },
-              ),
-            Expanded(
-              child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(ordersControllerProvider);
-            ref.invalidate(tableControllerProvider);
-          },
-          child: active.isEmpty
-              ? const SingleChildScrollView(
-                  physics: AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: 500,
-                    child: EmptyState(
-                      message: HumanCopy.kitchenCalmSubtitle,
-                      title: HumanCopy.kitchenCalmTitle,
-                      icon: Icons.sentiment_satisfied_alt_outlined,
+          ] else ...[
+            // Mobile incoming new orders badge
+            if (badge > 0)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                child: Center(
+                  child: Tooltip(
+                    message: '$badge طلبات جديدة واردة للمطبخ',
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      onTap: () {
+                        AppHaptics.selectionTap();
+                        ref.read(newOrderNotifierProvider).reset();
+                        HumanSnackBar.success(
+                          context,
+                          HumanCopy.alertsReviewed,
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.xs),
+                        child: Badge(
+                          label: Text('$badge'),
+                          child: Icon(
+                            Icons.notifications_active_outlined,
+                            color: StatusColors.tone(
+                              SemanticTone.warning,
+                              theme.brightness,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                )
-              : Builder(
-                builder: (context) {
-                  final theme = Theme.of(context);
-                  final pendingColor = KdsColors.statusColor(
-                    OrderStatus.pending,
-                    theme.brightness,
-                  );
-                  final preparingColor = KdsColors.statusColor(
-                    OrderStatus.preparing,
-                    theme.brightness,
-                  );
-                  final readyColor = KdsColors.statusColor(
-                    OrderStatus.ready,
-                    theme.brightness,
-                  );
-
-                  return ResponsiveLayout(
-                    mobile: TabBarView(
-                      children: [
-                        _KdsColumn(
-                          title: strings.kdsPending,
-                          color: pendingColor,
-                          icon: Icons.schedule,
-                          orders: pendingList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                          isExpanded: false,
-                        ),
-                        _KdsColumn(
-                          title: strings.kdsPreparing,
-                          color: preparingColor,
-                          icon: Icons.soup_kitchen_outlined,
-                          orders: preparingList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                          isExpanded: false,
-                        ),
-                        _KdsColumn(
-                          title: strings.kdsReady,
-                          color: readyColor,
-                          icon: Icons.check_circle_outline,
-                          orders: readyList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                          isExpanded: false,
-                        ),
-                      ],
-                    ),
-                    tablet: Row(
-                      children: [
-                        _KdsColumn(
-                          title: strings.kdsPending,
-                          color: pendingColor,
-                          icon: Icons.schedule,
-                          orders: pendingList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                        ),
-                        _KdsColumn(
-                          title: strings.kdsPreparing,
-                          color: preparingColor,
-                          icon: Icons.soup_kitchen_outlined,
-                          orders: preparingList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                        ),
-                        _KdsColumn(
-                          title: strings.kdsReady,
-                          color: readyColor,
-                          icon: Icons.check_circle_outline,
-                          orders: readyList,
-                          onAdvance: (order) => _advance(context, ref, order),
-                          onClaim: (order) => _claim(order, currentUserId),
-                          onRevert: (order, target) => _confirmAndRevert(
-                            context,
-                            order,
-                            target,
-                            currentUserId ?? '',
-                          ),
-                          tableNumberById: tableNumberById,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                ),
               ),
+            // Mobile overflow menu
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: strings.isArabic ? 'المزيد' : 'More',
+              onSelected: (value) async {
+                AppHaptics.selectionTap();
+                switch (value) {
+                  case 'sort':
+                    setState(() => _sortOldestFirst = !_sortOldestFirst);
+                    HumanSnackBar.info(
+                      context,
+                      _sortOldestFirst
+                          ? strings.kdsSortOldestFirst
+                          : strings.kdsSortNewestFirst,
+                    );
+                    break;
+                  case 'history':
+                    _showRecentCompletedOrdersSheet(context, ref);
+                    break;
+                  case 'logout':
+                    final messenger = ScaffoldMessenger.of(context);
+                    await ref.read(authControllerProvider.notifier).logout();
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text(AppConstants.logoutMessage)),
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'sort',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _sortOldestFirst
+                            ? Icons.arrow_downward_rounded
+                            : Icons.arrow_upward_rounded,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _sortOldestFirst
+                              ? strings.kdsSortOldestFirst
+                              : strings.kdsSortNewestFirst,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'history',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.history_rounded, size: 20),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          strings.recentCompletedOrdersTitle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.logout,
+                        size: 20,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          AppConstants.logout,
+                          style: TextStyle(color: theme.colorScheme.error),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+        bottom: isMobile && operationalActive.isNotEmpty
+            ? TabBar(
+                controller: _tabController,
+                indicatorColor: switch (_tabController.index) {
+                  0 => pendingColor,
+                  1 => preparingColor,
+                  _ => readyColor,
+                },
+                indicatorWeight: 3.5,
+                tabs: [
+                  Tab(
+                    text: '${strings.kdsPending} (${pendingList.length})',
+                  ),
+                  Tab(
+                    text: '${strings.kdsPreparing} (${preparingList.length})',
+                  ),
+                  Tab(
+                    text: '${strings.kdsReady} (${readyList.length})',
+                  ),
+                ],
+              )
+            : null,
+      ),
+      body: Column(
+        children: [
+          // Offline Banner
+          if (!ref.watch(isOnlineProvider))
+            StaleDataBanner(
+              lastUpdated: DateTime.now(),
+              onRetry: () {
+                ref.invalidate(ordersControllerProvider);
+                ref.invalidate(tableControllerProvider);
+              },
+            ),
+
+          // Search & Filter Expandable Row
+          if (_isSearchExpanded)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.35,
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: strings.kdsSearchHint,
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      isDense: true,
+                      filled: true,
+                      fillColor: theme.colorScheme.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderSide: BorderSide(
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                    ),
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterChip(
+                          label: Text(strings.kdsFilterAll),
+                          selected: _selectedOrderType == null,
+                          onSelected: (_) =>
+                              setState(() => _selectedOrderType = null),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        FilterChip(
+                          label: Text(strings.kdsFilterDineIn),
+                          selected: _selectedOrderType == OrderType.dineIn,
+                          onSelected: (_) => setState(
+                            () => _selectedOrderType = OrderType.dineIn,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        FilterChip(
+                          label: Text(strings.kdsFilterTakeaway),
+                          selected: _selectedOrderType == OrderType.takeaway,
+                          onSelected: (_) => setState(
+                            () => _selectedOrderType = OrderType.takeaway,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        FilterChip(
+                          label: Text(strings.kdsFilterDelivery),
+                          selected: _selectedOrderType == OrderType.delivery,
+                          onSelected: (_) => setState(
+                            () => _selectedOrderType = OrderType.delivery,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Station Selector Chips Strip (Always visible)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
+                  ),
+                ),
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: KitchenStation.values.map((station) {
+                  final isSelected = station == _selectedStation;
+                  final count = active
+                      .where((o) => _orderMatchesStation(o, station))
+                      .length;
+
+                  return Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.xs,
+                    ),
+                    child: ChoiceChip(
+                      selected: isSelected,
+                      showCheckmark: false,
+                      avatar: Icon(
+                        station.icon,
+                        size: 16,
+                        color: isSelected
+                            ? theme.colorScheme.onPrimary
+                            : theme.colorScheme.primary,
+                      ),
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            station.localizedTitle(strings.isArabic),
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
+                              fontSize: 13,
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary.withValues(
+                                      alpha: 0.25,
+                                    )
+                                  : theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? theme.colorScheme.onPrimary
+                                    : theme.colorScheme.onSurfaceVariant,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      selectedColor: theme.colorScheme.primary,
+                      onSelected: (selected) {
+                        if (selected) {
+                          AppHaptics.selectionTap();
+                          setState(() => _selectedStation = station);
+                        }
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+          // Expo Station Helper Banner
+          if (_selectedStation == KitchenStation.expo)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              color: theme.colorScheme.secondaryContainer.withValues(
+                alpha: 0.4,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: theme.colorScheme.secondary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      strings.kdsExpoHelp,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // KDS Delayed Alert Strip (When lateCount > 0)
+          if (lateCount > 0)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 6,
+              ),
+              color: StatusColors.tone(SemanticTone.danger, theme.brightness)
+                  .withValues(alpha: 0.12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 16,
+                    color: StatusColors.tone(
+                      SemanticTone.danger,
+                      theme.brightness,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    '${strings.kdsDelayedAlert}: ${strings.kdsLateCountBadge(lateCount)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: StatusColors.tone(
+                        SemanticTone.danger,
+                        theme.brightness,
+                      ),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Mobile Wet-Hands Quick Navigation Buttons
+          if (isMobile && operationalActive.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Builder(
+                    builder: (btnContext) {
+                      final isRtl =
+                          Directionality.of(btnContext) == TextDirection.rtl;
+                      final prevIcon = isRtl
+                          ? Icons.arrow_forward_ios_rounded
+                          : Icons.arrow_back_ios_rounded;
+                      return FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                        ),
+                        onPressed: _tabController.index > 0
+                            ? () {
+                                AppHaptics.selectionTap();
+                                _tabController.animateTo(
+                                  _tabController.index - 1,
+                                );
+                              }
+                            : null,
+                        icon: Icon(prevIcon, size: 14),
+                        label: Text(strings.kdsPrevTab),
+                      );
+                    },
+                  ),
+                  Builder(
+                    builder: (btnContext) {
+                      final isRtl =
+                          Directionality.of(btnContext) == TextDirection.rtl;
+                      final nextIcon = isRtl
+                          ? Icons.arrow_back_ios_rounded
+                          : Icons.arrow_forward_ios_rounded;
+                      return FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                        ),
+                        onPressed: _tabController.index < 2
+                            ? () {
+                                AppHaptics.selectionTap();
+                                _tabController.animateTo(
+                                  _tabController.index + 1,
+                                );
+                              }
+                            : null,
+                        iconAlignment: IconAlignment.end,
+                        icon: Icon(nextIcon, size: 14),
+                        label: Text(strings.kdsNextTab),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+          // Main Board Columns / Tabs
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(ordersControllerProvider);
+                ref.invalidate(tableControllerProvider);
+              },
+              child: active.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 48),
+                        child: KdsEmptyState(
+                          title: HumanCopy.kitchenCalmTitle,
+                          message: HumanCopy.kitchenCalmSubtitle,
+                          primaryActionLabel: strings.kdsViewRecentCompleted,
+                          onPrimaryAction: () =>
+                              _showRecentCompletedOrdersSheet(context, ref),
+                          secondaryActionLabel: strings.kdsRefreshBoard,
+                          onSecondaryAction: () {
+                            ref.invalidate(ordersControllerProvider);
+                            ref.invalidate(tableControllerProvider);
+                          },
+                        ),
+                      ),
+                    )
+                  : (_searchQuery.trim().isNotEmpty &&
+                          operationalActive.isEmpty)
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 48),
+                            child: KdsEmptyState(
+                              title: strings.isArabic
+                                  ? 'لا توجد نتائج بحث'
+                                  : 'No Search Results',
+                              message: strings.isArabic
+                                  ? 'لا توجد طلبات تطابق "$_searchQuery"'
+                                  : 'No orders match "$_searchQuery"',
+                              primaryActionLabel: strings.isArabic
+                                  ? 'مسح البحث'
+                                  : 'Clear Search',
+                              onPrimaryAction: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _searchQuery = '';
+                                });
+                              },
+                            ),
+                          ),
+                        )
+                      : (_selectedStation != KitchenStation.all &&
+                              stationActive.isEmpty)
+                          ? SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 48),
+                                child: KdsEmptyState(
+                                  title: strings.isArabic
+                                      ? 'المحطة هادئة حالياً'
+                                      : 'Station is Calm',
+                                  message: strings.isArabic
+                                      ? 'لا توجد طلبات واردة لمحطة ${_selectedStation.localizedTitle(strings.isArabic)}'
+                                      : 'No orders for ${_selectedStation.localizedTitle(false)}',
+                                  primaryActionLabel: strings.isArabic
+                                      ? 'عرض كل المحطات'
+                                      : 'View All Stations',
+                                  onPrimaryAction: () {
+                                    setState(
+                                      () => _selectedStation =
+                                          KitchenStation.all,
+                                    );
+                                  },
+                                ),
+                              ),
+                            )
+                          : ResponsiveLayout(
+                      mobile: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _KdsColumn(
+                            title: strings.kdsPending,
+                            color: pendingColor,
+                            icon: Icons.schedule,
+                            orders: pendingList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: false,
+                            emptyMessage: strings.kdsEmptyPending,
+                          ),
+                          _KdsColumn(
+                            title: strings.kdsPreparing,
+                            color: preparingColor,
+                            icon: Icons.soup_kitchen_outlined,
+                            orders: preparingList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: false,
+                            emptyMessage: strings.kdsEmptyPreparing,
+                          ),
+                          _KdsColumn(
+                            title: strings.kdsReady,
+                            color: readyColor,
+                            icon: Icons.check_circle_outline,
+                            orders: readyList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: false,
+                            emptyMessage: strings.kdsEmptyReady,
+                          ),
+                        ],
+                      ),
+                      tablet: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _KdsColumn(
+                            title: strings.kdsPending,
+                            color: pendingColor,
+                            icon: Icons.schedule,
+                            orders: pendingList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: true,
+                            emptyMessage: strings.kdsEmptyPending,
+                          ),
+                          const VerticalDivider(width: 1),
+                          _KdsColumn(
+                            title: strings.kdsPreparing,
+                            color: preparingColor,
+                            icon: Icons.soup_kitchen_outlined,
+                            orders: preparingList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: true,
+                            emptyMessage: strings.kdsEmptyPreparing,
+                          ),
+                          const VerticalDivider(width: 1),
+                          _KdsColumn(
+                            title: strings.kdsReady,
+                            color: readyColor,
+                            icon: Icons.check_circle_outline,
+                            orders: readyList,
+                            onAdvance: (order) =>
+                                _advance(context, ref, order),
+                            onClaim: (order) =>
+                                _claim(order, currentUserId),
+                            onRevert: (order, target) => _confirmAndRevert(
+                              context,
+                              order,
+                              target,
+                              currentUserId ?? '',
+                            ),
+                            tableNumberById: tableNumberById,
+                            isExpanded: true,
+                            emptyMessage: strings.kdsEmptyReady,
+                          ),
+                        ],
+                      ),
+                    ),
             ),
           ),
         ],
       ),
-    ),
     );
   }
 
@@ -498,8 +1133,7 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     }
   }
 
-  /// Shows the guarded revert confirmation for [order], then applies the
-  /// revert attributed to the current chef.
+  /// Shows the guarded revert confirmation for [order], then applies the revert.
   Future<void> _confirmAndRevert(
     BuildContext context,
     OrderEntity order,
@@ -541,12 +1175,10 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final next = _nextStatus(order.status, order.orderType);
     if (next == null) return;
 
-    // When dealing with delivery orders:
-    // 1. If moving preparing -> ready, advance to ready and offer driver assignment sheet.
-    // 2. If already ready, advancing means handing over to the driver. Only allow if a driver is assigned!
-    if (order.orderType == OrderType.delivery && order.status == OrderStatus.ready) {
+    // Delivery order constraints
+    if (order.orderType == OrderType.delivery &&
+        order.status == OrderStatus.ready) {
       if (order.driverId == null) {
-        // Must assign a driver before handing over
         await KdsDriverAssignmentSheet.show(context, order: order);
         return;
       }
@@ -570,18 +1202,19 @@ class _KdsPageState extends ConsumerState<KdsPage> {
         .read(ordersControllerProvider.notifier)
         .updateStatus(order.id, next);
 
-    if (context.mounted && (next == OrderStatus.served || next == OrderStatus.completed)) {
-      final orderShortId = order.id.length > 6 ? order.id.substring(order.id.length - 4) : order.id;
+    if (context.mounted &&
+        (next == OrderStatus.served || next == OrderStatus.completed)) {
+      final orderShortId = order.id.length > 6
+          ? order.id.substring(order.id.length - 4)
+          : order.id;
       ScaffoldMessenger.of(context).clearSnackBars();
       final successBg = StatusColors.tone(
         SemanticTone.success,
         Theme.of(context).brightness,
       );
-      // Terminal orders are immutable: served→completed has no legal undo,
-      // so only offer "تراجع" when the backward move is allowed
-      // (e.g. ready→served can go back to ready).
       final canUndo = next.canRevertTo(prevStatus);
-      final message = (order.orderType == OrderType.delivery && next == OrderStatus.served)
+      final message = (order.orderType == OrderType.delivery &&
+              next == OrderStatus.served)
           ? 'تم تسليم الطلب #$orderShortId للمندوب بنجاح 🛵'
           : 'أحسنت يا شيف! الطلب #$orderShortId أصبح جاهزاً للتقديم';
 
@@ -605,14 +1238,23 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                     final authUser = ref.read(authControllerProvider).user;
                     final reverted = await ref
                         .read(ordersControllerProvider.notifier)
-                        .revertStatus(order.id, prevStatus, actorId: authUser?.id ?? 'chef');
+                        .revertStatus(
+                          order.id,
+                          prevStatus,
+                          actorId: authUser?.id ?? 'chef',
+                        );
                     if (context.mounted) {
                       if (reverted != null) {
-                        HumanSnackBar.info(context, 'أعدنا الطلب إلى المطبخ — لا عليك');
+                        HumanSnackBar.info(
+                          context,
+                          'أعدنا الطلب إلى المطبخ — لا عليك',
+                        );
                       } else {
                         HumanSnackBar.error(
                           context,
-                          ref.read(appStringsProvider).orderRevertFailed(orderShortId),
+                          ref
+                              .read(appStringsProvider)
+                              .orderRevertFailed(orderShortId),
                         );
                       }
                     }
@@ -630,7 +1272,11 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     final strings = ref.read(appStringsProvider);
     final allOrders = ref.read(ordersControllerProvider);
     final completedOrders = allOrders
-        .where((o) => o.status == OrderStatus.served || o.status == OrderStatus.completed)
+        .where(
+          (o) =>
+              o.status == OrderStatus.served ||
+              o.status == OrderStatus.completed,
+        )
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -649,7 +1295,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
           return Container(
             decoration: BoxDecoration(
               color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xl),
+              ),
             ),
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
@@ -674,7 +1322,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                         Icon(Icons.history_rounded, color: colorScheme.primary),
                         const SizedBox(width: 8),
                         Text(
-                          strings.recentDeliveredWithCount(completedOrders.length),
+                          strings.recentDeliveredWithCount(
+                            completedOrders.length,
+                          ),
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -690,7 +1340,9 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   strings.revertHint,
-                  style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Expanded(
@@ -706,7 +1358,8 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                       : ListView.separated(
                           controller: scrollController,
                           itemCount: completedOrders.length,
-                          separatorBuilder: (_, index) => const SizedBox(height: AppSpacing.sm),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
                           itemBuilder: (ctx, index) {
                             final order = completedOrders[index];
                             final orderIdShort = order.id.length > 6
@@ -717,70 +1370,109 @@ class _KdsPageState extends ConsumerState<KdsPage> {
                               elevation: 0,
                               color: colorScheme.surfaceContainerLow,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppRadius.md),
-                                side: BorderSide(color: colorScheme.outlineVariant),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
+                                ),
+                                side: BorderSide(
+                                  color: colorScheme.outlineVariant,
+                                ),
                               ),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  backgroundColor: const Color(0xFF10B981)
+                                      .withValues(alpha: 0.15),
                                   foregroundColor: const Color(0xFF10B981),
                                   child: const Icon(Icons.done_all_rounded),
                                 ),
                                 title: Text(
                                   strings.orderWithType(
                                     orderIdShort,
-                                    order.orderType.localizedLabel(strings.isArabic),
+                                    order.orderType.localizedLabel(
+                                      strings.isArabic,
+                                    ),
                                   ),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 subtitle: Text(
                                   strings.itemsWithStatus(
-                                    order.items.fold<int>(0, (s, i) => s + i.quantity),
-                                    order.status.localizedLabel(strings.isArabic),
+                                    order.items.fold<int>(
+                                      0,
+                                      (s, i) => s + i.quantity,
+                                    ),
+                                    order.status.localizedLabel(
+                                      strings.isArabic,
+                                    ),
                                   ),
                                 ),
                                 trailing: Builder(
                                   builder: (_) {
-                                    // Only served→ready is a legal revert. Terminal
-                                    // orders (completed/cancelled) are immutable,
-                                    // so they get a disabled badge instead of an
-                                    // action that would silently fail.
-                                    final canRevert = order.status.canRevertTo(OrderStatus.ready);
+                                    final canRevert = order.status.canRevertTo(
+                                      OrderStatus.ready,
+                                    );
                                     if (!canRevert) {
                                       return Tooltip(
                                         message: strings.orderFinalNoRevert,
                                         child: FilledButton.tonalIcon(
-                                          icon: const Icon(Icons.lock_outline_rounded, size: 16),
-                                          label: Text(strings.orderFinalNoRevert),
+                                          icon: const Icon(
+                                            Icons.lock_outline_rounded,
+                                            size: 16,
+                                          ),
+                                          label: Text(
+                                            strings.orderFinalNoRevert,
+                                          ),
                                           onPressed: null,
                                         ),
                                       );
                                     }
                                     return FilledButton.tonalIcon(
                                       style: FilledButton.styleFrom(
-                                        backgroundColor: colorScheme.primaryContainer,
-                                        foregroundColor: colorScheme.onPrimaryContainer,
+                                        backgroundColor:
+                                            colorScheme.primaryContainer,
+                                        foregroundColor:
+                                            colorScheme.onPrimaryContainer,
                                       ),
-                                      icon: const Icon(Icons.undo_rounded, size: 16),
+                                      icon: const Icon(
+                                        Icons.undo_rounded,
+                                        size: 16,
+                                      ),
                                       label: Text(strings.backToKitchen),
                                       onPressed: () async {
-                                        final authUser = ref.read(authControllerProvider).user;
+                                        final authUser = ref
+                                            .read(authControllerProvider)
+                                            .user;
                                         final reverted = await ref
-                                            .read(ordersControllerProvider.notifier)
-                                            .revertStatus(order.id, OrderStatus.ready, actorId: authUser?.id ?? 'chef');
+                                            .read(
+                                              ordersControllerProvider.notifier,
+                                            )
+                                            .revertStatus(
+                                              order.id,
+                                              OrderStatus.ready,
+                                              actorId: authUser?.id ?? 'chef',
+                                            );
                                         if (!sheetContext.mounted) return;
                                         if (reverted != null) {
                                           Navigator.of(sheetContext).pop();
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
-                                              content: Text(strings.orderBackToReady(orderIdShort)),
-                                              backgroundColor: const Color(0xFF10B981),
+                                              content: Text(
+                                                strings.orderBackToReady(
+                                                  orderIdShort,
+                                                ),
+                                              ),
+                                              backgroundColor:
+                                                  const Color(0xFF10B981),
                                             ),
                                           );
                                         } else {
                                           HumanSnackBar.error(
                                             sheetContext,
-                                            strings.orderRevertFailed(orderIdShort),
+                                            strings.orderRevertFailed(
+                                              orderIdShort,
+                                            ),
                                           );
                                         }
                                       },
@@ -800,10 +1492,10 @@ class _KdsPageState extends ConsumerState<KdsPage> {
     );
   }
 
-  /// Maps a status to the next KDS stage based on order type, or null when terminal.
   OrderStatus? _nextStatus(OrderStatus status, OrderType orderType) {
     switch (status) {
       case OrderStatus.pending:
+      case OrderStatus.confirmed:
         return OrderStatus.preparing;
       case OrderStatus.preparing:
         return OrderStatus.ready;
@@ -827,6 +1519,7 @@ class _KdsColumn extends ConsumerWidget {
     required this.onClaim,
     required this.onRevert,
     required this.tableNumberById,
+    required this.emptyMessage,
     this.isExpanded = true,
   });
 
@@ -835,84 +1528,137 @@ class _KdsColumn extends ConsumerWidget {
   final IconData icon;
   final List<OrderEntity> orders;
   final ValueChanged<OrderEntity> onAdvance;
-
-  /// Claims an unclaimed ticket for the current chef (استلام الطلب).
   final ValueChanged<OrderEntity> onClaim;
-
-  /// Requests a guarded revert of [OrderEntity] to [OrderStatus].
   final void Function(OrderEntity order, OrderStatus target) onRevert;
   final Map<String, int> tableNumberById;
+  final String emptyMessage;
   final bool isExpanded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
+
     final content = Container(
-      margin: const EdgeInsets.all(AppSpacing.xs),
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
+      margin: isExpanded
+          ? const EdgeInsets.all(AppSpacing.xs)
+          : EdgeInsets.zero,
+      padding: isExpanded
+          ? const EdgeInsets.all(AppSpacing.sm)
+          : const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm,
               vertical: AppSpacing.xs,
             ),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: color),
-                const SizedBox(width: AppSpacing.xs),
-                Flexible(
-                  child: Text(
-                    '$title (${orders.length})',
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
+      decoration: isExpanded
+          ? BoxDecoration(
+              color: theme.brightness == Brightness.dark
+                  ? color.withValues(alpha: 0.06)
+                  : color.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: color.withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+            )
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // On tablet (isExpanded == true), render distinct column header.
+          // On mobile (isExpanded == false), header is omitted to save ~90px!
+          if (isExpanded) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: color),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      '$title (${orders.length})',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Expanded(
             child: orders.isEmpty
                 ? Center(
-                    child: Text(
-                      strings.kdsEmptyColumn,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.xl,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              icon,
+                              size: 28,
+                              color: color,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            emptyMessage,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            HumanCopy.kitchenCalmSubtitle,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   )
-                : ListView(
+                : ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    children: [
-                      for (final order in orders)
-                        _OrderCard(
-                          order: order,
-                          onAdvance: onAdvance,
-                          onClaim: onClaim,
-                          onRevert: onRevert,
-                          tableNumber: order.tableId == null
-                              ? null
-                              : tableNumberById[order.tableId],
-                        ),
-                    ],
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      final order = orders[index];
+                      return _OrderCard(
+                        key: ValueKey(order.id),
+                        order: order,
+                        onAdvance: onAdvance,
+                        onClaim: onClaim,
+                        onRevert: onRevert,
+                        tableNumber: order.tableId == null
+                            ? null
+                            : tableNumberById[order.tableId],
+                      );
+                    },
                   ),
           ),
         ],
@@ -928,6 +1674,7 @@ class _KdsColumn extends ConsumerWidget {
 
 class _OrderCard extends ConsumerWidget {
   const _OrderCard({
+    super.key,
     required this.order,
     required this.onAdvance,
     required this.onClaim,
@@ -937,64 +1684,58 @@ class _OrderCard extends ConsumerWidget {
 
   final OrderEntity order;
   final ValueChanged<OrderEntity> onAdvance;
-
-  /// Claims this unclaimed ticket for the current chef (استلام الطلب).
   final ValueChanged<OrderEntity> onClaim;
-
-  /// Requests a guarded revert of [order] to the mapped target status.
   final void Function(OrderEntity order, OrderStatus target) onRevert;
   final int? tableNumber;
 
-  /// Orders younger than this threshold are considered "new".
   static const Duration _newThreshold = Duration(minutes: 2);
-
   bool get _isNew => DateTime.now().difference(order.createdAt) < _newThreshold;
 
-  /// Elapsed-time urgency mapped onto the audited semantic tones
-  /// (< 5 min on time, < 10 min warning, otherwise late).
   static SemanticTone _urgencyTone(int minutes) {
     if (minutes < 5) return SemanticTone.success;
     if (minutes < 10) return SemanticTone.warning;
     return SemanticTone.danger;
   }
 
-  /// Icon shown next to the urgency label on the ticket card.
   static IconData _urgencyIcon(SemanticTone tone) => switch (tone) {
     SemanticTone.success => Icons.check_circle_outline,
     SemanticTone.warning => Icons.warning_amber_rounded,
     _ => Icons.error_outline,
   };
 
-  /// Bilingual urgency label for the badge (emoji-free).
-  static String _urgencyLabel(AppStrings strings, int minutes, SemanticTone tone) => switch (tone) {
-    SemanticTone.success => strings.onTimeMinutes(minutes),
-    SemanticTone.warning => strings.warningMinutes(minutes),
-    _ => strings.lateMinutes(minutes),
-  };
+  static String _urgencyLabel(
+    AppStrings strings,
+    int minutes,
+    SemanticTone tone,
+  ) =>
+      switch (tone) {
+        SemanticTone.success => strings.onTimeMinutes(minutes),
+        SemanticTone.warning => strings.warningMinutes(minutes),
+        _ => strings.lateMinutes(minutes),
+      };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
     final theme = Theme.of(context);
+
     final buttonLabel = switch (order.status) {
       OrderStatus.pending => strings.kdsPreparing,
       OrderStatus.preparing => strings.kdsReady,
       OrderStatus.ready => order.orderType == OrderType.delivery
-          ? (order.driverId == null ? strings.assignDriverChip : strings.handoverToDriver)
+          ? (order.driverId == null
+              ? strings.assignDriverChip
+              : strings.handoverToDriver)
           : strings.kdsCompleting,
       _ => strings.ok,
     };
 
-    // Semantic keys so tests can target the advance action without fragile
-    // Arabic text lookups (the labels also appear as column titles).
     final actionKey = switch (order.status) {
       OrderStatus.pending => const ValueKey<String>('kds_action_preparing'),
       OrderStatus.ready => const ValueKey<String>('kds_action_resume'),
       _ => null,
     };
 
-    // Guarded undo: only legal single-step backward moves offer a revert
-    // (ready→preparing, served→ready); terminal statuses never do.
     final revertTarget = _revertTargetOf(order.status);
     final canUndo =
         revertTarget != null && order.status.canRevertTo(revertTarget);
@@ -1010,17 +1751,33 @@ class _OrderCard extends ConsumerWidget {
             ? int.tryParse(order.tableId!.replaceAll(RegExp(r'[^0-9]'), ''))
             : null);
 
+    // Filter items that have special notes for the prominent top banner
+    final itemsWithNotes = order.items
+        .where((i) => i.specialNotes?.trim().isNotEmpty ?? false)
+        .toList();
+
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        side: BorderSide(color: highlight, width: 1.8),
+        side: BorderSide(
+          color: highlight,
+          width: urgencyTone == SemanticTone.danger ? 2.5 : 1.8,
+        ),
       ),
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          boxShadow: AppShadows.kdsCard,
+          color: theme.colorScheme.surface,
+        ),
         padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ── Top Identity Header ───────────────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1028,7 +1785,9 @@ class _OrderCard extends ConsumerWidget {
                   child: Text(
                     Formatters.formatOrderId(order.id),
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1043,20 +1802,27 @@ class _OrderCard extends ConsumerWidget {
                           end: AppSpacing.xs,
                         ),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xs,
+                          horizontal: 6,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary.withValues(
                             alpha: 0.15,
                           ),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.full,
+                          ),
+                          border: Border.all(
+                            color: theme.colorScheme.primary,
+                            width: 1,
+                          ),
                         ),
                         child: Text(
                           strings.kdsNewBadge,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
+                            fontSize: 11,
                           ),
                         ),
                       ),
@@ -1064,96 +1830,157 @@ class _OrderCard extends ConsumerWidget {
                       Chip(
                         label: Text(
                           '${strings.orderTablePrefix} $displayTable',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
                     else if (order.orderType == OrderType.takeaway)
                       Chip(
-                        label: Text(strings.takeawayShort),
+                        label: Text(
+                          strings.takeawayShort,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       )
                     else if (order.orderType == OrderType.delivery)
-                      if (order.status == OrderStatus.ready || order.driverId != null)
-                        ActionChip(
-                          avatar: Icon(
-                            order.driverId != null
-                                ? Icons.two_wheeler_rounded
-                                : Icons.person_add_alt_1_rounded,
-                            size: 16,
-                            color: order.driverId != null
-                                ? const Color(0xFF10B981)
-                                : theme.colorScheme.primary,
-                          ),
-                          label: Text(
-                            order.driverId != null
-                                ? strings.driverAssignedChip
-                                : strings.assignDriverChip,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          onPressed: () =>
-                              KdsDriverAssignmentSheet.show(context, order: order),
-                        )
-                      else
-                        Chip(
-                          avatar: const Icon(
-                            Icons.two_wheeler_outlined,
-                            size: 16,
-                          ),
-                          label: Text(
-                            order.orderType.localizedLabel(strings.isArabic),
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      Chip(
+                        label: Text(
+                          order.orderType.localizedLabel(strings.isArabic),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xs),
-            for (final item in order.items) ...[
-              Text(
-                '${item.quantity} × ${item.menuItem.name}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (item.selectedModifiers.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    start: AppSpacing.md,
+
+            // ── Prominent Notes & Allergies Banner FIRST ─────────────────────
+            if (itemsWithNotes.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xs),
+              for (final noteItem in itemsWithNotes)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: 6,
                   ),
-                  child: Text(
-                    item.selectedModifiers.map((m) => m.name).join('، '),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.2 : 0.1,
+                    ),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    border: Border.all(
+                      color: theme.colorScheme.error.withValues(alpha: 0.6),
+                      width: 1.2,
                     ),
                   ),
-                ),
-              if (item.specialNotes?.trim().isNotEmpty ?? false)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    start: AppSpacing.md,
-                  ),
-                  child: Text(
-                    '${strings.specialNotesLabel}: ${item.specialNotes}',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          '${strings.specialNotesLabel}: ${noteItem.specialNotes}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],
+
             const SizedBox(height: AppSpacing.xs),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.xs),
+
+            // ── Items List ───────────────────────────────────────────────────
+            for (final item in order.items) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Text(
+                        '${item.quantity}×',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.menuItem.name,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          if (item.selectedModifiers.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(
+                                start: AppSpacing.xs,
+                                top: 1,
+                              ),
+                              child: Text(
+                                item.selectedModifiers
+                                    .map((m) => m.name)
+                                    .join('، '),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: AppSpacing.xs),
+
+            // ── Items count and total line ───────────────────────────────────
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Flexible(
                   child: Text(
-                    strings.itemCountLine(order.items.fold<int>(0, (sum, i) => sum + i.quantity)),
-                    style: theme.textTheme.labelMedium,
+                    strings.itemCountLine(
+                      order.items.fold<int>(0, (sum, i) => sum + i.quantity),
+                    ),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -1163,25 +1990,72 @@ class _OrderCard extends ConsumerWidget {
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
-            if (elapsed >= 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: StatusBadge.tone(
-                    label: _urgencyLabel(strings, elapsed, urgencyTone),
-                    semanticTone: urgencyTone,
-                    icon: _urgencyIcon(urgencyTone),
-                  ),
+
+            // ── Elapsed Time & Visual Urgency Progress Bar ───────────────────
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              child: LinearProgressIndicator(
+                value: (elapsed / 10.0).clamp(0.05, 1.0),
+                minHeight: 5,
+                backgroundColor: urgencyColor.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(urgencyColor),
+              ),
+            ),
+            if (elapsed >= 1) ...[
+              const SizedBox(height: 4),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: StatusBadge.tone(
+                  label: _urgencyLabel(strings, elapsed, urgencyTone),
+                  semanticTone: urgencyTone,
+                  icon: _urgencyIcon(urgencyTone),
                 ),
               ),
+            ],
+
+            // ── Delivery Driver Assignment Row (if Delivery order) ───────────
+            if (order.orderType == OrderType.delivery) ...[
+              const SizedBox(height: AppSpacing.xs),
+              ActionChip(
+                avatar: Icon(
+                  order.driverId != null
+                      ? Icons.two_wheeler_rounded
+                      : Icons.person_add_alt_1_rounded,
+                  size: 16,
+                  color: order.driverId != null
+                      ? const Color(0xFF10B981)
+                      : theme.colorScheme.primary,
+                ),
+                label: Text(
+                  order.driverId != null
+                      ? strings.driverAssignedChip
+                      : strings.assignDriverChip,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: order.driverId != null
+                        ? const Color(0xFF10B981)
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onPressed: () =>
+                    KdsDriverAssignmentSheet.show(context, order: order),
+              ),
+            ],
+
             const SizedBox(height: AppSpacing.sm),
+
+            // ── Action Buttons Row (Touch Target >= 56px Main CTA) ───────────
             Row(
               children: [
+                // Print Ticket
                 IconButton.outlined(
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
@@ -1190,7 +2064,7 @@ class _OrderCard extends ConsumerWidget {
                     minHeight: 48,
                   ),
                   tooltip: strings.printKitchenTicket,
-                  icon: const Icon(Icons.print_outlined, size: 18),
+                  icon: const Icon(Icons.print_outlined, size: 20),
                   onPressed: () => TicketPrintDialog.show(
                     context,
                     order: order,
@@ -1198,20 +2072,23 @@ class _OrderCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
+
+                // Claim Button (If unclaimed ticket)
                 if (order.assignedKitchenId == null) ...[
                   Expanded(
-                    child: FilledButton.tonal(
+                    child: FilledButton(
                       style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 48),
+                        minimumSize: const Size(0, 56),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
+                          horizontal: 8,
                           vertical: 4,
                         ),
                       ),
                       onPressed: () => onClaim(order),
                       child: Text(
                         strings.kdsClaimOrder,
-                        style: theme.textTheme.labelMedium?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -1220,29 +2097,34 @@ class _OrderCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: AppSpacing.xs),
                 ],
+
+                // Advance Status CTA
                 Expanded(
-                  child: FilledButton.tonal(
+                  child: FilledButton(
                     key: actionKey,
                     style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 48),
+                      minimumSize: const Size(0, 56),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
+                        horizontal: 8,
                         vertical: 4,
                       ),
                     ),
                     onPressed: () => onAdvance(order),
                     child: Text(
                       buttonLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
+
+                // Guarded Revert Button
                 if (canUndo) ...[
                   const SizedBox(width: AppSpacing.xs),
-                  IconButton(
+                  IconButton.outlined(
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints(
@@ -1250,7 +2132,7 @@ class _OrderCard extends ConsumerWidget {
                       minHeight: 48,
                     ),
                     tooltip: strings.kdsRevertTooltip,
-                    icon: const Icon(Icons.undo, size: 18),
+                    icon: const Icon(Icons.undo, size: 20),
                     onPressed: () => onRevert(order, revertTarget),
                   ),
                 ],
@@ -1265,8 +2147,6 @@ class _OrderCard extends ConsumerWidget {
   int _elapsedMinutes(DateTime createdAt) =>
       Formatters.elapsedMinutes(createdAt);
 
-  /// Maps a status to its revert target, or null when no backward move is
-  /// defined (pending/preparing/completed/cancelled never offer undo).
   static OrderStatus? _revertTargetOf(OrderStatus status) => switch (status) {
     OrderStatus.ready => OrderStatus.preparing,
     OrderStatus.served => OrderStatus.ready,

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../manager_dashboard/domain/entities/security_audit_log_entity.dart';
+import '../../../manager_dashboard/presentation/controllers/security_audit_controller.dart';
 
 enum ManagerApprovalAction {
   voidOrder('إلغاء طلب مرسل للمطبخ'),
@@ -12,7 +16,13 @@ enum ManagerApprovalAction {
 }
 
 /// Dialog enforcing Manager PIN Code & Reason tracking for critical cashier actions.
-class ManagerApprovalDialog extends StatefulWidget {
+///
+/// Security model: the PIN is NEVER hardcoded or logged. Verification must be
+/// performed server-side (e.g. `verify_manager_pin` RPC); until that backend
+/// exists this dialog enforces format + reason + attempt lockout and records
+/// an audit event WITHOUT the PIN value. TODO(backend): wire
+/// [_verifyPinServerSide] to the real RPC and remove the local-only path.
+class ManagerApprovalDialog extends ConsumerStatefulWidget {
   const ManagerApprovalDialog({
     super.key,
     required this.action,
@@ -40,18 +50,38 @@ class ManagerApprovalDialog extends StatefulWidget {
   }
 
   @override
-  State<ManagerApprovalDialog> createState() => _ManagerApprovalDialogState();
+  ConsumerState<ManagerApprovalDialog> createState() => _ManagerApprovalDialogState();
 }
 
-class _ManagerApprovalDialogState extends State<ManagerApprovalDialog> {
+class _ManagerApprovalDialogState extends ConsumerState<ManagerApprovalDialog> {
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
   String? _errorMessage;
+  bool _obscurePin = true;
+  int _failedAttempts = 0;
+  DateTime? _lockedUntil;
 
-  // For demonstration / restaurant standard setup: Manager PIN is 1234 or 9999
-  static const Set<String> _validManagerPins = {'1234', '9999', '123456'};
+  static const int _maxAttempts = 5;
+  static const Duration _lockoutDuration = Duration(minutes: 1);
 
-  void _verifyAndApprove() {
+  /// Placeholder until the server-side RPC lands. Currently enforces a
+  /// minimum format (≥4 digits) — the real check MUST happen backend-side so
+  /// no secret ever lives in the client.
+  /// TODO(backend): replace with `verify_manager_pin` RPC call.
+  Future<bool> _verifyPinServerSide(String pin) async {
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    return pin.length >= 4;
+  }
+
+  Future<void> _verifyAndApprove() async {
+    if (_lockedUntil != null && DateTime.now().isBefore(_lockedUntil!)) {
+      final remaining = _lockedUntil!.difference(DateTime.now()).inSeconds;
+      setState(
+        () => _errorMessage = 'تم القفل مؤقتاً بعد محاولات خاطئة — حاول بعد $remaining ثانية',
+      );
+      return;
+    }
+
     final pin = _pinController.text.trim();
     final reason = _reasonController.text.trim();
 
@@ -60,8 +90,8 @@ class _ManagerApprovalDialogState extends State<ManagerApprovalDialog> {
       return;
     }
 
-    if (!_validManagerPins.contains(pin)) {
-      setState(() => _errorMessage = 'الرقم السري للمدير غير صحيح');
+    if (!RegExp(r'^\d{4,}$').hasMatch(pin)) {
+      _registerFailure('الرقم السري يجب أن يكون 4 أرقام على الأقل');
       return;
     }
 
@@ -71,7 +101,43 @@ class _ManagerApprovalDialogState extends State<ManagerApprovalDialog> {
       return;
     }
 
+    final ok = await _verifyPinServerSide(pin);
+    if (!ok) {
+      _registerFailure('الرقم السري للمدير غير صحيح');
+      return;
+    }
+
+    if (!mounted) return;
+    // Audit WITHOUT the PIN value — never persist secrets in logs.
+    try {
+      final user = ref.read(authControllerProvider).user;
+      ref.read(securityAuditControllerProvider.notifier).recordEvent(
+            type: SecurityAuditEventType.managerPinOverride,
+            actionDescription:
+                '${widget.action.titleAr}${widget.targetDescription != null ? ' — ${widget.targetDescription}' : ''} — السبب: $reason',
+            staffName: user?.name ?? 'كاشير',
+            staffRole: user?.role.name ?? 'cashier',
+            severity: AuditSeverity.warning,
+            metadata: const {'pinVerified': 'server-pending'},
+          );
+    } catch (_) {
+      // Audit is best-effort and must never block the approval itself.
+    }
     Navigator.of(context).pop(true);
+  }
+
+  void _registerFailure(String message) {
+    _failedAttempts += 1;
+    if (_failedAttempts >= _maxAttempts) {
+      _lockedUntil = DateTime.now().add(_lockoutDuration);
+      _failedAttempts = 0;
+      setState(
+        () => _errorMessage =
+            'تجاوزت الحد الأقصى للمحاولات — تم القفل لمدة دقيقة',
+      );
+    } else {
+      setState(() => _errorMessage = message);
+    }
   }
 
   @override
@@ -155,13 +221,19 @@ class _ManagerApprovalDialogState extends State<ManagerApprovalDialog> {
             TextFormField(
               controller: _pinController,
               keyboardType: TextInputType.number,
-              obscureText: true,
+              obscureText: _obscurePin,
               autofocus: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'الرقم السري للمدير (Manager PIN)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock_outline_rounded),
-                hintText: 'تجريبي: 1234',
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock_outline_rounded),
+                suffixIcon: IconButton(
+                  tooltip: _obscurePin ? 'إظهار' : 'إخفاء',
+                  icon: Icon(
+                    _obscurePin ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  ),
+                  onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),

@@ -75,8 +75,10 @@ void main() {
         final tableOrder = await orders.placeOrderForTable('t1');
         expect(tableOrder, isNotNull);
 
-        // 2. Kitchen finishes the ticket → status flips to ready.
-        await orders.updateStatus(tableOrder!.id, OrderStatus.ready);
+        // 2. Kitchen finishes the ticket → status flips to ready via the
+        // legal path (pending -> preparing -> ready).
+        await orders.updateStatus(tableOrder!.id, OrderStatus.preparing);
+        await orders.updateStatus(tableOrder.id, OrderStatus.ready);
         expect(
           container.read(ordersControllerProvider).first.status,
           OrderStatus.ready,

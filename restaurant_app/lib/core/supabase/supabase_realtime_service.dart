@@ -19,9 +19,9 @@ import 'supabase_providers.dart';
 /// - Customer:  orders + delivery_assignments (2 channels: the assignment
 ///   channel is RLS-scoped to the customer's own orders so the tracking
 ///   page learns the driver the moment the kitchen dispatches)
-/// - Kitchen:   orders (1 channel)
-/// - Cashier:   orders (1 channel)
-/// - Waiter:    orders + tables + table_service_requests (3 channels)
+/// - Kitchen/managerChef: orders + delivery_assignments (2 channels)
+/// - Cashier:   orders + tables + delivery_assignments (3 channels)
+/// - Waiter:    orders + tables + table_service_requests + delivery_assignments (4 channels)
 /// - Driver:    orders + delivery_assignments + driver_locations (3 channels)
 /// - Manager/Admin: all 5 channels
 class SupabaseRealtimeService {
@@ -63,9 +63,11 @@ class SupabaseRealtimeService {
       // Orders channel — needed by ALL roles
       _subscribeOrders();
 
-      // Tables + Table Service Requests — needed by waiter, manager, admin
+      // Tables + Table Service Requests — waiter/manager/admin + cashier
+      // (cashier POS resolves tables by number and needs live floor state).
       if (role == null ||
           role == UserRole.waiter ||
+          role == UserRole.cashier ||
           role == UserRole.manager ||
           role == UserRole.admin) {
         _subscribeTables();
@@ -80,15 +82,19 @@ class SupabaseRealtimeService {
         _subscribeDriverLocations();
       }
 
-      // Delivery Assignments — needed by driver, manager, admin, cashier,
-      // and customer (RLS limits customers to their own orders' rows, so the
-      // tracking page flips from "searching" to the driver card live).
+      // Delivery Assignments — driver/manager/admin/cashier/customer plus
+      // kitchen + waiter (kitchen driver chip + waiter awareness rely on the
+      // assignment row, not just the orders.driver_id mirror — F12).
+      // RLS still scopes customers to their own orders.
       if (role == null ||
           role == UserRole.driver ||
           role == UserRole.manager ||
           role == UserRole.admin ||
           role == UserRole.cashier ||
-          role == UserRole.customer) {
+          role == UserRole.customer ||
+          role == UserRole.kitchen ||
+          role == UserRole.managerChef ||
+          role == UserRole.waiter) {
         _subscribeDeliveryAssignments();
       }
 

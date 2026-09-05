@@ -8,6 +8,7 @@ import '../../../../core/printing/ticket_printer_service.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../shared/animations/animated_press_card.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/error_state.dart';
@@ -20,6 +21,7 @@ import '../../../menu/domain/entities/menu_item.dart';
 import '../../../menu/presentation/controllers/menu_controller.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../orders/presentation/controllers/orders_controller.dart';
+import '../../../table_management/presentation/controllers/table_controller.dart';
 import '../controllers/cashier_pos_controller.dart';
 import '../controllers/held_orders_controller.dart';
 import '../widgets/cashier_discount_dialog.dart';
@@ -77,23 +79,51 @@ class _FastPOSCheckoutPageState extends ConsumerState<FastPOSCheckoutPage> {
       final posState = ref.read(cashierPOSControllerProvider);
       final rawTotals = CartTotals.fromItems(cart);
       final discountAmount = posState.calculateTotalDiscount(rawTotals.subtotal);
-      final finalTotal = (rawTotals.totalAmount - discountAmount).clamp(0.0, rawTotals.totalAmount);
+      // Server is the source of truth: VAT applies to (subtotal - discount),
+      // so recompute via CartTotals instead of subtracting after VAT.
+      final finalTotal = CartTotals.fromItems(
+        cart,
+        discountAmount: discountAmount,
+      ).totalAmount;
 
       final orderNotifier = ref.read(ordersControllerProvider.notifier);
-      final OrderEntity? order;
+      OrderEntity? order;
       if (posState.orderType == OrderType.dineIn && posState.selectedTableNumber != null) {
+        // Resolve the real tables.id by table_number (numeric strings like
+        // "11" parse server-side; the old 't5' placeholder parsed to null and
+        // silently dropped the table link).
+        final tables = ref.read(tableControllerProvider);
+        String tableId = '${posState.selectedTableNumber}';
+        for (final t in tables) {
+          if (t.tableNumber == posState.selectedTableNumber) {
+            tableId = t.id;
+            break;
+          }
+        }
         order = await orderNotifier.placeOrderForTable(
-          't${posState.selectedTableNumber}',
+          tableId,
           paymentMethod: paymentMethod,
+          discountAmountOverride: discountAmount,
         );
       } else {
         order = await orderNotifier.placeOrder(
           orderType: posState.orderType,
           paymentMethod: paymentMethod,
+          discountAmountOverride: discountAmount,
         );
       }
 
+      // Fast-POS is immediate tender: close + pay right away so the sale
+      // lands in completed + payments (leaving it pending while the UI
+      // claims it was collected corrupts cashier totals — F4). The payment
+      // row itself is persisted by the onPaymentRecorded hook.
       if (order != null) {
+        final closed = await orderNotifier.completeAndPayOrder(
+          order.id,
+          paymentMethod: paymentMethod,
+          discountAmount: discountAmount > 0 ? discountAmount : null,
+        );
+        if (closed != null) order = closed;
         // Auto print invoice ticket
         final printer = ref.read(ticketPrinterServiceProvider);
         unawaited(printer.printCustomerInvoice(order));
@@ -154,8 +184,11 @@ class _FastPOSCheckoutPageState extends ConsumerState<FastPOSCheckoutPage> {
     final posState = ref.watch(cashierPOSControllerProvider);
     final rawTotals = CartTotals.fromItems(cart);
     final discountAmount = posState.calculateTotalDiscount(rawTotals.subtotal);
-    final finalTotalAmount =
-        (rawTotals.totalAmount - discountAmount).clamp(0.0, rawTotals.totalAmount);
+    // Same single source as checkout: VAT on (subtotal - discount).
+    final finalTotalAmount = CartTotals.fromItems(
+      cart,
+      discountAmount: discountAmount,
+    ).totalAmount;
 
     return Scaffold(
       appBar: AppBar(
@@ -575,16 +608,14 @@ class _POSMenuItemCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md - 1)),
-                    child: item.imageUrl != null && item.imageUrl!.isNotEmpty
-                        ? Image.network(
-                            item.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stack) => _buildFallback(colorScheme),
-                          )
-                        : _buildFallback(colorScheme),
-                  ),
+                  item.imageUrl != null && item.imageUrl!.isNotEmpty
+                      ? AppImageUtils.buildOptimizedImage(
+                          imageUrl: item.imageUrl!,
+                          fit: BoxFit.cover,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md - 1)),
+                          errorWidget: _buildFallback(colorScheme),
+                        )
+                      : _buildFallback(colorScheme),
 
                   // Out of stock overlay
                   if (!item.isAvailable)

@@ -4,6 +4,7 @@ import '../../../../config/constants.dart';
 import '../../../../core/theme/status_colors.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/spacing.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../shared/animations/animated_press_card.dart';
 import '../../../menu/domain/entities/menu_item.dart';
 
@@ -61,18 +62,26 @@ class MenuItemTile extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   if (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                    ClipRRect(
+                    AppImageUtils.buildOptimizedImage(
+                      imageUrl: item.imageUrl!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: Image.network(
-                        item.imageUrl!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          _getCategoryPlaceholderIcon(item.categoryId),
-                          size: 38,
-                          color: colorScheme.primary.withValues(alpha: 0.7),
+                      placeholder: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary.withValues(alpha: 0.6),
+                          ),
                         ),
+                      ),
+                      errorWidget: Icon(
+                        _getCategoryPlaceholderIcon(item.categoryId),
+                        size: 38,
+                        color: colorScheme.primary.withValues(alpha: 0.7),
                       ),
                     )
                   else

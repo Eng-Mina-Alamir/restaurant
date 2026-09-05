@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../config/constants.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../cart/domain/cart_totals.dart';
 import '../../../cart/presentation/controllers/cart_controller.dart';
+import '../../../coupons/presentation/controllers/coupon_controller.dart';
 
 /// Floating sticky bar at bottom of screen when cart has items.
 class FloatingCartBar extends ConsumerWidget {
@@ -15,7 +17,13 @@ class FloatingCartBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cart = ref.watch(cartControllerProvider);
     final count = cart.fold<int>(0, (sum, item) => sum + item.quantity);
-    final total = cart.fold<double>(0, (sum, item) => sum + item.linePrice);
+    // Server-consistent total: same CartTotals formula the cart page and the
+    // persisted order use (VAT on subtotal - coupon), so opening the cart
+    // never shows a price jump.
+    final appliedCoupon = ref.watch(appliedCouponProvider);
+    final rawSubtotal = cart.fold<double>(0, (sum, item) => sum + item.linePrice);
+    final discount = appliedCoupon?.calculateDiscount(rawSubtotal) ?? 0.0;
+    final total = CartTotals.fromItems(cart, discountAmount: discount).totalAmount;
     final isVisible = count > 0;
     final theme = Theme.of(context);
 
@@ -25,7 +33,7 @@ class FloatingCartBar extends ConsumerWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
+        padding: const EdgeInsetsDirectional.fromSTEB(
           AppSpacing.md,
           0,
           AppSpacing.md,

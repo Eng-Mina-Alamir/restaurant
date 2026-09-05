@@ -349,6 +349,12 @@ void main() {
       await pump();
       expect(controller.state.single.orderType, OrderType.dineIn);
 
+      // Legal path only: pending -> preparing -> ready (direct
+      // pending -> ready is rejected by canTransitionTo + DB trigger).
+      await controller.updateStatus('ORD-9201', OrderStatus.preparing);
+      await pump();
+      expect(controller.state.single.status, OrderStatus.preparing);
+
       await controller.updateStatus('ORD-9201', OrderStatus.ready);
       await pump();
 

@@ -15,16 +15,23 @@ class KdsAlertService {
 
   late final AudioPlayer _player;
   bool _disposed = false;
+  bool isMuted = false;
+
+  void toggleMute() {
+    isMuted = !isMuted;
+  }
 
   /// Plays a notification sound and triggers heavy haptic feedback to alert
   /// kitchen staff of a new incoming order.
   Future<void> alertNewOrder() async {
     if (_disposed) return;
-    try {
-      // Use a short, system-level notification sound.
-      await _player.play(AssetSource('sounds/order_alert.mp3'));
-    } catch (_) {
-      // Sound file may not exist in dev; fall through to haptic only.
+    if (!isMuted) {
+      try {
+        // Use a short, system-level notification sound.
+        await _player.play(AssetSource('sounds/order_alert.mp3'));
+      } catch (_) {
+        // Sound file may not exist in dev; fall through to haptic only.
+      }
     }
     try {
       unawaited(HapticFeedback.heavyImpact().catchError((_) {}));

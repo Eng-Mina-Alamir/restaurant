@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/supabase/supabase_providers.dart';
+import '../../../../core/tenant/tenant_context.dart';
 import '../../data/repositories/supabase_restaurant_repository.dart';
 import '../../domain/entities/restaurant_entity.dart';
 
 final restaurantRepositoryProvider =
     Provider<SupabaseRestaurantRepository>((ref) {
-  return SupabaseRestaurantRepository(ref.watch(supabaseClientProvider));
+  return SupabaseRestaurantRepository(
+    ref.watch(supabaseClientProvider),
+    restaurantIdProvider: () => ref.watch(currentRestaurantIdProvider),
+  );
 });
 
 /// Holds the restaurant profile + the actual tables count side by side so the

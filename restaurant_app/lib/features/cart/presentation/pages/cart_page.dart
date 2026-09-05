@@ -7,6 +7,7 @@ import '../../../../core/domain/enums.dart';
 import '../../../../core/theme/spacing.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/haptics.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../../../coupons/presentation/controllers/coupon_controller.dart';
@@ -108,6 +109,9 @@ class _CartPageState extends ConsumerState<CartPage> {
                 title: 'سداد طلب من رصيد المحفظة',
               );
         }
+        // Coupon is single-use per order: clear it so the next cart starts
+        // clean instead of inheriting a stale discount.
+        ref.read(appliedCouponProvider.notifier).remove();
         AppHaptics.actionSuccess();
         context.push('/customer/order-confirmation', extra: order);
       } else {
@@ -829,17 +833,17 @@ class _CartLineCard extends StatelessWidget {
                 ),
               ),
               child: item.menuItem.imageUrl != null && item.menuItem.imageUrl!.isNotEmpty
-                  ? ClipRRect(
+                  ? AppImageUtils.buildOptimizedImage(
+                      imageUrl: item.menuItem.imageUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: Image.network(
-                        item.menuItem.imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Center(
-                          child: Icon(
-                            _getCategoryIcon(item.menuItem.categoryId),
-                            size: 28,
-                            color: colorScheme.primary,
-                          ),
+                      errorWidget: Center(
+                        child: Icon(
+                          _getCategoryIcon(item.menuItem.categoryId),
+                          size: 28,
+                          color: colorScheme.primary,
                         ),
                       ),
                     )

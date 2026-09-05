@@ -31,6 +31,7 @@ import '../widgets/branches_overview_section.dart';
 import '../widgets/peak_hours_chart.dart';
 import '../widgets/sales_line_chart.dart';
 import '../widgets/top_items_bar_chart.dart';
+import '../../../subscription/presentation/widgets/subscription_status_card.dart';
 
 /// Modern Multi-Branch Manager & Super Admin dashboard.
 class ManagerDashboardPage extends ConsumerWidget {
@@ -273,6 +274,9 @@ class ManagerDashboardPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],
+
+                    // ── SaaS Subscription & Trial Status Banner ───────────────
+                    const SubscriptionStatusCard(),
 
                     // ── 2. Hero Greeting Banner ──────────────────────────────
                     _HeroGreetingBanner(

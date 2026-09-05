@@ -467,6 +467,26 @@ class AppStrings {
   String get kdsRevertConfirmAction => isArabic ? 'تأكيد التراجع' : 'Confirm Revert';
   String revertToStatus(String status) => isArabic ? 'تراجع إلى $status؟' : 'Revert to $status?';
   String get confirmRevert => isArabic ? 'تأكيد التراجع' : 'Confirm Revert';
+  String get kdsSearchHint => isArabic ? 'بحث برقم الطلب أو رقم الطاولة...' : 'Search order # or table...';
+  String get kdsFilterAll => isArabic ? 'الكل' : 'All';
+  String get kdsFilterDineIn => isArabic ? 'صالة' : 'Dine-in';
+  String get kdsFilterTakeaway => isArabic ? 'سفري' : 'Takeaway';
+  String get kdsFilterDelivery => isArabic ? 'دليفري' : 'Delivery';
+  String get kdsSortOldestFirst => isArabic ? 'الأقدم أولاً' : 'Oldest First';
+  String get kdsSortNewestFirst => isArabic ? 'الأحدث أولاً' : 'Newest First';
+  String get kdsSoundMuted => isArabic ? 'تم كتم التنبيه الصوتي' : 'Alert sound muted';
+  String get kdsSoundUnmuted => isArabic ? 'تم تفعيل التنبيه الصوتي' : 'Alert sound active';
+  String get kdsSoundToggle => isArabic ? 'كتم / تفعيل الصوت' : 'Mute / Unmute Sound';
+  String kdsLateCountBadge(int count) => isArabic ? '$count متأخر' : '$count delayed';
+  String get kdsViewRecentCompleted => isArabic ? 'عرض المنجز حديثاً' : 'View Recent Completed';
+  String get kdsRefreshBoard => isArabic ? 'تحديث الشاشة' : 'Refresh Board';
+  String get kdsEmptyPending => isArabic ? 'لا توجد طلبات بانتظار التحضير' : 'No pending orders';
+  String get kdsEmptyPreparing => isArabic ? 'لا توجد طلبات قيد التحضير حالياً' : 'No orders preparing';
+  String get kdsEmptyReady => isArabic ? 'لا توجد طلبات جاهزة للتقديم' : 'No ready orders';
+  String get kdsEmptyFiltered => isArabic ? 'لا توجد طلبات تطابق الفلتر' : 'No orders match filter';
+  String get kdsPrevTab => isArabic ? 'التبويب السابق' : 'Previous tab';
+  String get kdsNextTab => isArabic ? 'التبويب التالي' : 'Next tab';
+  String get kdsExpoHelp => isArabic ? 'محطة Expo: تجميع ومراجعة كافة طلبات المطبخ' : 'Expo Station: assembly & verification of all tickets';
 
   // ── Metrics Extras ─────────────────────────────────────────────────────────
   String get metricsByCategory => isArabic ? 'الإيرادات حسب الفئة' : 'Revenue by Category';

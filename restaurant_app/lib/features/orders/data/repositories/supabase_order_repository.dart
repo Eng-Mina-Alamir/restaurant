@@ -44,9 +44,13 @@ class SupabaseOrderRepository implements OrderRepository {
           ? int.tryParse(order.tableId!.trim())
           : null;
 
+      // Server is the sole generator of order_number (trg_set_order_number):
+      // temp/local ids (non-numeric ORD-*/local-*) are sent as NULL so the
+      // trigger mints a unique ORD-YYMMDD-XXXX. Only already-numeric ids
+      // (retry of a persisted order) echo their order_number.
       final orderRow = <String, dynamic>{
         'id': ?numericId,
-        'order_number': order.id,
+        'order_number': numericId != null ? order.id : null,
         'restaurant_id': _sanitizeUuid(
           order.restaurantId,
           defaultFallback: defaultRestaurantId,
@@ -372,23 +376,12 @@ class SupabaseOrderRepository implements OrderRepository {
 
       final updated = _orderFromRow(Map<String, dynamic>.from(response as Map));
 
-      // 4. Audit trail.
-      if (resolvedNumericId != null) {
-        try {
-          await _supabase.from(SupabaseConfig.orderStatusLogTable).insert({
-            'order_id': resolvedNumericId,
-            'from_status': current.status.name,
-            'to_status': toStatus.name,
-            'changed_by': _sanitizeUuid(actorId),
-            'reason': reason,
-            'is_revert': true,
-          });
-        } catch (e) {
-          AppLogger.warning(
-            'revertStatus: failed to write order_status_log for $orderId: $e',
-          );
-        }
-      }
+      // 4. Audit trail is written EXCLUSIVELY by the DB trigger
+      // trg_log_order_status_change (single writer — previously this method
+      // also inserted manually, producing duplicate is_revert rows). The
+      // reason/actor for reverts is recorded via the trigger's changed_by
+      // (auth.uid()); max-2-reverts is enforced DB-side in
+      // validate_order_status_transition().
 
       await _cacheOrderLocally(updated);
       return Right<Failure, OrderEntity>(updated);
@@ -535,15 +528,52 @@ class SupabaseOrderRepository implements OrderRepository {
     }
   }
 
+  /// Resolves any order identifier (numeric id string OR order_number text
+  /// like `ORD-260904-0018`) to the numeric `orders.id` used by bigint FK
+  /// columns (`order_status_log`, `delivery_assignments`, `payments`).
+  /// Returns null when the order is not yet persisted (temp local id).
+  /// Transport errors propagate to the caller (which maps them to Left).
+  Future<int?> resolveNumericOrderId(String orderId) async {
+    final direct = int.tryParse(orderId);
+    if (direct != null) return direct;
+    final rows = await _supabase
+        .from(SupabaseConfig.ordersTable)
+        .select('id')
+        .eq('order_number', orderId)
+        .limit(1);
+    final list = rows as List;
+    if (list.isEmpty) return null;
+    return int.tryParse(
+      (list.first as Map)['id']?.toString() ?? '',
+    );
+  }
+
   @override
   Future<Either<Failure, List<OrderStatusLogEntry>>> getAuditTrail(
     String orderId,
   ) async {
     try {
+      // Numeric ids hit the log table directly (a transport failure stays a
+      // Left, preserving the offline-failure contract). Text ids
+      // (order_number / temp local ids) resolve first: unknown -> empty
+      // trail, resolution transport failure -> Left.
+      int? numericId = int.tryParse(orderId);
+      if (numericId == null) {
+        try {
+          numericId = await resolveNumericOrderId(orderId);
+        } catch (e) {
+          return Left<Failure, List<OrderStatusLogEntry>>(
+            ServerFailure('فشل تحميل سجل الحالة: $e'),
+          );
+        }
+        if (numericId == null) {
+          return const Right<Failure, List<OrderStatusLogEntry>>([]);
+        }
+      }
       final response = await _supabase
           .from(SupabaseConfig.orderStatusLogTable)
           .select()
-          .eq('order_id', orderId)
+          .eq('order_id', numericId)
           .order('created_at');
       final trail = (response as List)
           .map((raw) => _logFromRow(Map<String, dynamic>.from(raw as Map)))
